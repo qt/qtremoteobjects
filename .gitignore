@@ -1,0 +1,17 @@
+Makefile
+Makefile.*
+release/
+debug/
+*.o
+*.so.*
+*.dll
+*.lib
+*.so
+moc_*
+*.moc
+*.pro.user
+
+rep_*_replicant.h
+rep_*_prime.h
+
+/repc/repc

@@ -1,0 +1,5 @@
+#include <QtCore>
+class Speedometer
+{
+    PROP(int mph);
+};

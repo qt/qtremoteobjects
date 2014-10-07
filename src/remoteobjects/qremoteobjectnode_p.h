@@ -1,0 +1,112 @@
+/****************************************************************************
+**
+** Copyright (C) 2014 Ford Motor Company
+** Contact: http://www.qt-project.org/legal
+**
+** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+**
+** $QT_BEGIN_LICENSE:LGPL$
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
+**
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
+**
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+#ifndef QREMOTEOBJECTNODE_P_H
+#define QREMOTEOBJECTNODE_P_H
+
+#include "qconnectionclientfactory_p.h"
+#include "qremoteobjectsourceio_p.h"
+#include "qremoteobjectreplica.h"
+#include "qremoteobjectnode.h"
+
+#include <QBasicTimer>
+#include <QMutex>
+#include <QSharedPointer>
+
+QT_BEGIN_NAMESPACE
+
+class QRemoteObjectRegistry;
+class QRegistrySource;
+
+class QRemoteObjectNodePrivate : public QObject
+{
+    Q_OBJECT
+
+public:
+    QRemoteObjectNodePrivate();
+    virtual ~QRemoteObjectNodePrivate();
+
+    QRemoteObjectSourceLocations remoteObjectAddresses() const;
+
+    void timerEvent(QTimerEvent*);
+
+    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &);
+
+    void connectReplica(QObject *object, QRemoteObjectReplica *instance);
+    void openConnectionIfNeeded(const QString &name);
+
+    void initConnection(const QUrl &address);
+    bool hasInstance(const QString &name);
+    void setRegistry(QRemoteObjectRegistry *);
+
+Q_SIGNALS:
+    void remoteObjectAdded(const QRemoteObjectSourceLocation &);
+    void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
+
+public Q_SLOTS:
+    void onClientRead(QObject *obj);
+    void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry);
+    void onRemoteObjectSourceRemoved(const QRemoteObjectSourceLocation &entry);
+    void onRegistryInitialized();
+    void onShouldReconnect(ClientIoDevice *ioDevice);
+
+public:
+    QAtomicInt isInitialized;
+    QScopedPointer<QRemoteObjectSourceIo> remoteObjectIo;
+    QMutex mutex;
+    QUrl registryAddress;
+    QHash<QString, QWeakPointer<QRemoteObjectReplicaPrivate> > replicas;
+    QConnectionClientFactory m_factory;
+    QMap<QString, ClientIoDevice*> connectedSources;
+    QSet<ClientIoDevice*> knownNodes;
+    QSet<ClientIoDevice*> pendingReconnect;
+    QSet<QUrl> requestedUrls;
+    QSignalMapper clientRead;
+    QScopedPointer<QRemoteObjectRegistry> registry;
+    QScopedPointer<QRegistrySource> registrySource;
+    int retryInterval;
+    QBasicTimer reconnectTimer;
+    QRemoteObjectNode::ErrorCode m_lastError;
+};
+
+QT_END_NAMESPACE
+
+#endif

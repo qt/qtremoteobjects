@@ -1,0 +1,43 @@
+include($QT_INSTALL_DOCS/global/qt-module-defaults.qdocconf)
+
+project                 = QtRemoteObjects
+description             = Qt RemoteObjects Reference Documentation
+version                 = $QT_VERSION
+
+qhp.projects            = QtRemoteObjects
+
+qhp.QtRemoteObjects.file                = qtremoteobjects.qhp
+qhp.QtRemoteObjects.namespace           = org.qt-project.qtremoteobjects.$QT_VERSION_TAG
+qhp.QtRemoteObjects.virtualFolder       = qtremoteobjects
+qhp.QtRemoteObjects.indexTitle          = Qt RemoteObjects
+qhp.QtRemoteObjects.indexRoot           =
+
+qhp.QtRemoteObjects.filterAttributes    = qtremoteobjects $QT_VERSION qtrefdoc
+qhp.QtRemoteObjects.customFilters.Qt.name = QtRemoteObjects $QT_VERSION
+qhp.QtRemoteObjects.customFilters.Qt.filterAttributes = qtremoteobjects $QT_VERSION
+qhp.QtRemoteObjects.subprojects         = classes
+qhp.QtRemoteObjects.subprojects.classes.title = C++ Classes
+qhp.QtRemoteObjects.subprojects.classes.indexTitle = Qt RemoteObjects C++ Classes
+qhp.QtRemoteObjects.subprojects.classes.selectors = class fake:headerfile
+qhp.QtRemoteObjects.subprojects.classes.sortPages = true
+
+depends += qtcore \
+           qtdoc
+
+tagfile                 = ../../../doc/qtremoteobjects/qtremoteobjects.tagsi
+
+headerdirs  += .. \
+                ../../remoteobjects
+
+sourcedirs  += .. \
+                ../../remoteobjects
+
+exampledirs += ../../../examples/RemoteObjects \
+               snippets/
+
+examplesinstallpath = RemoteObjects
+
+imagedirs   += images
+
+navigation.landingpage = "Qt RemoteObjects"
+navigation.cppclassespage = "Qt RemoteObjects C++ Classes"

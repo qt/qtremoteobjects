@@ -1,0 +1,8 @@
+#include <QtCore>
+class TcpDataCenter
+{
+    PROP(int data1);
+    PROP(float data2);
+    PROP(QString data3);
+    PROP(QVector<int> data4);
+};
