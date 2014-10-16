@@ -93,7 +93,13 @@ bool RepCodeGenerator::generate(const AST &ast, Mode mode)
     if (!file.open(QIODevice::WriteOnly))
         return false;
 
+    QString includeGuardName(m_fileName.toUpper());
+    includeGuardName.replace('.', '_');
+
     QTextStream stream(&file);
+
+    stream << "#ifndef " << includeGuardName << endl;
+    stream << "#define " << includeGuardName << endl << endl;
 
     QStringList out;
 
@@ -105,6 +111,9 @@ bool RepCodeGenerator::generate(const AST &ast, Mode mode)
         generateClass(mode, out, astClass, podMetaTypeRegistrationCode);
 
     stream << out.join("\n");
+
+    stream << endl << "#endif // " << includeGuardName << endl;
+
 #ifdef HAVE_QSAVEFILE
     file.commit();
 #endif
