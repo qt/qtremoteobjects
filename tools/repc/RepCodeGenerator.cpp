@@ -376,10 +376,10 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 out << QString("");
                 out << QString("    void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
                 out << QString("    {");
-                out << QString("        static int index = %1::staticMetaObject.indexOfProperty(\"%2\");").arg(className).arg( property.name());
-                out << QString("        QVariantList args;");
-                out << QString("        args << QVariant::fromValue(%1);").arg(property.name());
-                out << QString("        send(QMetaObject::WriteProperty, index, args);");
+                out << QString("        static int __repc_index = %1::staticMetaObject.indexOfProperty(\"%2\");").arg(className).arg( property.name());
+                out << QString("        QVariantList __repc_args;");
+                out << QString("        __repc_args << QVariant::fromValue(%1);").arg(property.name());
+                out << QString("        send(QMetaObject::WriteProperty, __repc_index, __repc_args);");
                 out << QString("    }");
             }
             out << QString("");
@@ -442,12 +442,12 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
                     out << QString("    void %1").arg(slot);
                     out << QString("    {");
-                    out << QString("        static int index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");").arg(className).arg(functionString).arg(types.join(", "));
-                    out << QString("        QVariantList args;");
+                    out << QString("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");").arg(className).arg(functionString).arg(types.join(", "));
+                    out << QString("        QVariantList __repc_args;");
                     if (names.length() > 0)
-                        out << QString("        args << %1;").arg(names.join(" << "));
-                    out << QString("        qDebug() << \"%1::%2\" << index;").arg(className).arg(functionString);
-                    out << QString("        send(QMetaObject::InvokeMetaMethod, index, args);");
+                        out << QString("        __repc_args << %1;").arg(names.join(" << "));
+                    out << QString("        qDebug() << \"%1::%2\" << __repc_index;").arg(className).arg(functionString);
+                    out << QString("        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);");
                     out << QString("    }");
                 }
             }
