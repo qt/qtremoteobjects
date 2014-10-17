@@ -39,100 +39,54 @@
 **
 ****************************************************************************/
 
-#ifndef REPPARSER_H
-#define REPPARSER_H
+#include "rep_enums_replica.h"
 
-#include <QStringList>
-#include <QVector>
+#include <QTest>
 
-// A property of a Class declaration
-class ASTProperty
+#include <QByteArray>
+#include <QDataStream>
+
+class tst_Enums : public QObject {
+    Q_OBJECT
+
+private Q_SLOTS:
+    void testMarshaling();
+};
+
+void tst_Enums::testMarshaling()
 {
-public:
-    enum Modifier
+    QByteArray ba;
+    QDataStream ds(&ba, QIODevice::ReadWrite);
+
     {
-        Constant,
-        ReadOnly,
-        ReadWrite
-    };
+        const Qt::DateFormat format1 = Qt::TextDate;
+        const Qt::DateFormat format2 = Qt::ISODate;
+        const Qt::DateFormat format3 = Qt::SystemLocaleShortDate;
+        const Qt::DateFormat format4 = Qt::SystemLocaleLongDate;
+        const Qt::DateFormat format5 = Qt::DefaultLocaleShortDate;
+        const Qt::DateFormat format6 = Qt::DefaultLocaleLongDate;
+        const Qt::DateFormat format7 = Qt::SystemLocaleDate;
 
-    ASTProperty();
-    ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier);
+        ds << format1 << format2 << format3 << format4 << format5 << format6 << format7;
+    }
 
-    QString type() const;
-    QString name() const;
-    QString defaultValue() const;
-    Modifier modifier() const;
+    ds.device()->seek(0);
 
-private:
-    QString m_type;
-    QString m_name;
-    QString m_defaultValue;
-    Modifier m_modifier;
-};
-Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
+    {
+        Qt::DateFormat format1, format2, format3, format4, format5, format6, format7;
 
-// A Class declaration
-class ASTClass
-{
-public:
-    explicit ASTClass(const QString& name = QString());
-    bool isValid() const;
-    QString name() const;
-    QVector<ASTProperty> properties() const;
+        ds >> format1 >> format2 >> format3 >> format4 >> format5 >> format6 >> format7;
 
-private:
-    friend class RepParser;
-    friend class RepCodeGenerator;
+        QCOMPARE(format1, Qt::TextDate);
+        QCOMPARE(format2, Qt::ISODate);
+        QCOMPARE(format3, Qt::SystemLocaleShortDate);
+        QCOMPARE(format4, Qt::SystemLocaleLongDate);
+        QCOMPARE(format5, Qt::DefaultLocaleShortDate);
+        QCOMPARE(format6, Qt::DefaultLocaleLongDate);
+        QCOMPARE(format7, Qt::SystemLocaleDate);
+    }
+}
 
-    QString m_name;
-    QVector<ASTProperty> m_properties;
-    QStringList m_signals;
-    QStringList m_slots;
-};
-Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
+QTEST_APPLESS_MAIN(tst_Enums)
 
-// The attribute of a POD
-struct PODAttribute
-{
-    QString type;
-    QString name;
-};
-Q_DECLARE_TYPEINFO(PODAttribute, Q_MOVABLE_TYPE);
-
-// A POD declaration
-struct POD
-{
-    QString name;
-    QVector<PODAttribute> attributes;
-};
-Q_DECLARE_TYPEINFO(POD, Q_MOVABLE_TYPE);
-
-// The AST representation of a .rep file
-class AST
-{
-public:
-    QVector<ASTClass> classes;
-    QVector<POD> pods;
-    QVector<QString> enumUses;
-    QStringList includes;
-};
-Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);
-
-class RepParser
-{
-public:
-    explicit RepParser(const QString &fileName);
-
-    bool parse();
-
-    AST ast() const;
-
-private:
-    bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
-
-    QString m_fileName;
-    AST m_ast;
-};
-
-#endif
+#include "tst_enums.moc"

@@ -1,0 +1,7 @@
+#include <QtCore>
+
+USE_ENUM(Qt::DateFormat)
+
+class TestInterface
+{
+};

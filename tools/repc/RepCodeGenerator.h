@@ -69,6 +69,8 @@ public:
 private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
     QString generateMetaTypeRegistrationForPODs(const QVector<POD> &pods);
+    QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
+    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
 
     void generatePOD(QTextStream &out, const POD &pod);
     QString formatQPropertyDeclarations(const POD &pod);
@@ -80,7 +82,7 @@ private:
     QString formatDataMembers(const POD &pod);
     QString formatMarshalingOperators(const POD &pod);
 
-    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &podMetaTypeRegistrationCode);
+    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
 
 private:
     QString m_fileName;

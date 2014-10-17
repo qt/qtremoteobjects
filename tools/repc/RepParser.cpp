@@ -99,6 +99,7 @@ QVector<ASTProperty> ASTClass::properties() const
 // R->WHITESPACE
 // WHITESPACE: newlines, whitespaces
 // R->POD
+// R->ENUM
 // R->CLASS DESCR
 // DESCR->WHITESPACE IDENTIFIER CBRACKET
 // DESCR->IDENTIFIER COBRACKET
@@ -123,6 +124,7 @@ QVector<ASTProperty> ASTClass::properties() const
 QRegExp re_class("class\\s*(\\S+)\\s*");
 QRegExp re_pod("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_prop("\\s*PROP\\(([^\\)]+)\\);?.*");
+QRegExp re_useEnum("USE_ENUM\\s*\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_signal("\\s*SIGNAL\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_slot("\\s*SLOT\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_start("^\\{\\s*");
@@ -168,6 +170,8 @@ bool RepParser::parse()
             }
 
             m_ast.pods.append(pod);
+        } else if (re_useEnum.exactMatch(line)) {
+            m_ast.enumUses.append(re_useEnum.capturedTexts()[1]);
         } else if (re_prop.exactMatch(line)) {
             const QStringList params = re_prop.capturedTexts();
             if (!parseProperty(astClass, params[1]))

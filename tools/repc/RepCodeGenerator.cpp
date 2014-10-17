@@ -106,11 +106,16 @@ bool RepCodeGenerator::generate(const AST &ast, Mode mode)
     generateHeader(mode, stream, ast);
     foreach (const POD &pod, ast.pods)
         generatePOD(stream, pod);
-    const QString podMetaTypeRegistrationCode = generateMetaTypeRegistrationForPODs(ast.pods);
+
+    const QString metaTypeRegistrationCode = generateMetaTypeRegistrationForPODs(ast.pods)
+                                           + generateMetaTypeRegistrationForEnums(ast.enumUses);
+
     foreach (const ASTClass &astClass, ast.classes)
-        generateClass(mode, out, astClass, podMetaTypeRegistrationCode);
+        generateClass(mode, out, astClass, metaTypeRegistrationCode);
 
     stream << out.join("\n");
+
+    generateStreamOperatorsForEnums(stream, ast.enumUses);
 
     stream << endl << "#endif // " << includeGuardName << endl;
 
@@ -311,7 +316,38 @@ QString RepCodeGenerator::generateMetaTypeRegistrationForPODs(const QVector<POD>
     return out;
 }
 
-void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass &astClass, const QString &podMetaTypeRegistrationCode)
+QString RepCodeGenerator::generateMetaTypeRegistrationForEnums(const QVector<QString> &enumUses)
+{
+    QString out;
+
+    foreach (const QString &enumName, enumUses) {
+        out += QStringLiteral("        qRegisterMetaTypeStreamOperators<") + enumName + ">(\"" + enumName + "\");\n";
+    }
+
+    return out;
+}
+
+void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enumUses)
+{
+    foreach (const QString &enumName, enumUses) {
+        out << "inline QDataStream &operator<<(QDataStream &out, " << enumName << " value)" << endl;
+        out << "{" << endl;
+        out << "    out << static_cast<qint32>(value);" << endl;
+        out << "    return out;" << endl;
+        out << "}" << endl;
+        out << endl;
+        out << "inline QDataStream &operator>>(QDataStream &in, " << enumName << " &value)" << endl;
+        out << "{" << endl;
+        out << "    qint32 intValue = 0;" << endl;
+        out << "    in >> intValue;" << endl;
+        out << "    value = static_cast<" << enumName << ">(intValue);" << endl;
+        out << "    return in;" << endl;
+        out << "}" << endl;
+        out << endl;
+    }
+}
+
+void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass &astClass, const QString &metaTypeRegistrationCode)
 {
     const QString className = (astClass.name() + (mode == REPLICA ? "Replica" : "Source"));
     if (mode == REPLICA)
@@ -337,8 +373,8 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
     out << "    {";
 
-    if (!podMetaTypeRegistrationCode.isEmpty())
-        out << podMetaTypeRegistrationCode;
+    if (!metaTypeRegistrationCode.isEmpty())
+        out << metaTypeRegistrationCode;
 
     if (mode == REPLICA) {
         out << QString("        QVariantList properties;");
