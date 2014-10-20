@@ -442,7 +442,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
                     out << QString("    void %1").arg(slot);
                     out << QString("    {");
-                    out << QString("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");").arg(className).arg(functionString).arg(types.join(", "));
+                    out << QString("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");").arg(className).arg(functionString).arg(types.join(','));
                     out << QString("        QVariantList __repc_args;");
                     if (names.length() > 0) {
                         QStringList variantNames;
