@@ -271,7 +271,7 @@ QConnectionClientFactory::QConnectionClientFactory()
 
 ClientIoDevice *QConnectionClientFactory::createDevice(const QUrl &url, QObject *parent)
 {
-    ClientIoDevice *res = QConnectionAbstractFactory::create(url.scheme(), parent);
+    ClientIoDevice *res = QConnectionAbstractFactory<ClientIoDevice>::create(url.scheme(), parent);
     res->m_url = url;
     return res;
 }

@@ -211,7 +211,7 @@ QConnectionAbstractServer *QConnectionServerFactory::createServer(const QUrl &ur
 
 QConnectionAbstractServer *QConnectionServerFactory::create(const QUrl &url, QObject *parent)
 {
-    return QConnectionAbstractFactory::create(url.scheme(), parent);
+    return QConnectionAbstractFactory<QConnectionAbstractServer>::create(url.scheme(), parent);
 }
 
 QT_END_NAMESPACE
