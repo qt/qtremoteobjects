@@ -146,15 +146,22 @@ QVariantList QRemoteObjectSourcePrivate::marshalArgs(int index, void **a)
 
 void QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QVariantList &args)
 {
-    static QVariant null(QMetaType::QObjectStar, Q_NULLPTR);
     QVarLengthArray<void*, 10> param(args.size() + 1);
-    param[0] = null.data(); //Never a return value
-    for (int i = 0; i < args.size(); ++i) {
-        param[i + 1] = const_cast<void*>(args.at(i).data());
-    }
+
     if (c == QMetaObject::InvokeMetaMethod) {
+        static QVariant null(QMetaType::QObjectStar, Q_NULLPTR);
+        param[0] = null.data(); //Never a return value
+
+        for (int i = 0; i < args.size(); ++i) {
+            param[i + 1] = const_cast<void*>(args.at(i).data());
+        }
+
         parent()->qt_metacall(c, index + m_methodOffset, param.data());
     } else {
+        for (int i = 0; i < args.size(); ++i) {
+            param[i] = const_cast<void*>(args.at(i).data());
+        }
+
         parent()->qt_metacall(c, index + m_propertyOffset, param.data());
     }
 }
