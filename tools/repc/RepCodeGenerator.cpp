@@ -388,11 +388,11 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     else
     {
         foreach (const ASTProperty &property, astClass.m_properties) {
-            out << QString("    %1 %2() const { return _%2;}").arg(property.type(), property.name());
+            out << QString("    virtual %1 %2() const { return _%2; }").arg(property.type(), property.name());
         }
         foreach (const ASTProperty &property, astClass.m_properties) {
             if (property.modifier() != ASTProperty::Constant) {
-                out << QString("    void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
+                out << QString("    virtual void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
                 out << QString("    {");
                 out << QString("        if (%1 != _%1)").arg(property.name());
                 out << QString("        {");
