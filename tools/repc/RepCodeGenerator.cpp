@@ -159,7 +159,7 @@ static QString formatTemplateStringArgTypeNameCapitalizedName(int numberOfTypeOc
 
 QString RepCodeGenerator::formatQPropertyDeclarations(const POD &pod)
 {
-    return formatTemplateStringArgTypeNameCapitalizedName(1, 4, QStringLiteral("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY on%3Changed)\n"), pod);
+    return formatTemplateStringArgTypeNameCapitalizedName(1, 4, QStringLiteral("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY %2Changed)\n"), pod);
 }
 
 QString RepCodeGenerator::formatConstructors(const POD &pod)
@@ -206,14 +206,14 @@ QString RepCodeGenerator::formatPropertyGettersAndSetters(const POD &pod)
 {
     // MSVC doesn't like adjacent string literal concatenation within QStringLiteral, so keep it in one line:
     QString templateString
-            = QStringLiteral("    %1 %2() const { return _%2; }\n    void set%3(%1 %2) { if (%2 != _%2) { _%2 = %2; Q_EMIT on%3Changed(); } }\n");
+            = QStringLiteral("    %1 %2() const { return _%2; }\n    void set%3(%1 %2) { if (%2 != _%2) { _%2 = %2; Q_EMIT %2Changed(); } }\n");
     return formatTemplateStringArgTypeNameCapitalizedName(2, 9, qMove(templateString), pod);
 }
 
 QString RepCodeGenerator::formatSignals(const POD &pod)
 {
     QString out;
-    const QString prefix = QStringLiteral("    void on");
+    const QString prefix = QStringLiteral("    void ");
     const QString suffix = QStringLiteral("Changed();\n");
     const int expectedOutSize
             = accumulatedSizeOfNames(pod.attributes)
@@ -221,7 +221,7 @@ QString RepCodeGenerator::formatSignals(const POD &pod)
     out.reserve(expectedOutSize);
     foreach (const PODAttribute &a, pod.attributes) {
         out += prefix;
-        out += cap(a.name);
+        out += a.name;
         out += suffix;
     }
     Q_ASSERT(out.size() == expectedOutSize);
@@ -359,7 +359,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         if (property.modifier() == ASTProperty::Constant)
             out << QString("    Q_PROPERTY(%1 %2 READ %2 CONSTANT)").arg(property.type(), property.name());
         else
-            out << QString("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY on%3Changed)").arg(property.type(), property.name(), cap(property.name()));
+            out << QString("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY %2Changed)").arg(property.type(), property.name(), cap(property.name()));
     }
     out << "";
 
@@ -397,7 +397,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 out << QString("        if (%1 != _%1)").arg(property.name());
                 out << QString("        {");
                 out << QString("            _%1 = %1;").arg(property.name());
-                out << QString("            Q_EMIT on%1Changed();").arg(cap(property.name()));
+                out << QString("            Q_EMIT %1Changed();").arg(property.name());
                 out << QString("        }");
                 out << QString("    }");
             }
@@ -409,7 +409,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     out << "Q_SIGNALS:";
     foreach (const ASTProperty &property, astClass.m_properties) {
         if (property.modifier() != ASTProperty::Constant)
-            out << QString("    void on%1Changed();").arg(cap(property.name()));
+            out << QString("    void %1Changed();").arg(property.name());
     }
 
     foreach (const QString &signalName, astClass.m_signals)
