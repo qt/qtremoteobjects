@@ -70,6 +70,7 @@ private:
     QString m_defaultValue;
     Modifier m_modifier;
 };
+Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
 // A Class declaration
 class ASTClass
@@ -87,8 +88,8 @@ private:
     QVector<ASTProperty> m_properties;
     QStringList m_signals;
     QStringList m_slots;
-
 };
+Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
 // The attribute of a POD
 struct PODAttribute
@@ -104,6 +105,7 @@ struct POD
     QString name;
     QVector<PODAttribute> attributes;
 };
+Q_DECLARE_TYPEINFO(POD, Q_MOVABLE_TYPE);
 
 // The AST representation of a .rep file
 class AST
@@ -113,6 +115,7 @@ public:
     QVector<POD> pods;
     QStringList includes;
 };
+Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);
 
 class RepParser
 {
