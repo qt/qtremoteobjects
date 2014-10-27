@@ -132,9 +132,7 @@ RepParser::RepParser(const QString &fileName)
 bool RepParser::parse()
 {
     // clean up from previous run
-    m_ast.classes.clear();
-    m_ast.pods.clear();
-    m_ast.includes.clear();
+    m_ast = AST();
 
     QFile file(m_fileName);
     if (!file.open(QIODevice::ReadOnly))
