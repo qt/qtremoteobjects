@@ -358,7 +358,9 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     foreach (const ASTProperty &property, astClass.m_properties) {
         if (property.modifier() == ASTProperty::Constant)
             out << QString("    Q_PROPERTY(%1 %2 READ %2 CONSTANT)").arg(property.type(), property.name());
-        else
+        else if (property.modifier() == ASTProperty::ReadOnly)
+            out << QString("    Q_PROPERTY(%1 %2 READ %2 NOTIFY %2Changed)").arg(property.type(), property.name());
+        else if (property.modifier() == ASTProperty::ReadWrite)
             out << QString("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY %2Changed)").arg(property.type(), property.name(), cap(property.name()));
     }
     out << "";
@@ -372,7 +374,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
             out << QString("        return propAsVariant(%1).value<%2>();").arg(i).arg(property.type());
             out << QString("    }");
             i++;
-            if (property.modifier() != ASTProperty::Constant) {
+            if (property.modifier() == ASTProperty::ReadWrite) {
                 out << QString("");
                 out << QString("    void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
                 out << QString("    {");
@@ -391,7 +393,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
             out << QString("    virtual %1 %2() const { return _%2; }").arg(property.type(), property.name());
         }
         foreach (const ASTProperty &property, astClass.m_properties) {
-            if (property.modifier() != ASTProperty::Constant) {
+            if (property.modifier() == ASTProperty::ReadWrite) {
                 out << QString("    virtual void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
                 out << QString("    {");
                 out << QString("        if (%1 != _%1)").arg(property.name());

@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS += pods
+SUBDIRS += parser pods

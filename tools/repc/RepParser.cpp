@@ -90,6 +90,11 @@ QString ASTClass::name() const
     return m_name;
 }
 
+QVector<ASTProperty> ASTClass::properties() const
+{
+    return m_properties;
+}
+
 //grammar
 // R->WHITESPACE
 // WHITESPACE: newlines, whitespaces
@@ -117,8 +122,7 @@ QString ASTClass::name() const
 
 QRegExp re_class("class\\s*(\\S+)\\s*");
 QRegExp re_pod("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*");
-QRegExp re_prop("\\s*PROP\\((.+)\\s+([^\\)=]+)(=(.*))?\\);?.*");
-QRegExp re_fixed("\\s*FIXED\\((.+)\\s+([^\\)=]+)(=(.*))?\\);?.*");
+QRegExp re_prop("\\s*PROP\\(([^\\)]+)\\);?.*");
 QRegExp re_signal("\\s*SIGNAL\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_slot("\\s*SLOT\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_start("^\\{\\s*");
@@ -165,14 +169,8 @@ bool RepParser::parse()
             m_ast.pods.append(pod);
         } else if (re_prop.exactMatch(line)) {
             const QStringList params = re_prop.capturedTexts();
-
-            ASTProperty property(params[1], params[2], (params.length() == 5 ? params[4] : QString()), ASTProperty::ReadWrite);
-            astClass.m_properties << property;
-        } else if (re_fixed.exactMatch(line)) {
-            const QStringList params = re_prop.capturedTexts();
-
-            ASTProperty property(params[1], params[2], (params.length() == 5 ? params[4] : QString()), ASTProperty::Constant);
-            astClass.m_properties << property;
+            if (!parseProperty(astClass, params[1]))
+                return false;
         } else if (re_signal.exactMatch(line)) {
             astClass.m_signals << re_signal.capturedTexts()[1];
         } else if (re_slot.exactMatch(line)) {
@@ -185,6 +183,99 @@ bool RepParser::parse()
         }
     }
 
+    return true;
+}
+
+// A helper function to parse modifier flag of property declaration
+static bool parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier)
+{
+    if (flag == QStringLiteral("READONLY")) {
+        modifier = ASTProperty::ReadOnly;
+    } else if (flag == QStringLiteral("CONSTANT")) {
+        modifier = ASTProperty::Constant;
+    } else {
+        qWarning("invalid property declaration: flag %s is unknown", qPrintable(flag));
+        return false;
+    }
+
+    return true;
+}
+
+bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclaration)
+{
+    QString input = propertyDeclaration.trimmed();
+
+    QString propertyType;
+    QString propertyName;
+    QString propertyDefaultValue;
+    ASTProperty::Modifier propertyModifier;
+
+    // parse type declaration which could be a nested template as well
+    bool inTemplate = false;
+    int templateDepth = 0;
+    int nameIndex = -1;
+
+    for (int i = 0; i < input.size(); ++i) {
+        if (input[i] == QLatin1Char('<')) {
+            propertyType += input[i];
+            inTemplate = true;
+            templateDepth++;
+        } else if (input[i] == QLatin1Char('>')) {
+            propertyType += input[i];
+            templateDepth--;
+            if (templateDepth == 0)
+                inTemplate = false;
+        } else if (input[i] == QLatin1Char(' ')) {
+            if (!inTemplate) {
+                nameIndex = i;
+                break;
+            } else {
+                propertyType += input[i];
+            }
+        } else {
+            propertyType += input[i];
+        }
+    }
+
+    if (nameIndex == -1) {
+        qWarning("invalid property declaration: %s", qPrintable(propertyDeclaration));
+        return false;
+    }
+
+    // parse the name of the property
+    input = input.mid(nameIndex).trimmed();
+
+    const int equalSignIndex = input.indexOf(QLatin1Char('='));
+    if (equalSignIndex != -1) { // we have a default value
+        propertyName = input.left(equalSignIndex).trimmed();
+
+        input = input.mid(equalSignIndex + 1).trimmed();
+        const int whitespaceIndex = input.indexOf(QLatin1Char(' '));
+        if (whitespaceIndex == -1) { // no flag given
+            propertyDefaultValue = input;
+            propertyModifier = ASTProperty::ReadWrite;
+        } else { // flag given
+            propertyDefaultValue = input.left(whitespaceIndex).trimmed();
+
+            const QString flag = input.mid(whitespaceIndex + 1).trimmed();
+            if (!parseModifierFlag(flag, propertyModifier))
+                return false;
+        }
+    } else { // there is no default value
+        const int whitespaceIndex = input.indexOf(QLatin1Char(' '));
+        if (whitespaceIndex == -1) { // no flag given
+            propertyName = input;
+            propertyModifier = ASTProperty::ReadWrite;
+        } else { // flag given
+            propertyName = input.left(whitespaceIndex).trimmed();
+
+            const QString flag = input.mid(whitespaceIndex + 1).trimmed();
+            if (!parseModifierFlag(flag, propertyModifier))
+                return false;
+        }
+    }
+
+    astClass.m_properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier);
     return true;
 }
 

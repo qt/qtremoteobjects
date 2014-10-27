@@ -52,7 +52,7 @@ public:
     enum Modifier
     {
         Constant,
-        Read,
+        ReadOnly,
         ReadWrite
     };
 
@@ -79,6 +79,7 @@ public:
     explicit ASTClass(const QString& name = QString());
     bool isValid() const;
     QString name() const;
+    QVector<ASTProperty> properties() const;
 
 private:
     friend class RepParser;
@@ -127,6 +128,8 @@ public:
     AST ast() const;
 
 private:
+    bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
+
     QString m_fileName;
     AST m_ast;
 };
