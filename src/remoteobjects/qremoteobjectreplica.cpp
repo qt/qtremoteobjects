@@ -146,7 +146,7 @@ void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
 
 void QRemoteObjectReplicaPrivate::emitValidChanged()
 {
-    const static int validChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("onIsReplicaValidChanged()");
+    const static int validChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("isReplicaValidChanged()");
     Q_ASSERT(validChangedIndex != -1);
     void *noArgs[] = {0};
     QMetaObject::activate(this, metaObject(), validChangedIndex, noArgs);
