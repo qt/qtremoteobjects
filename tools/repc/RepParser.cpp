@@ -127,6 +127,7 @@ QRegExp re_signal("\\s*SIGNAL\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_slot("\\s*SLOT\\(\\s*(.*)\\s*\\);?\\s*");
 QRegExp re_start("^\\{\\s*");
 QRegExp re_end("^\\};?\\s*");
+QRegExp re_comment("^\\s*//(.*)");
 
 RepParser::RepParser(const QString &fileName)
     : m_fileName(fileName)
@@ -179,7 +180,9 @@ bool RepParser::parse()
             m_ast.classes.append(astClass);
         } else if (re_start.exactMatch(line)) {
         } else {
-            m_ast.includes.append(line);
+            if (!re_comment.exactMatch(line) && !line.isEmpty()) {
+               m_ast.includes.append(line);
+            }
         }
     }
 
