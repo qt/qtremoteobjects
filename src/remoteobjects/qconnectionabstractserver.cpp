@@ -51,8 +51,7 @@ ServerIoDevice::ServerIoDevice(QObject *parent)
 
 ServerIoDevice::~ServerIoDevice()
 {
-    if (m_packet)
-        delete m_packet;
+    delete m_packet;
 }
 
 bool ServerIoDevice::read()

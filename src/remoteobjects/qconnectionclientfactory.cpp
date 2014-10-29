@@ -55,8 +55,7 @@ ClientIoDevice::ClientIoDevice(QObject *parent)
 
 ClientIoDevice::~ClientIoDevice()
 {
-    if (m_packet)
-        delete m_packet;
+    delete m_packet;
 }
 
 void ClientIoDevice::close()
