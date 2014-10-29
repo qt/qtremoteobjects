@@ -58,18 +58,18 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
-    if (app.arguments().size() < 3 || app.arguments().contains("--help"))
+    if (app.arguments().size() < 3 || app.arguments().contains(QLatin1String("--help")))
         usage();
 
-    const int idxOfInput = app.arguments().indexOf("-i")+1;
-    const int idxOfOutput = app.arguments().indexOf("-o")+1;
+    const int idxOfInput = app.arguments().indexOf(QLatin1String("-i"))+1;
+    const int idxOfOutput = app.arguments().indexOf(QLatin1String("-o"))+1;
     if (idxOfInput <= 1 && idxOfOutput <= 1)
         usage();
 
     RepCodeGenerator::Mode mode;
-    if (app.arguments().contains("-s"))
+    if (app.arguments().contains(QLatin1String("-s")))
         mode = RepCodeGenerator::SOURCE;
-    else if (app.arguments().contains("-r"))
+    else if (app.arguments().contains(QLatin1String("-r")))
         mode = RepCodeGenerator::REPLICA;
     else
         usage();

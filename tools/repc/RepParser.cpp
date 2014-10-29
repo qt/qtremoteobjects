@@ -121,15 +121,15 @@ QVector<ASTProperty> ASTClass::properties() const
 // SLOT->IDENTIFIER ROPENBRACKET
 // ROPENBRACKET
 
-QRegExp re_class("class\\s*(\\S+)\\s*");
-QRegExp re_pod("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*");
-QRegExp re_prop("\\s*PROP\\(([^\\)]+)\\);?.*");
-QRegExp re_useEnum("USE_ENUM\\s*\\(\\s*(.*)\\s*\\);?\\s*");
-QRegExp re_signal("\\s*SIGNAL\\(\\s*(.*)\\s*\\);?\\s*");
-QRegExp re_slot("\\s*SLOT\\(\\s*(.*)\\s*\\);?\\s*");
-QRegExp re_start("^\\{\\s*");
-QRegExp re_end("^\\};?\\s*");
-QRegExp re_comment("^\\s*//(.*)");
+QRegExp re_class(QStringLiteral("class\\s*(\\S+)\\s*"));
+QRegExp re_pod(QStringLiteral("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_prop(QStringLiteral("\\s*PROP\\(([^\\)]+)\\);?.*"));
+QRegExp re_useEnum(QStringLiteral("USE_ENUM\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_signal(QStringLiteral("\\s*SIGNAL\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_slot(QStringLiteral("\\s*SLOT\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_start(QStringLiteral("^\\{\\s*"));
+QRegExp re_end(QStringLiteral("^\\};?\\s*"));
+QRegExp re_comment(QStringLiteral("^\\s*//(.*)"));
 
 RepParser::RepParser(const QString &fileName)
     : m_fileName(fileName)
@@ -159,12 +159,12 @@ bool RepParser::parse()
             pod.name = re_pod.capturedTexts()[1];
 
             const QString argString = re_pod.capturedTexts()[2].trimmed();
-            const QStringList argList = argString.split(",");
+            const QStringList argList = argString.split(QLatin1String(","));
             if (argList.length() == 0)
                 continue;
 
             foreach (const QString &paramString, argList) {
-                const QStringList tmp = paramString.trimmed().split(QRegExp("\\s+"));
+                const QStringList tmp = paramString.trimmed().split(QRegExp(QStringLiteral("\\s+")));
                 PODAttribute attr = { tmp[0], tmp[1] };
                 pod.attributes.append(qMove(attr));
             }
