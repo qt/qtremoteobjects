@@ -80,7 +80,8 @@ public:
     bool isValid() const;
     QString name() const;
     QVector<ASTProperty> properties() const;
-
+    QStringList slotsList() const;
+    QStringList signalsList() const;
 private:
     friend class RepParser;
     friend class RepCodeGenerator;

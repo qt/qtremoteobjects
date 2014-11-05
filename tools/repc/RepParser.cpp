@@ -95,6 +95,16 @@ QVector<ASTProperty> ASTClass::properties() const
     return m_properties;
 }
 
+QStringList ASTClass::slotsList() const
+{
+    return m_slots;
+}
+
+QStringList ASTClass::signalsList() const
+{
+    return m_signals;
+}
+
 //grammar
 // R->WHITESPACE
 // WHITESPACE: newlines, whitespaces
@@ -123,10 +133,10 @@ QVector<ASTProperty> ASTClass::properties() const
 
 QRegExp re_class(QStringLiteral("class\\s*(\\S+)\\s*"));
 QRegExp re_pod(QStringLiteral("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
-QRegExp re_prop(QStringLiteral("\\s*PROP\\(([^\\)]+)\\);?.*"));
+QRegExp re_prop(QStringLiteral("\\s*PROP\\s*\\(([^\\)]+)\\);?.*"));
 QRegExp re_useEnum(QStringLiteral("USE_ENUM\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
-QRegExp re_signal(QStringLiteral("\\s*SIGNAL\\(\\s*(.*)\\s*\\);?\\s*"));
-QRegExp re_slot(QStringLiteral("\\s*SLOT\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_signal(QStringLiteral("\\s*SIGNAL\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_slot(QStringLiteral("\\s*SLOT\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
 QRegExp re_start(QStringLiteral("^\\{\\s*"));
 QRegExp re_end(QStringLiteral("^\\};?\\s*"));
 QRegExp re_comment(QStringLiteral("^\\s*//(.*)"));

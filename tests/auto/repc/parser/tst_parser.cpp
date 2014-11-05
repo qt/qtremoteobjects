@@ -53,6 +53,10 @@ class tst_Parser : public QObject {
 private Q_SLOTS:
     void testProperties_data();
     void testProperties();
+    void testSlots_data();
+    void testSlots();
+    void testSignals_data();
+    void testSignals();
 };
 
 
@@ -71,6 +75,7 @@ void tst_Parser::testProperties_data()
     QTest::newRow("readonlyWithValue") << "PROP(int foo=1 READONLY)" << "int" << "foo" << "1" << ASTProperty::ReadOnly;
     QTest::newRow("constantWithValue") << "PROP(int foo=1 CONSTANT)" << "int" << "foo" << "1" << ASTProperty::Constant;
     QTest::newRow("defaultWhitespaces") << "PROP(  QString   foo  )" << "QString" << "foo" << QString() << ASTProperty::ReadWrite;
+    QTest::newRow("defaultWhitespacesBeforeParentheses") << "PROP     (  QString   foo  )" << "QString" << "foo" << QString() << ASTProperty::ReadWrite;
     QTest::newRow("readonlyWhitespaces") << "PROP(  QString   foo   READONLY  )" << "QString" << "foo" << QString() << ASTProperty::ReadOnly;
     QTest::newRow("constantWhitespaces") << "PROP(  QString   foo   CONSTANT  )" << "QString" << "foo" << QString() << ASTProperty::Constant;
     QTest::newRow("defaultWithValueWhitespaces") << "PROP(  int foo  = 1 )" << "int" << "foo" << "1" << ASTProperty::ReadWrite;
@@ -114,6 +119,78 @@ void tst_Parser::testProperties()
     QCOMPARE(property.defaultValue(), expectedDefaultValue);
     QCOMPARE(property.modifier(), expectedModifier);
 }
+
+void tst_Parser::testSlots_data()
+{
+    QTest::addColumn<QString>("slotDeclaration");
+    QTest::addColumn<QString>("expectedSlot");
+    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "test()";
+    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "test()";
+    QTest::newRow("slotwitharguments") << "SLOT(test(QString value, int number))" << "test(QString value, int number)";
+    QTest::newRow("slotwithspaces") << "SLOT(   test  (QString value, int number)  )" << "   test  (QString value, int number)  ";
+}
+
+void tst_Parser::testSlots()
+{
+    QFETCH(QString, slotDeclaration);
+    QFETCH(QString, expectedSlot);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << "class TestClass" << endl;
+    stream << "{" << endl;
+    stream << slotDeclaration << endl;
+    stream << "};" << endl;
+    file.close();
+
+    RepParser parser(file.fileName());
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    const ASTClass astClass = ast.classes.first();
+    const QStringList slotsList = astClass.slotsList();
+    QCOMPARE(slotsList.count(), 1);
+    QCOMPARE(slotsList.first(), expectedSlot);
+}
+
+void tst_Parser::testSignals_data()
+{
+    QTest::addColumn<QString>("signalDeclaration");
+    QTest::addColumn<QString>("expectedSignal");
+    QTest::newRow("signalwithoutspacebeforeparentheses") << "SIGNAL(test())" << "test()";
+    QTest::newRow("signalwithspacebeforeparentheses") << "SIGNAL (test())" << "test()";
+    QTest::newRow("signalwitharguments") << "SIGNAL(test(QString value, int value))" << "test(QString value, int value)";
+}
+
+void tst_Parser::testSignals()
+{
+    QFETCH(QString, signalDeclaration);
+    QFETCH(QString, expectedSignal);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << "class TestClass" << endl;
+    stream << "{" << endl;
+    stream << signalDeclaration << endl;
+    stream << "};" << endl;
+    file.close();
+
+    RepParser parser(file.fileName());
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    const ASTClass astClass = ast.classes.first();
+    const QStringList signalsList = astClass.signalsList();
+    QCOMPARE(signalsList.count(), 1);
+    QCOMPARE(signalsList.first(), expectedSignal);
+}
+
 
 QTEST_APPLESS_MAIN(tst_Parser)
 
