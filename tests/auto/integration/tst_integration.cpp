@@ -115,7 +115,7 @@ private slots:
         //QVERIFY(m_registryClient.connect( QStringLiteral("local:replica")));
     }
 
-    void RegistryTest() {
+    void registryTest() {
         QSharedPointer<TcpDataCenterReplica> tcpCentre(m_registryClient.acquire<TcpDataCenterReplica>());
         QSharedPointer<LocalDataCenterReplica> localCentre(m_registryClient.acquire<LocalDataCenterReplica>());
         tcpCentre->waitForSource();
