@@ -39,9 +39,6 @@
 **
 ****************************************************************************/
 
-#ifndef TESTS_REMOTEOBJECTTEST_H
-#define TESTS_REMOTEOBJECTTEST_H
-
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <qremoteobjectreplica.h>
@@ -61,7 +58,7 @@ bool operator<(const QVector<int> &lhs, const QVector<int> &rhs)
     return lhs.size() < rhs.size();
 }
 
-class RemoteObjectTest: public QObject
+class tst_Integration: public QObject
 {
     Q_OBJECT
     QRemoteObjectNode m_client;
@@ -224,6 +221,6 @@ private:
     QScopedPointer<LocalDataCenterSource> dataCenterLocal;
 };
 
-QTEST_MAIN(RemoteObjectTest)
+QTEST_MAIN(tst_Integration)
 
-#endif
+#include "tst_integration.moc"

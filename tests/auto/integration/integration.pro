@@ -1,5 +1,6 @@
-QT += network testlib
-
+CONFIG += testcase parallel_test
+TARGET = tst_integration
+QT += testlib remoteobjects
 QT -= gui
 
 OTHER_FILES = engine.rep \
@@ -9,16 +10,13 @@ OTHER_FILES = engine.rep \
 
 REPC_SOURCE += $$OTHER_FILES
 REPC_REPLICA += $$OTHER_FILES
-QT += remoteobjects
 
-CONFIG += testcase
-
-HEADERS += $$PWD/remoteobjecttest.h \
-           $$PWD/engine.h \
+HEADERS += $$PWD/engine.h \
            $$PWD/speedometer.h
 
 SOURCES += $$PWD/engine.cpp \
-           $$PWD/speedometer.cpp
+           $$PWD/speedometer.cpp \
+           $$PWD/tst_integration.cpp
 
 contains(QT_CONFIG, c++11): CONFIG += c++11
 
