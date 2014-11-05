@@ -50,9 +50,6 @@ class Engine : public EngineSource
 public:
     Engine(QObject *parent=Q_NULLPTR);
     virtual ~Engine();
-
-private:
-    int speed;
 };
 
 #endif
