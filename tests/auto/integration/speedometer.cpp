@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include "Speedometer.h"
+#include "speedometer.h"
 
 Speedometer::Speedometer(QObject *parent) :
   SpeedometerSource(parent)

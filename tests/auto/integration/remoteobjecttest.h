@@ -46,8 +46,8 @@
 #include <QMetaType>
 #include <qremoteobjectreplica.h>
 #include <QRemoteObjectNode>
-#include "Engine.h"
-#include "Speedometer.h"
+#include "engine.h"
+#include "speedometer.h"
 #include "rep_engine_replica.h"
 #include "rep_speedometer_replica.h"
 #include "rep_localdatacenter_source.h"

@@ -13,12 +13,12 @@ QT += remoteobjects
 
 CONFIG += testcase
 
-HEADERS += $$PWD/RemoteObjectTest.h \
-           $$PWD/Engine.h \
-           $$PWD/Speedometer.h
+HEADERS += $$PWD/remoteobjecttest.h \
+           $$PWD/engine.h \
+           $$PWD/speedometer.h
 
-SOURCES += $$PWD/Engine.cpp \
-           $$PWD/Speedometer.cpp
+SOURCES += $$PWD/engine.cpp \
+           $$PWD/speedometer.cpp
 
 contains(QT_CONFIG, c++11): CONFIG += c++11
 

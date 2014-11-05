@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include "RepParser.h"
+#include "repparser.h"
 
 #include <QFile>
 #include <QTextStream>

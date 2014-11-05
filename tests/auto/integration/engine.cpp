@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include "Engine.h"
+#include "engine.h"
 
 Engine::Engine(QObject *parent) :
   EngineSource(parent)

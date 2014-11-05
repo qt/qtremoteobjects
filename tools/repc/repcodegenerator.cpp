@@ -39,9 +39,9 @@
 **
 ****************************************************************************/
 
-#include "RepCodeGenerator.h"
+#include "repcodegenerator.h"
 
-#include "RepParser.h"
+#include "repparser.h"
 
 #ifndef QT_BOOTSTRAPPED
 # define HAVE_QSAVEFILE

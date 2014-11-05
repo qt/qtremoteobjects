@@ -41,8 +41,8 @@
 
 #include <QCoreApplication>
 
-#include "RepCodeGenerator.h"
-#include "RepParser.h"
+#include "repcodegenerator.h"
+#include "repparser.h"
 
 #include <cstdio>
 
