@@ -289,7 +289,7 @@ void QConnectedReplicaPrivate::requestRemoteObjectSource()
 
 void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 {
-    for (int i = QRemoteObjectReplica::staticMetaObject.methodOffset(); i < m_metaObject->methodCount(); i++) {
+    for (int i = QRemoteObjectReplica::staticMetaObject.methodOffset(); i < m_metaObject->methodCount(); ++i) {
         QMetaMethod mm = m_metaObject->method(i);
         if (mm.methodType() == QMetaMethod::Signal) {
             const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);

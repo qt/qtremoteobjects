@@ -466,8 +466,8 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                     QStringList types, names;
                     const QStringList cap = re_slotArgs.capturedTexts();
 
-                    const QString functionString = cap[1].trimmed();
-                    const QString argString = cap[2].trimmed();
+                    const QString functionString = cap.at(1).trimmed();
+                    const QString argString = cap.at(2).trimmed();
 
                     if (!argString.isEmpty()) {
                         const QStringList argList = argString.split(QLatin1Char(','));
@@ -483,7 +483,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                     out << QStringLiteral("    {");
                     out << QString::fromLatin1("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");").arg(className).arg(functionString).arg(types.join(QLatin1Char(',')));
                     out << QStringLiteral("        QVariantList __repc_args;");
-                    if (names.length() > 0) {
+                    if (!names.isEmpty()) {
                         QStringList variantNames;
                         foreach (const QString &name, names)
                             variantNames << QStringLiteral("QVariant::fromValue(%1)").arg(name);

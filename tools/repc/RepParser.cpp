@@ -163,12 +163,12 @@ bool RepParser::parse()
 
         if (re_class.exactMatch(line)) {
             // new Class declaration
-            astClass = ASTClass(re_class.capturedTexts()[1]);
+            astClass = ASTClass(re_class.capturedTexts().at(1));
         } else if (re_pod.exactMatch(line)) {
             POD pod;
             pod.name = re_pod.capturedTexts()[1];
 
-            const QString argString = re_pod.capturedTexts()[2].trimmed();
+            const QString argString = re_pod.capturedTexts().at(2).trimmed();
             const QStringList argList = argString.split(QLatin1String(","));
             if (argList.length() == 0)
                 continue;
@@ -181,15 +181,15 @@ bool RepParser::parse()
 
             m_ast.pods.append(pod);
         } else if (re_useEnum.exactMatch(line)) {
-            m_ast.enumUses.append(re_useEnum.capturedTexts()[1]);
+            m_ast.enumUses.append(re_useEnum.capturedTexts().at(1));
         } else if (re_prop.exactMatch(line)) {
             const QStringList params = re_prop.capturedTexts();
-            if (!parseProperty(astClass, params[1]))
+            if (!parseProperty(astClass, params.at(1)))
                 return false;
         } else if (re_signal.exactMatch(line)) {
-            astClass.m_signals << re_signal.capturedTexts()[1];
+            astClass.m_signals << re_signal.capturedTexts().at(1);
         } else if (re_slot.exactMatch(line)) {
-            astClass.m_slots << re_slot.capturedTexts()[1];
+            astClass.m_slots << re_slot.capturedTexts().at(1);
         } else if (re_end.exactMatch(line)) {
             m_ast.classes.append(astClass);
         } else if (re_start.exactMatch(line)) {
@@ -236,10 +236,10 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
         if (input[i] == QLatin1Char('<')) {
             propertyType += input[i];
             inTemplate = true;
-            templateDepth++;
+            ++templateDepth;
         } else if (input[i] == QLatin1Char('>')) {
             propertyType += input[i];
-            templateDepth--;
+            --templateDepth;
             if (templateDepth == 0)
                 inTemplate = false;
         } else if (input[i] == QLatin1Char(' ')) {

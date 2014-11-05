@@ -156,7 +156,7 @@ bool QInitPacket::deserialize(QDataStream& in)
     quint8 c;
     QVariant tmp;
     validate >> nParam;
-    for (quint32 i = 0; i < nParam; i++)
+    for (quint32 i = 0; i < nParam; ++i)
     {
         const qint64 pos = validate.device()->pos();
         qint64 bytesLeft = packetLen - pos;
@@ -260,7 +260,7 @@ bool QInitDynamicPacket::deserialize(QDataStream& in)
     quint8 c;
     QVariant tmp;
     validate >> nParam;
-    for (quint32 i = 0; i < nParam; i++)
+    for (quint32 i = 0; i < nParam; ++i)
     {
         qint64 pos = validate.device()->pos();
         qint64 bytesLeft = packetLen - pos;

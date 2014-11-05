@@ -72,8 +72,7 @@ bool ServerIoDevice::read()
         return false;
 
     m_curReadSize = 0;
-    if (m_packet)
-        delete m_packet;
+    delete m_packet;
     m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(in);
     return  m_packet && m_packet->id != QRemoteObjectPackets::QRemoteObjectPacket::Invalid;
 }
