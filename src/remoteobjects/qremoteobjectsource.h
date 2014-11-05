@@ -42,9 +42,8 @@
 #ifndef QREMOTEOBJECTSOURCE_H
 #define QREMOTEOBJECTSOURCE_H
 
-#include "qtremoteobjectglobal.h"
-
-#include <QScopedPointer>
+#include <QtCore/QScopedPointer>
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 QT_BEGIN_NAMESPACE
 

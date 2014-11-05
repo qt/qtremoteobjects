@@ -42,12 +42,10 @@
 #ifndef QREMOTEOBJECTNODE_H
 #define QREMOTEOBJECTNODE_H
 
-#include "qtremoteobjectglobal.h"
-
-#include "qremoteobjectregistry.h"
-#include "qremoteobjectdynamicreplica.h"
-
-#include <QSharedPointer>
+#include <QtCore/QSharedPointer>
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
+#include <QtRemoteObjects/qremoteobjectregistry.h>
+#include <QtRemoteObjects/qremoteobjectdynamicreplica.h>
 
 QT_BEGIN_NAMESPACE
 

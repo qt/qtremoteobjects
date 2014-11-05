@@ -42,7 +42,7 @@
 #ifndef QDYNAMICREMOTEOBJECT_H
 #define QDYNAMICREMOTEOBJECT_H
 
-#include "qremoteobjectreplica.h"
+#include <QtRemoteObjects/qremoteobjectreplica.h>
 
 QT_BEGIN_NAMESPACE
 

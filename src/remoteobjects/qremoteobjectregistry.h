@@ -42,7 +42,7 @@
 #ifndef QREMOTEOBJECTREGISTRY_P_H
 #define QREMOTEOBJECTREGISTRY_P_H
 
-#include "qremoteobjectreplica.h"
+#include <QtRemoteObjects/qremoteobjectreplica.h>
 
 QT_BEGIN_NAMESPACE
 

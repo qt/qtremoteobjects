@@ -42,10 +42,9 @@
 #ifndef QQREMOTEOBJECTREPLICA_H
 #define QQREMOTEOBJECTREPLICA_H
 
-#include "qtremoteobjectglobal.h"
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
 
-#include <QSharedPointer>
-#include <QtCore/qnamespace.h>
+#include <QtCore/QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
