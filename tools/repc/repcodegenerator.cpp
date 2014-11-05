@@ -465,6 +465,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     if (!astClass.slotsList.isEmpty()) {
         out << QStringLiteral("");
         out << QStringLiteral("public Q_SLOTS:");
+        int variableNameIndex = 0;
         foreach (const QString &slot, astClass.slotsList) {
             if (mode == SOURCE) {
                 out << QString::fromLatin1("    virtual void %1 = 0;").arg(slot);
@@ -476,18 +477,29 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
                     const QString functionString = cap.at(1).trimmed();
                     const QString argString = cap.at(2).trimmed();
-
+                    QString newArgString;
                     if (!argString.isEmpty()) {
                         const QStringList argList = argString.split(QLatin1Char(','));
                         foreach (QString paramString, argList) {
                             paramString = paramString.trimmed();
                             const QStringList tmp = paramString.split(QRegExp(QStringLiteral("\\s+")));
-                            types << tmp[0];
-                            names << tmp[1];
+                            const QString type = tmp.at(0);
+                            types << type;
+                            QString name;
+                            if (tmp.count() > 1)
+                                name = tmp.at(1);
+                            else
+                                name = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
+
+                            names << name;
+                            if (!newArgString.isEmpty())
+                                newArgString += QLatin1String(", ");
+
+                            newArgString += QString::fromLatin1("%1 %2").arg(type).arg(name);
                         }
                     }
 
-                    out << QString::fromLatin1("    void %1").arg(slot);
+                    out << QString::fromLatin1("    void %1(%2)").arg(functionString).arg(newArgString);
                     out << QStringLiteral("    {");
                     out << QString::fromLatin1("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");").arg(className).arg(functionString).arg(types.join(QLatin1Char(',')));
                     out << QStringLiteral("        QVariantList __repc_args;");

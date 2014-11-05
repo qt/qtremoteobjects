@@ -8,5 +8,5 @@ class MinuteTimer
     SIGNAL(timeChanged());
     SIGNAL(timeChanged2(QTime t));
     SIGNAL(sendCustom(PresetInfo info));
-    SLOT(SetTimeZone(int zn));
+    SLOT(SetTimeZone(int));
 };
