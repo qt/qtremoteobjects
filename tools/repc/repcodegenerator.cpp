@@ -255,7 +255,7 @@ QString RepCodeGenerator::formatDataMembers(const POD &pod)
     return out;
 }
 
-QString RepCodeGenerator::formatMarshalingOperators(const POD &pod)
+QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
 {
     return QLatin1String("inline QDataStream &operator<<(QDataStream &ds, const ") + pod.name + QLatin1String(" &obj) {\n"
            "    QtRemoteObjects::copyStoredProperties(&obj, ds);\n"
@@ -286,7 +286,7 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
         <<      formatDataMembers(pod)
         << "};\n"
            "\n"
-        << formatMarshalingOperators(pod)
+        << formatMarshallingOperators(pod)
         << "\n"
            "Q_DECLARE_METATYPE(" << pod.name << ")\n"
            "\n"

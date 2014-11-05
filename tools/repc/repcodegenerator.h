@@ -80,7 +80,7 @@ private:
     QString formatPropertyGettersAndSetters(const POD &pod);
     QString formatSignals(const POD &pod);
     QString formatDataMembers(const POD &pod);
-    QString formatMarshalingOperators(const POD &pod);
+    QString formatMarshallingOperators(const POD &pod);
 
     void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
 

@@ -50,10 +50,10 @@ class tst_Enums : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
-    void testMarshaling();
+    void testMarshalling();
 };
 
-void tst_Enums::testMarshaling()
+void tst_Enums::testMarshalling()
 {
     QByteArray ba;
     QDataStream ds(&ba, QIODevice::ReadWrite);

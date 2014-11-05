@@ -52,7 +52,7 @@ class tst_Pods : public QObject {
 private Q_SLOTS:
     void testConstructors();
     void testParent();
-    void testMarshaling();
+    void testMarshalling();
 };
 
 
@@ -80,7 +80,7 @@ void tst_Pods::testParent()
     QVERIFY(!pi.parent());
 }
 
-void tst_Pods::testMarshaling()
+void tst_Pods::testMarshalling()
 {
     QByteArray ba;
     QDataStream ds(&ba, QIODevice::ReadWrite);
