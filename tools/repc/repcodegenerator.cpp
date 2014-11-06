@@ -349,7 +349,7 @@ void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const Q
 
 void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass &astClass, const QString &metaTypeRegistrationCode)
 {
-    const QString className = (astClass.name() + (mode == REPLICA ? QStringLiteral("Replica") : QStringLiteral("Source")));
+    const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : QStringLiteral("Source")));
     if (mode == REPLICA)
         out << QString::fromLatin1("class %1 : public QRemoteObjectReplica").arg(className);
     else
@@ -357,7 +357,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
     out << QStringLiteral("{");
     out << QStringLiteral("    Q_OBJECT");
-    out << QString::fromLatin1("    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"%1\")").arg(astClass.name());
+    out << QString::fromLatin1("    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"%1\")").arg(astClass.name);
     out << QStringLiteral("    friend class QRemoteObjectNode;");
     if (mode == SOURCE)
         out <<QStringLiteral("public:");
@@ -370,11 +370,11 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     } else {
         out << QString::fromLatin1("    %1(QObject *parent = Q_NULLPTR) : QRemoteObjectSource(parent)").arg(className);
 
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            if (!property.defaultValue().isEmpty()) {
-                out += QString::fromLatin1("        , _%1(%2)").arg(property.name()).arg(property.defaultValue());
+        foreach (const ASTProperty &property, astClass.properties) {
+            if (!property.defaultValue.isEmpty()) {
+                out += QString::fromLatin1("        , _%1(%2)").arg(property.name).arg(property.defaultValue);
             } else {
-                out += QString::fromLatin1("        , _%1()").arg(property.name());
+                out += QString::fromLatin1("        , _%1()").arg(property.name);
             }
         }
     }
@@ -386,9 +386,9 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
     if (mode == REPLICA) {
         out << QStringLiteral("        QVariantList properties;");
-        out << QString::fromLatin1("        properties.reserve(%1);").arg(astClass.m_properties.size());
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            out << QString(QLatin1String("        properties << QVariant::fromValue(") + property.type() + QLatin1String("(") + property.defaultValue() + QLatin1String("));"));
+        out << QString::fromLatin1("        properties.reserve(%1);").arg(astClass.properties.size());
+        foreach (const ASTProperty &property, astClass.properties) {
+            out << QString(QLatin1String("        properties << QVariant::fromValue(") + property.type + QLatin1String("(") + property.defaultValue + QLatin1String("));"));
         }
         out << QStringLiteral("        setProperties(properties);");
     }
@@ -399,32 +399,32 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     out << QString::fromLatin1("    virtual ~%1() {}").arg(className);
 
     //First output properties
-    foreach (const ASTProperty &property, astClass.m_properties) {
-        if (property.modifier() == ASTProperty::Constant)
-            out << QString::fromLatin1("    Q_PROPERTY(%1 %2 READ %2 CONSTANT)").arg(property.type(), property.name());
-        else if (property.modifier() == ASTProperty::ReadOnly)
-            out << QString::fromLatin1("    Q_PROPERTY(%1 %2 READ %2 NOTIFY %2Changed)").arg(property.type(), property.name());
-        else if (property.modifier() == ASTProperty::ReadWrite)
-            out << QString::fromLatin1("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY %2Changed)").arg(property.type(), property.name(), cap(property.name()));
+    foreach (const ASTProperty &property, astClass.properties) {
+        if (property.modifier == ASTProperty::Constant)
+            out << QString::fromLatin1("    Q_PROPERTY(%1 %2 READ %2 CONSTANT)").arg(property.type, property.name);
+        else if (property.modifier == ASTProperty::ReadOnly)
+            out << QString::fromLatin1("    Q_PROPERTY(%1 %2 READ %2 NOTIFY %2Changed)").arg(property.type, property.name);
+        else if (property.modifier == ASTProperty::ReadWrite)
+            out << QString::fromLatin1("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY %2Changed)").arg(property.type, property.name, cap(property.name));
     }
     out << QStringLiteral("");
 
     //Next output getter/setter
     if (mode == REPLICA) {
         int i = 0;
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            out << QString::fromLatin1("    %1 %2() const").arg(property.type(), property.name());
+        foreach (const ASTProperty &property, astClass.properties) {
+            out << QString::fromLatin1("    %1 %2() const").arg(property.type, property.name);
             out << QStringLiteral("    {");
-            out << QString::fromLatin1("        return propAsVariant(%1).value<%2>();").arg(i).arg(property.type());
+            out << QString::fromLatin1("        return propAsVariant(%1).value<%2>();").arg(i).arg(property.type);
             out << QStringLiteral("    }");
             i++;
-            if (property.modifier() == ASTProperty::ReadWrite) {
+            if (property.modifier == ASTProperty::ReadWrite) {
                 out << QStringLiteral("");
-                out << QString::fromLatin1("    void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
+                out << QString::fromLatin1("    void set%3(%1 %2)").arg(property.type, property.name, cap(property.name));
                 out << QStringLiteral("    {");
-                out << QString::fromLatin1("        static int __repc_index = %1::staticMetaObject.indexOfProperty(\"%2\");").arg(className).arg( property.name());
+                out << QString::fromLatin1("        static int __repc_index = %1::staticMetaObject.indexOfProperty(\"%2\");").arg(className).arg( property.name);
                 out << QStringLiteral("        QVariantList __repc_args;");
-                out << QString::fromLatin1("        __repc_args << QVariant::fromValue(%1);").arg(property.name());
+                out << QString::fromLatin1("        __repc_args << QVariant::fromValue(%1);").arg(property.name);
                 out << QStringLiteral("        send(QMetaObject::WriteProperty, __repc_index, __repc_args);");
                 out << QStringLiteral("    }");
             }
@@ -433,17 +433,17 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     }
     else
     {
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            out << QString::fromLatin1("    virtual %1 %2() const { return _%2; }").arg(property.type(), property.name());
+        foreach (const ASTProperty &property, astClass.properties) {
+            out << QString::fromLatin1("    virtual %1 %2() const { return _%2; }").arg(property.type, property.name);
         }
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            if (property.modifier() == ASTProperty::ReadWrite) {
-                out << QString::fromLatin1("    virtual void set%3(%1 %2)").arg(property.type(), property.name(), cap(property.name()));
+        foreach (const ASTProperty &property, astClass.properties) {
+            if (property.modifier == ASTProperty::ReadWrite) {
+                out << QString::fromLatin1("    virtual void set%3(%1 %2)").arg(property.type, property.name, cap(property.name));
                 out << QStringLiteral("    {");
-                out << QString::fromLatin1("        if (%1 != _%1)").arg(property.name());
+                out << QString::fromLatin1("        if (%1 != _%1)").arg(property.name);
                 out << QStringLiteral("        {");
-                out << QString::fromLatin1("            _%1 = %1;").arg(property.name());
-                out << QString::fromLatin1("            Q_EMIT %1Changed();").arg(property.name());
+                out << QString::fromLatin1("            _%1 = %1;").arg(property.name);
+                out << QString::fromLatin1("            Q_EMIT %1Changed();").arg(property.name);
                 out << QStringLiteral("        }");
                 out << QStringLiteral("    }");
             }
@@ -451,21 +451,21 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     }
 
     //Next output property signals
-    if (!astClass.m_properties.isEmpty() || !astClass.m_signals.isEmpty()) {
+    if (!astClass.properties.isEmpty() || !astClass.signalsList.isEmpty()) {
         out << QStringLiteral("");
         out << QStringLiteral("Q_SIGNALS:");
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            if (property.modifier() != ASTProperty::Constant)
-                out << QString::fromLatin1("    void %1Changed();").arg(property.name());
+        foreach (const ASTProperty &property, astClass.properties) {
+            if (property.modifier != ASTProperty::Constant)
+                out << QString::fromLatin1("    void %1Changed();").arg(property.name);
         }
 
-        foreach (const QString &signalName, astClass.m_signals)
+        foreach (const QString &signalName, astClass.signalsList)
             out << QString::fromLatin1("    void %1;").arg(signalName);
     }
-    if (!astClass.m_slots.isEmpty()) {
+    if (!astClass.slotsList.isEmpty()) {
         out << QStringLiteral("");
         out << QStringLiteral("public Q_SLOTS:");
-        foreach (const QString &slot, astClass.m_slots) {
+        foreach (const QString &slot, astClass.slotsList) {
             if (mode == SOURCE) {
                 out << QString::fromLatin1("    virtual void %1 = 0;").arg(slot);
             } else {
@@ -509,11 +509,11 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     if (mode == SOURCE)
     {
         //Next output data members
-        if (!astClass.m_properties.isEmpty()) {
+        if (!astClass.properties.isEmpty()) {
             out << QStringLiteral("");
             out << QStringLiteral("private:");
-            foreach (const ASTProperty &property, astClass.m_properties) {
-                out << QString::fromLatin1("    %1 _%2;").arg(property.type(), property.name());
+            foreach (const ASTProperty &property, astClass.properties) {
+                out << QString::fromLatin1("    %1 _%2;").arg(property.type, property.name);
             }
         }
     }

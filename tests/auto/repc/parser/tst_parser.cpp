@@ -110,14 +110,14 @@ void tst_Parser::testProperties()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QVector<ASTProperty> properties = astClass.properties();
+    const QVector<ASTProperty> properties = astClass.properties;
     QCOMPARE(properties.count(), 1);
 
     const ASTProperty property = properties.first();
-    QCOMPARE(property.type(), expectedType);
-    QCOMPARE(property.name(), expectedName);
-    QCOMPARE(property.defaultValue(), expectedDefaultValue);
-    QCOMPARE(property.modifier(), expectedModifier);
+    QCOMPARE(property.type, expectedType);
+    QCOMPARE(property.name, expectedName);
+    QCOMPARE(property.defaultValue, expectedDefaultValue);
+    QCOMPARE(property.modifier, expectedModifier);
 }
 
 void tst_Parser::testSlots_data()
@@ -151,7 +151,7 @@ void tst_Parser::testSlots()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QStringList slotsList = astClass.slotsList();
+    const QStringList slotsList = astClass.slotsList;
     QCOMPARE(slotsList.count(), 1);
     QCOMPARE(slotsList.first(), expectedSlot);
 }
@@ -186,7 +186,7 @@ void tst_Parser::testSignals()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QStringList signalsList = astClass.signalsList();
+    const QStringList signalsList = astClass.signalsList;
     QCOMPARE(signalsList.count(), 1);
     QCOMPARE(signalsList.first(), expectedSignal);
 }

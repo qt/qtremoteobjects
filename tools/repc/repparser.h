@@ -45,10 +45,9 @@
 #include <QStringList>
 #include <QVector>
 
-// A property of a Class declaration
-class ASTProperty
+/// A property of a Class declaration
+struct ASTProperty
 {
-public:
     enum Modifier
     {
         Constant,
@@ -59,37 +58,24 @@ public:
     ASTProperty();
     ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier);
 
-    QString type() const;
-    QString name() const;
-    QString defaultValue() const;
-    Modifier modifier() const;
-
-private:
-    QString m_type;
-    QString m_name;
-    QString m_defaultValue;
-    Modifier m_modifier;
+    QString type;
+    QString name;
+    QString defaultValue;
+    Modifier modifier;
 };
 Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
-// A Class declaration
-class ASTClass
+/// A Class declaration
+struct ASTClass
 {
-public:
     explicit ASTClass(const QString& name = QString());
-    bool isValid() const;
-    QString name() const;
-    QVector<ASTProperty> properties() const;
-    QStringList slotsList() const;
-    QStringList signalsList() const;
-private:
-    friend class RepParser;
-    friend class RepCodeGenerator;
 
-    QString m_name;
-    QVector<ASTProperty> m_properties;
-    QStringList m_signals;
-    QStringList m_slots;
+    bool isValid() const;
+
+    QString name;
+    QVector<ASTProperty> properties;
+    QStringList signalsList;
+    QStringList slotsList;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -110,9 +96,8 @@ struct POD
 Q_DECLARE_TYPEINFO(POD, Q_MOVABLE_TYPE);
 
 // The AST representation of a .rep file
-class AST
+struct AST
 {
-public:
     QVector<ASTClass> classes;
     QVector<POD> pods;
     QVector<QString> enumUses;

@@ -45,64 +45,23 @@
 #include <QTextStream>
 
 ASTProperty::ASTProperty()
-    : m_modifier(ReadWrite)
+    : modifier(ReadWrite)
 {
 }
 
 ASTProperty::ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier)
-    : m_type(type), m_name(name), m_defaultValue(defaultValue), m_modifier(modifier)
+    : type(type), name(name), defaultValue(defaultValue), modifier(modifier)
 {
 }
-
-QString ASTProperty::type() const
-{
-    return m_type;
-}
-
-QString ASTProperty::name() const
-{
-    return m_name;
-}
-
-QString ASTProperty::defaultValue() const
-{
-    return m_defaultValue;
-}
-
-ASTProperty::Modifier ASTProperty::modifier() const
-{
-    return m_modifier;
-}
-
 
 ASTClass::ASTClass(const QString &name)
-    : m_name(name)
+    : name(name)
 {
 }
 
 bool ASTClass::isValid() const
 {
-    return !m_name.isEmpty();
-}
-
-QString ASTClass::name() const
-{
-    return m_name;
-}
-
-QVector<ASTProperty> ASTClass::properties() const
-{
-    return m_properties;
-}
-
-QStringList ASTClass::slotsList() const
-{
-    return m_slots;
-}
-
-QStringList ASTClass::signalsList() const
-{
-    return m_signals;
+    return !name.isEmpty();
 }
 
 QRegExp re_class(QStringLiteral("class\\s*(\\S+)\\s*"));
@@ -161,9 +120,9 @@ bool RepParser::parse()
             if (!parseProperty(astClass, params.at(1)))
                 return false;
         } else if (re_signal.exactMatch(line)) {
-            astClass.m_signals << re_signal.capturedTexts().at(1);
+            astClass.signalsList << re_signal.capturedTexts().at(1);
         } else if (re_slot.exactMatch(line)) {
-            astClass.m_slots << re_slot.capturedTexts().at(1);
+            astClass.slotsList << re_slot.capturedTexts().at(1);
         } else if (re_end.exactMatch(line)) {
             m_ast.classes.append(astClass);
         } else if (re_start.exactMatch(line)) {
@@ -266,7 +225,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
         }
     }
 
-    astClass.m_properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier);
+    astClass.properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier);
     return true;
 }
 
