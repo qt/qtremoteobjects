@@ -144,6 +144,12 @@ private slots:
         QCOMPARE(engine_r->rpm(), 1234);
     }
 
+    void defaultValueTest() {
+        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->cylinders(), 4);
+    }
+
     void sequentialReplicaTest() {
         engine->setRpm(3456);
 

@@ -369,6 +369,14 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         out << QStringLiteral("    void initialize()");
     } else {
         out << QString::fromLatin1("    %1(QObject *parent = Q_NULLPTR) : QRemoteObjectSource(parent)").arg(className);
+
+        foreach (const ASTProperty &property, astClass.m_properties) {
+            if (!property.defaultValue().isEmpty()) {
+                out += QString::fromLatin1("        , _%1(%2)").arg(property.name()).arg(property.defaultValue());
+            } else {
+                out += QString::fromLatin1("        , _%1()").arg(property.name());
+            }
+        }
     }
 
     out << QStringLiteral("    {");
