@@ -498,13 +498,15 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         }
     }
 
-    //Next output data members
-    out << QStringLiteral("");
-    out << QStringLiteral("private:");
     if (mode == SOURCE)
     {
-        foreach (const ASTProperty &property, astClass.m_properties) {
-            out << QString::fromLatin1("    %1 _%2;").arg(property.type(), property.name());
+        //Next output data members
+        if (!astClass.m_properties.isEmpty()) {
+            out << QStringLiteral("");
+            out << QStringLiteral("private:");
+            foreach (const ASTProperty &property, astClass.m_properties) {
+                out << QString::fromLatin1("    %1 _%2;").arg(property.type(), property.name());
+            }
         }
     }
 
