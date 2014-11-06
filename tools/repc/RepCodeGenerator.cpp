@@ -443,16 +443,17 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     }
 
     //Next output property signals
-    out << QStringLiteral("");
-    out << QStringLiteral("Q_SIGNALS:");
-    foreach (const ASTProperty &property, astClass.m_properties) {
-        if (property.modifier() != ASTProperty::Constant)
-            out << QString::fromLatin1("    void %1Changed();").arg(property.name());
+    if (!astClass.m_properties.isEmpty() || !astClass.m_signals.isEmpty()) {
+        out << QStringLiteral("");
+        out << QStringLiteral("Q_SIGNALS:");
+        foreach (const ASTProperty &property, astClass.m_properties) {
+            if (property.modifier() != ASTProperty::Constant)
+                out << QString::fromLatin1("    void %1Changed();").arg(property.name());
+        }
+
+        foreach (const QString &signalName, astClass.m_signals)
+            out << QString::fromLatin1("    void %1;").arg(signalName);
     }
-
-    foreach (const QString &signalName, astClass.m_signals)
-        out << QString::fromLatin1("    void %1;").arg(signalName);
-
     if (!astClass.m_slots.isEmpty()) {
         out << QStringLiteral("");
         out << QStringLiteral("public Q_SLOTS:");
