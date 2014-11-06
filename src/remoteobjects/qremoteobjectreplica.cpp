@@ -398,7 +398,12 @@ void QInProcessReplicaPrivate::setProperty(int i, const QVariant &property)
 
 void QInProcessReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
 {
-    connectionToSource->invoke(call, index, args);
+    Q_ASSERT(call == QMetaObject::InvokeMetaMethod || call == QMetaObject::WriteProperty);
+
+    if (call == QMetaObject::InvokeMetaMethod)
+        connectionToSource->invoke(call, index - m_methodOffset, args);
+    else
+        connectionToSource->invoke(call, index - m_propertyOffset, args);
 }
 
 QT_END_NAMESPACE

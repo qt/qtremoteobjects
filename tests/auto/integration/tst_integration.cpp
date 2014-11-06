@@ -164,6 +164,20 @@ private slots:
         QCOMPARE(engine_r->started(), true);
     }
 
+    void slotTestInProcess() {
+        engine->setStarted(false);
+
+        QSharedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->started(), false);
+
+        QSignalSpy spy(engine_r.data(), SIGNAL(startedChanged()));
+        engine_r->start();
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(engine_r->started(), true);
+    }
+
     void slotWithParameterTest() {
         engine->setRpm(0);
 
