@@ -2,5 +2,9 @@
 class Engine
 {
     PROP(int cylinders = 4 CONSTANT);
+    PROP(bool started);
     PROP(int rpm);
+
+    SLOT(start());
+    SLOT(increaseRpm(int deltaRpm));
 };

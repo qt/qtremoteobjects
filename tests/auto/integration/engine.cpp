@@ -50,3 +50,15 @@ Engine::Engine(QObject *parent) :
 Engine::~Engine()
 {
 }
+
+void Engine::start()
+{
+    if (!started()) {
+        setStarted(true);
+    }
+}
+
+void Engine::increaseRpm(int deltaRpm)
+{
+    setRpm(rpm() + deltaRpm);
+}

@@ -150,6 +150,34 @@ private slots:
         QCOMPARE(engine_r->cylinders(), 4);
     }
 
+    void slotTest() {
+        engine->setStarted(false);
+
+        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->started(), false);
+
+        QSignalSpy spy(engine_r.data(), SIGNAL(startedChanged()));
+        engine_r->start();
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(engine_r->started(), true);
+    }
+
+    void slotWithParameterTest() {
+        engine->setRpm(0);
+
+        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->rpm(), 0);
+
+        QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged()));
+        engine_r->increaseRpm(1000);
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(engine_r->rpm(), 1000);
+    }
+
     void sequentialReplicaTest() {
         engine->setRpm(3456);
 

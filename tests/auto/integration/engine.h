@@ -50,6 +50,9 @@ class Engine : public EngineSource
 public:
     Engine(QObject *parent=Q_NULLPTR);
     virtual ~Engine();
+
+    void start() Q_DECL_OVERRIDE;
+    void increaseRpm(int deltaRpm) Q_DECL_OVERRIDE;
 };
 
 #endif
