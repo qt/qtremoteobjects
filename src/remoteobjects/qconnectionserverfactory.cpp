@@ -59,8 +59,8 @@ LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
     : ServerIoDevice(parent), m_connection(conn)
 {
     m_connection->setParent(this);
-    connect(conn, SIGNAL(readyRead()), this, SIGNAL(readyRead()));
-    connect(conn, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
+    connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
+    connect(conn, &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
 }
 
 QIODevice *LocalServerIo::connection() const
@@ -78,8 +78,8 @@ TcpServerIo::TcpServerIo(QTcpSocket *conn, QObject *parent)
     : ServerIoDevice(parent), m_connection(conn)
 {
     m_connection->setParent(this);
-    connect(conn, SIGNAL(readyRead()), this, SIGNAL(readyRead()));
-    connect(conn, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
+    connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
+    connect(conn, &QAbstractSocket::disconnected, this, &ServerIoDevice::disconnected);
 }
 
 QIODevice *TcpServerIo::connection() const
@@ -96,7 +96,7 @@ void TcpServerIo::doClose()
 LocalServerImpl::LocalServerImpl(QObject *parent)
     : QConnectionAbstractServer(parent)
 {
-    connect(&m_server, SIGNAL(newConnection()), this, SIGNAL(newConnection()));
+    connect(&m_server, &QLocalServer::newConnection, this, &QConnectionAbstractServer::newConnection);
 }
 
 LocalServerImpl::~LocalServerImpl()
@@ -149,7 +149,7 @@ void LocalServerImpl::close()
 TcpServerImpl::TcpServerImpl(QObject *parent)
     : QConnectionAbstractServer(parent)
 {
-    connect(&m_server, SIGNAL(newConnection()), this, SIGNAL(newConnection()));
+    connect(&m_server, &QTcpServer::newConnection, this, &QConnectionAbstractServer::newConnection);
 }
 
 TcpServerImpl::~TcpServerImpl()
