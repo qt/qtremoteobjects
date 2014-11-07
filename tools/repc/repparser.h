@@ -97,7 +97,7 @@ struct ASTClass
 
     QString name;
     QVector<ASTProperty> properties;
-    QStringList signalsList;
+    QVector<ASTFunction> signalsList;
     QVector<ASTFunction> slotsList;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);

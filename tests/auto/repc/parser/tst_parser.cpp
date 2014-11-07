@@ -187,9 +187,9 @@ void tst_Parser::testSignals()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QStringList signalsList = astClass.signalsList;
-    QCOMPARE(signalsList.count(), 1);
-    QCOMPARE(signalsList.first(), expectedSignal);
+    const QVector<ASTFunction> signalsList = astClass.signalsList;
+    ASTFunction signal = signalsList.first();
+    QCOMPARE(QString("%1(%2)").arg(signal.name).arg(signal.paramsAsString()), expectedSignal);
 }
 
 

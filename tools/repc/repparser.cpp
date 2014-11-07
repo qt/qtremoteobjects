@@ -91,7 +91,7 @@ QRegExp re_class(QStringLiteral("class\\s*(\\S+)\\s*"));
 QRegExp re_pod(QStringLiteral("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
 QRegExp re_prop(QStringLiteral("\\s*PROP\\s*\\(([^\\)]+)\\);?.*"));
 QRegExp re_useEnum(QStringLiteral("USE_ENUM\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
-QRegExp re_signal(QStringLiteral("\\s*SIGNAL\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_signal(QStringLiteral("\\s*SIGNAL\\s*\\(\\s*(.*)\\s*\\(\\s*(.*)\\s*\\)\\s*\\);?\\s*"));
 QRegExp re_slot(QStringLiteral("\\s*SLOT\\s*\\(\\s*(.*)\\s*\\(\\s*(.*)\\s*\\)\\s*\\);?\\s*"));
 QRegExp re_start(QStringLiteral("^\\{\\s*"));
 QRegExp re_end(QStringLiteral("^\\};?\\s*"));
@@ -143,7 +143,14 @@ bool RepParser::parse()
             if (!parseProperty(astClass, params.at(1)))
                 return false;
         } else if (re_signal.exactMatch(line)) {
-            astClass.signalsList << re_signal.capturedTexts().at(1);
+            const QStringList captures = re_signal.capturedTexts();
+
+            ASTFunction signal;
+            signal.name = captures.at(1).trimmed();
+
+            const QString argString = captures.at(2).trimmed();
+            parseParams(signal, argString);
+            astClass.signalsList << signal;
         } else if (re_slot.exactMatch(line)) {
             const QStringList captures = re_slot.capturedTexts();
 

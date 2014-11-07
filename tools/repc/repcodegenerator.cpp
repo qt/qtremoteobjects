@@ -459,8 +459,8 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 out << QString::fromLatin1("    void %1Changed();").arg(property.name);
         }
 
-        foreach (const QString &signalName, astClass.signalsList)
-            out << QString::fromLatin1("    void %1;").arg(signalName);
+        foreach (const ASTFunction &signal, astClass.signalsList)
+            out << QString::fromLatin1("    void %1(%2);").arg(signal.name).arg(signal.paramsAsString());
     }
     if (!astClass.slotsList.isEmpty()) {
         out << QStringLiteral("");
