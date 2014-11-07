@@ -65,6 +65,29 @@ struct ASTProperty
 };
 Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
+struct ASTFunctionParameter
+{
+    QString type;
+    QString name;
+};
+Q_DECLARE_TYPEINFO(ASTFunctionParameter, Q_MOVABLE_TYPE);
+
+struct ASTFunction
+{
+    enum ParamsAsStringFormat {
+        NoVariableNames,
+        WithVariableNames
+    };
+
+    QString paramsAsString(ParamsAsStringFormat format = WithVariableNames) const;
+    QStringList paramNames() const;
+
+    QString returnType;
+    QString name;
+    QVector<ASTFunctionParameter> params;
+};
+Q_DECLARE_TYPEINFO(ASTFunction, Q_MOVABLE_TYPE);
+
 /// A Class declaration
 struct ASTClass
 {
@@ -75,7 +98,7 @@ struct ASTClass
     QString name;
     QVector<ASTProperty> properties;
     QStringList signalsList;
-    QStringList slotsList;
+    QVector<ASTFunction> slotsList;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -116,6 +139,7 @@ public:
 
 private:
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
+    bool parseParams(ASTFunction &slot, const QString &paramsString);
 
     QString m_fileName;
     AST m_ast;

@@ -127,7 +127,7 @@ void tst_Parser::testSlots_data()
     QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "test()";
     QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "test()";
     QTest::newRow("slotwitharguments") << "SLOT(test(QString value, int number))" << "test(QString value, int number)";
-    QTest::newRow("slotwithspaces") << "SLOT(   test  (QString value, int number)  )" << "   test  (QString value, int number)  ";
+    QTest::newRow("slotwithspaces") << "SLOT(   test  (QString value, int number)  )" << "test(QString value, int number)";
 }
 
 void tst_Parser::testSlots()
@@ -151,9 +151,10 @@ void tst_Parser::testSlots()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QStringList slotsList = astClass.slotsList;
+    const QVector<ASTFunction> slotsList = astClass.slotsList;
     QCOMPARE(slotsList.count(), 1);
-    QCOMPARE(slotsList.first(), expectedSlot);
+    ASTFunction slot = slotsList.first();
+    QCOMPARE(QString("%1(%2)").arg(slot.name).arg(slot.paramsAsString()), expectedSlot);
 }
 
 void tst_Parser::testSignals_data()

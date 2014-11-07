@@ -54,6 +54,29 @@ ASTProperty::ASTProperty(const QString &type, const QString &name, const QString
 {
 }
 
+QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
+{
+    QString str;
+    foreach (const ASTFunctionParameter &param, params) {
+        str += param.type;
+        if (format == WithVariableNames) {
+            str += QString::fromLatin1(" %1").arg(param.name);
+        }
+        str += QStringLiteral(", ");
+    }
+    str.chop(2);
+    return str;
+}
+
+QStringList ASTFunction::paramNames() const
+{
+    QStringList names;
+    foreach (const ASTFunctionParameter &param, params) {
+        names << param.name;
+    }
+    return names;
+}
+
 ASTClass::ASTClass(const QString &name)
     : name(name)
 {
@@ -69,7 +92,7 @@ QRegExp re_pod(QStringLiteral("POD\\s*(\\S+)\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
 QRegExp re_prop(QStringLiteral("\\s*PROP\\s*\\(([^\\)]+)\\);?.*"));
 QRegExp re_useEnum(QStringLiteral("USE_ENUM\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
 QRegExp re_signal(QStringLiteral("\\s*SIGNAL\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
-QRegExp re_slot(QStringLiteral("\\s*SLOT\\s*\\(\\s*(.*)\\s*\\);?\\s*"));
+QRegExp re_slot(QStringLiteral("\\s*SLOT\\s*\\(\\s*(.*)\\s*\\(\\s*(.*)\\s*\\)\\s*\\);?\\s*"));
 QRegExp re_start(QStringLiteral("^\\{\\s*"));
 QRegExp re_end(QStringLiteral("^\\};?\\s*"));
 QRegExp re_comment(QStringLiteral("^\\s*//(.*)"));
@@ -122,7 +145,14 @@ bool RepParser::parse()
         } else if (re_signal.exactMatch(line)) {
             astClass.signalsList << re_signal.capturedTexts().at(1);
         } else if (re_slot.exactMatch(line)) {
-            astClass.slotsList << re_slot.capturedTexts().at(1);
+            const QStringList captures = re_slot.capturedTexts();
+
+            ASTFunction slot;
+            slot.name = captures.at(1).trimmed();
+
+            const QString argString = captures.at(2).trimmed();
+            parseParams(slot, argString);
+            astClass.slotsList << slot;
         } else if (re_end.exactMatch(line)) {
             m_ast.classes.append(astClass);
         } else if (re_start.exactMatch(line)) {
@@ -227,6 +257,30 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     }
 
     astClass.properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier);
+    return true;
+}
+
+
+bool RepParser::parseParams(ASTFunction& function, const QString& paramsString)
+{
+    if (paramsString.isEmpty())
+        return true;
+
+    int variableNameIndex = 0;
+
+    const QStringList paramsList = paramsString.split(QLatin1Char(','));
+    foreach (const QString &paramString, paramsList) {
+        const QStringList tmp = paramString.trimmed().split(QRegExp(QStringLiteral("\\s+")));
+
+        ASTFunctionParameter param;
+        param.type = tmp.at(0);
+        if (tmp.count() > 1)
+            param.name = tmp.at(1);
+        else
+            param.name = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
+
+        function.params << param;
+    }
     return true;
 }
 
