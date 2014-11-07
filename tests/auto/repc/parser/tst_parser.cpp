@@ -127,6 +127,7 @@ void tst_Parser::testSlots_data()
     QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "test()";
     QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "test()";
     QTest::newRow("slotwitharguments") << "SLOT(test(QString value, int number))" << "test(QString value, int number)";
+    QTest::newRow("slotwithunnamedarguments") << "SLOT(test(QString, int))" << "test(QString __repc_variable_1, int __repc_variable_2)";
     QTest::newRow("slotwithspaces") << "SLOT(   test  (QString value, int number)  )" << "test(QString value, int number)";
 }
 
