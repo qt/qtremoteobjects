@@ -99,7 +99,7 @@ bool RepParser::parse()
             astClass = ASTClass(re_class.capturedTexts().at(1));
         } else if (re_pod.exactMatch(line)) {
             POD pod;
-            pod.name = re_pod.capturedTexts()[1];
+            pod.name = re_pod.capturedTexts().at(1);
 
             const QString argString = re_pod.capturedTexts().at(2).trimmed();
             const QStringList argList = argString.split(QLatin1String(","));
@@ -108,7 +108,7 @@ bool RepParser::parse()
 
             foreach (const QString &paramString, argList) {
                 const QStringList tmp = paramString.trimmed().split(QRegExp(QStringLiteral("\\s+")));
-                PODAttribute attr = { tmp[0], tmp[1] };
+                PODAttribute attr = { tmp.at(0), tmp.at(1) };
                 pod.attributes.append(qMove(attr));
             }
 
@@ -166,24 +166,25 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     int nameIndex = -1;
 
     for (int i = 0; i < input.size(); ++i) {
-        if (input[i] == QLatin1Char('<')) {
-            propertyType += input[i];
+        const QChar inputChar(input.at(i));
+        if (inputChar == QLatin1Char('<')) {
+            propertyType += inputChar;
             inTemplate = true;
             ++templateDepth;
-        } else if (input[i] == QLatin1Char('>')) {
-            propertyType += input[i];
+        } else if (inputChar == QLatin1Char('>')) {
+            propertyType += inputChar;
             --templateDepth;
             if (templateDepth == 0)
                 inTemplate = false;
-        } else if (input[i] == QLatin1Char(' ')) {
+        } else if (inputChar == QLatin1Char(' ')) {
             if (!inTemplate) {
                 nameIndex = i;
                 break;
             } else {
-                propertyType += input[i];
+                propertyType += inputChar;
             }
         } else {
-            propertyType += input[i];
+            propertyType += inputChar;
         }
     }
 
