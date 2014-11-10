@@ -273,22 +273,59 @@ bool RepParser::parseParams(ASTFunction& function, const QString& paramsString)
     if (paramsString.isEmpty())
         return true;
 
+    int templateDepth = 0;
+    bool inTemplate = false;
+    bool inVariable = false;
+    QString propertyType;
+    QString variableName;
     int variableNameIndex = 0;
-
-    const QStringList paramsList = paramsString.split(QLatin1Char(','));
-    foreach (const QString &paramString, paramsList) {
-        const QStringList tmp = paramString.trimmed().split(QRegExp(QStringLiteral("\\s+")));
-
-        ASTFunctionParameter param;
-        param.type = tmp.at(0);
-        if (tmp.count() > 1)
-            param.name = tmp.at(1);
-        else
-            param.name = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
-
-        function.params << param;
+    for (int i = 0; i < paramsString.size(); ++i) {
+        const QChar inputChar(paramsString.at(i));
+        if (inputChar == QLatin1Char('<')) {
+            propertyType += inputChar;
+            inTemplate = true;
+            ++templateDepth;
+        } else if (inputChar == QLatin1Char('>')) {
+            propertyType += inputChar;
+            --templateDepth;
+            if (templateDepth == 0)
+                inTemplate = false;
+        } else if (inputChar == QLatin1Char(' ')) {
+            if (inTemplate)
+                propertyType += inputChar;
+            else if (!propertyType.isEmpty())
+                inVariable = true;
+        } else if (inputChar == QLatin1Char(',')) {
+            if (!inTemplate) {
+                function.params << generateFunctionParameter(variableName, propertyType, variableNameIndex);
+                propertyType.clear();
+                variableName.clear();
+                inVariable = false;
+            } else {
+                propertyType += inputChar;
+            }
+        } else {
+            if (inVariable)
+                variableName += inputChar;
+            else
+                propertyType += inputChar;
+        }
+    }
+    if (!propertyType.isEmpty()) {
+        function.params << generateFunctionParameter(variableName, propertyType, variableNameIndex);
     }
     return true;
+}
+
+ASTFunctionParameter RepParser::generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex)
+{
+    ASTFunctionParameter param;
+    param.type = propertyType;
+    if (!variableName.isEmpty())
+        param.name = variableName.trimmed();
+    else
+        param.name = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
+    return param;
 }
 
 AST RepParser::ast() const

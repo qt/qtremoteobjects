@@ -129,6 +129,10 @@ void tst_Parser::testSlots_data()
     QTest::newRow("slotwitharguments") << "SLOT(test(QString value, int number))" << "test(QString value, int number)";
     QTest::newRow("slotwithunnamedarguments") << "SLOT(test(QString, int))" << "test(QString __repc_variable_1, int __repc_variable_2)";
     QTest::newRow("slotwithspaces") << "SLOT(   test  (QString value, int number)  )" << "test(QString value, int number)";
+    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "test(QMap<QString,int> foo)";
+    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "test(QMap<QString,int> foo, QMap<QString,int> bla)";
+    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "test(QMap<QList<QString>,int> foo)";
+    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "test(QMap<QString , int> foo)";
 }
 
 void tst_Parser::testSlots()
@@ -165,6 +169,8 @@ void tst_Parser::testSignals_data()
     QTest::newRow("signalwithoutspacebeforeparentheses") << "SIGNAL(test())" << "test()";
     QTest::newRow("signalwithspacebeforeparentheses") << "SIGNAL (test())" << "test()";
     QTest::newRow("signalwitharguments") << "SIGNAL(test(QString value, int value))" << "test(QString value, int value)";
+    QTest::newRow("signalwithtemplates") << "SIGNAL(test(QMap<QString,int> foo))" << "test(QMap<QString,int> foo)";
+    QTest::newRow("signalwithtemplateswithspace") << "SIGNAL ( test (QMap<QString , int>  foo ) )" << "test(QMap<QString , int> foo)";
 }
 
 void tst_Parser::testSignals()

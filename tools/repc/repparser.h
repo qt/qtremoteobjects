@@ -140,6 +140,7 @@ public:
 private:
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
     bool parseParams(ASTFunction &slot, const QString &paramsString);
+    ASTFunctionParameter generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex);
 
     QString m_fileName;
     AST m_ast;
