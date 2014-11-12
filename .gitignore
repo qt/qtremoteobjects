@@ -13,8 +13,10 @@ moc_*
 *.orig
 *.kdev4
 .kdev*
+.qmake.cache
+.rcc
 
-rep_*_replicant.h
 rep_*_prime.h
-
+rep_*_source.h
+rep_*_replica.h
 /repc/repc
