@@ -41,7 +41,9 @@
 
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectreplica_p.h"
+
 #include "qremoteobjectdynamicreplica.h"
+#include "qremoteobjectpendingcall_p.h"
 #include "qconnectionclientfactory_p.h"
 #include "qremoteobjectsource_p.h"
 #include "private/qmetaobjectbuilder_p.h"
@@ -52,6 +54,9 @@
 #include <QMetaProperty>
 #include <QThread>
 #include <QTime>
+#include <QTimer>
+
+#include <limits>
 
 QT_BEGIN_NAMESPACE
 
@@ -71,7 +76,7 @@ QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
 }
 
 QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta)
-                            : QRemoteObjectReplicaPrivate(name, meta), isSet(0), connectionToSource(Q_NULLPTR)
+    : QRemoteObjectReplicaPrivate(name, meta), isSet(0), connectionToSource(Q_NULLPTR), m_curSerialId(0)
 {
 }
 
@@ -89,14 +94,15 @@ bool QRemoteObjectReplicaPrivate::isDynamicReplica() const
     return m_metaObject == Q_NULLPTR;
 }
 
-void QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
+bool QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
 {
     Q_ASSERT(!connectionToSource.isNull());
 
     if (!connectionToSource->isOpen())
-        return;
+        return false;
 
     connectionToSource->write(packet->serialize());
+    return true;
 }
 
 void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
@@ -170,7 +176,7 @@ void QRemoteObjectReplicaPrivate::initializeMetaObject(const QInitDynamicPacket 
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
     QVector<QPair<QByteArray, QVariant> > propertyValues;
-    m_metaObject = packet->createMetaObject(builder, m_remoteObjectMethodTypes, m_methodArgumentTypes, &propertyValues);
+    m_metaObject = packet->createMetaObject(builder, m_remoteObjectMethodTypes, m_methodReturnTypeIsVoid, m_methodArgumentTypes, &propertyValues);
     //rely on order of properties;
     QVariantList list;
     typedef QPair<QByteArray, QVariant> PropertyPair;
@@ -248,6 +254,66 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
     }
 }
 
+QRemoteObjectPendingCall QConnectedReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+{
+    Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
+
+    qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
+    QInvokePacket package = QInvokePacket(m_objectName, call, index - m_methodOffset, args);
+    return sendCommandWithReply(&package);
+}
+
+QRemoteObjectPendingCall QConnectedReplicaPrivate::sendCommandWithReply(QRemoteObjectPackets::QInvokePacket* packet)
+{
+    Q_ASSERT(packet);
+    packet->serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 0 : m_curSerialId++);
+
+    bool success = sendCommand(packet);
+    if (!success) {
+        return QRemoteObjectPendingCall(); // invalid
+    }
+
+    qCDebug(QT_REMOTEOBJECT) << "Sent InvokePacket with serial id:" << packet->serialId;
+    QRemoteObjectPendingCall pendingCall(new QRemoteObjectPendingCallData(packet->serialId, this));
+    Q_ASSERT(!m_pendingCalls.contains(packet->serialId));
+    m_pendingCalls[packet->serialId] = pendingCall;
+    return pendingCall;
+}
+
+void QConnectedReplicaPrivate::notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket* replyPacket)
+{
+    QRemoteObjectPendingCall call = m_pendingCalls.take(replyPacket->ackedSerialId);
+
+    QMutexLocker mutex(&call.d->mutex);
+
+    // clear error flag
+    call.d->error = QRemoteObjectPendingCall::NoError;
+    call.d->returnValue = replyPacket->value;
+
+    // notify watchers if needed
+    if (call.d->watcherHelper)
+        call.d->watcherHelper->emitSignals();
+}
+
+bool QConnectedReplicaPrivate::waitForFinished(const QRemoteObjectPendingCall& call, int timeout)
+{
+    if (!call.d->watcherHelper)
+        call.d->watcherHelper.reset(new QRemoteObjectPendingCallWatcherHelper);
+
+    call.d->mutex.unlock();
+
+    QEventLoop loop;
+    loop.connect(call.d->watcherHelper.data(), SIGNAL(finished()), SLOT(quit()));
+    QTimer::singleShot(timeout, &loop, SLOT(quit()));
+
+    // enter the event loop and wait for a reply
+    loop.exec(QEventLoop::ExcludeUserInputEvents | QEventLoop::WaitForMoreEvents);
+
+    call.d->mutex.lock();
+
+    return call.d->error != QRemoteObjectPendingCall::InvalidMessage;
+}
+
 const QVariant QConnectedReplicaPrivate::getProperty(int i) const
 {
     return m_propertyStorage[i];
@@ -320,6 +386,13 @@ void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVarian
     Q_D(QRemoteObjectReplica);
 
     d->_q_send(call, index, args);
+}
+
+QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+{
+    Q_D(QRemoteObjectReplica);
+
+    return d->_q_sendWithReply(call, index, args);
 }
 
 const QVariant QRemoteObjectReplica::propAsVariant(int i) const
@@ -404,6 +477,15 @@ void QInProcessReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
         connectionToSource->invoke(call, index - m_methodOffset, args);
     else
         connectionToSource->invoke(call, index - m_propertyOffset, args);
+}
+
+QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+{
+    Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
+
+    QVariant returnValue;
+    connectionToSource->invoke(call, index - m_methodOffset, args, &returnValue);
+    return QRemoteObjectPendingCall::fromCompletedCall(returnValue);
 }
 
 QT_END_NAMESPACE

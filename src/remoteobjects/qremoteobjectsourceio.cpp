@@ -175,7 +175,14 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                 QRemoteObjectSourcePrivate *pp = m_remoteObjects[name];
                 if (p->call == QMetaObject::InvokeMetaMethod) {
                     qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_meta->method(p->index+pp->m_methodOffset).name();
-                    pp->invoke(QMetaObject::InvokeMetaMethod, p->index, p->args);
+                    QVariant returnValue;
+                    pp->invoke(QMetaObject::InvokeMetaMethod, p->index, p->args, &returnValue);
+
+                    // send reply if wanted
+                    if (p->serialId >= 0) {
+                        QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
+                        connection->write(replyPacket.serialize());
+                    }
                 } else {
                     qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_meta->property(p->index+pp->m_propertyOffset).name();
                     pp->invoke(QMetaObject::WriteProperty, p->index, p->args);

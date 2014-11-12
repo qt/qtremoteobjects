@@ -5,6 +5,6 @@ class Engine
     PROP(bool started);
     PROP(int rpm);
 
-    SLOT(start());
-    SLOT(increaseRpm(int deltaRpm));
+    SLOT(bool start());
+    SLOT(void increaseRpm(int deltaRpm));
 };

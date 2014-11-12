@@ -43,10 +43,12 @@
 #define QREMOTEOBJECTREPLICA_P_H
 
 #include "qremoteobjectreplica.h"
+
+#include "qremoteobjectpendingcall.h"
+
 #include <QPointer>
 #include <QVector>
 #include <qcompilerdetection.h>
-#include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -71,11 +73,14 @@ public:
     virtual bool isInitialized() const { return true; }
     virtual bool isReplicaValid() const { return true; }
     virtual bool waitForSource(int) { return true; }
+    virtual bool waitForFinished(const QRemoteObjectPendingCall &, int) { return true; }
+    virtual void notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket *) {};
     virtual void configurePrivate(QRemoteObjectReplica *);
     void emitValidChanged();
     void emitInitialized();
 
     virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) = 0;
+    virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
 
     //Dynamic replica functions
     virtual void initializeMetaObject(const QInitDynamicPacket *packet);
@@ -84,6 +89,7 @@ public:
     const QMetaObject *m_metaObject;
 
     //Dynamic Replica data
+    QVector<bool> m_methodReturnTypeIsVoid;
     QVector<QVector<int> > m_methodArgumentTypes;
     QVector<int> m_remoteObjectMethodTypes;
     int m_methodOffset, m_propertyOffset;
@@ -104,15 +110,25 @@ public:
     void initialize(const QByteArray &);
     void configurePrivate(QRemoteObjectReplica *) Q_DECL_OVERRIDE;
     void requestRemoteObjectSource();
-    void sendCommand(const QRemoteObjectPackets::QRemoteObjectPacket *packet);
+    bool sendCommand(const QRemoteObjectPackets::QRemoteObjectPacket *packet);
+    QRemoteObjectPendingCall sendCommandWithReply(QRemoteObjectPackets::QInvokePacket* packet);
+    bool waitForFinished(const QRemoteObjectPendingCall &call, int timeout);
+    void notifyAboutReply(const QInvokeReplyPacket* replyPacket);
     void setConnection(ClientIoDevice *conn);
     void setDisconnected();
+
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
+    QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) Q_DECL_OVERRIDE;
+
     void initializeMetaObject(const QInitDynamicPacket *packet) Q_DECL_OVERRIDE;
     QAtomicInt isSet;
     QVector<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
     QPointer<ClientIoDevice> connectionToSource;
+
+    // pending call data
+    int m_curSerialId;
+    QHash<int, QRemoteObjectPendingCall> m_pendingCalls;
 };
 
 class QInProcessReplicaPrivate : public QRemoteObjectReplicaPrivate
@@ -126,7 +142,9 @@ public:
     void setProperty(int i, const QVariant &) Q_DECL_OVERRIDE;
     bool isShortCircuit() const Q_DECL_OVERRIDE { return true; }
 
-    virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args);
+    void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
+    QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) Q_DECL_OVERRIDE;
+
     QPointer<QRemoteObjectSourcePrivate> connectionToSource;
 };
 

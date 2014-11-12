@@ -48,6 +48,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QRemoteObjectPendingCall;
 class QRemoteObjectReplicaPrivate;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
@@ -71,6 +72,8 @@ protected:
     explicit QRemoteObjectReplica(QObject *parent = Q_NULLPTR);
 
     void send(QMetaObject::Call call, int index, const QVariantList &args);
+    QRemoteObjectPendingCall sendWithReply(QMetaObject::Call call, int index, const QVariantList &args);
+
 protected:
     void setProperty(int i, const QVariant &);
     void setProperties(const QVariantList &);

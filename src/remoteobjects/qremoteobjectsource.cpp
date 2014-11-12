@@ -144,25 +144,34 @@ QVariantList QRemoteObjectSourcePrivate::marshalArgs(int index, void **a)
     return list;
 }
 
-void QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QVariantList &args)
+bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QVariantList &args, QVariant* returnValue)
 {
     QVarLengthArray<void*, 10> param(args.size() + 1);
 
     if (c == QMetaObject::InvokeMetaMethod) {
-        static QVariant null(QMetaType::QObjectStar, Q_NULLPTR);
-        param[0] = null.data(); //Never a return value
+        if (returnValue) {
+            const QMetaMethod metaMethod = parent()->metaObject()->method(index + m_methodOffset);
+            int typeId = metaMethod.returnType();
+            if (!QMetaType(typeId).sizeOf())
+                typeId = QVariant::Invalid;
+            QVariant tmp(typeId, Q_NULLPTR);
+            returnValue->swap(tmp);
+            param[0] = returnValue->data();
+        } else {
+            param[0] = Q_NULLPTR;
+        }
 
         for (int i = 0; i < args.size(); ++i) {
             param[i + 1] = const_cast<void*>(args.at(i).data());
         }
 
-        parent()->qt_metacall(c, index + m_methodOffset, param.data());
+        return (parent()->qt_metacall(c, index + m_methodOffset, param.data()) == -1);
     } else {
         for (int i = 0; i < args.size(); ++i) {
             param[i] = const_cast<void*>(args.at(i).data());
         }
 
-        parent()->qt_metacall(c, index + m_propertyOffset, param.data());
+        return (parent()->qt_metacall(c, index + m_propertyOffset, param.data()) == -1);
     }
 }
 

@@ -39,20 +39,49 @@
 **
 ****************************************************************************/
 
-#ifndef TESTS_ENGINE_H
-#define TESTS_ENGINE_H
+#ifndef QREMOTEOBJECTPENDINGCALL_P_H
+#define QREMOTEOBJECTPENDINGCALL_P_H
 
-#include "rep_engine_source.h"
+#include "qremoteobjectpendingcall.h"
 
-class Engine : public EngineSource
+#include <QMutex>
+
+QT_BEGIN_NAMESPACE
+
+class QRemoteObjectPendingCallWatcherHelper;
+class QRemoteObjectReplicaPrivate;
+
+class QRemoteObjectPendingCallData : public QSharedData
+{
+public:
+    typedef QExplicitlySharedDataPointer<QRemoteObjectPendingCallData> Ptr;
+
+    explicit QRemoteObjectPendingCallData(int serialId = -1, QRemoteObjectReplicaPrivate *replica = Q_NULLPTR);
+    ~QRemoteObjectPendingCallData();
+
+    QRemoteObjectReplicaPrivate *replica;
+    int serialId;
+
+    QVariant returnValue;
+    QRemoteObjectPendingCall::Error error;
+
+    mutable QMutex mutex;
+
+    QScopedPointer<QRemoteObjectPendingCallWatcherHelper> watcherHelper;
+};
+
+class QRemoteObjectPendingCallWatcherHelper: public QObject
 {
     Q_OBJECT
 public:
-    Engine(QObject *parent=Q_NULLPTR);
-    virtual ~Engine();
+    void add(QRemoteObjectPendingCallWatcher *watcher);
 
-    bool start() Q_DECL_OVERRIDE;
-    void increaseRpm(int deltaRpm) Q_DECL_OVERRIDE;
+    void emitSignals();
+
+Q_SIGNALS:
+    void finished();
 };
+
+QT_END_NAMESPACE
 
 #endif

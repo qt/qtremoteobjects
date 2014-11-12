@@ -127,15 +127,15 @@ void tst_Parser::testSlots_data()
 {
     QTest::addColumn<QString>("slotDeclaration");
     QTest::addColumn<QString>("expectedSlot");
-    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "test()";
-    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "test()";
-    QTest::newRow("slotwitharguments") << "SLOT(test(QString value, int number))" << "test(QString value, int number)";
-    QTest::newRow("slotwithunnamedarguments") << "SLOT(test(QString, int))" << "test(QString __repc_variable_1, int __repc_variable_2)";
-    QTest::newRow("slotwithspaces") << "SLOT(   test  (QString value, int number)  )" << "test(QString value, int number)";
-    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "test(QMap<QString,int> foo)";
-    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "test(QMap<QString,int> foo, QMap<QString,int> bla)";
-    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "test(QMap<QList<QString>,int> foo)";
-    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "test(QMap<QString , int> foo)";
+    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "void test()";
+    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "void test()";
+    QTest::newRow("slotwitharguments") << "SLOT(void test(QString value, int number))" << "void test(QString value, int number)";
+    QTest::newRow("slotwithunnamedarguments") << "SLOT(void test(QString, int))" << "void test(QString __repc_variable_1, int __repc_variable_2)";
+    QTest::newRow("slotwithspaces") << "SLOT(   void test  (QString value, int number)  )" << "void test(QString value, int number)";
+    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "void test(QMap<QString,int> foo)";
+    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "void test(QMap<QString,int> foo, QMap<QString,int> bla)";
+    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "void test(QMap<QList<QString>,int> foo)";
+    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "void test(QMap<QString , int> foo)";
 }
 
 void tst_Parser::testSlots()
@@ -162,7 +162,7 @@ void tst_Parser::testSlots()
     const QVector<ASTFunction> slotsList = astClass.slotsList;
     QCOMPARE(slotsList.count(), 1);
     ASTFunction slot = slotsList.first();
-    QCOMPARE(QString("%1(%2)").arg(slot.name).arg(slot.paramsAsString()), expectedSlot);
+    QCOMPARE(QString("%1 %2(%3)").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString()), expectedSlot);
 }
 
 void tst_Parser::testSignals_data()

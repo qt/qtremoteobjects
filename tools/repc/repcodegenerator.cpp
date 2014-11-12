@@ -136,9 +136,10 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
            "\n"
            "#include <QRemoteObjectNode>\n"
            ;
-    if (mode == REPLICA)
-        out << "#include <qremoteobjectreplica.h>\n";
-    else
+    if (mode == REPLICA) {
+        out << "#include <QRemoteObjectReplica>\n";
+        out << "#include <QRemoteObjectPendingReply>\n";
+    } else
         out << "#include <QRemoteObjectSource>\n";
     out << "\n";
 
@@ -467,9 +468,15 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         out << QStringLiteral("public Q_SLOTS:");
         foreach (const ASTFunction &slot, astClass.slotsList) {
             if (mode == SOURCE) {
-                out << QStringLiteral("    virtual void %1(%2) = 0;").arg(slot.name).arg(slot.paramsAsString());
+                out << QStringLiteral("    virtual %1 %2(%3) = 0;").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString());
             } else {
-                out << QStringLiteral("    void %1(%2)").arg(slot.name).arg(slot.paramsAsString());
+                // TODO: Discuss whether it is a good idea to special-case for void here,
+                const bool isVoid = slot.returnType == QStringLiteral("void");
+
+                if (isVoid)
+                    out << QStringLiteral("    void %1(%2)").arg(slot.name).arg(slot.paramsAsString());
+                else
+                    out << QStringLiteral("    QRemoteObjectPendingReply<%1> %2(%3)").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString());
                 out << QStringLiteral("    {");
                 out << QStringLiteral("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");")
                     .arg(className).arg(slot.name).arg(slot.paramsAsString(ASTFunction::NoVariableNames));
@@ -482,7 +489,10 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                     out << QStringLiteral("        __repc_args << %1;").arg(variantNames.join(QLatin1String(" << ")));
                 }
                 out << QStringLiteral("        qDebug() << \"%1::%2\" << __repc_index;").arg(className).arg(slot.name);
-                out << QStringLiteral("        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);");
+                if (isVoid)
+                    out << QStringLiteral("        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);");
+                else
+                    out << QStringLiteral("        return QRemoteObjectPendingReply<%1>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));").arg(slot.returnType);
                 out << QStringLiteral("    }");
             }
         }

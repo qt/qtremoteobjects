@@ -117,6 +117,7 @@ public:
         AddObject,
         RemoveObject,
         InvokePacket,
+        InvokeReplyPacket,
         PropertyChangePacket,
         ObjectList
     };
@@ -175,6 +176,7 @@ public:
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QMetaObject *createMetaObject(QMetaObjectBuilder &builder,
                                   QVector<int> &methodTypes,
+                                  QVector<bool> &methodReturnTypeIsVoid,
                                   QVector<QVector<int> > &methodArgumentTypes,
                                   QVector<QPair<QByteArray, QVariant> > *propertyValues = 0) const;
     QString name;
@@ -209,15 +211,35 @@ class QInvokePacket : public QRemoteObjectPacket
 {
 public:
     inline QInvokePacket() : QRemoteObjectPacket(),
-      call(-1), index(-1) {}
-    inline QInvokePacket(const QString &_name, int _call, int _index, QVariantList _args) :
-       name(_name), call(_call), index(_index), args(_args) { id = InvokePacket; }
+      call(-1), index(-1), serialId(-1) {}
+    inline QInvokePacket(const QString &_name, int _call, int _index, QVariantList _args, int _serialId = -1) :
+       name(_name), call(_call), index(_index), args(_args), serialId(_serialId) { id = InvokePacket; }
     virtual QByteArray serialize() const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
+
     QString name;
     int call;
     int index;
     QVariantList args;
+
+    int serialId;
+};
+
+class QInvokeReplyPacket : public QRemoteObjectPacket
+{
+public:
+    inline QInvokeReplyPacket() : QRemoteObjectPacket()
+        , ackedSerialId(-1) {}
+    inline QInvokeReplyPacket(const QString &_name, int _ackedSerialId, const QVariant &_value = QVariant()) : QRemoteObjectPacket()
+        , name(_name), ackedSerialId(_ackedSerialId), value(_value) { id = InvokeReplyPacket; }
+    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
+
+    QString name;
+    int ackedSerialId;
+
+    // reply payload
+    QVariant value;
 };
 
 class QPropertyChangePacket : public QRemoteObjectPacket

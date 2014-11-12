@@ -108,7 +108,7 @@ public:
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
-    void invoke(QMetaObject::Call, int index, const QVariantList &args);
+    bool invoke(QMetaObject::Call c, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
 };
 
 QT_END_NAMESPACE

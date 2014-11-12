@@ -157,11 +157,60 @@ private slots:
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
 
-        QSignalSpy spy(engine_r.data(), SIGNAL(startedChanged()));
-        engine_r->start();
+        QRemoteObjectPendingReply<bool> reply = engine_r->start();
+        QCOMPARE(reply.error(), QRemoteObjectPendingCall::InvalidMessage);
+        QVERIFY(reply.waitForFinished());
+        QVERIFY(reply.isFinished());
+        QCOMPARE(reply.returnValue(), true);
+        QCOMPARE(reply.error(), QRemoteObjectPendingCall::NoError);
+
+        QCOMPARE(engine_r->started(), true);
+    }
+
+    void slotTestWithWatcher() {
+        engine->setStarted(false);
+
+        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->started(), false);
+
+        QRemoteObjectPendingReply<bool> reply = engine_r->start();
+        QCOMPARE(reply.error(), QRemoteObjectPendingCall::InvalidMessage);
+
+        QRemoteObjectPendingCallWatcher watcher(reply);
+        QSignalSpy spy(&watcher, SIGNAL(finished(QRemoteObjectPendingCallWatcher *)));
         spy.wait();
         QCOMPARE(spy.count(), 1);
+
+        QVERIFY(reply.isFinished());
+        QCOMPARE(reply.returnValue(), true);
         QCOMPARE(engine_r->started(), true);
+    }
+
+    void slotTestDynamicReplica() {
+        QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
+        Q_ASSERT(engine_r);
+        engine_r->waitForSource();
+
+        const QMetaObject *metaObject = engine_r->metaObject();
+        const int propIndex = metaObject->indexOfProperty("started");
+        QVERIFY(propIndex >= 0);
+        const QMetaProperty property = metaObject->property(propIndex);
+        bool started = property.read(engine_r.data()).value<bool>();
+        QCOMPARE(started, false);
+
+        const int methodIndex = metaObject->indexOfMethod("start()");
+        QVERIFY(methodIndex >= 0);
+        const QMetaMethod method = metaObject->method(methodIndex);
+        QRemoteObjectPendingCall call;
+        QVERIFY(method.invoke(engine_r.data(), Q_RETURN_ARG(QRemoteObjectPendingCall, call)));
+        QCOMPARE(call.error(), QRemoteObjectPendingCall::InvalidMessage);
+        QVERIFY(call.waitForFinished());
+        QVERIFY(call.isFinished());
+        QCOMPARE(call.returnValue().type(), QVariant::Bool);
+        QCOMPARE(call.returnValue().toBool(), true);
+        started = property.read(engine_r.data()).value<bool>();
+        QCOMPARE(started, true);
     }
 
     void slotTestInProcess() {
@@ -171,10 +220,12 @@ private slots:
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
 
-        QSignalSpy spy(engine_r.data(), SIGNAL(startedChanged()));
-        engine_r->start();
-        spy.wait();
-        QCOMPARE(spy.count(), 1);
+        QRemoteObjectPendingReply<bool> reply = engine_r->start();
+        QVERIFY(reply.waitForFinished());
+        QVERIFY(reply.isFinished());
+        QCOMPARE(reply.returnValue(), true);
+        QCOMPARE(reply.error(), QRemoteObjectPendingCall::NoError);
+
         QCOMPARE(engine_r->started(), true);
     }
 

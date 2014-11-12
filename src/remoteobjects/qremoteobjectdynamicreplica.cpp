@@ -126,8 +126,16 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 args << QVariant(d->m_methodArgumentTypes.at(id)[i-1], argv[i]);
             }
 
-            QRemoteObjectReplica::send(QMetaObject::InvokeMetaMethod, saved_id, args);
+            const bool returnTypeIsVoid = d->m_methodReturnTypeIsVoid.at(id);
+            if (returnTypeIsVoid)
+                QRemoteObjectReplica::send(QMetaObject::InvokeMetaMethod, saved_id, args);
+            else {
+                QRemoteObjectPendingCall call = QRemoteObjectReplica::sendWithReply(QMetaObject::InvokeMetaMethod, saved_id, args);
+                QMetaType::construct(qMetaTypeId<QRemoteObjectPendingCall>(), argv[0], &call);
+            }
         }
+
+        id = -1;
     }
 
     return id;

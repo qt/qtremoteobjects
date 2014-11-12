@@ -51,11 +51,13 @@ Engine::~Engine()
 {
 }
 
-void Engine::start()
+bool Engine::start()
 {
-    if (!started()) {
-        setStarted(true);
-    }
+    if (started())
+        return false; // already started
+
+    setStarted(true);
+    return true;
 }
 
 void Engine::increaseRpm(int deltaRpm)

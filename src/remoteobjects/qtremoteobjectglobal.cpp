@@ -41,6 +41,8 @@
 
 #include "qtremoteobjectglobal.h"
 
+#include "qremoteobjectpendingcall.h"
+
 #include <QMetaObject>
 #include <QMetaProperty>
 #include "private/qmetaobjectbuilder_p.h"
@@ -83,6 +85,11 @@ QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in)
         packet = new QInvokePacket;
         if (packet->deserialize(in))
             packet->id = InvokePacket;
+        break;
+    case InvokeReplyPacket:
+        packet = new QInvokeReplyPacket;
+        if (packet->deserialize(in))
+            packet->id = InvokeReplyPacket;
         break;
     case PropertyChangePacket:
         packet = new QPropertyChangePacket;
@@ -310,12 +317,15 @@ bool QInitDynamicPacket::deserialize(QDataStream& in)
 
 QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
                                                   QVector<int> &methodTypes,
+                                                  QVector<bool> &methodReturnTypeIsVoid,
                                                   QVector<QVector<int> > &methodArgumentTypes,
                                                   QVector<QPair<QByteArray, QVariant> > *propertyValues) const
 {
     quint32 numMethods = 0;
     QDataStream ds(packetData);
     ds >> numMethods;
+    methodReturnTypeIsVoid.clear();
+    methodReturnTypeIsVoid.resize(numMethods);
     methodTypes.clear();
     methodTypes.resize(numMethods);
     methodArgumentTypes.clear();
@@ -337,6 +347,7 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
         methodTypes[i] = type;
         if (type == QMetaMethod::Method || type == QMetaMethod::Slot)
             ds >> returnType;
+        methodReturnTypeIsVoid[i] = returnType.isEmpty();
         quint32 parameterCount = 0;
         ds >> parameterCount;
         QByteArray parameterType;
@@ -351,7 +362,7 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
         else if (returnType.isEmpty())
             builder.addMethod(signature);
         else
-            builder.addMethod(signature, returnType);
+            builder.addMethod(signature, QByteArrayLiteral("QRemoteObjectPendingCall"));
     }
 
     quint32 numProperties = 0;
@@ -413,6 +424,7 @@ QByteArray QInvokePacket::serialize() const
     ds << call;
     ds << index;
     ds << args;
+    ds << serialId;
     return ds.finishPacket();
 }
 
@@ -422,6 +434,24 @@ bool QInvokePacket::deserialize(QDataStream& in)
     in >> call;
     in >> index;
     in >> args;
+    in >> serialId;
+    return true;
+}
+
+QByteArray QInvokeReplyPacket::serialize() const
+{
+    DataStreamPacket ds(id);
+    ds << name;
+    ds << ackedSerialId;
+    ds << value;
+    return ds.finishPacket();
+}
+
+bool QInvokeReplyPacket::deserialize(QDataStream& in)
+{
+    in >> name;
+    in >> ackedSerialId;
+    in >> value;
     return true;
 }
 

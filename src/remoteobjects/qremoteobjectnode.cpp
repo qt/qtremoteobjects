@@ -432,6 +432,18 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         break;
     }
+    case QRemoteObjectPacket::InvokeReplyPacket:
+    {
+        const QInvokeReplyPacket *p = static_cast<const QInvokeReplyPacket *>(packet);
+        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
+        if (rep) {
+            qCDebug(QT_REMOTEOBJECT) << "Received InvokeReplyPacket ack'ing serial id:" << p->ackedSerialId;
+            rep->notifyAboutReply(p);
+        } else { //replica has been deleted, remove from list
+            replicas.remove(p->name);
+        }
+        break;
+    }
     }
 
     if (connection->bytesAvailable()) //have bytes left over, so recurse

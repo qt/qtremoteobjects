@@ -41,6 +41,7 @@
 
 #include "repparser.h"
 
+#include <QDebug>
 #include <QFile>
 #include <QTextStream>
 
@@ -156,8 +157,20 @@ bool RepParser::parse()
         } else if (re_slot.exactMatch(line)) {
             const QStringList captures = re_slot.capturedTexts();
 
+            QString returnTypeAndName = captures.at(1).trimmed();
+
+            // compat code with old SLOT declaration: "SLOT(func(...))"
+            const bool hasWhitespace = returnTypeAndName.indexOf(QStringLiteral(" ")) != -1;
+            if (!hasWhitespace) {
+                qWarning() << "Encountered old-style format for SLOT:" << qPrintable(captures.at(0));
+                returnTypeAndName.prepend(QStringLiteral("void "));
+            }
+
+            const int startOfFunctionName = returnTypeAndName.lastIndexOf(QStringLiteral(" ")) + 1;
+
             ASTFunction slot;
-            slot.name = captures.at(1).trimmed();
+            slot.returnType = returnTypeAndName.mid(0, startOfFunctionName-1);
+            slot.name = returnTypeAndName.mid(startOfFunctionName);
 
             const QString argString = captures.at(2).trimmed();
             RepParser::TypeParser parseType;
