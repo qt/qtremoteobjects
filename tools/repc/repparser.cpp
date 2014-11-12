@@ -54,6 +54,11 @@ ASTProperty::ASTProperty(const QString &type, const QString &name, const QString
 {
 }
 
+ASTFunction::ASTFunction(const QString &name, const QString &returnType)
+    : returnType(returnType), name(name)
+{
+}
+
 QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 {
     QString str;

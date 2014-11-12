@@ -79,6 +79,8 @@ struct ASTFunction
         WithVariableNames
     };
 
+    explicit ASTFunction(const QString &name = QString(), const QString &returnType = QStringLiteral("void"));
+
     QString paramsAsString(ParamsAsStringFormat format = WithVariableNames) const;
     QStringList paramNames() const;
 
