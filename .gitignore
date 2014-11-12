@@ -10,6 +10,9 @@ debug/
 moc_*
 *.moc
 *.pro.user
+*.orig
+*.kdev4
+.kdev*
 
 rep_*_replicant.h
 rep_*_prime.h
