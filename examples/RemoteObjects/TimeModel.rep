@@ -1,6 +1,7 @@
 #include <QtCore>
 
 POD PresetInfo(int presetNumber, float frequency, QString stationName)
+POD PresetData(QList<QString> bla)
 class MinuteTimer
 {
     PROP(int hour=1);

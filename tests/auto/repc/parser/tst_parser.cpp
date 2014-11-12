@@ -44,6 +44,7 @@
 #include <QTemporaryFile>
 #include <QTest>
 #include <QTextStream>
+#include <QDebug>
 
 Q_DECLARE_METATYPE(ASTProperty::Modifier)
 
@@ -57,6 +58,8 @@ private Q_SLOTS:
     void testSlots();
     void testSignals_data();
     void testSignals();
+    void testPods_data();
+    void testPods();
 };
 
 
@@ -197,6 +200,58 @@ void tst_Parser::testSignals()
     const QVector<ASTFunction> signalsList = astClass.signalsList;
     ASTFunction signal = signalsList.first();
     QCOMPARE(QString("%1(%2)").arg(signal.name).arg(signal.paramsAsString()), expectedSignal);
+}
+
+void tst_Parser::testPods_data()
+{
+    QTest::addColumn<QString>("podsdeclaration");
+    QTest::addColumn<QString>("expectedtypes");
+    QTest::addColumn<QString>("expectedvariables");
+
+    //Variable/Type separate by ";"
+    QTest::newRow("one pod") << "POD preset(int presetNumber)" << "int" << "presetNumber";
+    QTest::newRow("two pod") << "POD preset(int presetNumber, double foo)" << "int;double" << "presetNumber;foo";
+    QTest::newRow("two pod with space") << "POD preset ( int presetNumber , double foo ) " << "int;double" << "presetNumber;foo";
+    //Template
+    QTest::newRow("pod template") << "POD preset(QMap<QString,int> foo) " << "QMap<QString,int>" << "foo";
+    QTest::newRow("pod template (QList)") << "POD preset(QList<QString> foo) " << "QList<QString>" << "foo";
+    QTest::newRow("two pod template") << "POD preset(QMap<QString,int> foo, QMap<double,int> bla) " << "QMap<QString,int>;QMap<double,int>" << "foo;bla";
+    QTest::newRow("two pod template with space") << "POD preset( QMap<QString  ,  int >  foo ,   QMap<  double , int > bla ) " << "QMap<QString  ,  int >;QMap<  double , int >" << "foo;bla";
+
+}
+
+void tst_Parser::testPods()
+{
+    QFETCH(QString, podsdeclaration);
+    QFETCH(QString, expectedtypes);
+    QFETCH(QString, expectedvariables);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << podsdeclaration << endl;
+    stream << "class TestClass" << endl;
+    stream << "{" << endl;
+    stream << "};" << endl;
+    file.close();
+
+    RepParser parser(file.fileName());
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    QCOMPARE(ast.pods.count(), 1);
+    const POD pods = ast.pods.first();
+    const QVector<PODAttribute> podsList = pods.attributes;
+    const QStringList typeList = expectedtypes.split(QLatin1Char(';'));
+    const QStringList variableList = expectedvariables.split(QLatin1Char(';'));
+    QVERIFY(typeList.count() == variableList.count());
+    QVERIFY(podsList.count() == variableList.count());
+    for (int i=0; i < podsList.count(); ++i) {
+        QCOMPARE(podsList.at(i).name, variableList.at(i));
+        QCOMPARE(podsList.at(i).type, typeList.at(i));
+    }
 }
 
 

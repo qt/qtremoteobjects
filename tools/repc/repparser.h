@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
 **
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
@@ -44,6 +44,7 @@
 
 #include <QStringList>
 #include <QVector>
+#include <QMap>
 
 /// A property of a Class declaration
 struct ASTProperty
@@ -65,12 +66,18 @@ struct ASTProperty
 };
 Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
-struct ASTFunctionParameter
+struct ASTDeclaration
 {
+    ASTDeclaration(const QString &declarationType = QString(), const QString &declarationName = QString())
+        : type(declarationType),
+          name(declarationName)
+    {
+    }
+
     QString type;
     QString name;
 };
-Q_DECLARE_TYPEINFO(ASTFunctionParameter, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTDeclaration, Q_MOVABLE_TYPE);
 
 struct ASTFunction
 {
@@ -86,7 +93,7 @@ struct ASTFunction
 
     QString returnType;
     QString name;
-    QVector<ASTFunctionParameter> params;
+    QVector<ASTDeclaration> params;
 };
 Q_DECLARE_TYPEINFO(ASTFunction, Q_MOVABLE_TYPE);
 
@@ -140,9 +147,17 @@ public:
     AST ast() const;
 
 private:
+    struct TypeParser
+    {
+        void parseArguments(const QString &arguments);
+        void appendParams(ASTFunction &slot);
+        void appendPods(POD &pods);
+        void generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex);
+        //Type, Variable
+        QList<ASTDeclaration> arguments;
+    };
+
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
-    bool parseParams(ASTFunction &slot, const QString &paramsString);
-    ASTFunctionParameter generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex);
 
     QString m_fileName;
     AST m_ast;

@@ -62,7 +62,7 @@ ASTFunction::ASTFunction(const QString &name, const QString &returnType)
 QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 {
     QString str;
-    foreach (const ASTFunctionParameter &param, params) {
+    foreach (const ASTDeclaration &param, params) {
         str += param.type;
         if (format == WithVariableNames) {
             str += QString::fromLatin1(" %1").arg(param.name);
@@ -76,7 +76,7 @@ QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 QStringList ASTFunction::paramNames() const
 {
     QStringList names;
-    foreach (const ASTFunctionParameter &param, params) {
+    foreach (const ASTDeclaration &param, params) {
         names << param.name;
     }
     return names;
@@ -130,16 +130,11 @@ bool RepParser::parse()
             pod.name = re_pod.capturedTexts().at(1);
 
             const QString argString = re_pod.capturedTexts().at(2).trimmed();
-            const QStringList argList = argString.split(QLatin1String(","));
-            if (argList.length() == 0)
+            if (argString.isEmpty())
                 continue;
-
-            foreach (const QString &paramString, argList) {
-                const QStringList tmp = paramString.trimmed().split(QRegExp(QStringLiteral("\\s+")));
-                PODAttribute attr = { tmp.at(0), tmp.at(1) };
-                pod.attributes.append(qMove(attr));
-            }
-
+            RepParser::TypeParser parseType;
+            parseType.parseArguments(argString);
+            parseType.appendPods(pod);
             m_ast.pods.append(pod);
         } else if (re_useEnum.exactMatch(line)) {
             m_ast.enumUses.append(re_useEnum.capturedTexts().at(1));
@@ -154,7 +149,9 @@ bool RepParser::parse()
             signal.name = captures.at(1).trimmed();
 
             const QString argString = captures.at(2).trimmed();
-            parseParams(signal, argString);
+            RepParser::TypeParser parseType;
+            parseType.parseArguments(argString);
+            parseType.appendParams(signal);
             astClass.signalsList << signal;
         } else if (re_slot.exactMatch(line)) {
             const QStringList captures = re_slot.capturedTexts();
@@ -163,7 +160,9 @@ bool RepParser::parse()
             slot.name = captures.at(1).trimmed();
 
             const QString argString = captures.at(2).trimmed();
-            parseParams(slot, argString);
+            RepParser::TypeParser parseType;
+            parseType.parseArguments(argString);
+            parseType.appendParams(slot);
             astClass.slotsList << slot;
         } else if (re_end.exactMatch(line)) {
             m_ast.classes.append(astClass);
@@ -272,20 +271,22 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     return true;
 }
 
-
-bool RepParser::parseParams(ASTFunction& function, const QString& paramsString)
+AST RepParser::ast() const
 {
-    if (paramsString.isEmpty())
-        return true;
+    return m_ast;
+}
 
+
+void RepParser::TypeParser::parseArguments(const QString &arguments)
+{
     int templateDepth = 0;
     bool inTemplate = false;
     bool inVariable = false;
     QString propertyType;
     QString variableName;
     int variableNameIndex = 0;
-    for (int i = 0; i < paramsString.size(); ++i) {
-        const QChar inputChar(paramsString.at(i));
+    for (int i = 0; i < arguments.size(); ++i) {
+        const QChar inputChar(arguments.at(i));
         if (inputChar == QLatin1Char('<')) {
             propertyType += inputChar;
             inTemplate = true;
@@ -302,7 +303,7 @@ bool RepParser::parseParams(ASTFunction& function, const QString& paramsString)
                 inVariable = true;
         } else if (inputChar == QLatin1Char(',')) {
             if (!inTemplate) {
-                function.params << generateFunctionParameter(variableName, propertyType, variableNameIndex);
+                RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex);
                 propertyType.clear();
                 variableName.clear();
                 inVariable = false;
@@ -317,23 +318,34 @@ bool RepParser::parseParams(ASTFunction& function, const QString& paramsString)
         }
     }
     if (!propertyType.isEmpty()) {
-        function.params << generateFunctionParameter(variableName, propertyType, variableNameIndex);
+        RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex);
     }
-    return true;
 }
 
-ASTFunctionParameter RepParser::generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex)
+
+void RepParser::TypeParser::generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex)
 {
-    ASTFunctionParameter param;
-    param.type = propertyType;
     if (!variableName.isEmpty())
-        param.name = variableName.trimmed();
+        variableName = variableName.trimmed();
     else
-        param.name = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
-    return param;
+        variableName = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
+    arguments.append(ASTDeclaration(propertyType, variableName));
 }
 
-AST RepParser::ast() const
+
+void RepParser::TypeParser::appendParams(ASTFunction &slot)
 {
-    return m_ast;
+    Q_FOREACH (const ASTDeclaration &arg, arguments) {
+        slot.params << arg;
+    }
+}
+
+void RepParser::TypeParser::appendPods(POD &pods)
+{
+    Q_FOREACH (const ASTDeclaration &arg, arguments) {
+        PODAttribute attr;
+        attr.type = arg.type;
+        attr.name = arg.name;
+        pods.attributes.append(qMove(attr));
+    }
 }
