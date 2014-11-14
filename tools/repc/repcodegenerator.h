@@ -44,8 +44,8 @@
 
 #include <QString>
 
-class AST;
-class ASTClass;
+struct AST;
+struct ASTClass;
 struct POD;
 
 QT_BEGIN_NAMESPACE
