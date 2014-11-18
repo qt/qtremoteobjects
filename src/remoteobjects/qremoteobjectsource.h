@@ -55,7 +55,6 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSource : public QObject
     Q_PROPERTY(bool isReplicaValid READ isReplicaValid NOTIFY isReplicaValidChanged)
 
 public:
-    explicit QRemoteObjectSource(QObject *parent = Q_NULLPTR);
     virtual ~QRemoteObjectSource();
 
     bool isReplicaValid() const;
@@ -63,6 +62,9 @@ public:
 Q_SIGNALS:
     void isReplicaValidChanged();
     void initialized();
+
+protected:
+    explicit QRemoteObjectSource(QObject *parent = Q_NULLPTR);
 
 private:
     friend class QRemoteObjectSourceIo;
