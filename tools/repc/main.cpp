@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
     const int idxOfInput = app.arguments().indexOf(QLatin1String("-i"))+1;
     const int idxOfOutput = app.arguments().indexOf(QLatin1String("-o"))+1;
-    if (idxOfInput <= 1 && idxOfOutput <= 1)
+    if (idxOfInput <= 1 || idxOfOutput <= 1)
         usage();
 
     RepCodeGenerator::Mode mode;
