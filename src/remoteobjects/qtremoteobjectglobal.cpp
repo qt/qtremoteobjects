@@ -203,8 +203,8 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
         ds << mm.name();
         ds << mm.methodSignature();
         ds << quint32(mm.methodType());
-        if (mm.methodType() == QMetaMethod::Method)
-            ds << mm.typeName();
+        if (mm.methodType() == QMetaMethod::Method || mm.methodType() == QMetaMethod::Slot)
+            ds << QByteArray(mm.typeName());
         ds << quint32(mm.parameterCount());
         for (int i = 0; i < mm.parameterCount(); ++i)
             ds << mm.parameterTypes()[i];
@@ -335,7 +335,7 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
 
         type = static_cast<QMetaMethod::MethodType>(typeValue);
         methodTypes[i] = type;
-        if (typeValue == QMetaMethod::Method)
+        if (type == QMetaMethod::Method || type == QMetaMethod::Slot)
             ds >> returnType;
         quint32 parameterCount = 0;
         ds >> parameterCount;
@@ -345,9 +345,10 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
             ds >> parameterType;
             methodArgumentTypes[index] << QVariant::nameToType(parameterType.constData());
         }
+
         if (type == QMetaMethod::Signal)
             builder.addSignal(signature);
-        else if (type == QMetaMethod::Slot)
+        else if (returnType.isEmpty())
             builder.addMethod(signature);
         else
             builder.addMethod(signature, returnType);
