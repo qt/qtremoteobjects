@@ -115,6 +115,12 @@ private slots:
         //QVERIFY(m_registryClient.connect( QStringLiteral("local:replica")));
     }
 
+    void cleanup()
+    {
+        // wait for delivery of RemoveObject events to the source
+        QTest::qWait(20);
+    }
+
     void registryTest() {
         QSharedPointer<TcpDataCenterReplica> tcpCentre(m_registryClient.acquire<TcpDataCenterReplica>());
         QSharedPointer<LocalDataCenterReplica> localCentre(m_registryClient.acquire<LocalDataCenterReplica>());
@@ -188,6 +194,8 @@ private slots:
     }
 
     void slotTestDynamicReplica() {
+        engine->setStarted(false);
+
         QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
         Q_ASSERT(engine_r);
         engine_r->waitForSource();
