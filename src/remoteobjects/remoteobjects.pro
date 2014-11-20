@@ -30,6 +30,7 @@ PRIVATE_HEADERS += \
     $$PWD/qremoteobjectsource_p.h \
     $$PWD/qregistrysource_p.h \
     $$PWD/qremoteobjectnode_p.h \
+    $$PWD/qremoteobjectpacket_p.h \
     $$PWD/qremoteobjectpendingcall_p.h \
     $$PWD/qremoteobjectreplica_p.h
 
@@ -46,6 +47,7 @@ SOURCES += \
     $$PWD/qregistrysource.cpp \
     $$PWD/qremoteobjectreplica.cpp \
     $$PWD/qremoteobjectnode.cpp \
+    $$PWD/qremoteobjectpacket.cpp \
     $$PWD/qremoteobjectpendingcall.cpp \
     $$PWD/qtremoteobjectglobal.cpp
 

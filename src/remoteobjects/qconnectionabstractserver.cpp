@@ -40,6 +40,8 @@
 ****************************************************************************/
 
 #include "qconnectionabstractserver_p.h"
+
+#include "qremoteobjectpacket_p.h"
 #include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE

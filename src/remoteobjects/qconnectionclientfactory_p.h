@@ -53,6 +53,10 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace QRemoteObjectPackets {
+class QRemoteObjectPacket;
+}
+
 class ClientIoDevice : public QObject
 {
     Q_OBJECT

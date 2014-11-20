@@ -41,6 +41,7 @@
 
 #include "qremoteobjectsourceio_p.h"
 
+#include "qremoteobjectpacket_p.h"
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 #include "qtremoteobjectglobal.h"

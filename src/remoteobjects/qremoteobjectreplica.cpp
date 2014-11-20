@@ -43,6 +43,7 @@
 #include "qremoteobjectreplica_p.h"
 
 #include "qremoteobjectdynamicreplica.h"
+#include "qremoteobjectpacket_p.h"
 #include "qremoteobjectpendingcall_p.h"
 #include "qconnectionclientfactory_p.h"
 #include "qremoteobjectsource_p.h"

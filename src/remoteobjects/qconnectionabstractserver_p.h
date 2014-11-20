@@ -53,6 +53,10 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace QRemoteObjectPackets {
+class QRemoteObjectPacket;
+}
+
 //The Qt servers create QIODevice derived classes from handleConnection.
 //The problem is that they behave differently, so this class adds some
 //consistency.
