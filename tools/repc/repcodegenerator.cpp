@@ -478,8 +478,10 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 else
                     out << QStringLiteral("    QRemoteObjectPendingReply<%1> %2(%3)").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString());
                 out << QStringLiteral("    {");
-                out << QStringLiteral("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");")
-                    .arg(className).arg(slot.name).arg(slot.paramsAsString(ASTFunction::NoVariableNames));
+                const QByteArray normalizedSignature = QMetaObject::normalizedSignature(
+                    QStringLiteral("%1(%2)").arg(slot.name).arg(slot.paramsAsString(ASTFunction::NoVariableNames)).toLatin1().constData());
+                out << QStringLiteral("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2\");")
+                    .arg(className).arg(QString::fromLatin1(normalizedSignature));
                 out << QStringLiteral("        QVariantList __repc_args;");
                 if (!slot.paramNames().isEmpty()) {
                     QStringList variantNames;

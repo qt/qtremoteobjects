@@ -229,6 +229,14 @@ private slots:
         QCOMPARE(engine_r->started(), true);
     }
 
+    void slotTestWithUnnormalizedSignature()
+    {
+        QSharedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        engine_r->waitForSource();
+
+        engine_r->unnormalizedSignature(0, 0);
+    }
+
     void slotWithParameterTest() {
         engine->setRpm(0);
 

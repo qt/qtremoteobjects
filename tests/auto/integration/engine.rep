@@ -7,4 +7,6 @@ class Engine
 
     SLOT(bool start());
     SLOT(void increaseRpm(int deltaRpm));
+
+    SLOT(void unnormalizedSignature(int a, int b));
 };

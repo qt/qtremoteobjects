@@ -386,6 +386,8 @@ void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVarian
 {
     Q_D(QRemoteObjectReplica);
 
+    Q_ASSERT(index != -1);
+
     d->_q_send(call, index, args);
 }
 

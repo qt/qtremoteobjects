@@ -53,6 +53,8 @@ public:
 
     bool start() Q_DECL_OVERRIDE;
     void increaseRpm(int deltaRpm) Q_DECL_OVERRIDE;
+
+    void unnormalizedSignature(int, int) Q_DECL_OVERRIDE {}
 };
 
 #endif
