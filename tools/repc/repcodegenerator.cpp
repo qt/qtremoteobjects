@@ -443,7 +443,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         foreach (const ASTProperty &property, astClass.properties) {
             out << QStringLiteral("    %1 %2() const").arg(property.type, property.name);
             out << QStringLiteral("    {");
-            out << QStringLiteral("        return propAsVariant(%1).value<%2>();").arg(i).arg(property.type);
+            out << QStringLiteral("        return propAsVariant(%1).value<%2 >();").arg(i).arg(property.type);
             out << QStringLiteral("    }");
             i++;
             if (property.modifier == ASTProperty::ReadWrite) {
