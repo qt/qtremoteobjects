@@ -104,9 +104,9 @@ void tst_Parser::testProperties()
     stream << "{" << endl;
     stream << propertyDeclaration << endl;
     stream << "};" << endl;
-    file.close();
+    file.seek(0);
 
-    RepParser parser(file.fileName());
+    RepParser parser(file);
     QVERIFY(parser.parse());
 
     const AST ast = parser.ast();
@@ -153,9 +153,9 @@ void tst_Parser::testSlots()
     stream << "{" << endl;
     stream << slotDeclaration << endl;
     stream << "};" << endl;
-    file.close();
+    file.seek(0);
 
-    RepParser parser(file.fileName());
+    RepParser parser(file);
     QVERIFY(parser.parse());
 
     const AST ast = parser.ast();
@@ -193,9 +193,9 @@ void tst_Parser::testSignals()
     stream << "{" << endl;
     stream << signalDeclaration << endl;
     stream << "};" << endl;
-    file.close();
+    file.seek(0);
 
-    RepParser parser(file.fileName());
+    RepParser parser(file);
     QVERIFY(parser.parse());
 
     const AST ast = parser.ast();
@@ -238,9 +238,9 @@ void tst_Parser::testPods()
     stream << "class TestClass" << endl;
     stream << "{" << endl;
     stream << "};" << endl;
-    file.close();
+    file.seek(0);
 
-    RepParser parser(file.fileName());
+    RepParser parser(file);
     QVERIFY(parser.parse());
 
     const AST ast = parser.ast();

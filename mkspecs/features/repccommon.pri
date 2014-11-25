@@ -24,11 +24,6 @@ for(entry, REPC_$$repc_TYPE) {
 
     input_list = $$upper($$group)_LIST
     for(subent, $$list($$unique(files))) {
-
-        !contains(subent, .*\\w\\.rep$) {
-            warning("Invalid REPC $${repc_type}: '$$subent', please use '*.rep' instead.")
-            next()
-        }
         $$input_list += $$subent
     }
 }
@@ -38,7 +33,7 @@ for(group, groups) {
     input_list = $${GROUP}_LIST
 
     $${group}_header.output  = $$QMAKE_MOD_REPC${QMAKE_FILE_BASE}_$${repc_type}.h
-    $${group}_header.commands = $$QMAKE_REPC $$repc_option -i ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
+    $${group}_header.commands = $$QMAKE_REPC $$repc_option $$REPC_INCLUDEPATH ${QMAKE_FILE_NAME} ${QMAKE_FILE_OUT}
     $${group}_header.depends = ${QMAKE_FILE_NAME} $$QT_TOOL.repc.binary
     $${group}_header.variable_out = $${GROUP}_HEADERS
     $${group}_header.input = $$input_list

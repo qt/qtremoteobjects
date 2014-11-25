@@ -121,6 +121,10 @@ Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 // The attribute of a POD
 struct PODAttribute
 {
+    explicit PODAttribute(const QString &type = QString(), const QString &name = QString())
+        : type(type),
+          name(name)
+    {}
     QString type;
     QString name;
 };
@@ -147,7 +151,7 @@ Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);
 class RepParser
 {
 public:
-    explicit RepParser(const QString &fileName);
+    explicit RepParser(QIODevice &outputDevice);
 
     bool parse();
 
@@ -166,7 +170,7 @@ private:
 
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
 
-    QString m_fileName;
+    QIODevice &m_outputDevice;
     AST m_ast;
 };
 

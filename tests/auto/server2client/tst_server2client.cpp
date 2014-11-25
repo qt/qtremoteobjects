@@ -39,54 +39,80 @@
 **
 ****************************************************************************/
 
-#ifndef REPCODEGENERATOR_H
-#define REPCODEGENERATOR_H
+#include "rep_pods_replica.h"
 
-#include <QString>
+#include <QTest>
 
-struct AST;
-struct ASTClass;
-struct POD;
+#include <QByteArray>
+#include <QDataStream>
 
-QT_BEGIN_NAMESPACE
-class QIODevice;
-class QStringList;
-class QTextStream;
-QT_END_NAMESPACE
+class tst_Server2Client : public QObject {
+    Q_OBJECT
 
-class RepCodeGenerator
-{
-public:
-    enum Mode
-    {
-        REPLICA,
-        SOURCE
-    };
-
-    explicit RepCodeGenerator(QIODevice &outputDevice);
-
-    void generate(const AST &ast, Mode mode, QString fileName);
-
-private:
-    void generateHeader(Mode mode, QTextStream &out, const AST &ast);
-    QString generateMetaTypeRegistrationForPODs(const QVector<POD> &pods);
-    QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
-
-    void generatePOD(QTextStream &out, const POD &pod);
-    QString formatQPropertyDeclarations(const POD &pod);
-    QString formatConstructors(const POD &pod);
-    QString formatCopyConstructor(const POD &pod);
-    QString formatCopyAssignmentOperator(const POD &pod);
-    QString formatPropertyGettersAndSetters(const POD &pod);
-    QString formatSignals(const POD &pod);
-    QString formatDataMembers(const POD &pod);
-    QString formatMarshallingOperators(const POD &pod);
-
-    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
-
-private:
-    QIODevice &m_outputDevice;
+private Q_SLOTS:
+    void testConstructors();
+    void testParent();
+    void testMarshalling();
 };
 
-#endif
+
+void tst_Server2Client::testConstructors()
+{
+    PodI pi1;
+    QCOMPARE(pi1.i(), 0);
+
+    PodI pi2(1);
+    QCOMPARE(pi2.i(), 1);
+
+    PodI pi3(pi2);
+    QCOMPARE(pi3.i(), pi2.i());
+
+    PodI pi4(static_cast<QObject*>(Q_NULLPTR));
+    QCOMPARE(pi4.i(), 0);
+
+    PodI pi5(1, static_cast<QObject*>(Q_NULLPTR));
+    QCOMPARE(pi5.i(), 1);
+}
+
+void tst_Server2Client::testParent()
+{
+    PodI pi;
+    QVERIFY(!pi.parent());
+}
+
+void tst_Server2Client::testMarshalling()
+{
+    QByteArray ba;
+    QDataStream ds(&ba, QIODevice::ReadWrite);
+
+    {
+        PodI i1(1), i2(2), i3(3), iDeadBeef(0xdeadbeef);
+        Q_SET_OBJECT_NAME(i1);
+        Q_SET_OBJECT_NAME(i2);
+        Q_SET_OBJECT_NAME(i3);
+        Q_SET_OBJECT_NAME(iDeadBeef);
+        ds << i1 << i2 << i3 << iDeadBeef;
+    }
+
+    ds.device()->seek(0);
+
+    {
+        PodI i1, i2, i3, iDeadBeef;
+        ds >> i1 >> i2 >> i3 >> iDeadBeef;
+
+        QCOMPARE(i1.objectName(), QLatin1String("i1"));
+        QCOMPARE(i2.objectName(), QLatin1String("i2"));
+        QCOMPARE(i3.objectName(), QLatin1String("i3"));
+        QCOMPARE(iDeadBeef.objectName(), QLatin1String("iDeadBeef"));
+
+        QCOMPARE(i1.i(), 1);
+        QCOMPARE(i2.i(), 2);
+        QCOMPARE(i3.i(), 3);
+        QCOMPARE(iDeadBeef.i(), int(0xdeadbeef));
+    }
+}
+
+QTEST_APPLESS_MAIN(tst_Server2Client)
+
+#include "tst_server2client.moc"
+

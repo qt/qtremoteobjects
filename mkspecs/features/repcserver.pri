@@ -1,4 +1,4 @@
 repc_type = source
-repc_option = -s
+repc_option = -o source
 
 include(repccommon.pri)

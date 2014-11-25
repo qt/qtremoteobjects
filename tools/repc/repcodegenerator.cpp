@@ -43,14 +43,7 @@
 
 #include "repparser.h"
 
-#ifndef QT_BOOTSTRAPPED
-# define HAVE_QSAVEFILE
-#endif
-#ifdef HAVE_QSAVEFILE
-# include <QSaveFile>
-#else
-# include <QFile>
-#endif
+#include <QFileInfo>
 #include <QTextStream>
 
 // for normalizeTypeInternal
@@ -115,28 +108,23 @@ static QString cap(QString name)
     return name;
 }
 
-RepCodeGenerator::RepCodeGenerator(const QString &fileName)
-    : m_fileName(fileName)
+RepCodeGenerator::RepCodeGenerator(QIODevice &outputDevice)
+    : m_outputDevice(outputDevice)
 {
 }
 
-bool RepCodeGenerator::generate(const AST &ast, Mode mode)
+void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 {
-#ifdef HAVE_QSAVEFILE
-    QSaveFile file(m_fileName);
-#else
-    QFile file(m_fileName);
-#endif
-    if (!file.open(QIODevice::WriteOnly))
-        return false;
-
-    QString includeGuardName(m_fileName.toUpper());
-    includeGuardName.replace(QLatin1Char('.'), QLatin1Char('_'));
-
-    QTextStream stream(&file);
-
-    stream << "#ifndef " << includeGuardName << endl;
-    stream << "#define " << includeGuardName << endl << endl;
+    QTextStream stream(&m_outputDevice);
+    if (fileName.isEmpty())
+        stream << "#pragma once" << endl << endl;
+    else {
+        fileName = QFileInfo(fileName).fileName();
+        fileName = fileName.toUpper();
+        fileName.replace(QLatin1Char('.'), QLatin1Char('_'));
+        stream << "#ifndef " << fileName << endl;
+        stream << "#define " << fileName << endl << endl;
+    }
 
     QStringList out;
 
@@ -154,12 +142,9 @@ bool RepCodeGenerator::generate(const AST &ast, Mode mode)
 
     generateStreamOperatorsForEnums(stream, ast.enumUses);
 
-    stream << endl << "#endif // " << includeGuardName << endl;
-
-#ifdef HAVE_QSAVEFILE
-    file.commit();
-#endif
-    return true;
+    stream << endl;
+    if (!fileName.isEmpty())
+        stream << "#endif // " << fileName << endl;
 }
 
 void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &ast)

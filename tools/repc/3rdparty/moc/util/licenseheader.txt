@@ -1,9 +1,9 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the tools applications of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,54 +39,3 @@
 **
 ****************************************************************************/
 
-#ifndef REPCODEGENERATOR_H
-#define REPCODEGENERATOR_H
-
-#include <QString>
-
-struct AST;
-struct ASTClass;
-struct POD;
-
-QT_BEGIN_NAMESPACE
-class QIODevice;
-class QStringList;
-class QTextStream;
-QT_END_NAMESPACE
-
-class RepCodeGenerator
-{
-public:
-    enum Mode
-    {
-        REPLICA,
-        SOURCE
-    };
-
-    explicit RepCodeGenerator(QIODevice &outputDevice);
-
-    void generate(const AST &ast, Mode mode, QString fileName);
-
-private:
-    void generateHeader(Mode mode, QTextStream &out, const AST &ast);
-    QString generateMetaTypeRegistrationForPODs(const QVector<POD> &pods);
-    QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
-
-    void generatePOD(QTextStream &out, const POD &pod);
-    QString formatQPropertyDeclarations(const POD &pod);
-    QString formatConstructors(const POD &pod);
-    QString formatCopyConstructor(const POD &pod);
-    QString formatCopyAssignmentOperator(const POD &pod);
-    QString formatPropertyGettersAndSetters(const POD &pod);
-    QString formatSignals(const POD &pod);
-    QString formatDataMembers(const POD &pod);
-    QString formatMarshallingOperators(const POD &pod);
-
-    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
-
-private:
-    QIODevice &m_outputDevice;
-};
-
-#endif

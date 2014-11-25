@@ -39,54 +39,16 @@
 **
 ****************************************************************************/
 
-#ifndef REPCODEGENERATOR_H
-#define REPCODEGENERATOR_H
+#ifndef UTILS_H
+#define UTILS_H
 
-#include <QString>
-
-struct AST;
-struct ASTClass;
-struct POD;
+#include <QByteArray>
+#include "repparser.h"
 
 QT_BEGIN_NAMESPACE
-class QIODevice;
-class QStringList;
-class QTextStream;
+struct ClassDef;
 QT_END_NAMESPACE
 
-class RepCodeGenerator
-{
-public:
-    enum Mode
-    {
-        REPLICA,
-        SOURCE
-    };
-
-    explicit RepCodeGenerator(QIODevice &outputDevice);
-
-    void generate(const AST &ast, Mode mode, QString fileName);
-
-private:
-    void generateHeader(Mode mode, QTextStream &out, const AST &ast);
-    QString generateMetaTypeRegistrationForPODs(const QVector<POD> &pods);
-    QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
-
-    void generatePOD(QTextStream &out, const POD &pod);
-    QString formatQPropertyDeclarations(const POD &pod);
-    QString formatConstructors(const POD &pod);
-    QString formatCopyConstructor(const POD &pod);
-    QString formatCopyAssignmentOperator(const POD &pod);
-    QString formatPropertyGettersAndSetters(const POD &pod);
-    QString formatSignals(const POD &pod);
-    QString formatDataMembers(const POD &pod);
-    QString formatMarshallingOperators(const POD &pod);
-
-    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
-
-private:
-    QIODevice &m_outputDevice;
-};
-
-#endif
+QByteArray generateClass(const ClassDef &cdef);
+AST classList2AST(const QList<ClassDef> &classList);
+#endif // UTILS_H

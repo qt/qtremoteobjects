@@ -1,4 +1,4 @@
 repc_type = replica
-repc_option = -r
+repc_option = -o replica
 
 include(repccommon.pri)

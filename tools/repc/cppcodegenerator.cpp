@@ -39,54 +39,19 @@
 **
 ****************************************************************************/
 
-#ifndef REPCODEGENERATOR_H
-#define REPCODEGENERATOR_H
+#include "cppcodegenerator.h"
+#include "utils.h"
 
-#include <QString>
-
-struct AST;
-struct ASTClass;
-struct POD;
-
-QT_BEGIN_NAMESPACE
-class QIODevice;
-class QStringList;
-class QTextStream;
-QT_END_NAMESPACE
-
-class RepCodeGenerator
+CppCodeGenerator::CppCodeGenerator(QIODevice &outputDevice)
+    : m_outputDevice(outputDevice)
 {
-public:
-    enum Mode
-    {
-        REPLICA,
-        SOURCE
-    };
+}
 
-    explicit RepCodeGenerator(QIODevice &outputDevice);
+void CppCodeGenerator::generate(const QList<ClassDef> &classList)
+{
+    foreach (const ClassDef &cdef, classList)
+        m_outputDevice.write(generateClass(cdef));
 
-    void generate(const AST &ast, Mode mode, QString fileName);
-
-private:
-    void generateHeader(Mode mode, QTextStream &out, const AST &ast);
-    QString generateMetaTypeRegistrationForPODs(const QVector<POD> &pods);
-    QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
-
-    void generatePOD(QTextStream &out, const POD &pod);
-    QString formatQPropertyDeclarations(const POD &pod);
-    QString formatConstructors(const POD &pod);
-    QString formatCopyConstructor(const POD &pod);
-    QString formatCopyAssignmentOperator(const POD &pod);
-    QString formatPropertyGettersAndSetters(const POD &pod);
-    QString formatSignals(const POD &pod);
-    QString formatDataMembers(const POD &pod);
-    QString formatMarshallingOperators(const POD &pod);
-
-    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
-
-private:
-    QIODevice &m_outputDevice;
-};
-
-#endif
+    m_outputDevice.write("\n");
+    m_outputDevice.close();
+}

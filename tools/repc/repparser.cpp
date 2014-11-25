@@ -107,8 +107,8 @@ QRegExp re_start(QStringLiteral("^\\{\\s*"));
 QRegExp re_end(QStringLiteral("^\\};?\\s*"));
 QRegExp re_comment(QStringLiteral("^\\s*//(.*)"));
 
-RepParser::RepParser(const QString &fileName)
-    : m_fileName(fileName)
+RepParser::RepParser(QIODevice &outputDevice)
+    : m_outputDevice(outputDevice)
 {
 }
 
@@ -117,13 +117,9 @@ bool RepParser::parse()
     // clean up from previous run
     m_ast = AST();
 
-    QFile file(m_fileName);
-    if (!file.open(QIODevice::ReadOnly))
-        return false;
-
     ASTClass astClass;
 
-    QTextStream stream(&file);
+    QTextStream stream(&m_outputDevice);
     while (!stream.atEnd()) {
         const QString line = stream.readLine();
 
