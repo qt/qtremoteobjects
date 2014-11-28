@@ -128,9 +128,9 @@ QSet<QString> ClientIoDevice::remoteObjects() const
 LocalClientIo::LocalClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
-    connect(&m_socket, SIGNAL(readyRead()), this, SIGNAL(readyRead()));
-    connect(&m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onError(QLocalSocket::LocalSocketError)));
-    connect(&m_socket, SIGNAL(stateChanged(QLocalSocket::LocalSocketState)), this, SLOT(onStateChanged(QLocalSocket::LocalSocketState)));
+    connect(&m_socket, &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(&m_socket, static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
+    connect(&m_socket, &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
 }
 
 LocalClientIo::~LocalClientIo()
@@ -146,7 +146,7 @@ QIODevice *LocalClientIo::connection()
 void LocalClientIo::doClose()
 {
     if (m_socket.isOpen()) {
-        connect(&m_socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
+        connect(&m_socket, &QLocalSocket::disconnected, this, &QObject::deleteLater);
         m_socket.disconnectFromServer();
     } else {
         this->deleteLater();
@@ -193,9 +193,9 @@ void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
 TcpClientIo::TcpClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
-    connect(&m_socket, SIGNAL(readyRead()), this, SIGNAL(readyRead()));
-    connect(&m_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
-    connect(&m_socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
+    connect(&m_socket, &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(&m_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
+    connect(&m_socket, &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
 }
 
 TcpClientIo::~TcpClientIo()
@@ -211,7 +211,7 @@ QIODevice *TcpClientIo::connection()
 void TcpClientIo::doClose()
 {
     if (m_socket.isOpen()) {
-        connect(&m_socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
+        connect(&m_socket, &QTcpSocket::disconnected, this, &QObject::deleteLater);
         m_socket.disconnectFromHost();
     } else {
         this->deleteLater();

@@ -61,10 +61,10 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
         qCDebug(QT_REMOTEOBJECT) << m_server->serverError();
     }
 
-    connect(m_server.data(), SIGNAL(newConnection()), this, SLOT(handleConnection()));
-    connect(&m_serverDelete, SIGNAL(mapped(QObject*)), this, SLOT(onServerDisconnect(QObject*)));
-    connect(&m_serverRead, SIGNAL(mapped(QObject*)), this, SLOT(onServerRead(QObject*)));
-    connect(&m_remoteObjectDestroyed, SIGNAL(mapped(QString)), this, SLOT(clearRemoteObjectSource(QString)));
+    connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
+    connect(&m_serverDelete, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerDisconnect);
+    connect(&m_serverRead, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerRead);
+    connect(&m_remoteObjectDestroyed, static_cast<void (QSignalMapper::*)(const QString &)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::clearRemoteObjectSource);
 }
 
 QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
