@@ -20,3 +20,14 @@ rep_*_prime.h
 rep_*_source.h
 rep_*_replica.h
 /repc/repc
+/include/
+/lib/
+/bin/
+/examples/RemoteObjects/ClientApp/ClientApp
+/examples/RemoteObjects/CppClient/CppClient
+/examples/RemoteObjects/server/server
+/mkspecs/modules-inst/
+/mkspecs/modules/
+/tests/auto/integration/tst_integration
+
+
