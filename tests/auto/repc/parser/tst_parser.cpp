@@ -136,6 +136,9 @@ void tst_Parser::testSlots_data()
     QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "void test(QMap<QString,int> foo, QMap<QString,int> bla)";
     QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "void test(QMap<QList<QString>,int> foo)";
     QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "void test(QMap<QString , int> foo)";
+    QTest::newRow("slotWithConstRefArgument") << "SLOT (test(const QString &val))" << "void test(const QString & val)";
+    QTest::newRow("slotWithRefArgument") << "SLOT (test(QString &val))" << "void test(QString & val)";
+    QTest::newRow("slotwithtemplatetemplatesAndConstRef") << "SLOT(test(const QMap<QList<QString>,int> &foo))" << "void test(const QMap<QList<QString>,int> & foo)";
 }
 
 void tst_Parser::testSlots()
@@ -174,6 +177,8 @@ void tst_Parser::testSignals_data()
     QTest::newRow("signalwitharguments") << "SIGNAL(test(QString value, int value))" << "test(QString value, int value)";
     QTest::newRow("signalwithtemplates") << "SIGNAL(test(QMap<QString,int> foo))" << "test(QMap<QString,int> foo)";
     QTest::newRow("signalwithtemplateswithspace") << "SIGNAL ( test (QMap<QString , int>  foo ) )" << "test(QMap<QString , int> foo)";
+    QTest::newRow("signalWithConstRefArgument") << "SIGNAL (test(const QString &val))" << "test(const QString & val)";
+    QTest::newRow("signalWithRefArgument") << "SIGNAL (test(QString &val))" << "test(QString & val)";
 }
 
 void tst_Parser::testSignals()

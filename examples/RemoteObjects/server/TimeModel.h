@@ -50,7 +50,7 @@ public:
     virtual ~MinuteTimer();
 
 public slots:
-    virtual void SetTimeZone(int zn);
+    virtual void SetTimeZone(const int &zn);
 
 protected:
     void timerEvent(QTimerEvent *);

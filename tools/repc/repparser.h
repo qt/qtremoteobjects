@@ -68,14 +68,21 @@ Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
 struct ASTDeclaration
 {
-    ASTDeclaration(const QString &declarationType = QString(), const QString &declarationName = QString())
+    enum VariableType {
+        None = 0,
+        Constant = 1,
+        Reference = 2,
+    };
+    Q_DECLARE_FLAGS(VariableTypes, VariableType)
+    ASTDeclaration(const QString &declarationType = QString(), const QString &declarationName = QString(), VariableTypes declarationVariableType = None)
         : type(declarationType),
-          name(declarationName)
+          name(declarationName),
+          variableType(declarationVariableType)
     {
     }
-
     QString type;
     QString name;
+    VariableTypes variableType;
 };
 Q_DECLARE_TYPEINFO(ASTDeclaration, Q_MOVABLE_TYPE);
 
@@ -152,7 +159,7 @@ private:
         void parseArguments(const QString &arguments);
         void appendParams(ASTFunction &slot);
         void appendPods(POD &pods);
-        void generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex);
+        void generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex, ASTDeclaration::VariableTypes variableType);
         //Type, Variable
         QList<ASTDeclaration> arguments;
     };

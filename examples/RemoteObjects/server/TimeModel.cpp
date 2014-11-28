@@ -71,7 +71,7 @@ void MinuteTimer::timerEvent(QTimerEvent *)
     static PresetInfo bla(3, 93.9f, "Best Station");
     emit sendCustom(bla);
 }
-void MinuteTimer::SetTimeZone(int zn)
+void MinuteTimer::SetTimeZone(const int &zn)
 {
     qDebug()<<"SetTimeZone"<<zn;
     if (zn != zone)

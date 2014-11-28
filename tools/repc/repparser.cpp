@@ -64,7 +64,11 @@ QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 {
     QString str;
     foreach (const ASTDeclaration &param, params) {
+        if (param.variableType & ASTDeclaration::Constant)
+            str += QLatin1String("const ");
         str += param.type;
+        if (param.variableType & ASTDeclaration::Reference)
+            str += QLatin1String(" &");
         if (format == WithVariableNames) {
             str += QString::fromLatin1(" %1").arg(param.name);
         }
@@ -297,6 +301,7 @@ void RepParser::TypeParser::parseArguments(const QString &arguments)
     bool inVariable = false;
     QString propertyType;
     QString variableName;
+    ASTDeclaration::VariableTypes variableType = ASTDeclaration::None;
     int variableNameIndex = 0;
     for (int i = 0; i < arguments.size(); ++i) {
         const QChar inputChar(arguments.at(i));
@@ -312,11 +317,19 @@ void RepParser::TypeParser::parseArguments(const QString &arguments)
         } else if (inputChar == QLatin1Char(' ')) {
             if (inTemplate)
                 propertyType += inputChar;
-            else if (!propertyType.isEmpty())
-                inVariable = true;
+            else if (!propertyType.isEmpty()) {
+                if (propertyType == QLatin1String("const")) {
+                    propertyType.clear();
+                    variableType |= ASTDeclaration::Constant;
+                } else {
+                    inVariable = true;
+                }
+            }
+        } else if (inputChar == QLatin1Char('&')) {
+            variableType |= ASTDeclaration::Reference;
         } else if (inputChar == QLatin1Char(',')) {
             if (!inTemplate) {
-                RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex);
+                RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex, variableType);
                 propertyType.clear();
                 variableName.clear();
                 inVariable = false;
@@ -331,18 +344,18 @@ void RepParser::TypeParser::parseArguments(const QString &arguments)
         }
     }
     if (!propertyType.isEmpty()) {
-        RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex);
+        RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex, variableType);
     }
 }
 
 
-void RepParser::TypeParser::generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex)
+void RepParser::TypeParser::generateFunctionParameter(QString variableName, const QString &propertyType, int &variableNameIndex, ASTDeclaration::VariableTypes variableType)
 {
     if (!variableName.isEmpty())
         variableName = variableName.trimmed();
     else
         variableName = QString::fromLatin1("__repc_variable_%1").arg(++variableNameIndex);
-    arguments.append(ASTDeclaration(propertyType, variableName));
+    arguments.append(ASTDeclaration(propertyType, variableName, variableType));
 }
 
 
