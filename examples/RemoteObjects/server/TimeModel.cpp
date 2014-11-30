@@ -41,7 +41,7 @@
 
 #include "TimeModel.h"
 
-MinuteTimer::MinuteTimer(QObject *parent) : MinuteTimerSource(parent)
+MinuteTimer::MinuteTimer(QObject *parent) : MinuteTimerSimpleSource(parent)
 {
     time = QTime::currentTime();
     setHour(time.hour());

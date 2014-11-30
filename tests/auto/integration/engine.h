@@ -44,7 +44,7 @@
 
 #include "rep_engine_source.h"
 
-class Engine : public EngineSource
+class Engine : public EngineSimpleSource
 {
     Q_OBJECT
 public:

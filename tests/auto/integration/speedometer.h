@@ -44,7 +44,7 @@
 
 #include "rep_speedometer_source.h"
 
-class Speedometer : public SpeedometerSource
+class Speedometer : public SpeedometerSimpleSource
 {
     Q_OBJECT
 public:

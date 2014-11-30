@@ -96,7 +96,7 @@ private slots:
         QMetaType::registerComparators<QVector<int> >();
         qRegisterMetaTypeStreamOperators<QVector<int> >();
         m_localCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry();
-        dataCenterLocal.reset(new LocalDataCenterSource);
+        dataCenterLocal.reset(new LocalDataCenterSimpleSource);
         dataCenterLocal->setData1(5);
         dataCenterLocal->setData2(5.0);
         dataCenterLocal->setData3(QStringLiteral("local"));
@@ -104,7 +104,7 @@ private slots:
         m_localCentreServer.enableRemoting(dataCenterLocal.data());
 
         m_tcpCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl("tcp://localhost:19999"));
-        dataCenterTcp.reset(new TcpDataCenterSource);
+        dataCenterTcp.reset(new TcpDataCenterSimpleSource);
         dataCenterTcp->setData1(5);
         dataCenterTcp->setData2(5.0);
         dataCenterTcp->setData3(QStringLiteral("tcp"));
@@ -332,8 +332,8 @@ private slots:
 private:
     QScopedPointer<Engine> engine;
     QScopedPointer<Speedometer> speedometer;
-    QScopedPointer<TcpDataCenterSource> dataCenterTcp;
-    QScopedPointer<LocalDataCenterSource> dataCenterLocal;
+    QScopedPointer<TcpDataCenterSimpleSource> dataCenterTcp;
+    QScopedPointer<LocalDataCenterSimpleSource> dataCenterLocal;
 };
 
 QTEST_MAIN(tst_Integration)

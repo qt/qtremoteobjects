@@ -60,7 +60,8 @@ public:
     enum Mode
     {
         REPLICA,
-        SOURCE
+        SOURCE,
+        SIMPLE_SOURCE
     };
 
     explicit RepCodeGenerator(QIODevice &outputDevice);

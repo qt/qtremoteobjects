@@ -42,7 +42,7 @@
 #include <QtCore>
 #include "rep_TimeModel_source.h"
 
-class MinuteTimer : public MinuteTimerSource
+class MinuteTimer : public MinuteTimerSimpleSource
 {
     Q_OBJECT
 public:

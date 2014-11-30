@@ -135,8 +135,11 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
     const QString metaTypeRegistrationCode = generateMetaTypeRegistrationForPODs(ast.pods)
                                            + generateMetaTypeRegistrationForEnums(ast.enumUses);
 
-    foreach (const ASTClass &astClass, ast.classes)
+    foreach (const ASTClass &astClass, ast.classes) {
         generateClass(mode, out, astClass, metaTypeRegistrationCode);
+        if (mode == SOURCE)
+            generateClass(SIMPLE_SOURCE, out, astClass, metaTypeRegistrationCode);
+    }
 
     stream << out.join(QLatin1Char('\n'));
 
@@ -372,7 +375,7 @@ void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const Q
 
 void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass &astClass, const QString &metaTypeRegistrationCode)
 {
-    const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : QStringLiteral("Source")));
+    const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : mode == SOURCE ? QStringLiteral("Source") : QStringLiteral("SimpleSource")));
     if (mode == REPLICA)
         out << QString::fromLatin1("class %1 : public QRemoteObjectReplica").arg(className);
     else
@@ -382,10 +385,10 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     out << QStringLiteral("    Q_OBJECT");
     out << QStringLiteral("    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"%1\")").arg(astClass.name);
     out << QStringLiteral("    friend class QRemoteObjectNode;");
-    if (mode == SOURCE)
-        out <<QStringLiteral("public:");
-    else
+    if (mode == REPLICA)
         out <<QStringLiteral("private:");
+    else
+        out <<QStringLiteral("public:");
 
     if (mode == REPLICA) {
         out << QStringLiteral("    %1() : QRemoteObjectReplica() {}").arg(className);
@@ -393,11 +396,13 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     } else {
         out << QStringLiteral("    %1(QObject *parent = Q_NULLPTR) : QRemoteObjectSource(parent)").arg(className);
 
-        foreach (const ASTProperty &property, astClass.properties) {
-            if (!property.defaultValue.isEmpty()) {
-                out += QStringLiteral("        , _%1(%2)").arg(property.name).arg(property.defaultValue);
-            } else {
-                out += QStringLiteral("        , _%1()").arg(property.name);
+        if (mode == SIMPLE_SOURCE) {
+            foreach (const ASTProperty &property, astClass.properties) {
+                if (!property.defaultValue.isEmpty()) {
+                    out += QStringLiteral("        , _%1(%2)").arg(property.name).arg(property.defaultValue);
+                } else {
+                    out += QStringLiteral("        , _%1()").arg(property.name);
+                }
             }
         }
     }
@@ -453,9 +458,14 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
             }
             out << QStringLiteral("");
         }
-    }
-    else
-    {
+    } else if (mode == SOURCE) {
+        foreach (const ASTProperty &property, astClass.properties)
+            out << QString::fromLatin1("    virtual %1 %2() const = 0;").arg(property.type, property.name);
+        foreach (const ASTProperty &property, astClass.properties) {
+            if (property.modifier == ASTProperty::ReadWrite)
+                out << QStringLiteral("    virtual void set%3(%1 %2) = 0;").arg(property.type, property.name, cap(property.name));
+        }
+    } else {
         foreach (const ASTProperty &property, astClass.properties) {
             out << QString::fromLatin1("    virtual %1 %2() const { return _%2; }").arg(property.type, property.name);
         }
@@ -489,7 +499,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         out << QStringLiteral("");
         out << QStringLiteral("public Q_SLOTS:");
         foreach (const ASTFunction &slot, astClass.slotsList) {
-            if (mode == SOURCE) {
+            if (mode != REPLICA) {
                 out << QStringLiteral("    virtual %1 %2(%3) = 0;").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString());
             } else {
                 // TODO: Discuss whether it is a good idea to special-case for void here,
@@ -521,7 +531,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         }
     }
 
-    if (mode == SOURCE)
+    if (mode == SIMPLE_SOURCE)
     {
         //Next output data members
         if (!astClass.properties.isEmpty()) {

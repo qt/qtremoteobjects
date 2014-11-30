@@ -42,7 +42,7 @@
 #include "engine.h"
 
 Engine::Engine(QObject *parent) :
-  EngineSource(parent)
+  EngineSimpleSource(parent)
 {
     setRpm(0);
 }
