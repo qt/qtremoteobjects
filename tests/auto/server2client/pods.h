@@ -40,7 +40,6 @@
 #include <QMetaProperty>
 
 #include <QRemoteObjectNode>
-#include <QRemoteObjectSource>
 
 #include <QString>
 class PodI : public QObject

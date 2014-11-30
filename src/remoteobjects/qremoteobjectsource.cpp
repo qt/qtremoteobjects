@@ -39,7 +39,6 @@
 **
 ****************************************************************************/
 
-#include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 
 #include "qconnectionabstractserver_p.h"
@@ -259,23 +258,6 @@ int QRemoteObjectSourcePrivate::qt_metacall(QMetaObject::Call call, int methodId
     }
 
     return methodId;
-}
-
-
-QRemoteObjectSource::QRemoteObjectSource(QObject *parent)
-    : QObject(parent)
-    , d_ptr(Q_NULLPTR)
-{
-    emit initialized();
-}
-
-QRemoteObjectSource::~QRemoteObjectSource()
-{
-}
-
-bool QRemoteObjectSource::isReplicaValid() const
-{
-    return true;
 }
 
 QT_END_NAMESPACE

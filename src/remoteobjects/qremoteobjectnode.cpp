@@ -608,21 +608,6 @@ QRemoteObjectDynamicReplica *QRemoteObjectNode::acquire(const QString &name)
     return static_cast<QRemoteObjectDynamicReplica*>(d_ptr->acquire(Q_NULLPTR, instance, name));
 }
 
-bool QRemoteObjectNode::enableRemoting(QRemoteObjectSource *remoteObject)
-{
-    if (d_ptr->remoteObjectIo.isNull()) {
-        d_ptr->m_lastError = OperationNotValidOnClientNode;
-        return false;
-    }
-
-    const int ind = remoteObject->metaObject()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-    const QString name = QString::fromLatin1(remoteObject->metaObject()->classInfo(ind).value());
-
-    d_ptr->isInitialized.storeRelease(1);
-
-    return d_ptr->remoteObjectIo->enableRemoting(remoteObject, &QRemoteObjectSource::staticMetaObject, name);
-}
-
 bool QRemoteObjectNode::enableRemoting(QObject *object, const QMetaObject *_meta)
 {
     if (d_ptr->remoteObjectIo.isNull()) {

@@ -47,31 +47,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QRemoteObjectSourcePrivate;
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSource : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(bool isReplicaValid READ isReplicaValid NOTIFY isReplicaValidChanged)
-
-public:
-    virtual ~QRemoteObjectSource();
-
-    bool isReplicaValid() const;
-
-Q_SIGNALS:
-    void isReplicaValidChanged();
-    void initialized();
-
-protected:
-    explicit QRemoteObjectSource(QObject *parent = Q_NULLPTR);
-
-private:
-    friend class QRemoteObjectSourceIo;
-    Q_DECLARE_PRIVATE(QRemoteObjectSource)
-
-    QScopedPointer<QRemoteObjectSourcePrivate> d_ptr;
-};
+//Placeholder for upcoming validation code
 
 QT_END_NAMESPACE
 

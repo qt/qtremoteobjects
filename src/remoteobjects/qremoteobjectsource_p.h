@@ -49,7 +49,6 @@
 QT_BEGIN_NAMESPACE
 
 class ServerIoDevice;
-class QRemoteObjectSource;
 
 template <typename Container>
 class ContainerWithOffset {

@@ -165,7 +165,6 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
         out << "#include <QRemoteObjectReplica>\n";
         out << "#include <QRemoteObjectPendingReply>\n";
     } else
-        out << "#include <QRemoteObjectSource>\n";
     out << "\n";
 
     out << ast.includes.join(QLatin1Char('\n'));
@@ -379,7 +378,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
     if (mode == REPLICA)
         out << QString::fromLatin1("class %1 : public QRemoteObjectReplica").arg(className);
     else
-        out << QString::fromLatin1("class %1 : public QRemoteObjectSource").arg(className);
+        out << QString::fromLatin1("class %1 : public QObject").arg(className);
 
     out << QStringLiteral("{");
     out << QStringLiteral("    Q_OBJECT");
@@ -394,7 +393,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         out << QStringLiteral("    %1() : QRemoteObjectReplica() {}").arg(className);
         out << QStringLiteral("    void initialize()");
     } else {
-        out << QStringLiteral("    %1(QObject *parent = Q_NULLPTR) : QRemoteObjectSource(parent)").arg(className);
+        out << QStringLiteral("    %1(QObject *parent = Q_NULLPTR) : QObject(parent)").arg(className);
 
         if (mode == SIMPLE_SOURCE) {
             foreach (const ASTProperty &property, astClass.properties) {

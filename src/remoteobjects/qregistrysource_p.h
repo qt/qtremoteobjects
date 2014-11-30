@@ -42,11 +42,11 @@
 #ifndef QREGISTRYSOURCE_P_H
 #define QREGISTRYSOURCE_P_H
 
-#include "qremoteobjectsource.h"
+#include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE
 
-class QRegistrySource : public QRemoteObjectSource
+class QRegistrySource : public QObject
 {
     Q_OBJECT
     Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")

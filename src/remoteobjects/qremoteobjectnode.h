@@ -49,7 +49,6 @@
 
 QT_BEGIN_NAMESPACE
 
-class QRemoteObjectSource;
 class QRemoteObjectReplica;
 class QRemoteObjectNodePrivate;
 
@@ -93,7 +92,6 @@ public:
     }
     QRemoteObjectDynamicReplica *acquire(const QString &name);
 
-    bool enableRemoting(QRemoteObjectSource *remoteObject);
     bool enableRemoting(QObject *object, const QMetaObject *meta = Q_NULLPTR);
     bool disableRemoting(QObject *remoteObject);
 

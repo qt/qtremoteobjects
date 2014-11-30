@@ -51,7 +51,6 @@
 
 QT_BEGIN_NAMESPACE
 
-class QRemoteObjectSource;
 class QRemoteObjectSourcePrivate;
 
 class QRemoteObjectSourceIo : public QObject
