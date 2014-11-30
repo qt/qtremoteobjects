@@ -314,16 +314,29 @@ private slots:
         for (int i = 0; i < metaTcpRep1->propertyCount(); ++i)
         {
             const QMetaProperty propLhs =  metaTcpRep1->property(i);
+            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0) //Ignore properties only on the Replica side
+                continue;
             const QMetaProperty propRhs =  metaTcpSource->property(metaTcpSource->indexOfProperty(propLhs.name()));
-            QCOMPARE(propLhs.notifySignalIndex(),  propRhs.notifySignalIndex());
+            if (propLhs.notifySignalIndex() == -1)
+                QCOMPARE(propRhs.hasNotifySignal(), false);
+            else {
+                QCOMPARE(propRhs.notifySignalIndex() != -1, true);
+                QCOMPARE(metaTcpRep1->method(propLhs.notifySignalIndex()).name(), metaTcpSource->method(propRhs.notifySignalIndex()).name());
+            }
             QCOMPARE(propLhs.read(rep1),  propRhs.read(dataCenterTcp.data()));
-            QCOMPARE(propLhs.read(rep2),  propRhs.read(rep1));
         }
         for (int i = 0; i < metaLocalRep1->propertyCount(); ++i )
         {
             const QMetaProperty propLhs =  metaLocalRep1->property(i);
+            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0) //Ignore properties only on the Replica side
+                continue;
             const QMetaProperty propRhs =  metaLocalSource->property(metaTcpSource->indexOfProperty(propLhs.name()));
-            QCOMPARE(propLhs.notifySignalIndex(),  propRhs.notifySignalIndex());
+            if (propLhs.notifySignalIndex() == -1)
+                QCOMPARE(propRhs.hasNotifySignal(), false);
+            else {
+                QCOMPARE(propRhs.notifySignalIndex() != -1, true);
+                QCOMPARE(metaTcpRep1->method(propLhs.notifySignalIndex()).name(), metaTcpSource->method(propRhs.notifySignalIndex()).name());
+            }
             QCOMPARE(propLhs.read(rep3),  propRhs.read(dataCenterLocal.data()));
         }
 
