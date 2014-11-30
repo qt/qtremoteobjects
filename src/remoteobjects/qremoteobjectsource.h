@@ -47,7 +47,103 @@
 
 QT_BEGIN_NAMESPACE
 
-//Placeholder for upcoming validation code
+//Based on compile time checks for static connect() from qobjectdefs_impl.h
+template <class ObjectType, typename Func1, typename Func2>
+static inline int qtro_prop_index(Func1, Func2, const char *propName)
+{
+    typedef QtPrivate::FunctionPointer<Func1> Type1;
+    typedef QtPrivate::FunctionPointer<Func2> Type2;
+    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
+
+    //compilation error if the arguments do not match.
+    Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
+                      "Argument counts are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::CheckCompatibleArguments<typename Type1::Arguments, typename Type2::Arguments>::value),
+                      "Arguments are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::AreArgumentsCompatible<typename Type1::ReturnType, typename Type2::ReturnType>::value),
+                      "Return types are not compatible.");
+    return ObjectType::staticMetaObject.indexOfProperty(propName);
+}
+
+template <class ObjectType, typename Func1, typename Func2>
+static inline int qtro_signal_index(Func1 func, Func2, int *count, const int *types)
+{
+    typedef QtPrivate::FunctionPointer<Func1> Type1;
+    typedef QtPrivate::FunctionPointer<Func2> Type2;
+    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
+
+    //compilation error if the arguments do not match.
+    Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
+                      "Argument counts are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::CheckCompatibleArguments<typename Type1::Arguments, typename Type2::Arguments>::value),
+                      "Arguments are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::AreArgumentsCompatible<typename Type1::ReturnType, typename Type2::ReturnType>::value),
+                      "Return types are not compatible.");
+    const QMetaMethod sig = QMetaMethod::fromSignal(func);
+    *count = Type2::ArgumentCount;
+    types = QtPrivate::ConnectionTypes<typename Type2::Arguments>::types();
+    return sig.methodIndex();
+}
+
+template <class ObjectType, typename Func1, typename Func2>
+static inline void qtro_method_test(Func1, Func2)
+{
+    typedef QtPrivate::FunctionPointer<Func1> Type1;
+    typedef QtPrivate::FunctionPointer<Func2> Type2;
+    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
+
+    //compilation error if the arguments do not match.
+    Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
+                      "Argument counts are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::CheckCompatibleArguments<typename Type1::Arguments, typename Type2::Arguments>::value),
+                      "Arguments are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::AreArgumentsCompatible<typename Type1::ReturnType, typename Type2::ReturnType>::value),
+                      "Return types are not compatible.");
+}
+
+template <class ObjectType, typename Func1, typename Func2>
+static inline int qtro_method_index(Func1, Func2, const char *methodName, int *count, const int *types)
+{
+    typedef QtPrivate::FunctionPointer<Func1> Type1;
+    typedef QtPrivate::FunctionPointer<Func2> Type2;
+    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
+
+    //compilation error if the arguments do not match.
+    Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
+                      "Argument counts are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::CheckCompatibleArguments<typename Type1::Arguments, typename Type2::Arguments>::value),
+                      "Arguments are not compatible.");
+    Q_STATIC_ASSERT_X((QtPrivate::AreArgumentsCompatible<typename Type1::ReturnType, typename Type2::ReturnType>::value),
+                      "Return types are not compatible.");
+    *count = Type2::ArgumentCount;
+    types = QtPrivate::ConnectionTypes<typename Type2::Arguments>::types();
+    return ObjectType::staticMetaObject.indexOfMethod(methodName);
+}
+
+class SourceApiMap
+{
+protected:
+    SourceApiMap() {}
+public:
+    virtual ~SourceApiMap() {}
+    virtual QString name() const = 0;
+    virtual int propertyCount() const = 0;
+    virtual int signalCount() const = 0;
+    virtual int methodCount() const = 0;
+    virtual int sourcePropertyIndex(int index) const = 0;
+    virtual int sourceSignalIndex(int index) const = 0;
+    virtual int sourceMethodIndex(int index) const = 0;
+    virtual int signalParameterCount(int index) const = 0;
+    virtual int signalParameterType(int sigIndex, int paramIndex) const = 0;
+    virtual const QByteArray signalSignature(int index) const = 0;
+    virtual int methodParameterCount(int index) const = 0;
+    virtual int methodParameterType(int methodIndex, int paramIndex) const = 0;
+    virtual const QByteArray methodSignature(int index) const = 0;
+    virtual QMetaMethod::MethodType methodType(int index) const = 0;
+    virtual const QByteArray typeName(int index) const = 0;
+    virtual int propertyIndexFromSignal(int index) const = 0;
+    virtual bool isDynamic() const { return false; }
+};
 
 QT_END_NAMESPACE
 

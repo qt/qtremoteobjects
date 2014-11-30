@@ -96,8 +96,10 @@ public:
     //Dynamic Replica data
     QVector<bool> m_methodReturnTypeIsVoid;
     QVector<QVector<int> > m_methodArgumentTypes;
-    QVector<int> m_remoteObjectMethodTypes;
-    int m_methodOffset, m_propertyOffset;
+    int m_numSignals;
+    int m_signalOffset;
+    int m_methodOffset;
+    int m_propertyOffset;
 };
 
 class QConnectedReplicaPrivate : public QRemoteObjectReplicaPrivate

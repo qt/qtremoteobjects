@@ -424,8 +424,8 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             for (int i = 0; i < p->args.size(); i++) {
                 param[i + 1] = const_cast<void *>(p->args[i].data());
             }
-            qCDebug(QT_REMOTEOBJECT) << "Replica Invoke-->" << p->name << rep->m_metaObject->method(p->index+rep->m_methodOffset).name() << p->index << rep->m_methodOffset;
-            QMetaObject::activate(rep.data(), rep->metaObject(), p->index+rep->m_methodOffset, param.data());
+            qCDebug(QT_REMOTEOBJECT) << "Replica Invoke-->" << p->name << rep->m_metaObject->method(p->index+rep->m_signalOffset).name() << p->index << rep->m_signalOffset;
+            QMetaObject::activate(rep.data(), rep->metaObject(), p->index+rep->m_signalOffset, param.data());
         } else { //replica has been deleted, remove from list
             replicas.remove(p->name);
         }
@@ -655,8 +655,12 @@ bool QRemoteObjectNode::enableRemoting(QObject *object, const QMetaObject *_meta
             return false;
         }
     }
-
     return d_ptr->remoteObjectIo->enableRemoting(object, meta, name);
+}
+
+bool QRemoteObjectNode::enableRemoting(QObject *object, const SourceApiMap *api)
+{
+    return d_ptr->remoteObjectIo->enableRemoting(object, api);
 }
 
 bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)

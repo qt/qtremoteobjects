@@ -42,6 +42,7 @@
 #include "qremoteobjectpacket_p.h"
 
 #include "qremoteobjectpendingcall.h"
+#include "qremoteobjectsource.h"
 
 #include "private/qmetaobjectbuilder_p.h"
 
@@ -106,19 +107,18 @@ QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in)
 QByteArray QInitPacketEncoder::serialize() const
 {
     DataStreamPacket ds(id);
-    ds << name;
+    ds << api->name();
     qint64 postNamePosition = ds.device()->pos();
     ds << quint32(0);
 
     //Now copy the property data
     const QMetaObject *meta = object->metaObject();
-    const int propertyOffset = base && base != meta ? base->propertyCount() : meta->propertyOffset();
-    const int nParam = meta->propertyCount();
 
-    ds << quint32(nParam - propertyOffset);  //Number of properties
+    const int numProperties = api->propertyCount();
+    ds << quint32(numProperties);  //Number of properties
 
-    for (int i = propertyOffset; i < nParam; ++i) {
-        const QMetaProperty mp = meta->property(i);
+    for (int i = 0; i < numProperties; ++i) {
+        const QMetaProperty mp = meta->property(api->sourcePropertyIndex(i));
         ds << mp.name();
         ds << mp.read(object);
     }
@@ -188,35 +188,40 @@ bool QInitPacket::deserialize(QDataStream& in)
 QByteArray QInitDynamicPacketEncoder::serialize() const
 {
     DataStreamPacket ds(id);
-    ds << name;
+    ds << api->name();
     qint64 postNamePosition = ds.device()->pos();
     ds << quint32(0);
 
     //Now copy the property data
     const QMetaObject *meta = object->metaObject();
-    const int propertyOffset = base->propertyCount();
-    const int nParam = meta->propertyCount();
-    const int methodOffset = base->methodCount();
-    const int numMethods = meta->methodCount();
 
-    ds << quint32(numMethods - methodOffset);
-    for (int i = methodOffset; i < numMethods; ++i) {
-        const QMetaMethod mm = meta->method(i);
-        ds << quint32(i - methodOffset);
-        ds << mm.name();
-        ds << mm.methodSignature();
-        ds << quint32(mm.methodType());
-        if (mm.methodType() == QMetaMethod::Method || mm.methodType() == QMetaMethod::Slot)
-            ds << QByteArray(mm.typeName());
-        ds << quint32(mm.parameterCount());
-        for (int i = 0; i < mm.parameterCount(); ++i)
-            ds << mm.parameterTypes()[i];
+    const int numSignals = api->signalCount();
+    ds << quint32(numSignals);  //Number of signals
+    const int numMethods = api->methodCount();
+    ds << quint32(numMethods);  //Number of methods
+
+    for (int i = 0; i < numSignals; ++i) {
+        ds << api->signalSignature(i);
+        const int n = api->signalParameterCount(i);
+        ds << quint32(n);
+        for (int j = 0; j < n; ++j)
+            ds << QVariant::typeToName(api->signalParameterType(i, j));
     }
 
-    ds << quint32(nParam - propertyOffset);  //Number of properties
+    for (int i = 0; i < numMethods; ++i) {
+        ds << api->methodSignature(i);
+        ds << api->typeName(i);
+        const int n = api->methodParameterCount(i);
+        ds << quint32(n);
+        for (int j = 0; j < n; ++j)
+            ds << QVariant::typeToName(api->methodParameterType(i, j));
+    }
 
-    for (int i = propertyOffset; i < nParam; ++i) {
-        const QMetaProperty mp = meta->property(i);
+    const int numProperties = api->propertyCount();
+    ds << quint32(numProperties);  //Number of properties
+
+    for (int i = 0; i < numProperties; ++i) {
+        const QMetaProperty mp = meta->property(api->sourcePropertyIndex(i));
         ds << mp.name();
         ds << mp.typeName();
         if (mp.notifySignalIndex() == -1)
@@ -312,60 +317,68 @@ bool QInitDynamicPacket::deserialize(QDataStream& in)
 }
 
 QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
-                                                  QVector<int> &methodTypes,
+                                                  int &outNumSignals,
                                                   QVector<bool> &methodReturnTypeIsVoid,
                                                   QVector<QVector<int> > &methodArgumentTypes,
                                                   QVector<QPair<QByteArray, QVariant> > *propertyValues) const
 {
+    quint32 numSignals = 0;
     quint32 numMethods = 0;
-    QDataStream ds(packetData);
-    ds >> numMethods;
-    methodReturnTypeIsVoid.clear();
-    methodReturnTypeIsVoid.resize(numMethods);
-    methodTypes.clear();
-    methodTypes.resize(numMethods);
+    quint32 numProperties = 0;
+
     methodArgumentTypes.clear();
-    methodArgumentTypes.resize(numMethods);
-    for (quint32 i = 0; i < numMethods; ++i) {
-        quint32 index = 0;
-        QMetaMethod::MethodType type;
-        QByteArray name;
-        QByteArray signature;
-        QByteArray returnType;
-        quint32 typeValue;
+    methodReturnTypeIsVoid.clear();
 
-        ds >> index;
-        ds >> name;
-        ds >> signature;
-        ds >> typeValue;
+    QDataStream ds(packetData);
+    ds >> numSignals;
+    outNumSignals = numSignals;
+    ds >> numMethods;
 
-        type = static_cast<QMetaMethod::MethodType>(typeValue);
-        methodTypes[i] = type;
-        if (type == QMetaMethod::Method || type == QMetaMethod::Slot)
-            ds >> returnType;
-        methodReturnTypeIsVoid[i] = returnType.isEmpty();
+    methodArgumentTypes.resize(numSignals+numMethods);
+    methodReturnTypeIsVoid.resize(numMethods);
+
+    int curIndex = 0;
+
+    for (quint32 i = 0; i < numSignals; ++i) {
+        QByteArray signature, parameterType;
         quint32 parameterCount = 0;
-        ds >> parameterCount;
-        QByteArray parameterType;
-        methodArgumentTypes[index].reserve(parameterCount);
-        for (unsigned int pCount = 0; pCount < parameterCount; ++pCount) {
-            ds >> parameterType;
-            methodArgumentTypes[index] << QVariant::nameToType(parameterType.constData());
-        }
 
-        if (type == QMetaMethod::Signal)
-            builder.addSignal(signature);
-        else if (returnType.isEmpty())
+        ds >> signature;
+        ds >> parameterCount;
+        methodArgumentTypes[curIndex].reserve(parameterCount);
+        for (quint32 pCount = 0; pCount < parameterCount; ++pCount) {
+            ds >> parameterType;
+            methodArgumentTypes[curIndex] << QVariant::nameToType(parameterType.constData());
+        }
+        ++curIndex;
+        builder.addSignal(signature);
+    }
+
+    for (quint32 i = 0; i < numMethods; ++i) {
+        QByteArray signature, returnType, parameterType;
+        quint32 parameterCount = 0;
+
+        ds >> signature;
+        ds >> returnType;
+        ds >> parameterCount;
+        methodArgumentTypes[curIndex].reserve(parameterCount);
+        for (quint32 pCount = 0; pCount < parameterCount; ++pCount) {
+            ds >> parameterType;
+            methodArgumentTypes[curIndex] << QVariant::nameToType(parameterType.constData());
+        }
+        ++curIndex;
+        const bool isVoid = returnType.isEmpty() || returnType == QByteArrayLiteral("void");
+        methodReturnTypeIsVoid[i] = isVoid;
+        if (isVoid)
             builder.addMethod(signature);
         else
             builder.addMethod(signature, QByteArrayLiteral("QRemoteObjectPendingCall"));
     }
 
-    quint32 numProperties = 0;
-    ds >> numProperties;  //Number of properties
+    ds >> numProperties;
 
     QVector<QPair<QByteArray, QVariant> > &propVal = *propertyValues;
-    for (unsigned int i = 0; i < numProperties; ++i) {
+    for (quint32 i = 0; i < numProperties; ++i) {
         QByteArray name;
         QByteArray typeName;
         QByteArray signalName;

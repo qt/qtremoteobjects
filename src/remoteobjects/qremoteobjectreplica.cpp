@@ -64,9 +64,16 @@ using namespace QRemoteObjectPackets;
 
 QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta)
     : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta),
-      m_methodOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount()),
+      m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount()),
       m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
 {
+    if (meta) {
+        m_methodOffset = m_signalOffset;
+        for (int i = m_signalOffset; i < meta->methodCount(); ++i) {
+            if (meta->method(i).methodType() == QMetaMethod::Signal)
+                ++m_methodOffset;
+        }
+    }
 }
 
 QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
@@ -176,7 +183,8 @@ void QRemoteObjectReplicaPrivate::initializeMetaObject(const QInitDynamicPacket 
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
     QVector<QPair<QByteArray, QVariant> > propertyValues;
-    m_metaObject = packet->createMetaObject(builder, m_remoteObjectMethodTypes, m_methodReturnTypeIsVoid, m_methodArgumentTypes, &propertyValues);
+    m_metaObject = packet->createMetaObject(builder, m_numSignals, m_methodReturnTypeIsVoid, m_methodArgumentTypes, &propertyValues);
+    m_methodOffset = m_signalOffset + m_numSignals;
     //rely on order of properties;
     QVariantList list;
     typedef QPair<QByteArray, QVariant> PropertyPair;
@@ -452,7 +460,7 @@ const QVariant QInProcessReplicaPrivate::getProperty(int i) const
 {
     Q_ASSERT(connectionToSource);
     Q_ASSERT(connectionToSource->m_object);
-    const int index = i + connectionToSource->m_propertyOffset;
+    const int index = i + QRemoteObjectSourcePrivate::qobjectPropertyOffset;
     Q_ASSERT(index >= 0 && index < connectionToSource->m_object->metaObject()->propertyCount());
     return connectionToSource->m_object->metaObject()->property(index).read(connectionToSource->m_object);
 }
@@ -466,7 +474,7 @@ void QInProcessReplicaPrivate::setProperty(int i, const QVariant &property)
 {
     Q_ASSERT(connectionToSource);
     Q_ASSERT(connectionToSource->m_object);
-    const int index = i+connectionToSource->m_propertyOffset;
+    const int index = i + QRemoteObjectSourcePrivate::qobjectPropertyOffset;
     Q_ASSERT(index >= 0 && index < connectionToSource->m_object->metaObject()->propertyCount());
     connectionToSource->m_object->metaObject()->property(index).write(connectionToSource->m_object, property);
 }
@@ -476,17 +484,21 @@ void QInProcessReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod || call == QMetaObject::WriteProperty);
 
     if (call == QMetaObject::InvokeMetaMethod)
-        connectionToSource->invoke(call, index - m_methodOffset, args);
+        connectionToSource->invoke(call, connectionToSource->m_api->sourceMethodIndex(index - m_methodOffset), args);
     else
-        connectionToSource->invoke(call, index - m_propertyOffset, args);
+        connectionToSource->invoke(call, connectionToSource->m_api->sourcePropertyIndex(index - m_propertyOffset), args);
 }
 
 QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
-    QVariant returnValue;
-    connectionToSource->invoke(call, index - m_methodOffset, args, &returnValue);
+    const int ReplicaIndex = index - m_methodOffset;
+    int typeId = QVariant::nameToType(connectionToSource->m_api->typeName(ReplicaIndex).constData());
+    if (!QMetaType(typeId).sizeOf())
+        typeId = QVariant::Invalid;
+    QVariant returnValue(typeId, Q_NULLPTR);
+    connectionToSource->invoke(call, connectionToSource->m_api->sourceMethodIndex(ReplicaIndex), args, &returnValue);
     return QRemoteObjectPendingCall::fromCompletedCall(returnValue);
 }
 

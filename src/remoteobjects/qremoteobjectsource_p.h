@@ -46,69 +46,80 @@
 #include <QMetaObject>
 #include <QMetaProperty>
 #include <QVector>
+#include "qremoteobjectsource.h"
 
 QT_BEGIN_NAMESPACE
 
 class ServerIoDevice;
 
-template <typename Container>
-class ContainerWithOffset {
-public:
-    typedef typename Container::value_type value_type;
-    typedef typename Container::reference reference;
-    typedef typename Container::const_reference const_reference;
-    typedef typename Container::difference_type difference_type;
-    typedef typename Container::pointer pointer;
-    typedef typename Container::const_pointer const_pointer;
-    typedef typename Container::iterator iterator;
-    typedef typename Container::const_iterator const_iterator;
-
-    ContainerWithOffset() :c(), offset(0) {}
-    ContainerWithOffset(off_t offset)
-        : c(), offset(offset) {}
-    ContainerWithOffset(const Container &c, off_t offset)
-        : c(c), offset(offset) {}
-#ifdef Q_COMPILER_RVALUE_REFS
-    ContainerWithOffset(Container &&c, off_t offset)
-        : c(std::move(c)), offset(offset) {}
-#endif
-
-    reference operator[](int i) { return c[i-offset]; };
-    const_reference operator[](int i) const { return c[i-offset]; }
-
-    void reserve(int size) { c.reserve(size); }
-    void push_back(const value_type &v) { c.push_back(v); }
-#ifdef Q_COMPILER_RVALUE_REFS
-    void push_back(value_type &&v) { c.push_back(std::move(v)); }
-#endif
-
-private:
-    Container c;
-    off_t offset;
-};
-
 class QRemoteObjectSourcePrivate : public QObject
 {
 public:
-    explicit QRemoteObjectSourcePrivate(QObject *object, QMetaObject const *meta, const QString &name);
+    explicit QRemoteObjectSourcePrivate(QObject *object, const SourceApiMap *);
 
     ~QRemoteObjectSourcePrivate();
 
     int qt_metacall(QMetaObject::Call call, int methodId, void **a);
-    ContainerWithOffset<QVector<QVector<int> > > args;
-    QHash<int, QMetaProperty> propertyFromNotifyIndex;
     QList<ServerIoDevice*> listeners;
-    QString m_name;
     QObject *m_object;
-    const QMetaObject * const m_meta;
-    const int m_methodOffset;
-    const int m_propertyOffset;
+    const SourceApiMap * const m_api;
 
     QVariantList marshalArgs(int index, void **a);
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
     bool invoke(QMetaObject::Call c, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
+    static const int qobjectPropertyOffset;
+    static const int qobjectMethodOffset;
+};
+
+class DynamicApiMap : public SourceApiMap
+{
+public:
+    DynamicApiMap(QObject *object, const QMetaObject *meta, const QString &name);
+    ~DynamicApiMap() {}
+    QString name() const Q_DECL_OVERRIDE { return _name; }
+    int propertyCount() const Q_DECL_OVERRIDE { return _properties.size(); }
+    int signalCount() const Q_DECL_OVERRIDE { return _signals.size(); }
+    int methodCount() const Q_DECL_OVERRIDE { return _methods.size(); }
+    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE { return _properties.at(index); }
+    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE { return _signals.at(index); }
+    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE { return _methods.at(index); }
+    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(_signals.at(index)); }
+    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(_signals.at(sigIndex), paramIndex); }
+    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE { return signature(_signals.at(index)); }
+    int methodParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(_methods.at(index)); }
+    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(_methods.at(methodIndex), paramIndex); }
+    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE { return signature(_methods.at(index)); }
+    QMetaMethod::MethodType methodType(int index) const Q_DECL_OVERRIDE;
+    const QByteArray typeName(int index) const Q_DECL_OVERRIDE;
+    int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    {
+        if (index < _propertyAssociatedWithSignal.size())
+            return _propertyAssociatedWithSignal.at(index);
+        return -1;
+    }
+    bool isDynamic() const Q_DECL_OVERRIDE { return true; }
+private:
+    int parameterCount(int objectIndex) const;
+    int parameterType(int objectIndex, int paramIndex) const;
+    const QByteArray signature(int objectIndex) const;
+    inline void checkCache(int objectIndex) const
+    {
+        if (objectIndex != _cachedMetamethodIndex) {
+            _cachedMetamethodIndex = objectIndex;
+            _cachedMetamethod = _meta->method(objectIndex);
+        }
+    }
+
+    QString _name;
+    QVector<int> _properties;
+    QVector<int> _signals;
+    QVector<int> _methods;
+    QVector<int> _propertyAssociatedWithSignal;
+    const QMetaObject *_meta;
+    mutable QMetaMethod _cachedMetamethod;
+    mutable int _cachedMetamethodIndex;
 };
 
 QT_END_NAMESPACE

@@ -80,7 +80,18 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *m
         return false;
     }
 
-    QRemoteObjectSourcePrivate *pp = new QRemoteObjectSourcePrivate(object, meta, name);
+    return enableRemoting(object, new DynamicApiMap(object, meta, name));
+}
+
+bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api)
+{
+    const QString name = api->name();
+    if (!api->isDynamic() && m_remoteObjects.contains(name)) {
+        qCWarning(QT_REMOTEOBJECT) << "Tried to register QRemoteObjectSource twice" << name;
+        return false;
+    }
+
+    QRemoteObjectSourcePrivate *pp = new QRemoteObjectSourcePrivate(object, api);
 
     qCDebug(QT_REMOTEOBJECT) << "Registering" << name;
 
@@ -94,7 +105,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *m
 
 bool QRemoteObjectSourceIo::disableRemoting(QRemoteObjectSourcePrivate *pp)
 {
-    const QString name = pp->m_name;
+    const QString name = pp->m_api->name();
     clearRemoteObjectSource(name);
     pp->setParent(Q_NULLPTR);
     delete pp;
@@ -173,18 +184,30 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             if (m_remoteObjects.contains(name)) {
                 QRemoteObjectSourcePrivate *pp = m_remoteObjects[name];
                 if (p->call == QMetaObject::InvokeMetaMethod) {
-                    qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_meta->method(p->index+pp->m_methodOffset).name();
-                    QVariant returnValue;
-                    pp->invoke(QMetaObject::InvokeMetaMethod, p->index, p->args, &returnValue);
-
-                    // send reply if wanted
-                    if (p->serialId >= 0) {
-                        QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
-                        connection->write(replyPacket.serialize());
+                    if (p->index < 0 || p->index >= pp->m_api->methodCount()) {
+                        qCWarning(QT_REMOTEOBJECT) << "Invalid method invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
+                        //TODO - consider moving this to packet validation?
+                    } else {
+                        qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(pp->m_api->sourceMethodIndex(p->index)).name();
+                        int typeId = QVariant::nameToType(pp->m_api->typeName(p->index).constData());
+                        if (!QMetaType(typeId).sizeOf())
+                            typeId = QVariant::Invalid;
+                        QVariant returnValue(typeId, Q_NULLPTR);
+                        pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->sourceMethodIndex(p->index), p->args, &returnValue);
+                        // send reply if wanted
+                        if (p->serialId >= 0) {
+                            QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
+                            connection->write(replyPacket.serialize());
+                        }
                     }
                 } else {
-                    qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_meta->property(p->index+pp->m_propertyOffset).name();
-                    pp->invoke(QMetaObject::WriteProperty, p->index, p->args);
+                    if (p->index < 0 || p->index >= pp->m_api->propertyCount()) {
+                        qCWarning(QT_REMOTEOBJECT) << "Invalid property invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
+                        //TODO - consider moving this to packet validation?
+                    } else {
+                        qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(pp->m_api->sourcePropertyIndex(p->index)).name();
+                        pp->invoke(QMetaObject::WriteProperty, pp->m_api->sourcePropertyIndex(p->index), p->args);
+                    }
                 }
             }
             break;
@@ -208,7 +231,7 @@ void QRemoteObjectSourceIo::handleConnection()
 
     QRemoteObjectPackets::QObjectListPacket p(QStringList(m_remoteObjects.keys()));
     conn->write(p.serialize());
-    qCDebug(QT_REMOTEOBJECT) << "Wrote ObjectList packet from Server";
+    qCDebug(QT_REMOTEOBJECT) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
 }
 
 void QRemoteObjectSourceIo::clearRemoteObjectSource(const QString &name)

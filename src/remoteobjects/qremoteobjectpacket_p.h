@@ -43,6 +43,7 @@
 #define QTREMOTEOBJECTPACKET_P_H
 
 #include "qtremoteobjectglobal.h"
+#include "qremoteobjectsource.h"
 
 #include <QtCore/QDataStream>
 #include <QtCore/QHash>
@@ -55,6 +56,7 @@
 QT_BEGIN_NAMESPACE
 
 class QMetaObjectBuilder;
+class SourceApiMap;
 
 namespace QRemoteObjectPackets {
 
@@ -106,13 +108,12 @@ public:
 class QInitPacketEncoder : public QRemoteObjectPacket
 {
 public:
-    inline QInitPacketEncoder(const QString &_name, const QObject *_object, QMetaObject const *_base = Q_NULLPTR)
-        : QRemoteObjectPacket(InitPacket), name(_name), object(_object), base(_base) {}
+    inline QInitPacketEncoder(const QObject *_object, const SourceApiMap *_api)
+        : QRemoteObjectPacket(InitPacket), object(_object), api(_api) {}
     QByteArray serialize() const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
-    const QString name;
     const QObject *object;
-    const QMetaObject *base;
+    const SourceApiMap *api;
 private:
     QInitPacketEncoder() {}
 };
@@ -130,13 +131,12 @@ public:
 class QInitDynamicPacketEncoder : public QRemoteObjectPacket
 {
 public:
-    QInitDynamicPacketEncoder(const QString &_name, const QObject *_object, QMetaObject const *_base = Q_NULLPTR)
-        : QRemoteObjectPacket(InitDynamicPacket), name(_name), object(_object), base(_base) {}
+    QInitDynamicPacketEncoder(const QObject *_object, const SourceApiMap *_api)
+        : QRemoteObjectPacket(InitDynamicPacket), object(_object), api(_api) {}
     QByteArray serialize() const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
-    const QString name;
     const QObject *object;
-    const QMetaObject *base;
+    const SourceApiMap *api;
 private:
     QInitDynamicPacketEncoder() {}
 };
@@ -148,7 +148,7 @@ public:
     QByteArray serialize() const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QMetaObject *createMetaObject(QMetaObjectBuilder &builder,
-                                  QVector<int> &methodTypes,
+                                  int &outNumSignals,
                                   QVector<bool> &methodReturnTypeIsVoid,
                                   QVector<QVector<int> > &methodArgumentTypes,
                                   QVector<QPair<QByteArray, QVariant> > *propertyValues = 0) const;

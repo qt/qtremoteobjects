@@ -67,6 +67,8 @@ class tst_Integration: public QObject
     QRemoteObjectNode m_localCentreServer;
     QRemoteObjectNode m_tcpCentreServer;
     QRemoteObjectNode m_registryServer;
+    QRemoteObjectNode m_qobjectServer;
+    QRemoteObjectNode m_qobjectClient;
 private slots:
 
     void initTestCase() {
@@ -341,6 +343,29 @@ private slots:
         }
 
     }
+
+    void apiTest() {
+        m_qobjectServer = QRemoteObjectNode::createHostNode(QUrl("local:qobject"));
+
+        m_qobjectServer.enableRemoting<EngineSourceAPI>(engine.data());
+
+        engine->setRpm(1234);
+
+        m_qobjectClient = QRemoteObjectNode();
+        m_qobjectClient.connect(QUrl("local:qobject"));
+        QSharedPointer<EngineReplica> engine_r(m_qobjectClient.acquire<EngineReplica>());
+        engine_r->waitForSource();
+
+        QCOMPARE(engine_r->rpm(), 1234);
+    }
+
+    void apiInProcTest() {
+        QSharedPointer<EngineReplica> engine_r_inProc(m_qobjectServer.acquire<EngineReplica>());
+        engine_r_inProc->waitForSource();
+
+        QCOMPARE(engine_r_inProc->rpm(), 1234);
+    }
+
 
 private:
     QScopedPointer<Engine> engine;

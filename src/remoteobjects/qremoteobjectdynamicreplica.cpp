@@ -110,22 +110,21 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
         id = -1;
     } else if (call == QMetaObject::InvokeMetaMethod) {
-        const int methodType = d->m_remoteObjectMethodTypes.at(id);
-
-        if (methodType == QMetaMethod::Signal) {
+        if (id < d->m_numSignals) {
             // signal relay from Source world to Replica
             QMetaObject::activate(this, d->m_metaObject, id, argv);
 
-        } else if (methodType == QMetaMethod::Slot || methodType == QMetaMethod::Method) {
+        } else {
             // method relay from Replica to Source
-            qCDebug(QT_REMOTEOBJECT) << "method" << d->m_metaObject->method(saved_id).name() << "invoked";
+            const int methodIndex = id - d->m_numSignals;
+            qCDebug(QT_REMOTEOBJECT) << "method" << d->m_metaObject->method(saved_id).name() << "invoked.  Pending call (" << !d->m_methodReturnTypeIsVoid.at(methodIndex) << ")";
 
             QVariantList args;
-            for (int i = 1; i <= d->m_methodArgumentTypes.at(id).size(); ++i) {
-                args << QVariant(d->m_methodArgumentTypes.at(id)[i-1], argv[i]);
+            for (int i = 1; i <= d->m_methodArgumentTypes.at(methodIndex).size(); ++i) {
+                args << QVariant(d->m_methodArgumentTypes.at(methodIndex)[i-1], argv[i]);
             }
 
-            const bool returnTypeIsVoid = d->m_methodReturnTypeIsVoid.at(id);
+            const bool returnTypeIsVoid = d->m_methodReturnTypeIsVoid.at(methodIndex);
             if (returnTypeIsVoid)
                 QRemoteObjectReplica::send(QMetaObject::InvokeMetaMethod, saved_id, args);
             else {

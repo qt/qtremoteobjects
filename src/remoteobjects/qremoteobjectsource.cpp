@@ -39,6 +39,7 @@
 **
 ****************************************************************************/
 
+#include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 
 #include "qconnectionabstractserver_p.h"
@@ -55,54 +56,22 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
-static QVector<int> parameter_types(const QMetaMethod &member)
-{
-    QVector<int> types;
-    types.reserve(member.parameterCount());
-    for (int i = 0; i < member.parameterCount(); ++i) {
-        const int tp = member.parameterType(i);
-        if (tp == QMetaType::UnknownType) {
-            Q_ASSERT(tp != QMetaType::Void); // void parameter => metaobject is corrupt
-            qCWarning(QT_REMOTEOBJECT) <<"Don't know how to handle "
-                                    << member.parameterTypes().at(i).constData()
-                                    << ", use qRegisterMetaType to register it.";
+const int QRemoteObjectSourcePrivate::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
+const int QRemoteObjectSourcePrivate::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 
-        }
-        types << tp;
-    }
-    return types;
-}
-
-QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, QMetaObject const *meta, const QString &name)
+QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const SourceApiMap *api)
     : QObject(obj),
-      args(meta->methodCount()),
-      m_name(name),
       m_object(obj),
-      m_meta(meta),
-      m_methodOffset(meta->methodCount()),
-      m_propertyOffset(meta->propertyCount())
+      m_api(api)
 {
     if (!obj) {
-        qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: Cannot replicate a NULL object" << name;
+        qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: Cannot replicate a NULL object" << m_api->name();
         return;
     }
 
-    const QMetaObject *them = obj->metaObject();
-    for (int idx = m_propertyOffset; idx < them->propertyCount(); ++idx) {
-        const QMetaProperty mp = them->property(idx);
-        qCDebug(QT_REMOTEOBJECT) << "Property option" << idx << mp.name() << mp.isWritable() << mp.hasNotifySignal() << mp.notifySignalIndex();
-        if (mp.hasNotifySignal())
-            propertyFromNotifyIndex.insert(mp.notifySignalIndex(), mp);
-    }
-
-    args.reserve(them->methodCount() - m_methodOffset);
-
-    for (int idx = m_methodOffset; idx < them->methodCount(); ++idx) {
-        const QMetaMethod mm = them->method(idx);
-        qCDebug(QT_REMOTEOBJECT) << "Connection option" << idx << mm.name();
-
-        if (mm.methodType() != QMetaMethod::Signal)
-            continue;
+    const QMetaObject *meta = obj->metaObject();
+    for (int idx = 0; idx < m_api->signalCount(); ++idx) {
+        const int sourceIndex = m_api->sourceSignalIndex(idx);
 
         // This basically connects the parent Signals (note, all dynamic properties have onChange
         //notifications, thus signals) to us.  Normally each Signal is mapped to a unique index,
@@ -110,14 +79,12 @@ QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, QMetaObject
         //
         //We know no one will inherit from this class, so no need to worry about indices from
         //derived classes.
-        if (!QMetaObject::connect(obj, idx, this, m_methodOffset, Qt::DirectConnection, 0)) {
+        if (!QMetaObject::connect(obj, sourceIndex, this, QRemoteObjectSourcePrivate::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
             qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
             return;
         }
 
-        args.push_back(parameter_types(mm));
-
-        qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << mm.name();
+        qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << meta->method(sourceIndex).name();
     }
 }
 
@@ -126,16 +93,16 @@ QRemoteObjectSourcePrivate::~QRemoteObjectSourcePrivate()
     Q_FOREACH (ServerIoDevice *io, listeners) {
         removeListener(io, true);
     }
+    delete m_api;
 }
 
 QVariantList QRemoteObjectSourcePrivate::marshalArgs(int index, void **a)
 {
     QVariantList list;
-    const QVector<int> &argsForIndex = args[index];
-    const int N = argsForIndex.size();
+    const int N = m_api->signalParameterCount(index);
     list.reserve(N);
     for (int i = 0; i < N; ++i) {
-        const int type = argsForIndex[i];
+        const int type = m_api->signalParameterType(index, i);
         if (type == QMetaType::QVariant)
             list << *reinterpret_cast<QVariant *>(a[i + 1]);
         else
@@ -150,12 +117,6 @@ bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QV
 
     if (c == QMetaObject::InvokeMetaMethod) {
         if (returnValue) {
-            const QMetaMethod metaMethod = parent()->metaObject()->method(index + m_methodOffset);
-            int typeId = metaMethod.returnType();
-            if (!QMetaType(typeId).sizeOf())
-                typeId = QVariant::Invalid;
-            QVariant tmp(typeId, Q_NULLPTR);
-            returnValue->swap(tmp);
             param[0] = returnValue->data();
         } else {
             param[0] = Q_NULLPTR;
@@ -165,14 +126,13 @@ bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QV
             param[i + 1] = const_cast<void*>(args.at(i).data());
         }
 
-        return (parent()->qt_metacall(c, index + m_methodOffset, param.data()) == -1);
     } else {
         for (int i = 0; i < args.size(); ++i) {
             param[i] = const_cast<void*>(args.at(i).data());
         }
 
-        return (parent()->qt_metacall(c, index + m_propertyOffset, param.data()) == -1);
     }
+    return (parent()->qt_metacall(c, index, param.data()) == -1);
 }
 
 #ifdef Q_COMPILER_UNIFORM_INIT
@@ -199,16 +159,17 @@ void QRemoteObjectSourcePrivate::handleMetaCall(int index, QMetaObject::Call cal
 
     QByteArray ba;
 
-    if (propertyFromNotifyIndex.contains(index)) {
-        const QMetaProperty mp = propertyFromNotifyIndex[index];
+    const int propertyIndex = m_api->propertyIndexFromSignal(index);
+    if (propertyIndex >= 0) {
+        const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
         qCDebug(QT_REMOTEOBJECT) << "Invoke Property" << mp.name() << mp.read(m_object);
-        QPropertyChangePacket p(m_name, mp.name(), mp.read(m_object));
+        QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_object));
         ba = p.serialize();
     }
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
-    QInvokePacket p(m_name, call, index - m_methodOffset, marshalArgs(index, a));
+    QInvokePacket p(m_api->name(), call, index, marshalArgs(index, a));
 
     ba += p.serialize();
 
@@ -221,10 +182,10 @@ void QRemoteObjectSourcePrivate::addListener(ServerIoDevice *io, bool dynamic)
     listeners.append(io);
 
     if (dynamic) {
-        QRemoteObjectPackets::QInitDynamicPacketEncoder p(m_name, m_object, m_meta);
+        QRemoteObjectPackets::QInitDynamicPacketEncoder p(m_object, m_api);
         io->write(p.serialize());
     } else {
-        QRemoteObjectPackets::QInitPacketEncoder p(m_name, m_object, m_meta);
+        QRemoteObjectPackets::QInitPacketEncoder p(m_object, m_api);
         io->write(p.serialize());
     }
 }
@@ -234,7 +195,7 @@ int QRemoteObjectSourcePrivate::removeListener(ServerIoDevice *io, bool shouldSe
     listeners.removeAll(io);
     if (shouldSendRemove)
     {
-        QRemoveObjectPacket p(m_name);
+        QRemoveObjectPacket p(m_api->name());
         io->write(p.serialize());
     }
     return listeners.length();
@@ -242,22 +203,80 @@ int QRemoteObjectSourcePrivate::removeListener(ServerIoDevice *io, bool shouldSe
 
 int QRemoteObjectSourcePrivate::qt_metacall(QMetaObject::Call call, int methodId, void **a)
 {
-    //We get called from the stored metaobject metacall.  Thus our index won't just be the index within our type, it will include
-    //an offset for any signals/slots in the meta base class.  The delta offset accounts for this.
-    const int delta = m_meta->methodCount() - m_methodOffset;
-
     methodId = QObject::qt_metacall(call, methodId, a);
     if (methodId < 0)
         return methodId;
 
-    if (call == QMetaObject::InvokeMetaMethod) {
-        if (methodId >= delta) {
-            handleMetaCall(senderSignalIndex(), call, a);
-        }
-        --methodId;
-    }
+    if (call == QMetaObject::InvokeMetaMethod)
+        handleMetaCall(methodId, call, a);
 
-    return methodId;
+    return -1;
+}
+
+DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *baseMeta, const QString &name)
+    : _name(name),
+      _meta(object->metaObject()),
+      _cachedMetamethodIndex(-1)
+{
+    const int propCount = _meta->propertyCount();
+    const int propOffset = baseMeta->propertyCount();
+    _properties.reserve(propCount-propOffset);
+    int i = 0;
+    for (i = propOffset; i < propCount; ++i) {
+        _properties << i;
+        const int notifyIndex = _meta->property(i).notifySignalIndex();
+        if (notifyIndex != -1) {
+            _signals << notifyIndex;
+            _propertyAssociatedWithSignal.append(i);
+            //The starting values of _signals will be the notify signals
+            //So if we are processing _signal with index i, api->sourcePropertyIndex(_propertyAssociatedWithSignal.at(i))
+            //will be the property that changed.  This is only valid if i < _propertyAssociatedWithSignal.size().
+        }
+    }
+    const int methodCount = _meta->methodCount();
+    const int methodOffset = baseMeta->methodCount();
+    for (i = methodOffset; i < methodCount; ++i) {
+        const QMetaMethod mm = _meta->method(i);
+        const QMetaMethod::MethodType m = mm.methodType();
+        if (m == QMetaMethod::Signal) {
+            if (_signals.indexOf(i) >= 0) //Already added as a property notifier
+                continue;
+            _signals << i;
+        } else if (m == QMetaMethod::Slot || m == QMetaMethod::Method)
+            _methods << i;
+    }
+}
+
+int DynamicApiMap::parameterCount(int objectIndex) const
+{
+    checkCache(objectIndex);
+    return _cachedMetamethod.parameterCount();
+}
+
+int DynamicApiMap::parameterType(int objectIndex, int paramIndex) const
+{
+    checkCache(objectIndex);
+    return _cachedMetamethod.parameterType(paramIndex);
+}
+
+const QByteArray DynamicApiMap::signature(int objectIndex) const
+{
+    checkCache(objectIndex);
+    return _cachedMetamethod.methodSignature();
+}
+
+QMetaMethod::MethodType DynamicApiMap::methodType(int index) const
+{
+    const int objectIndex = _methods.at(index);
+    checkCache(objectIndex);
+    return _cachedMetamethod.methodType();
+}
+
+const QByteArray DynamicApiMap::typeName(int index) const
+{
+    const int objectIndex = _methods.at(index);
+    checkCache(objectIndex);
+    return _cachedMetamethod.typeName();
 }
 
 QT_END_NAMESPACE
