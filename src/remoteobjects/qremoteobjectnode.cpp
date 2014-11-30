@@ -635,15 +635,15 @@ bool QRemoteObjectNode::enableRemoting(QObject *object, const QMetaObject *_meta
     if (!meta) { //If meta isn't provided, we need to search for an object that has RemoteObject CLASSINFO
         meta = object->metaObject();
         int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-        while (meta && ind == -1) {
-            meta = meta->superClass();
-            if (meta)
-                ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-        }
-        if (meta) {
+        if (ind != -1) {
+            int tmp = ind;
             name = QString::fromLatin1(meta->classInfo(ind).value());
-            meta = meta->superClass(); //We want the parent of the class that has ClassInfo, since we want to forward
-                                       //the object_type API
+            while (tmp == ind) {
+                meta = meta->superClass();
+                Q_ASSERT(meta); //This recurse to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
+                tmp = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+                //At the point we don't find QCLASSINFO_REMOTEOBJECT_TYPE, we have the metaobject we should work from
+            }
         } else {
             name = object->objectName();
             if (name.isEmpty()) {

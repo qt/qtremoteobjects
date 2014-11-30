@@ -194,9 +194,9 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
 
     //Now copy the property data
     const QMetaObject *meta = object->metaObject();
-    const int propertyOffset = base && base != meta ? base->propertyCount() : meta->propertyOffset();
+    const int propertyOffset = base->propertyCount();
     const int nParam = meta->propertyCount();
-    const int methodOffset = base && base != meta ? base->methodCount() : meta->methodOffset();
+    const int methodOffset = base->methodCount();
     const int numMethods = meta->methodCount();
 
     ds << quint32(numMethods - methodOffset);

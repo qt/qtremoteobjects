@@ -80,8 +80,8 @@ QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, QMetaObject
       m_name(name),
       m_object(obj),
       m_meta(meta),
-      m_methodOffset(meta == obj->metaObject() ? meta->methodOffset() : meta->methodCount()),
-      m_propertyOffset(meta == obj->metaObject() ? meta->propertyOffset() : meta->propertyCount())
+      m_methodOffset(meta->methodCount()),
+      m_propertyOffset(meta->propertyCount())
 {
     if (!obj) {
         qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: Cannot replicate a NULL object" << name;
