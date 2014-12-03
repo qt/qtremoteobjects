@@ -43,7 +43,8 @@
 #define QREMOTEOBJECTSOURCE_P_H
 
 #include <QObject>
-
+#include <QMetaObject>
+#include <QMetaProperty>
 #include <QVector>
 
 QT_BEGIN_NAMESPACE
