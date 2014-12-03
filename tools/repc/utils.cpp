@@ -103,7 +103,7 @@ static bool highToLowSort(int a, int b)
 static QList<FunctionDef> cleanedSignalList(const ClassDef &cdef)
 {
     QList<FunctionDef> ret = cdef.signalList;
-    std::vector<int> positions;
+    QVector<int> positions;
     foreach (const PropertyDef &prop, cdef.propertyList) {
         if (prop.notifyId != -1) {
             Q_ASSERT(prop.notify == ret.at(prop.notifyId).name);
