@@ -162,7 +162,7 @@ bool RepParser::parse()
             // compat code with old SLOT declaration: "SLOT(func(...))"
             const bool hasWhitespace = returnTypeAndName.indexOf(QStringLiteral(" ")) != -1;
             if (!hasWhitespace) {
-                qWarning() << "Encountered old-style format for SLOT:" << qPrintable(captures.at(0));
+                qWarning() << "[repc] - Adding 'void' for unspecified return type on" << qPrintable(captures.at(0).trimmed());
                 returnTypeAndName.prepend(QStringLiteral("void "));
             }
 
