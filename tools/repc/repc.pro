@@ -1,5 +1,5 @@
 option(host_build)
-CONFIG += force_bootstrap
+!osx: CONFIG += force_bootstrap
 include(3rdparty/moc/moc.pri)
 QT = core-private
 DEFINES += QT_NO_CAST_TO_ASCII QT_NO_CAST_FROM_ASCII QT_NO_CAST_FROM_BYTEARRAY QT_NO_URL_CAST_FROM_STRING
