@@ -68,7 +68,6 @@ Q_DECLARE_METATYPE(QRemoteObjectSourceLocations)
 #define QCLASSINFO_REMOTEOBJECT_TYPE "RemoteObject Type"
 
 class QDataStream;
-class QMetaObjectBuilder;
 
 namespace QRemoteObjectStringLiterals {
 
