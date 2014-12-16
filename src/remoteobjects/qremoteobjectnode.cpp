@@ -49,8 +49,6 @@
 #include "qremoteobjectreplica_p.h"
 #include "qremoteobjectsource_p.h"
 
-#include <QMetaProperty>
-
 QT_BEGIN_NAMESPACE
 
 static QString name(const QMetaObject * const mobj)

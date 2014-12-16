@@ -43,12 +43,8 @@
 #define QCONNECTIONABSTRACTSERVER_P_H
 
 #include <QAbstractSocket>
-#include <QDataStream>
 #include <QIODevice>
-#include <QLocalSocket>
 #include <QObject>
-#include <QTcpSocket>
-#include <QVariant>
 #include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE

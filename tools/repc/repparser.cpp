@@ -42,7 +42,6 @@
 #include "repparser.h"
 
 #include <QDebug>
-#include <QFile>
 #include <QTextStream>
 
 ASTProperty::ASTProperty()

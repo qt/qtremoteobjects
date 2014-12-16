@@ -1,4 +1,3 @@
-#include <QtCore>
 
 USE_ENUM(Qt::DateFormat)
 

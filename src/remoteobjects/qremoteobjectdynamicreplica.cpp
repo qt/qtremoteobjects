@@ -42,7 +42,6 @@
 #include "qremoteobjectdynamicreplica.h"
 #include "qremoteobjectreplica_p.h"
 
-#include <QDebug>
 #include <QMetaProperty>
 
 QT_BEGIN_NAMESPACE

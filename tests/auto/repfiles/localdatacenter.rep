@@ -1,4 +1,3 @@
-#include <QtCore>
 class LocalDataCenter
 {
     PROP(int data1);

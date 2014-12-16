@@ -49,7 +49,6 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QUrl>
-#include <QVariant>
 
 QT_BEGIN_NAMESPACE
 

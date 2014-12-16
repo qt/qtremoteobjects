@@ -47,6 +47,8 @@
 #include <QLocalServer>
 #include <QTcpServer>
 #include <QtGlobal>
+#include <QLocalSocket>
+#include <QTcpSocket>
 
 #ifdef Q_OS_LINUX
 #include <QFile>

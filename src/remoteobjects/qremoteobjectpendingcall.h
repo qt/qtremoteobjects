@@ -44,7 +44,6 @@
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
-#include <QDebug>
 #include <QVariant>
 
 QT_BEGIN_NAMESPACE

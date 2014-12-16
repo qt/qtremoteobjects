@@ -45,7 +45,6 @@
 #include "qremoteobjectsource_p.h"
 #include "qtremoteobjectglobal.h"
 
-#include <QMetaClassInfo>
 #include <QStringList>
 
 QT_BEGIN_NAMESPACE

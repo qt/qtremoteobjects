@@ -1,4 +1,3 @@
-#include <QtCore>
 class TcpDataCenter
 {
     PROP(int data1);

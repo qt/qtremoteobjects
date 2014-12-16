@@ -45,7 +45,6 @@
 #include "qremoteobjectreplica_p.h"
 
 #include <QCoreApplication>
-#include <QDebug>
 
 #include <private/qobject_p.h>
 

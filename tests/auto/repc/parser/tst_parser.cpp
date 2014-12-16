@@ -44,7 +44,6 @@
 #include <QTemporaryFile>
 #include <QTest>
 #include <QTextStream>
-#include <QDebug>
 
 Q_DECLARE_METATYPE(ASTProperty::Modifier)
 

@@ -44,7 +44,6 @@
 
 #include <QStringList>
 #include <QVector>
-#include <QMap>
 
 /// A property of a Class declaration
 struct ASTProperty

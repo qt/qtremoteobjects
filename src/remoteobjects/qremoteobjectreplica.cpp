@@ -52,7 +52,6 @@
 #include <QCoreApplication>
 #include <QDataStream>
 #include <QVariant>
-#include <QMetaProperty>
 #include <QThread>
 #include <QTime>
 #include <QTimer>
