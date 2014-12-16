@@ -28,6 +28,4 @@ rep_*_replica.h
 /examples/RemoteObjects/server/server
 /mkspecs/modules-inst/
 /mkspecs/modules/
-/tests/auto/integration/tst_integration
-
 

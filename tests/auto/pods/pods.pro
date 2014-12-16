@@ -1,9 +1,9 @@
 CONFIG += testcase parallel_test
-TARGET = tst_server2client
+TARGET = tst_pods
 QT += testlib remoteobjects
 QT -= gui
 
-SOURCES += tst_server2client.cpp
+SOURCES += tst_pods.cpp
 
 REP_FILES = pods.h
 

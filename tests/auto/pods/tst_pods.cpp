@@ -46,7 +46,7 @@
 #include <QByteArray>
 #include <QDataStream>
 
-class tst_Server2Client : public QObject {
+class tst_pods : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
@@ -56,7 +56,7 @@ private Q_SLOTS:
 };
 
 
-void tst_Server2Client::testConstructors()
+void tst_pods::testConstructors()
 {
     PodI pi1;
     QCOMPARE(pi1.i(), 0);
@@ -74,13 +74,13 @@ void tst_Server2Client::testConstructors()
     QCOMPARE(pi5.i(), 1);
 }
 
-void tst_Server2Client::testParent()
+void tst_pods::testParent()
 {
     PodI pi;
     QVERIFY(!pi.parent());
 }
 
-void tst_Server2Client::testMarshalling()
+void tst_pods::testMarshalling()
 {
     QByteArray ba;
     QDataStream ds(&ba, QIODevice::ReadWrite);
@@ -112,7 +112,7 @@ void tst_Server2Client::testMarshalling()
     }
 }
 
-QTEST_APPLESS_MAIN(tst_Server2Client)
+QTEST_APPLESS_MAIN(tst_pods)
 
-#include "tst_server2client.moc"
+#include "tst_pods.moc"
 

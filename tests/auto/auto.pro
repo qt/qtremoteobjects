@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS += repc integration cmake server2client
+SUBDIRS += repc integration cmake pods
