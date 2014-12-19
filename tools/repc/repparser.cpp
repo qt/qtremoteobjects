@@ -327,6 +327,7 @@ void RepParser::TypeParser::parseArguments(const QString &arguments)
                 RepParser::TypeParser::generateFunctionParameter(variableName, propertyType, variableNameIndex, variableType);
                 propertyType.clear();
                 variableName.clear();
+                variableType = ASTDeclaration::None;
                 inVariable = false;
             } else {
                 propertyType += inputChar;
