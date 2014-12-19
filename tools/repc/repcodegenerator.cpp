@@ -46,42 +46,7 @@
 #include <QFileInfo>
 #include <QTextStream>
 
-// for normalizeTypeInternal
-#include <private/qmetaobject_p.h>
-#include <private/qmetaobject_moc_p.h>
-
 QT_USE_NAMESPACE
-
-// Code copied from moc.cpp
-// We cannot depend on QMetaObject::normalizedSignature,
-// since repc is linked against Qt5Bootstrap (which doesn't offer QMetaObject) when cross-compiling
-// Thus, just use internal API which is exported in private headers, as moc does
-static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
-{
-    const char *s = ba.constData();
-    int len = ba.size();
-    char stackbuf[64];
-    char *buf = (len >= 64 ? new char[len + 1] : stackbuf);
-    char *d = buf;
-    char last = 0;
-    while (*s && is_space(*s))
-        s++;
-    while (*s) {
-        while (*s && !is_space(*s))
-            last = *d++ = *s++;
-        while (*s && is_space(*s))
-            s++;
-        if (*s && ((is_ident_char(*s) && is_ident_char(last))
-                   || ((*s == ':') && (last == '<')))) {
-            last = *d++ = ' ';
-        }
-    }
-    *d = '\0';
-    QByteArray result = normalizeTypeInternal(buf, d, fixScope);
-    if (buf != stackbuf)
-        delete [] buf;
-    return result;
-}
 
 template <typename C>
 static int accumulatedSizeOfNames(const C &c)
@@ -509,7 +474,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 else
                     out << QStringLiteral("    QRemoteObjectPendingReply<%1> %2(%3)").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString());
                 out << QStringLiteral("    {");
-                const QByteArray normalizedSignature = ::normalizeType(slot.paramsAsString(ASTFunction::NoVariableNames).toLatin1().constData());
+                const QByteArray normalizedSignature = slot.paramsAsString(ASTFunction::Normalized).toLatin1();
                 out << QStringLiteral("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");")
                     .arg(className).arg(slot.name).arg(QString::fromLatin1(normalizedSignature));
                 out << QStringLiteral("        QVariantList __repc_args;");

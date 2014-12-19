@@ -1,6 +1,6 @@
 CONFIG += testcase parallel_test
 TARGET = tst_parser
-QT += testlib
+QT += testlib core-private
 QT -= gui
 
 INCLUDEPATH += $$PWD/../../../../tools/repc/

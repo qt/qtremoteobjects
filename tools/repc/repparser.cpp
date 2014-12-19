@@ -44,6 +44,42 @@
 #include <QDebug>
 #include <QTextStream>
 
+// for normalizeTypeInternal
+#include <private/qmetaobject_p.h>
+#include <private/qmetaobject_moc_p.h>
+
+// Code copied from moc.cpp
+// We cannot depend on QMetaObject::normalizedSignature,
+// since repc is linked against Qt5Bootstrap (which doesn't offer QMetaObject) when cross-compiling
+// Thus, just use internal API which is exported in private headers, as moc does
+static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
+{
+    const char *s = ba.constData();
+    int len = ba.size();
+    char stackbuf[64];
+    char *buf = (len >= 64 ? new char[len + 1] : stackbuf);
+    char *d = buf;
+    char last = 0;
+    while (*s && is_space(*s))
+        s++;
+    while (*s) {
+        while (*s && !is_space(*s))
+            last = *d++ = *s++;
+        while (*s && is_space(*s))
+            s++;
+        if (*s && ((is_ident_char(*s) && is_ident_char(last))
+                   || ((*s == ':') && (last == '<')))) {
+            last = *d++ = ' ';
+        }
+    }
+    *d = '\0';
+    QByteArray result = normalizeTypeInternal(buf, d, fixScope);
+    if (buf != stackbuf)
+        delete [] buf;
+    return result;
+}
+
+
 ASTProperty::ASTProperty()
     : modifier(ReadWrite)
 {
@@ -63,17 +99,29 @@ QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 {
     QString str;
     foreach (const ASTDeclaration &param, params) {
+        QString paramStr;
+
         if (param.variableType & ASTDeclaration::Constant)
-            str += QLatin1String("const ");
-        str += param.type;
+            paramStr += QLatin1String("const ");
+
+        paramStr += param.type;
+
         if (param.variableType & ASTDeclaration::Reference)
-            str += QLatin1String(" &");
-        if (format == WithVariableNames) {
-            str += QString::fromLatin1(" %1").arg(param.name);
+            paramStr += QLatin1String(" &");
+
+        if (format == WithVariableNames)
+            paramStr += QString::fromLatin1(" %1").arg(param.name);
+
+        if (format == Normalized) {
+            paramStr = QString::fromLatin1(::normalizeType(paramStr.toLatin1().constData()));
+            str += paramStr + QLatin1Char(',');
+        } else {
+            str += paramStr + QStringLiteral(", ");
         }
-        str += QStringLiteral(", ");
     }
-    str.chop(2);
+
+    str.chop((format == Normalized ? 1 : 2)); // chop trailing ',' or ', '
+
     return str;
 }
 

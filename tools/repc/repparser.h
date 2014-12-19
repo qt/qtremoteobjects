@@ -89,7 +89,8 @@ struct ASTFunction
 {
     enum ParamsAsStringFormat {
         NoVariableNames,
-        WithVariableNames
+        WithVariableNames,
+        Normalized
     };
 
     explicit ASTFunction(const QString &name = QString(), const QString &returnType = QLatin1String("void"));
