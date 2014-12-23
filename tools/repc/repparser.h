@@ -73,12 +73,16 @@ struct ASTDeclaration
         Reference = 2,
     };
     Q_DECLARE_FLAGS(VariableTypes, VariableType)
+
     ASTDeclaration(const QString &declarationType = QString(), const QString &declarationName = QString(), VariableTypes declarationVariableType = None)
         : type(declarationType),
           name(declarationName),
           variableType(declarationVariableType)
     {
     }
+
+    QString asString() const;
+
     QString type;
     QString name;
     VariableTypes variableType;
@@ -88,14 +92,13 @@ Q_DECLARE_TYPEINFO(ASTDeclaration, Q_MOVABLE_TYPE);
 struct ASTFunction
 {
     enum ParamsAsStringFormat {
-        NoVariableNames,
-        WithVariableNames,
+        Default,
         Normalized
     };
 
     explicit ASTFunction(const QString &name = QString(), const QString &returnType = QLatin1String("void"));
 
-    QString paramsAsString(ParamsAsStringFormat format = WithVariableNames) const;
+    QString paramsAsString(ParamsAsStringFormat format = Default) const;
     QStringList paramNames() const;
 
     QString returnType;
