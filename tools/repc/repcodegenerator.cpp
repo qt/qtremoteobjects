@@ -474,9 +474,8 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 else
                     out << QStringLiteral("    QRemoteObjectPendingReply<%1> %2(%3)").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString());
                 out << QStringLiteral("    {");
-                const QByteArray normalizedSignature = slot.paramsAsString(ASTFunction::Normalized).toLatin1();
                 out << QStringLiteral("        static int __repc_index = %1::staticMetaObject.indexOfSlot(\"%2(%3)\");")
-                    .arg(className).arg(slot.name).arg(QString::fromLatin1(normalizedSignature));
+                    .arg(className).arg(slot.name).arg(slot.paramsAsString(ASTFunction::Normalized));
                 out << QStringLiteral("        QVariantList __repc_args;");
                 if (!slot.paramNames().isEmpty()) {
                     QStringList variantNames;
