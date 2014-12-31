@@ -90,7 +90,7 @@ ASTProperty::ASTProperty(const QString &type, const QString &name, const QString
 {
 }
 
-QString ASTDeclaration::asString() const
+QString ASTDeclaration::asString(bool withName) const
 {
     QString str;
     if (variableType & ASTDeclaration::Constant)
@@ -98,7 +98,8 @@ QString ASTDeclaration::asString() const
     str += type;
     if (variableType & ASTDeclaration::Reference)
         str += QLatin1String(" &");
-    str += QString::fromLatin1(" %1").arg(name);
+    if (withName)
+        str += QString::fromLatin1(" %1").arg(name);
     return str;
 }
 
@@ -111,7 +112,7 @@ QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 {
     QString str;
     foreach (const ASTDeclaration &param, params) {
-        QString paramStr = param.asString();
+        QString paramStr = param.asString(format != Normalized);
         if (format == Normalized) {
             paramStr = QString::fromLatin1(::normalizeType(paramStr.toLatin1().constData()));
             str += paramStr + QLatin1Char(',');

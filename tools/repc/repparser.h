@@ -81,7 +81,7 @@ struct ASTDeclaration
     {
     }
 
-    QString asString() const;
+    QString asString(bool withName) const;
 
     QString type;
     QString name;
