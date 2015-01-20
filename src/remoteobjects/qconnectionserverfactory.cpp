@@ -130,9 +130,8 @@ QUrl LocalServerImpl::address() const
 
 bool LocalServerImpl::listen(const QUrl &address)
 {
-#ifdef Q_OS_LINUX
-    QFile socketFile(QDir::tempPath() + QDir::separator() + address.path());
-    socketFile.remove();
+#ifdef Q_OS_UNIX
+    QLocalServer::removeServer(address.path());
 #endif
     return m_server.listen(address.path());
 }
