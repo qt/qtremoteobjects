@@ -44,6 +44,7 @@
 
 #include <QtCore/QScopedPointer>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
+#include <QtCore/QMetaMethod>
 
 QT_BEGIN_NAMESPACE
 
