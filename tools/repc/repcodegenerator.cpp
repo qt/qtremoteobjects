@@ -487,7 +487,6 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
 
                     out << QStringLiteral("        __repc_args << %1;").arg(variantNames.join(QLatin1String(" << ")));
                 }
-                out << QStringLiteral("        qDebug() << \"%1::%2\" << __repc_index;").arg(className).arg(slot.name);
                 if (isVoid)
                     out << QStringLiteral("        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);");
                 else
