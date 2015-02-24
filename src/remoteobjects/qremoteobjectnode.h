@@ -99,7 +99,7 @@ public:
         ApiDefinition<ObjectType> *api = new ApiDefinition<ObjectType>;
         return enableRemoting(object, api);
     }
-    bool enableRemoting(QObject *object, const QMetaObject *meta = Q_NULLPTR);
+    bool enableRemoting(QObject *object);
     bool disableRemoting(QObject *remoteObject);
 
     ErrorCode lastError() const;

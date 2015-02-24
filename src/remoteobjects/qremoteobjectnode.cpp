@@ -606,52 +606,30 @@ QRemoteObjectDynamicReplica *QRemoteObjectNode::acquire(const QString &name)
     return static_cast<QRemoteObjectDynamicReplica*>(d_ptr->acquire(Q_NULLPTR, instance, name));
 }
 
-bool QRemoteObjectNode::enableRemoting(QObject *object, const QMetaObject *_meta)
+bool QRemoteObjectNode::enableRemoting(QObject *object)
 {
     if (d_ptr->remoteObjectIo.isNull()) {
         d_ptr->m_lastError = OperationNotValidOnClientNode;
         return false;
     }
 
-    const QMetaObject *meta = _meta;
+    const QMetaObject *meta = object->metaObject();
     QString name;
-    if (!meta) { //If meta isn't provided, we need to search for an object that has RemoteObject CLASSINFO
-        meta = object->metaObject();
-        int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-        if (ind != -1) {
-            int tmp = ind;
-            name = QString::fromLatin1(meta->classInfo(ind).value());
-            while (tmp == ind) {
-                meta = meta->superClass();
-                Q_ASSERT(meta); //This recurse to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
-                tmp = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-                //At the point we don't find QCLASSINFO_REMOTEOBJECT_TYPE, we have the metaobject we should work from
-            }
-        } else {
-            name = object->objectName();
-            if (name.isEmpty()) {
-                d_ptr->m_lastError = MissingObjectName;
-                qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
-                return false;
-            }
-            meta = object->metaObject()->superClass();  //*Assume* we only want object's API forwarded
+    int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+    if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
+        int tmp = ind;
+        name = QString::fromLatin1(meta->classInfo(ind).value());
+        while (tmp == ind) {
+            meta = meta->superClass();
+            Q_ASSERT(meta); //This recurse to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
+            tmp = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+            //At the point we don't find QCLASSINFO_REMOTEOBJECT_TYPE, we have the metaobject we should work from
         }
-    } else {
+    } else { //This is a passed in QObject, use its API
         name = object->objectName();
         if (name.isEmpty()) {
             d_ptr->m_lastError = MissingObjectName;
             qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
-            return false;
-        }
-        const QMetaObject *check = object->metaObject();
-        if (check == meta) {
-            qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: The QMetaObject pointer provided is for object.  An ancestor of object should be used.";
-            return false;
-        }
-        while (check && check != meta)
-            check = check->superClass();
-        if (!check) { //Oops, meta is not a superclass of object
-            qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: The QMetaObject must be an ancestor of object.";
             return false;
         }
     }
