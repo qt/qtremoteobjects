@@ -45,6 +45,10 @@
 #include <QStringList>
 #include <QVector>
 
+QT_BEGIN_NAMESPACE
+class QIODevice;
+QT_END_NAMESPACE
+
 /// A property of a Class declaration
 struct ASTProperty
 {
