@@ -59,9 +59,10 @@ using namespace QRemoteObjectPackets;
 const int QRemoteObjectSourcePrivate::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
 const int QRemoteObjectSourcePrivate::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 
-QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const SourceApiMap *api)
+QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const SourceApiMap *api, QObject *adapter)
     : QObject(obj),
       m_object(obj),
+      m_adapter(adapter),
       m_api(api)
 {
     if (!obj) {
@@ -79,9 +80,16 @@ QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const Sourc
         //
         //We know no one will inherit from this class, so no need to worry about indices from
         //derived classes.
-        if (!QMetaObject::connect(obj, sourceIndex, this, QRemoteObjectSourcePrivate::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
-            qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
-            return;
+        if (m_api->isAdapterSignal(idx)) {
+            if (!QMetaObject::connect(adapter, sourceIndex, this, QRemoteObjectSourcePrivate::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+                qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
+                return;
+            }
+        } else {
+            if (!QMetaObject::connect(obj, sourceIndex, this, QRemoteObjectSourcePrivate::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+                qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
+                return;
+            }
         }
 
         qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << meta->method(sourceIndex).name();
@@ -111,7 +119,7 @@ QVariantList QRemoteObjectSourcePrivate::marshalArgs(int index, void **a)
     return list;
 }
 
-bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QVariantList &args, QVariant* returnValue)
+bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
 {
     QVarLengthArray<void*, 10> param(args.size() + 1);
 
@@ -132,6 +140,8 @@ bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, int index, const QV
         }
 
     }
+    if (forAdapter)
+        return (m_adapter->qt_metacall(c, index, param.data()) == -1);
     return (parent()->qt_metacall(c, index, param.data()) == -1);
 }
 
@@ -161,10 +171,17 @@ void QRemoteObjectSourcePrivate::handleMetaCall(int index, QMetaObject::Call cal
 
     const int propertyIndex = m_api->propertyIndexFromSignal(index);
     if (propertyIndex >= 0) {
-        const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
-        qCDebug(QT_REMOTEOBJECT) << "Invoke Property" << mp.name() << mp.read(m_object);
-        QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_object));
-        ba = p.serialize();
+        if (m_api->isAdapterProperty(index)) {
+            const QMetaProperty mp = m_adapter->metaObject()->property(propertyIndex);
+            qCDebug(QT_REMOTEOBJECT) << "Invoke Property (adapter)" << propertyIndex << mp.name() << mp.read(this);
+            QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(this));
+            ba = p.serialize();
+        } else {
+            const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
+            qCDebug(QT_REMOTEOBJECT) << "Invoke Property" << propertyIndex << mp.name() << mp.read(m_object);
+            QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_object));
+            ba = p.serialize();
+        }
     }
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();

@@ -108,7 +108,11 @@ QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in)
 QByteArray QInitPacketEncoder::serialize() const
 {
     const QMetaObject *meta = object->m_object->metaObject();
+    const QMetaObject *adapterMeta = Q_NULLPTR;
+    if (object->hasAdapter())
+        adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
+
     DataStreamPacket ds(id);
     ds << api->name();
     qint64 postNamePosition = ds.device()->pos();
@@ -124,9 +128,15 @@ QByteArray QInitPacketEncoder::serialize() const
             qCWarning(QT_REMOTEOBJECT) << "QInitPacketEncoder - Found invalid property.  Index not found:" << i << "Dropping invalid packet.";
             return QByteArray();
         }
-        const QMetaProperty mp = meta->property(index);
-        ds << mp.name();
-        ds << mp.read(object->m_object);
+        if (api->isAdapterProperty(i)) {
+            const QMetaProperty mp = adapterMeta->property(index);
+            ds << mp.name();
+            ds << mp.read(object->m_adapter);
+        } else {
+            const QMetaProperty mp = meta->property(index);
+            ds << mp.name();
+            ds << mp.read(object->m_object);
+        }
     }
 
     //Now go back and set the size of the rest of the data so we can treat is as a QByteArray
@@ -194,6 +204,9 @@ bool QInitPacket::deserialize(QDataStream& in)
 QByteArray QInitDynamicPacketEncoder::serialize() const
 {
     const QMetaObject *meta = object->m_object->metaObject();
+    const QMetaObject *adapterMeta = Q_NULLPTR;
+    if (object->hasAdapter())
+        adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
     DataStreamPacket ds(id);
@@ -243,14 +256,25 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
             qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid method.  Index not found:" << i << "Dropping invalid packet.";
             return QByteArray();
         }
-        const QMetaProperty mp = meta->property(index);
-        ds << mp.name();
-        ds << mp.typeName();
-        if (mp.notifySignalIndex() == -1)
-            ds << QByteArray();
-        else
-            ds << mp.notifySignal().methodSignature();
-        ds << mp.read(object->m_object);
+        if (api->isAdapterProperty(i)) {
+            const QMetaProperty mp = adapterMeta->property(index);
+            ds << mp.name();
+            ds << mp.typeName();
+            if (mp.notifySignalIndex() == -1)
+                ds << QByteArray();
+            else
+                ds << mp.notifySignal().methodSignature();
+            ds << mp.read(object->m_adapter);
+        } else {
+            const QMetaProperty mp = meta->property(index);
+            ds << mp.name();
+            ds << mp.typeName();
+            if (mp.notifySignalIndex() == -1)
+                ds << QByteArray();
+            else
+                ds << mp.notifySignal().methodSignature();
+            ds << mp.read(object->m_object);
+        }
     }
 
     //Now go back and set the size of the rest of the data so we can treat is as a QByteArray

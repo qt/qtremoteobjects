@@ -55,20 +55,21 @@ class ServerIoDevice;
 class QRemoteObjectSourcePrivate : public QObject
 {
 public:
-    explicit QRemoteObjectSourcePrivate(QObject *object, const SourceApiMap *);
+    explicit QRemoteObjectSourcePrivate(QObject *object, const SourceApiMap *, QObject *adapter);
 
     ~QRemoteObjectSourcePrivate();
 
     int qt_metacall(QMetaObject::Call call, int methodId, void **a);
     QList<ServerIoDevice*> listeners;
-    QObject *m_object;
+    QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;
+    bool hasAdapter() const { return m_adapter; }
 
     QVariantList marshalArgs(int index, void **a);
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
-    bool invoke(QMetaObject::Call c, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
+    bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
     static const int qobjectPropertyOffset;
     static const int qobjectMethodOffset;
 };

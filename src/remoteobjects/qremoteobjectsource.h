@@ -144,6 +144,9 @@ public:
     virtual const QByteArray typeName(int index) const = 0;
     virtual int propertyIndexFromSignal(int index) const = 0;
     virtual bool isDynamic() const { return false; }
+    virtual bool isAdapterSignal(int) const { return false; }
+    virtual bool isAdapterMethod(int) const { return false; }
+    virtual bool isAdapterProperty(int) const { return false; }
 };
 
 QT_END_NAMESPACE

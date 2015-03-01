@@ -83,7 +83,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *m
     return enableRemoting(object, new DynamicApiMap(object, meta, name));
 }
 
-bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api)
+bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     const QString name = api->name();
     if (!api->isDynamic() && m_remoteObjects.contains(name)) {
@@ -91,8 +91,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
         return false;
     }
 
-    QRemoteObjectSourcePrivate *pp = new QRemoteObjectSourcePrivate(object, api);
-
+    QRemoteObjectSourcePrivate *pp = new QRemoteObjectSourcePrivate(object, api, adapter);
     qCDebug(QT_REMOTEOBJECT) << "Registering" << name;
 
     m_remoteObjects[name] = pp;
@@ -190,12 +189,15 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         //TODO - consider moving this to packet validation?
                         break;
                     }
-                    qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
+                    if (pp->m_api->isAdapterMethod(p->index))
+                        qCDebug(QT_REMOTEOBJECT) << "Adapter (method) Invoke-->" << name << pp->m_adapter->metaObject()->method(resolvedIndex).name();
+                    else
+                        qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
                     int typeId = QVariant::nameToType(pp->m_api->typeName(p->index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
                     QVariant returnValue(typeId, Q_NULLPTR);
-                    pp->invoke(QMetaObject::InvokeMetaMethod, resolvedIndex, p->args, &returnValue);
+                    pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->isAdapterMethod(p->index), resolvedIndex, p->args, &returnValue);
                     // send reply if wanted
                     if (p->serialId >= 0) {
                         QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
@@ -208,8 +210,11 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         //TODO - consider moving this to packet validation?
                         break;
                     }
-                    qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(resolvedIndex).name();
-                    pp->invoke(QMetaObject::WriteProperty, resolvedIndex, p->args);
+                    if (pp->m_api->isAdapterProperty(p->index))
+                        qCDebug(QT_REMOTEOBJECT) << "Adapter (write property) Invoke-->" << name << pp->m_adapter->metaObject()->property(resolvedIndex).name();
+                    else
+                        qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(resolvedIndex).name();
+                    pp->invoke(QMetaObject::WriteProperty, pp->m_api->isAdapterProperty(p->index), resolvedIndex, p->args);
                 }
             }
             break;
