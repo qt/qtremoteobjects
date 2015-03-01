@@ -182,10 +182,10 @@ void QRemoteObjectSourcePrivate::addListener(ServerIoDevice *io, bool dynamic)
     listeners.append(io);
 
     if (dynamic) {
-        QRemoteObjectPackets::QInitDynamicPacketEncoder p(m_object, m_api);
+        QRemoteObjectPackets::QInitDynamicPacketEncoder p(this);
         io->write(p.serialize());
     } else {
-        QRemoteObjectPackets::QInitPacketEncoder p(m_object, m_api);
+        QRemoteObjectPackets::QInitPacketEncoder p(this);
         io->write(p.serialize());
     }
 }

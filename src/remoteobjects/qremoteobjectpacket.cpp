@@ -45,6 +45,7 @@
 #include "qremoteobjectsource.h"
 
 #include "private/qmetaobjectbuilder_p.h"
+#include "private/qremoteobjectsource_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -106,14 +107,14 @@ QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in)
 
 QByteArray QInitPacketEncoder::serialize() const
 {
+    const QMetaObject *meta = object->m_object->metaObject();
+    const SourceApiMap *api = object->m_api;
     DataStreamPacket ds(id);
     ds << api->name();
     qint64 postNamePosition = ds.device()->pos();
     ds << quint32(0);
 
     //Now copy the property data
-    const QMetaObject *meta = object->metaObject();
-
     const int numProperties = api->propertyCount();
     ds << quint32(numProperties);  //Number of properties
 
@@ -125,7 +126,7 @@ QByteArray QInitPacketEncoder::serialize() const
         }
         const QMetaProperty mp = meta->property(index);
         ds << mp.name();
-        ds << mp.read(object);
+        ds << mp.read(object->m_object);
     }
 
     //Now go back and set the size of the rest of the data so we can treat is as a QByteArray
@@ -192,14 +193,15 @@ bool QInitPacket::deserialize(QDataStream& in)
 
 QByteArray QInitDynamicPacketEncoder::serialize() const
 {
+    const QMetaObject *meta = object->m_object->metaObject();
+    const SourceApiMap *api = object->m_api;
+
     DataStreamPacket ds(id);
     ds << api->name();
     qint64 postNamePosition = ds.device()->pos();
     ds << quint32(0);
 
     //Now copy the property data
-    const QMetaObject *meta = object->metaObject();
-
     const int numSignals = api->signalCount();
     ds << quint32(numSignals);  //Number of signals
     const int numMethods = api->methodCount();
@@ -248,7 +250,7 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
             ds << QByteArray();
         else
             ds << mp.notifySignal().methodSignature();
-        ds << mp.read(object);
+        ds << mp.read(object->m_object);
     }
 
     //Now go back and set the size of the rest of the data so we can treat is as a QByteArray

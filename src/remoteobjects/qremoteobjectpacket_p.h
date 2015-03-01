@@ -56,7 +56,7 @@
 QT_BEGIN_NAMESPACE
 
 class QMetaObjectBuilder;
-class SourceApiMap;
+class QRemoteObjectSourcePrivate;
 
 namespace QRemoteObjectPackets {
 
@@ -108,12 +108,11 @@ public:
 class QInitPacketEncoder : public QRemoteObjectPacket
 {
 public:
-    inline QInitPacketEncoder(const QObject *_object, const SourceApiMap *_api)
-        : QRemoteObjectPacket(InitPacket), object(_object), api(_api) {}
+    inline QInitPacketEncoder(const QRemoteObjectSourcePrivate *_object)
+        : QRemoteObjectPacket(InitPacket), object(_object) {}
     QByteArray serialize() const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
-    const QObject *object;
-    const SourceApiMap *api;
+    const QRemoteObjectSourcePrivate *object;
 private:
     QInitPacketEncoder() {}
 };
@@ -131,12 +130,11 @@ public:
 class QInitDynamicPacketEncoder : public QRemoteObjectPacket
 {
 public:
-    QInitDynamicPacketEncoder(const QObject *_object, const SourceApiMap *_api)
-        : QRemoteObjectPacket(InitDynamicPacket), object(_object), api(_api) {}
+    QInitDynamicPacketEncoder(const QRemoteObjectSourcePrivate *_object)
+        : QRemoteObjectPacket(InitDynamicPacket), object(_object) {}
     QByteArray serialize() const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
-    const QObject *object;
-    const SourceApiMap *api;
+    const QRemoteObjectSourcePrivate *object;
 private:
     QInitDynamicPacketEncoder() {}
 };
