@@ -537,7 +537,7 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
             out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(0));")
                                  .arg(prop.name);
             changeSignals << QString::fromLatin1("%1Changed").arg(prop.name);
-            propertyChangeIndex << i;
+            propertyChangeIndex << i + 1; //_properties[0] is the count, so index is one higher
         }
     }
     const int signalCount = astClass.signalsList.count();
