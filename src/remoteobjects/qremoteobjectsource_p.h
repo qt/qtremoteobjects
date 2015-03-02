@@ -82,9 +82,24 @@ public:
     int propertyCount() const Q_DECL_OVERRIDE { return _properties.size(); }
     int signalCount() const Q_DECL_OVERRIDE { return _signals.size(); }
     int methodCount() const Q_DECL_OVERRIDE { return _methods.size(); }
-    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE { return _properties.at(index); }
-    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE { return _signals.at(index); }
-    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE { return _methods.at(index); }
+    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE
+    {
+        if (index < 0 || index >= propertyCount())
+            return -1;
+        return _properties.at(index);
+    }
+    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE
+    {
+        if (index < 0 || index >= signalCount())
+            return -1;
+        return _signals.at(index);
+    }
+    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE
+    {
+        if (index < 0 || index >= methodCount())
+            return -1;
+        return _methods.at(index);
+    }
     int signalParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(_signals.at(index)); }
     int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(_signals.at(sigIndex), paramIndex); }
     const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE { return signature(_signals.at(index)); }
@@ -95,7 +110,7 @@ public:
     const QByteArray typeName(int index) const Q_DECL_OVERRIDE;
     int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE
     {
-        if (index < _propertyAssociatedWithSignal.size())
+        if (index >= 0 && index < _propertyAssociatedWithSignal.size())
             return _propertyAssociatedWithSignal.at(index);
         return -1;
     }

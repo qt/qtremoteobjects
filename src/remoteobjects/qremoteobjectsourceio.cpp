@@ -184,30 +184,32 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             if (m_remoteObjects.contains(name)) {
                 QRemoteObjectSourcePrivate *pp = m_remoteObjects[name];
                 if (p->call == QMetaObject::InvokeMetaMethod) {
-                    if (p->index < 0 || p->index >= pp->m_api->methodCount()) {
+                    const int resolvedIndex = pp->m_api->sourceMethodIndex(p->index);
+                    if (resolvedIndex < 0) { //Invalid index
                         qCWarning(QT_REMOTEOBJECT) << "Invalid method invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
                         //TODO - consider moving this to packet validation?
-                    } else {
-                        qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(pp->m_api->sourceMethodIndex(p->index)).name();
-                        int typeId = QVariant::nameToType(pp->m_api->typeName(p->index).constData());
-                        if (!QMetaType(typeId).sizeOf())
-                            typeId = QVariant::Invalid;
-                        QVariant returnValue(typeId, Q_NULLPTR);
-                        pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->sourceMethodIndex(p->index), p->args, &returnValue);
-                        // send reply if wanted
-                        if (p->serialId >= 0) {
-                            QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
-                            connection->write(replyPacket.serialize());
-                        }
+                        break;
+                    }
+                    qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
+                    int typeId = QVariant::nameToType(pp->m_api->typeName(p->index).constData());
+                    if (!QMetaType(typeId).sizeOf())
+                        typeId = QVariant::Invalid;
+                    QVariant returnValue(typeId, Q_NULLPTR);
+                    pp->invoke(QMetaObject::InvokeMetaMethod, resolvedIndex, p->args, &returnValue);
+                    // send reply if wanted
+                    if (p->serialId >= 0) {
+                        QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
+                        connection->write(replyPacket.serialize());
                     }
                 } else {
-                    if (p->index < 0 || p->index >= pp->m_api->propertyCount()) {
+                    const int resolvedIndex = pp->m_api->sourcePropertyIndex(p->index);
+                    if (resolvedIndex < 0) {
                         qCWarning(QT_REMOTEOBJECT) << "Invalid property invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
                         //TODO - consider moving this to packet validation?
-                    } else {
-                        qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(pp->m_api->sourcePropertyIndex(p->index)).name();
-                        pp->invoke(QMetaObject::WriteProperty, pp->m_api->sourcePropertyIndex(p->index), p->args);
+                        break;
                     }
+                    qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(resolvedIndex).name();
+                    pp->invoke(QMetaObject::WriteProperty, resolvedIndex, p->args);
                 }
             }
             break;

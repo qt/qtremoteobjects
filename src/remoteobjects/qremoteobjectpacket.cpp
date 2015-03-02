@@ -118,7 +118,12 @@ QByteArray QInitPacketEncoder::serialize() const
     ds << quint32(numProperties);  //Number of properties
 
     for (int i = 0; i < numProperties; ++i) {
-        const QMetaProperty mp = meta->property(api->sourcePropertyIndex(i));
+        const int index = api->sourcePropertyIndex(i);
+        if (index < 0) {
+            qCWarning(QT_REMOTEOBJECT) << "QInitPacketEncoder - Found invalid property.  Index not found:" << i << "Dropping invalid packet.";
+            return QByteArray();
+        }
+        const QMetaProperty mp = meta->property(index);
         ds << mp.name();
         ds << mp.read(object);
     }
@@ -201,6 +206,11 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
     ds << quint32(numMethods);  //Number of methods
 
     for (int i = 0; i < numSignals; ++i) {
+        const int index = api->sourceSignalIndex(i);
+        if (index < 0) {
+            qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid signal.  Index not found:" << i << "Dropping invalid packet.";
+            return QByteArray();
+        }
         ds << api->signalSignature(i);
         const int n = api->signalParameterCount(i);
         ds << quint32(n);
@@ -209,6 +219,11 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
     }
 
     for (int i = 0; i < numMethods; ++i) {
+        const int index = api->sourceMethodIndex(i);
+        if (index < 0) {
+            qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid method.  Index not found:" << i << "Dropping invalid packet.";
+            return QByteArray();
+        }
         ds << api->methodSignature(i);
         ds << api->typeName(i);
         const int n = api->methodParameterCount(i);
@@ -221,7 +236,12 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
     ds << quint32(numProperties);  //Number of properties
 
     for (int i = 0; i < numProperties; ++i) {
-        const QMetaProperty mp = meta->property(api->sourcePropertyIndex(i));
+        const int index = api->sourcePropertyIndex(i);
+        if (index < 0) {
+            qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid method.  Index not found:" << i << "Dropping invalid packet.";
+            return QByteArray();
+        }
+        const QMetaProperty mp = meta->property(index);
         ds << mp.name();
         ds << mp.typeName();
         if (mp.notifySignalIndex() == -1)

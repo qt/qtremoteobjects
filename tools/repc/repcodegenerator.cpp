@@ -568,9 +568,24 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
     out << QStringLiteral("    int propertyCount() const Q_DECL_OVERRIDE { return _properties[0]; }");
     out << QStringLiteral("    int signalCount() const Q_DECL_OVERRIDE { return _signals[0]; }");
     out << QStringLiteral("    int methodCount() const Q_DECL_OVERRIDE { return _methods[0]; }");
-    out << QStringLiteral("    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE { return _properties[index+1]; }");
-    out << QStringLiteral("    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE { return _signals[index+1]; }");
-    out << QStringLiteral("    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE { return _methods[index+1]; }");
+    out << QStringLiteral("    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE");
+    out << QStringLiteral("    {");
+    out << QStringLiteral("        if (index < 0 || index >= _properties[0])");
+    out << QStringLiteral("            return -1;");
+    out << QStringLiteral("        return _properties[index+1];");
+    out << QStringLiteral("    }");
+    out << QStringLiteral("    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE");
+    out << QStringLiteral("    {");
+    out << QStringLiteral("        if (index < 0 || index >= _signals[0])");
+    out << QStringLiteral("            return -1;");
+    out << QStringLiteral("        return _signals[index+1];");
+    out << QStringLiteral("    }");
+    out << QStringLiteral("    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE");
+    out << QStringLiteral("    {");
+    out << QStringLiteral("        if (index < 0 || index >= _methods[0])");
+    out << QStringLiteral("            return -1;");
+    out << QStringLiteral("        return _methods[index+1];");
+    out << QStringLiteral("    }");
     out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return signalArgCount[index]; }");
     out << QString::fromLatin1("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE "
                                "{ return signalArgTypes[sigIndex][paramIndex]; }");

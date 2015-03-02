@@ -483,10 +483,20 @@ void QInProcessReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
 {
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod || call == QMetaObject::WriteProperty);
 
-    if (call == QMetaObject::InvokeMetaMethod)
-        connectionToSource->invoke(call, connectionToSource->m_api->sourceMethodIndex(index - m_methodOffset), args);
-    else
-        connectionToSource->invoke(call, connectionToSource->m_api->sourcePropertyIndex(index - m_propertyOffset), args);
+    const SourceApiMap *api = connectionToSource->m_api;
+    if (call == QMetaObject::InvokeMetaMethod) {
+        const int resolvedIndex = api->sourceMethodIndex(index - m_methodOffset);
+        if (resolvedIndex < 0)
+            qCWarning(QT_REMOTEOBJECT) << "Skipping invalid invocation.  Index not found:" << index - m_methodOffset;
+        else
+            connectionToSource->invoke(call, resolvedIndex, args);
+    } else {
+        const int resolvedIndex = connectionToSource->m_api->sourcePropertyIndex(index - m_propertyOffset);
+        if (resolvedIndex < 0)
+            qCWarning(QT_REMOTEOBJECT) << "Skipping invalid property setter.  Index not found:" << index - m_propertyOffset;
+        else
+            connectionToSource->invoke(call, resolvedIndex, args);
+    }
 }
 
 QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
@@ -498,7 +508,14 @@ QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject:
     if (!QMetaType(typeId).sizeOf())
         typeId = QVariant::Invalid;
     QVariant returnValue(typeId, Q_NULLPTR);
-    connectionToSource->invoke(call, connectionToSource->m_api->sourceMethodIndex(ReplicaIndex), args, &returnValue);
+
+    const int resolvedIndex = connectionToSource->m_api->sourceMethodIndex(ReplicaIndex);
+    if (resolvedIndex < 0) {
+        qCWarning(QT_REMOTEOBJECT) << "Skipping invalid invocation.  Index not found:" << ReplicaIndex;
+        return QRemoteObjectPendingCall();
+    }
+
+    connectionToSource->invoke(call, resolvedIndex, args, &returnValue);
     return QRemoteObjectPendingCall::fromCompletedCall(returnValue);
 }
 
