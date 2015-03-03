@@ -9,9 +9,8 @@ INCLUDEPATH += $$PWD
 !isEmpty(QOBJECT_REP) {
     qtPrepareTool(QMAKE_REPC, repc)
 
-    REPC_INCLUDEPATHES = $$QT.remoteobjects.includes
-    for (path, REPC_INCLUDEPATHES) {
-        REPC_INCLUDEPATH += -I $$path
+    for (path, QT.remoteobjects.includes) {
+        REPC_INCLUDEPATH += -I $$shell_quote($$path)
     }
 
     source2rep.input = QOBJECT_REP
