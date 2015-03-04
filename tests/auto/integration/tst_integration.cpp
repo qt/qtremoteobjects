@@ -75,6 +75,10 @@ private slots:
         QLoggingCategory::setFilterRules("*.debug=true\n"
                                          "qt.remoteobjects.debug=false\n"
                                          "qt.remoteobjects.warning=false");
+
+        qRegisterMetaType<Temperature>();
+        qRegisterMetaTypeStreamOperators<Temperature>();
+
         //Setup registry
         //Registry needs to be created first until we get the retry mechanism implemented
         m_registryServer = QRemoteObjectNode::createRegistryHostNode();
@@ -259,6 +263,17 @@ private slots:
         spy.wait();
         QCOMPARE(spy.count(), 1);
         QCOMPARE(engine_r->rpm(), 1000);
+    }
+
+    void slotWithUserReturnTypeTest() {
+        engine->setTemperature(Temperature(400, "Kelvin"));
+
+        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QRemoteObjectPendingReply<Temperature> pendingReply = engine_r->temperature();
+        pendingReply.waitForFinished();
+        Temperature temperature = pendingReply.returnValue();
+        QCOMPARE(temperature, Temperature(400, "Kelvin"));
     }
 
     void sequentialReplicaTest() {

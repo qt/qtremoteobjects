@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the examples of the Qt Toolkit.
+** This file is part of the QtRemoteObjects module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,38 +39,58 @@
 **
 ****************************************************************************/
 
-#include "engine.h"
+#ifndef TEMPERATURE_H
+#define TEMPERATURE_H
 
-Engine::Engine(QObject *parent) :
-  EngineSimpleSource(parent)
+#include <QString>
+
+class Temperature
 {
-    setRpm(0);
+public:
+    Temperature() : _value(0) {}
+    Temperature(double value, const QString &unit) : _value(value), _unit(unit) {}
+
+    void setValue(double arg) { _value = arg; }
+    double value() const { return _value; }
+
+    void setUnit(const QString &arg) { _unit = arg; }
+    QString unit() const { return _unit; }
+
+private:
+    double _value;
+    QString _unit;
+};
+
+inline bool operator==(const Temperature &lhs, const Temperature &rhs)
+{
+    return lhs.unit() == rhs.unit() &&
+            lhs.value() == rhs.value();
 }
 
-Engine::~Engine()
+inline bool operator!=(const Temperature &lhs, const Temperature &rhs)
 {
+    return !(lhs == rhs);
 }
 
-bool Engine::start()
+inline QDataStream &operator<<(QDataStream &out, const Temperature &temperature)
 {
-    if (started())
-        return false; // already started
-
-    setStarted(true);
-    return true;
+    out << temperature.value();
+    out << temperature.unit();
+    return out;
 }
 
-void Engine::increaseRpm(int deltaRpm)
+inline QDataStream &operator>>(QDataStream &in, Temperature &temperature)
 {
-    setRpm(rpm() + deltaRpm);
+    double value;
+    in >> value;
+    temperature.setValue(value);
+
+    QString unit;
+    in >> unit;
+    temperature.setUnit(unit);
+    return in;
 }
 
-Temperature Engine::temperature()
-{
-    return _temperature;
-}
+Q_DECLARE_METATYPE(Temperature);
 
-void Engine::setTemperature(const Temperature &value)
-{
-    _temperature = value;
-}
+#endif

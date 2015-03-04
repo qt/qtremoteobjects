@@ -1,3 +1,5 @@
+#include "temperature.h"
+
 class Engine
 {
     PROP(int cylinders = 4 CONSTANT);
@@ -8,4 +10,6 @@ class Engine
     SLOT(void increaseRpm(int deltaRpm));
 
     SLOT(void unnormalizedSignature(int a, int b));
+
+    SLOT(Temperature temperature())
 };

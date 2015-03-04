@@ -12,7 +12,8 @@ REPC_SOURCE += $$OTHER_FILES
 REPC_REPLICA += $$OTHER_FILES
 
 HEADERS += $$PWD/engine.h \
-           $$PWD/speedometer.h
+           $$PWD/speedometer.h \
+           $$PWD/temperature.h
 
 SOURCES += $$PWD/engine.cpp \
            $$PWD/speedometer.cpp \

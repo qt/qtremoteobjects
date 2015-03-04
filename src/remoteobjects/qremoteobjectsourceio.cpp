@@ -193,7 +193,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         qCDebug(QT_REMOTEOBJECT) << "Adapter (method) Invoke-->" << name << pp->m_adapter->metaObject()->method(resolvedIndex).name();
                     else
                         qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
-                    int typeId = QVariant::nameToType(pp->m_api->typeName(p->index).constData());
+                    int typeId = QMetaType::type(pp->m_api->typeName(p->index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
                     QVariant returnValue(typeId, Q_NULLPTR);

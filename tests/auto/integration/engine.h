@@ -55,6 +55,12 @@ public:
     void increaseRpm(int deltaRpm) Q_DECL_OVERRIDE;
 
     void unnormalizedSignature(int, int) Q_DECL_OVERRIDE {}
+
+    Temperature temperature() Q_DECL_OVERRIDE;
+    void setTemperature(const Temperature &value);
+
+private:
+    Temperature _temperature;
 };
 
 #endif
