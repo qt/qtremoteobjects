@@ -47,6 +47,8 @@
 class Engine : public EngineSimpleSource
 {
     Q_OBJECT
+    Q_PROPERTY(bool purchasedPart READ purchasedPart WRITE setpurchasedPart)
+
 public:
     Engine(QObject *parent=Q_NULLPTR);
     virtual ~Engine();
@@ -58,8 +60,13 @@ public:
 
     Temperature temperature() Q_DECL_OVERRIDE;
     void setTemperature(const Temperature &value);
+    bool purchasedPart() {return _purchasedPart;}
+
+public Q_SLOTS:
+    void setpurchasedPart(bool value);
 
 private:
+    bool _purchasedPart;
     Temperature _temperature;
 };
 

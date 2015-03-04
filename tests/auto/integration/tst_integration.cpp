@@ -227,6 +227,17 @@ private slots:
         QCOMPARE(started, true);
     }
 
+    void expapiTestDynamicReplica(){
+        engine->setStarted(false);
+        QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
+        const QMetaObject *metaObject = engine_r->metaObject();
+        const int propIndex = metaObject->indexOfProperty("purchasedPart");
+        QVERIFY(propIndex < 0);
+        const int methodIndex = metaObject->indexOfMethod("setpurchasedPart(bool)");
+        QVERIFY(methodIndex < 0);
+
+    }
+
     void slotTestInProcess() {
         engine->setStarted(false);
 

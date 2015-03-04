@@ -230,18 +230,18 @@ int QRemoteObjectSourcePrivate::qt_metacall(QMetaObject::Call call, int methodId
     return -1;
 }
 
-DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *baseMeta, const QString &name)
+DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *meta, const QString &name)
     : _name(name),
-      _meta(object->metaObject()),
+      _meta(meta),
       _cachedMetamethodIndex(-1)
 {
-    const int propCount = _meta->propertyCount();
-    const int propOffset = baseMeta->propertyCount();
+    const int propCount = meta->propertyCount();
+    const int propOffset = meta->propertyOffset();
     _properties.reserve(propCount-propOffset);
     int i = 0;
     for (i = propOffset; i < propCount; ++i) {
         _properties << i;
-        const int notifyIndex = _meta->property(i).notifySignalIndex();
+        const int notifyIndex = meta->property(i).notifySignalIndex();
         if (notifyIndex != -1) {
             _signals << notifyIndex;
             _propertyAssociatedWithSignal.append(i);
@@ -250,10 +250,10 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *baseMeta, const
             //will be the property that changed.  This is only valid if i < _propertyAssociatedWithSignal.size().
         }
     }
-    const int methodCount = _meta->methodCount();
-    const int methodOffset = baseMeta->methodCount();
+    const int methodCount = meta->methodCount();
+    const int methodOffset = meta->methodOffset();
     for (i = methodOffset; i < methodCount; ++i) {
-        const QMetaMethod mm = _meta->method(i);
+        const QMetaMethod mm = meta->method(i);
         const QMetaMethod::MethodType m = mm.methodType();
         if (m == QMetaMethod::Signal) {
             if (_signals.indexOf(i) >= 0) //Already added as a property notifier

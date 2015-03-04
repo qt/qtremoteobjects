@@ -45,6 +45,7 @@ Engine::Engine(QObject *parent) :
   EngineSimpleSource(parent)
 {
     setRpm(0);
+    setpurchasedPart(false);
 }
 
 Engine::~Engine()
@@ -73,4 +74,9 @@ Temperature Engine::temperature()
 void Engine::setTemperature(const Temperature &value)
 {
     _temperature = value;
+}
+
+void Engine::setpurchasedPart(bool value)
+{
+    _purchasedPart = value;
 }

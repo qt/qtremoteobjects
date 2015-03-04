@@ -615,15 +615,15 @@ bool QRemoteObjectNode::enableRemoting(QObject *object)
 
     const QMetaObject *meta = object->metaObject();
     QString name;
-    int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+    const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
     if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
-        int tmp = ind;
         name = QString::fromLatin1(meta->classInfo(ind).value());
-        while (tmp == ind) {
+        while (true) {
+            Q_ASSERT(meta->superClass()); //This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
+            if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE)) //At the point we don't find the same QCLASSINFO_REMOTEOBJECT_TYPE,
+                            //we have the metaobject we should work from
+                break;
             meta = meta->superClass();
-            Q_ASSERT(meta); //This recurse to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
-            tmp = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-            //At the point we don't find QCLASSINFO_REMOTEOBJECT_TYPE, we have the metaobject we should work from
         }
     } else { //This is a passed in QObject, use its API
         name = object->objectName();
