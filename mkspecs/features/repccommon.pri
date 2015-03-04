@@ -25,6 +25,10 @@ for(entry, REPC_$$repc_TYPE) {
     input_list = $$upper($$group)_LIST
     for(subent, $$list($$unique(files))) {
         $$input_list += $$subent
+
+        # Add directory of *.rep file to include path
+        file_path = $$_PRO_FILE_PWD_/$$subent
+        INCLUDEPATH *= $$dirname(file_path)
     }
 }
 

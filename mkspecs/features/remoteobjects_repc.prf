@@ -1,11 +1,6 @@
 include(repcclient.pri)
 include(repcserver.pri)
 
-# Adding $$PWD to INCLUDEPATH is only needed prior to
-# commit a90bb5b89a09490a1795064133f6d8ce33b6874e in qtbase
-# ~ Qt 5.5/5.4.1
-INCLUDEPATH += $$PWD
-
 !isEmpty(QOBJECT_REP) {
     qtPrepareTool(QMAKE_REPC, repc)
 
