@@ -173,8 +173,8 @@ void QRemoteObjectSourcePrivate::handleMetaCall(int index, QMetaObject::Call cal
     if (propertyIndex >= 0) {
         if (m_api->isAdapterProperty(index)) {
             const QMetaProperty mp = m_adapter->metaObject()->property(propertyIndex);
-            qCDebug(QT_REMOTEOBJECT) << "Invoke Property (adapter)" << propertyIndex << mp.name() << mp.read(this);
-            QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(this));
+            qCDebug(QT_REMOTEOBJECT) << "Invoke Property (adapter)" << propertyIndex << mp.name() << mp.read(m_adapter);
+            QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_adapter));
             ba = p.serialize();
         } else {
             const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
