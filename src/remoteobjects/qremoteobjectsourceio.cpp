@@ -80,7 +80,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *m
         return false;
     }
 
-    return enableRemoting(object, new DynamicApiMap(object, meta, name));
+    return enableRemoting(object, new DynamicApiMap(meta, name));
 }
 
 bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)

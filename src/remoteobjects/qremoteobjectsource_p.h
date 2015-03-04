@@ -77,7 +77,7 @@ public:
 class DynamicApiMap : public SourceApiMap
 {
 public:
-    DynamicApiMap(QObject *object, const QMetaObject *meta, const QString &name);
+    DynamicApiMap(const QMetaObject *meta, const QString &name);
     ~DynamicApiMap() {}
     QString name() const Q_DECL_OVERRIDE { return _name; }
     int propertyCount() const Q_DECL_OVERRIDE { return _properties.size(); }
