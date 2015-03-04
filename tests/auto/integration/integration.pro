@@ -3,6 +3,10 @@ TARGET = tst_integration
 QT += testlib remoteobjects
 QT -= gui
 
+#Only needed for tests, and only prior to
+#commit a90bb5b89a09490a1795064133f6d8ce33b6874e
+INCLUDEPATH += $$PWD
+
 OTHER_FILES = engine.rep \
               speedometer.rep \
               ../repfiles/localdatacenter.rep \
