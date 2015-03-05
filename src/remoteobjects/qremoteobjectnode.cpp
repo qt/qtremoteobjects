@@ -674,15 +674,14 @@ bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)
     return true;
 }
 
-QRemoteObjectReplica *QRemoteObjectNode::acquire(const QMetaObject *replicaMeta, QRemoteObjectReplica *instance)
+QRemoteObjectReplica *QRemoteObjectNode::acquire(const QMetaObject *replicaMeta, QRemoteObjectReplica *instance, const QString &name)
 {
-    return d_ptr->acquire(replicaMeta, instance, name(replicaMeta));
+    return d_ptr->acquire(replicaMeta, instance, name.isEmpty() ? ::name(replicaMeta) : name);
 }
 
 QAbstractItemReplica *QRemoteObjectNode::acquireModel(const QString &name)
 {
-    Q_UNUSED(name);
-    QAbstractItemReplicaPrivate *rep = acquire<QAbstractItemReplicaPrivate>();
+    QAbstractItemReplicaPrivate *rep = acquire<QAbstractItemReplicaPrivate>(name);
     return new QAbstractItemReplica(rep);
 }
 

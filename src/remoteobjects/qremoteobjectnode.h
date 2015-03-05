@@ -109,8 +109,14 @@ public:
     ErrorCode lastError() const;
 
 private:
+    template < class ObjectType >
+    ObjectType *acquire(const QString &name)
+    {
+        ObjectType* replica = new ObjectType;
+        return qobject_cast< ObjectType* >(acquire(&ObjectType::staticMetaObject, replica, name));
+    }
     QRemoteObjectNode(const QUrl &hostAddress, const QUrl &registryAddress);
-    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *);
+    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &name = QString::fromLatin1(""));
     bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=Q_NULLPTR);
 
     QSharedPointer<QRemoteObjectNodePrivate> d_ptr;
