@@ -52,6 +52,8 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectReplica;
 class QRemoteObjectNodePrivate;
 class SourceApiMap;
+class QAbstractItemModel;
+class QAbstractItemReplica;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode
 {
@@ -92,6 +94,7 @@ public:
         return qobject_cast< ObjectType* >(acquire(&ObjectType::staticMetaObject, replica));
     }
     QRemoteObjectDynamicReplica *acquire(const QString &name);
+    QAbstractItemReplica *acquireModel(const QString &name);
 
     template <template <typename> class ApiDefinition, typename ObjectType>
     bool enableRemoting(ObjectType *object)
@@ -100,6 +103,7 @@ public:
         return enableRemoting(object, api);
     }
     bool enableRemoting(QObject *object);
+    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles);
     bool disableRemoting(QObject *remoteObject);
 
     ErrorCode lastError() const;
@@ -107,7 +111,7 @@ public:
 private:
     QRemoteObjectNode(const QUrl &hostAddress, const QUrl &registryAddress);
     QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *);
-    bool enableRemoting(QObject *object, const SourceApiMap *);
+    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=Q_NULLPTR);
 
     QSharedPointer<QRemoteObjectNodePrivate> d_ptr;
 };

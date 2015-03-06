@@ -19,7 +19,10 @@ PUBLIC_HEADERS += \
     $$PWD/qremoteobjectnode.h \
     $$PWD/qremoteobjectpendingcall.h \
     $$PWD/qtremoteobjectglobal.h \
-    $$PWD/qremoteobjectregistry.h
+    $$PWD/qremoteobjectregistry.h \
+    $$PWD/qremoteobjectabstractitemmodeltypes.h \
+    $$PWD/qremoteobjectabstractitemreplica.h
+
 
 PRIVATE_HEADERS += \
     $$PWD/qconnectionabstractfactory_p.h \
@@ -32,7 +35,9 @@ PRIVATE_HEADERS += \
     $$PWD/qremoteobjectnode_p.h \
     $$PWD/qremoteobjectpacket_p.h \
     $$PWD/qremoteobjectpendingcall_p.h \
-    $$PWD/qremoteobjectreplica_p.h
+    $$PWD/qremoteobjectreplica_p.h \
+    $$PWD/qremoteobjectabstractitemreplica_p.h \
+    $$PWD/qremoteobjectabstractitemadapter_p.h
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
 
@@ -49,7 +54,10 @@ SOURCES += \
     $$PWD/qremoteobjectnode.cpp \
     $$PWD/qremoteobjectpacket.cpp \
     $$PWD/qremoteobjectpendingcall.cpp \
-    $$PWD/qtremoteobjectglobal.cpp
+    $$PWD/qtremoteobjectglobal.cpp \
+    $$PWD/qremoteobjectabstractitemreplica.cpp \
+    $$PWD/qremoteobjectabstractitemadapter.cpp
+
 
 DEFINES += QT_BUILD_REMOTEOBJECTS_LIB
 

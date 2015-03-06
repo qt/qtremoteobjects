@@ -39,57 +39,42 @@
 **
 ****************************************************************************/
 
-#ifndef QTREMOTEOBJECTGLOBAL_H
-#define QTREMOTEOBJECTGLOBAL_H
+#ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_H
+#define QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_H
 
-#include <QtCore/qglobal.h>
-#include <QtCore/QHash>
-#include <QtCore/QUrl>
-#include <QtCore/QLoggingCategory>
+#include "qtremoteobjectglobal.h"
+
+#include <QAbstractItemModel>
 
 QT_BEGIN_NAMESPACE
 
-typedef QPair<QString, QUrl> QRemoteObjectSourceLocation;
-typedef QHash<QString, QUrl> QRemoteObjectSourceLocations;
+class QAbstractItemReplicaPrivate;
 
-Q_DECLARE_METATYPE(QRemoteObjectSourceLocation)
-Q_DECLARE_METATYPE(QRemoteObjectSourceLocations)
+class Q_REMOTEOBJECTS_EXPORT QAbstractItemReplica : public QAbstractItemModel
+{
+    Q_OBJECT
+public:
+    ~QAbstractItemReplica();
 
-#ifndef QT_STATIC
-#  if defined(QT_BUILD_REMOTEOBJECTS_LIB)
-#    define Q_REMOTEOBJECTS_EXPORT Q_DECL_EXPORT
-#  else
-#    define Q_REMOTEOBJECTS_EXPORT Q_DECL_IMPORT
-#  endif
-#else
-#  define Q_REMOTEOBJECTS_EXPORT
-#endif
+    QModelIndex parent(const QModelIndex & index) const  Q_DECL_OVERRIDE;
+    int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    QModelIndex index(int row, int column, const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const Q_DECL_OVERRIDE;
+    QVector<int> availableRoles() const;
+    bool isInitalized();
 
-#define QCLASSINFO_REMOTEOBJECT_TYPE "RemoteObject Type"
+Q_SIGNALS:
+    void initialized();
 
-class QDataStream;
-
-namespace QRemoteObjectStringLiterals {
-
-// when QStringLiteral is used with the same string in different functions,
-// it creates duplicate static data. Wrapping it in inline functions prevents it.
-
-inline QString local() { return QStringLiteral("local"); }
-inline QString tcp() { return QStringLiteral("tcp"); }
-
-}
-
-namespace QtRemoteObjects {
-
-Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QObject *src, QObject *dst);
-Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QObject *src, QDataStream &dst);
-Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(QDataStream &src, QObject *dst);
-
-}
-
-Q_DECLARE_LOGGING_CATEGORY(QT_REMOTEOBJECT)
-Q_DECLARE_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS)
+private:
+    explicit QAbstractItemReplica(QAbstractItemReplicaPrivate *rep);
+    QScopedPointer<QAbstractItemReplicaPrivate> d;
+    friend class QAbstractItemReplicaPrivate;
+    friend class QRemoteObjectNode;
+};
 
 QT_END_NAMESPACE
 
-#endif // QTREMOTEOBJECTSGLOBAL_H
+#endif // QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_H

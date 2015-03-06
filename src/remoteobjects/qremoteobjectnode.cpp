@@ -48,6 +48,9 @@
 #include "qregistrysource_p.h"
 #include "qremoteobjectreplica_p.h"
 #include "qremoteobjectsource_p.h"
+#include "qremoteobjectabstractitemreplica_p.h"
+#include "qremoteobjectabstractitemadapter_p.h"
+#include <QAbstractItemModel>
 
 QT_BEGIN_NAMESPACE
 
@@ -636,9 +639,20 @@ bool QRemoteObjectNode::enableRemoting(QObject *object)
     return d_ptr->remoteObjectIo->enableRemoting(object, meta, name);
 }
 
-bool QRemoteObjectNode::enableRemoting(QObject *object, const SourceApiMap *api)
+bool QRemoteObjectNode::enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles)
 {
-    return d_ptr->remoteObjectIo->enableRemoting(object, api);
+    //This looks complicated, but hopefully there is a way to have an adapter be a template
+    //parameter and this makes sure that is supported.
+    QObject *adapter = QAbstractItemSourceAdapter::staticMetaObject.newInstance(Q_ARG(QAbstractItemModel*, model),
+                                                                                    Q_ARG(QVector<int>, roles));
+    QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemSourceAdapter> *api =
+        new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemSourceAdapter>(name);
+    return enableRemoting(model, api, adapter);
+}
+
+bool QRemoteObjectNode::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
+{
+    return d_ptr->remoteObjectIo->enableRemoting(object, api, adapter);
 }
 
 bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)
@@ -663,6 +677,13 @@ bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)
 QRemoteObjectReplica *QRemoteObjectNode::acquire(const QMetaObject *replicaMeta, QRemoteObjectReplica *instance)
 {
     return d_ptr->acquire(replicaMeta, instance, name(replicaMeta));
+}
+
+QAbstractItemReplica *QRemoteObjectNode::acquireModel(const QString &name)
+{
+    Q_UNUSED(name);
+    QAbstractItemReplicaPrivate *rep = acquire<QAbstractItemReplicaPrivate>();
+    return new QAbstractItemReplica(rep);
 }
 
 QT_END_NAMESPACE

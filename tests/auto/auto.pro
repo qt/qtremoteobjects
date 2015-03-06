@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS += repc integration cmake pods
+SUBDIRS += repc integration modelview cmake pods
