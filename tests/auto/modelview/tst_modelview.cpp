@@ -113,7 +113,7 @@ void TestModelView::initTestCase()
         m_sourceModel.appendRow(row);
         list << QStringLiteral("FancyTextNumber %1").arg(i);
     }
-    m_basicServer.enableRemoting(&m_sourceModel, "ServerModelAdapter", roles);
+    m_basicServer.enableRemoting(&m_sourceModel, "test", roles);
 
     m_client = QRemoteObjectNode::createNodeConnectedToRegistry();
 }
