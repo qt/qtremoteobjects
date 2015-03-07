@@ -79,7 +79,7 @@ public:
     virtual bool isReplicaValid() const { return true; }
     virtual bool waitForSource(int) { return true; }
     virtual bool waitForFinished(const QRemoteObjectPendingCall &, int) { return true; }
-    virtual void notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket *) {};
+    virtual void notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket *) {}
     virtual void configurePrivate(QRemoteObjectReplica *);
     void emitValidChanged();
     void emitInitialized();

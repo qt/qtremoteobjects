@@ -53,7 +53,6 @@ void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemRepli
     for (int i = 0; i < sourceModel->rowCount(); ++i) {
         for (int j = 0; j < sourceModel->columnCount(); ++j) {
             foreach (int role, replica->availableRoles()) {
-                qDebug() << i << j << role << replica->index(i, j).data(role) << sourceModel->index(i, j).data(role);
                 QCOMPARE(replica->index(i, j).data(role), sourceModel->index(i, j).data(role));
             }
         }
@@ -156,10 +155,8 @@ void TestModelView::testDataChanged()
     QSignalSpy spy(model.data(), SIGNAL(initialized()));
     spy.wait();
     QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
-    for (int i = 10; i < 20; ++i) {
-        qDebug() << "Setting Data" << i;
+    for (int i = 10; i < 20; ++i)
         m_sourceModel.setData(m_sourceModel.index(i, 1), QColor(Qt::blue), Qt::BackgroundRole);
-    }
 
     bool signalsReceived = false;
     while (dataChangedSpy.wait()) {
