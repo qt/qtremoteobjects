@@ -156,6 +156,27 @@ private slots:
         QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
     }
 
+    void delayedRegistryTest() {
+        QRemoteObjectNode regReplica = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
+        QCOMPARE(regReplica.registry()->isInitialized(), false);
+        QScopedPointer<Engine> localEngine(new Engine);
+        regReplica.enableRemoting(localEngine.data());
+        QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
+        QSignalSpy spy(regReplica.registry(), SIGNAL(initialized()));
+        QSignalSpy addedSpy(regReplica.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
+        QRemoteObjectNode regSource = QRemoteObjectNode::createRegistryHostNode(QUrl(QStringLiteral("local:testRegistry")));
+        bool added = addedSpy.wait();
+        QVERIFY(spy.count() > 0);
+        QCOMPARE(added, true);
+        QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), false);
+        QCOMPARE(regReplica.registry()->sourceLocations().keys().at(0), QStringLiteral("Engine"));
+        QCOMPARE(regReplica.registry()->sourceLocations().value("Engine"), QUrl(QStringLiteral("local:testHost")));
+        //This should produce a warning...
+        regSource.enableRemoting(localEngine.data());
+        QVERIFY(regReplica.registry()->sourceLocations().value("Engine") != QUrl(QStringLiteral("local:testRegistry")));
+
+    }
+
     void basicTest() {
         engine->setRpm(1234);
 

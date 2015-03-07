@@ -42,11 +42,14 @@
 #include "qremoteobjectregistry.h"
 #include "qremoteobjectreplica_p.h"
 
+#include <QSet>
+
 
 QT_BEGIN_NAMESPACE
 
 QRemoteObjectRegistry::QRemoteObjectRegistry(QObject *parent) : QRemoteObjectReplica(parent)
 {
+    connect(this, &QRemoteObjectRegistry::isReplicaValidChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
 }
 
 QRemoteObjectRegistry::~QRemoteObjectRegistry()
@@ -73,10 +76,20 @@ QRemoteObjectSourceLocations QRemoteObjectRegistry::sourceLocations() const
 
 void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
 {
-    if (!isInitialized()) {
-        bool res = waitForSource();
-        if (!res)
-            return; //FIX What to do here?
+    if (hostedSources.contains(entry.first)) {
+        qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << entry.first
+                                   << "as this Node already has a Source by that name.";
+        return;
+    }
+    hostedSources.insert(entry.first, entry.second);
+    if (!isReplicaValid()) {
+        return;
+    }
+    if (sourceLocations().contains(entry.first)) {
+        qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << entry.first
+                                   << "as another source (" << sourceLocations()[entry.first]
+                                   << ") has already registered that name.";
+        return;
     }
     qCDebug(QT_REMOTEOBJECT) << "An entry was added to the registry - Sending to Source" << entry.first << entry.second;
     // This does not set any data to avoid a coherency problem between client and server
@@ -88,10 +101,11 @@ void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
 
 void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entry)
 {
-    if (!isInitialized()) {
-        bool res = waitForSource();
-        if (!res)
-            return; //FIX What to do here?
+    if (!hostedSources.contains(entry.first))
+        return;
+    hostedSources.remove(entry.first);
+    if (!isReplicaValid()) {
+        return;
     }
     qCDebug(QT_REMOTEOBJECT) << "An entry was removed from the registry - Sending to Source" << entry.first << entry.second;
     // This does not set any data to avoid a coherency problem between client and server
@@ -99,6 +113,29 @@ void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entr
     QVariantList args;
     args << QVariant::fromValue(entry);
     send(QMetaObject::InvokeMetaMethod, index, args);
+}
+
+void QRemoteObjectRegistry::pushToRegistryIfNeeded()
+{
+    if (!isReplicaValid())
+        return;
+    const QSet<QString> myLocs = QSet<QString>::fromList(hostedSources.keys());
+    if (myLocs.empty())
+        return;
+    const QSet<QString> registryLocs = QSet<QString>::fromList(sourceLocations().keys());
+    foreach (const QString &loc, myLocs & registryLocs) {
+        qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << loc << "as another source ("
+                                   << sourceLocations()[loc] << ") has already registered that name.";
+        hostedSources.remove(loc);
+        return;
+    }
+    //Sources that need to be pushed to the registry...
+    foreach (const QString &loc, myLocs - registryLocs) {
+        static int index = QRemoteObjectRegistry::staticMetaObject.indexOfMethod("addSource(QRemoteObjectSourceLocation)");
+        QVariantList args;
+        args << QVariant::fromValue(QRemoteObjectSourceLocation(loc, hostedSources[loc]));
+        send(QMetaObject::InvokeMetaMethod, index, args);
+    }
 }
 
 QT_END_NAMESPACE

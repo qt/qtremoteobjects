@@ -68,9 +68,11 @@ Q_SIGNALS:
 public Q_SLOTS:
     void addSource(const QRemoteObjectSourceLocation &entry);
     void removeSource(const QRemoteObjectSourceLocation &entry);
+    void pushToRegistryIfNeeded();
 
 private:
     explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
+    QRemoteObjectSourceLocations hostedSources;
 };
 
 QT_END_NAMESPACE
