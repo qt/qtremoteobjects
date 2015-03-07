@@ -148,6 +148,14 @@ private slots:
 
     }
 
+    void noRegistryTest() {
+        QRemoteObjectNode regReplica = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
+        QCOMPARE(regReplica.registry()->isInitialized(), false);
+        QScopedPointer<Engine> localEngine(new Engine);
+        regReplica.enableRemoting(localEngine.data());
+        QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
+    }
+
     void basicTest() {
         engine->setRpm(1234);
 

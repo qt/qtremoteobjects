@@ -88,6 +88,11 @@ void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
 
 void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entry)
 {
+    if (!isInitialized()) {
+        bool res = waitForSource();
+        if (!res)
+            return; //FIX What to do here?
+    }
     qCDebug(QT_REMOTEOBJECT) << "An entry was removed from the registry - Sending to Source" << entry.first << entry.second;
     // This does not set any data to avoid a coherency problem between client and server
     static int index = QRemoteObjectRegistry::staticMetaObject.indexOfMethod("removeSource(QRemoteObjectSourceLocation)");
