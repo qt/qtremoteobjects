@@ -45,7 +45,7 @@
 #include "qremoteobjectregistry.h"
 #include "qremoteobjectdynamicreplica.h"
 #include "qremoteobjectpacket_p.h"
-#include "qregistrysource_p.h"
+#include "qremoteobjectregistrysource_p.h"
 #include "qremoteobjectreplica_p.h"
 #include "qremoteobjectsource_p.h"
 #include "qremoteobjectabstractitemreplica_p.h"

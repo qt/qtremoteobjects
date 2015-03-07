@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include "qregistrysource_p.h"
+#include "qremoteobjectregistrysource_p.h"
 
 QT_BEGIN_NAMESPACE
 
