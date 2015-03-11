@@ -42,7 +42,9 @@
 #ifndef REPCODEGENERATOR_H
 #define REPCODEGENERATOR_H
 
+#include <QSet>
 #include <QString>
+#include <QVector>
 
 struct AST;
 struct ASTClass;
@@ -70,7 +72,7 @@ public:
 
 private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
-    QString generateMetaTypeRegistrationForPODs(const QVector<POD> &pods);
+    QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
     QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
     void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
 

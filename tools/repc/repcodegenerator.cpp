@@ -44,6 +44,7 @@
 #include "repparser.h"
 
 #include <QFileInfo>
+#include <QMetaType>
 #include <QTextStream>
 
 QT_USE_NAMESPACE
@@ -73,6 +74,17 @@ static QString cap(QString name)
     return name;
 }
 
+/*
+  Returns \c true if the type is a built-in type.
+*/
+static bool isBuiltinType(const QString &type)
+ {
+    int id = QMetaType::type(type.toLatin1().constData());
+    if (id == QMetaType::UnknownType)
+        return false;
+    return (id < QMetaType::User);
+}
+
 RepCodeGenerator::RepCodeGenerator(QIODevice &outputDevice)
     : m_outputDevice(outputDevice)
 {
@@ -97,7 +109,21 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
     foreach (const POD &pod, ast.pods)
         generatePOD(stream, pod);
 
-    const QString metaTypeRegistrationCode = generateMetaTypeRegistrationForPODs(ast.pods)
+    QSet<QString> metaTypes;
+    foreach (const POD &pod, ast.pods)
+        metaTypes << pod.name;
+    foreach (const ASTClass &astClass, ast.classes) {
+        foreach (const ASTProperty &property, astClass.properties)
+            metaTypes << property.type;
+        foreach (const ASTFunction &function, astClass.signalsList + astClass.slotsList) {
+            metaTypes << function.returnType;
+            foreach (const ASTDeclaration &decl, function.params) {
+                metaTypes << decl.type;
+            }
+        }
+    }
+
+    const QString metaTypeRegistrationCode = generateMetaTypeRegistration(metaTypes)
                                            + generateMetaTypeRegistrationForEnums(ast.enumUses);
 
     foreach (const ASTClass &astClass, ast.classes) {
@@ -287,26 +313,24 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
            ;
 }
 
-QString RepCodeGenerator::generateMetaTypeRegistrationForPODs(const QVector<POD> &pods)
+QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &metaTypes)
 {
     QString out;
     const QString qRegisterMetaType = QStringLiteral("        qRegisterMetaType<");
     const QString qRegisterMetaTypeStreamOperators = QStringLiteral("        qRegisterMetaTypeStreamOperators<");
     const QString lineEnding = QStringLiteral(">();\n");
-    const int expectedOutSize
-            = 2 * accumulatedSizeOfNames(pods)
-            + pods.size() * (qRegisterMetaType.size() + qRegisterMetaTypeStreamOperators.size() + 2 * lineEnding.size());
-    out.reserve(expectedOutSize);
-    foreach (const POD &pod, pods) {
+    foreach (const QString &metaType, metaTypes) {
+        if (isBuiltinType(metaType))
+            continue;
+
         out += qRegisterMetaType;
-        out += pod.name;
+        out += metaType;
         out += lineEnding;
 
         out += qRegisterMetaTypeStreamOperators;
-        out += pod.name;
+        out += metaType;
         out += lineEnding;
     }
-    Q_ASSERT(expectedOutSize == out.size());
     return out;
 }
 
