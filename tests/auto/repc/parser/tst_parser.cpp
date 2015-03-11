@@ -51,6 +51,8 @@ class tst_Parser : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    void testBasic_data();
+    void testBasic();
     void testProperties_data();
     void testProperties();
     void testSlots_data();
@@ -59,8 +61,32 @@ private Q_SLOTS:
     void testSignals();
     void testPods_data();
     void testPods();
+    void testInvalid_data();
+    void testInvalid();
 };
 
+void tst_Parser::testBasic_data()
+{
+    QTest::addColumn<QString>("content");
+
+    QTest::newRow("empty") << ""; // empty lines are fine...
+    QTest::newRow("include") << "#include \"foo\"";
+    QTest::newRow("include_spaces") << "#  include \"foo\"";
+}
+
+void tst_Parser::testBasic()
+{
+    QFETCH(QString, content);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << content << endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+}
 
 void tst_Parser::testProperties_data()
 {
@@ -259,6 +285,40 @@ void tst_Parser::testPods()
     }
 }
 
+void tst_Parser::testInvalid_data()
+{
+    QTest::addColumn<QString>("content");
+
+    QTest::newRow("pod_invalid") << "POD (int foo)";
+    QTest::newRow("pod_unbalancedparens") << "POD foo(int foo";
+    QTest::newRow("pod_inclass") << "class Foo\n{\nPOD foo(int)\n}";
+    QTest::newRow("class_noidentifier") << "class\n{\n}";
+    QTest::newRow("class_nonewline") << "class Foo {}";
+    QTest::newRow("class_nested") << "class Foo\n{\nclass Bar\n}";
+    QTest::newRow("prop_outsideclass") << "PROP(int foo)";
+    QTest::newRow("prop_toomanyargs") << "class Foo\n{\nPROP(int int foo)\n}";
+    QTest::newRow("prop_noargs") << "class Foo\n{\nPROP()\n}";
+    QTest::newRow("prop_unbalancedparens") << "class Foo\n{\nPROP(int foo\n}";
+    QTest::newRow("signal_outsideclass") << "SIGNAL(foo())";
+    QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}";
+    QTest::newRow("slot_outsideclass") << "SLOT(void foo())";
+    QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}";
+
+}
+
+void tst_Parser::testInvalid()
+{
+    QFETCH(QString, content);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << content << endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(!parser.parse());
+}
 
 QTEST_APPLESS_MAIN(tst_Parser)
 

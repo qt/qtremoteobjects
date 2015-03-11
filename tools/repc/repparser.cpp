@@ -154,33 +154,63 @@ QRegExp re_slot(QStringLiteral("\\s*SLOT\\s*\\(\\s*(.*)\\s*\\(\\s*(.*)\\s*\\)\\s
 QRegExp re_start(QStringLiteral("^\\{\\s*"));
 QRegExp re_end(QStringLiteral("^\\};?\\s*"));
 QRegExp re_comment(QStringLiteral("^\\s*//(.*)"));
+QRegExp re_include(QStringLiteral("^#\\s*include (.*)"));
 
 RepParser::RepParser(QIODevice &outputDevice)
     : m_outputDevice(outputDevice)
 {
 }
 
+QString RepParser::errorString() const
+{
+    return m_errorString;
+}
+
+void RepParser::setErrorString(const QString& error)
+{
+    m_errorString = QStringLiteral("error at line %1: %2").arg(QString::number(m_currentLine)).arg(error);
+}
+
 bool RepParser::parse()
 {
     // clean up from previous run
     m_ast = AST();
+    m_currentLine = 0;
+    m_errorString.clear();
 
     ASTClass astClass;
+
+    enum {
+        GlobalScope,
+        ClassScope
+    } currentScope = GlobalScope;
 
     QTextStream stream(&m_outputDevice);
     while (!stream.atEnd()) {
         const QString line = stream.readLine();
+        ++m_currentLine;
 
         if (re_class.exactMatch(line)) {
+            if (currentScope == ClassScope) {
+                setErrorString(QStringLiteral("class: Cannot be nested"));
+                return false;
+            }
+
             // new Class declaration
             astClass = ASTClass(re_class.capturedTexts().at(1));
         } else if (re_pod.exactMatch(line)) {
+            if (currentScope != GlobalScope) {
+                setErrorString(QStringLiteral("POD: Can only be used in global scope"));
+                return false;
+            }
+
             POD pod;
             pod.name = re_pod.capturedTexts().at(1);
 
             const QString argString = re_pod.capturedTexts().at(2).trimmed();
             if (argString.isEmpty())
                 continue;
+
             RepParser::TypeParser parseType;
             parseType.parseArguments(argString);
             parseType.appendPods(pod);
@@ -188,10 +218,20 @@ bool RepParser::parse()
         } else if (re_useEnum.exactMatch(line)) {
             m_ast.enumUses.append(re_useEnum.capturedTexts().at(1));
         } else if (re_prop.exactMatch(line)) {
+            if (currentScope != ClassScope) {
+                setErrorString(QStringLiteral("PROP: Can only be used in class scope"));
+                return false;
+            }
+
             const QStringList params = re_prop.capturedTexts();
             if (!parseProperty(astClass, params.at(1)))
                 return false;
         } else if (re_signal.exactMatch(line)) {
+            if (currentScope != ClassScope) {
+                setErrorString(QStringLiteral("SIGNAL: Can only be used in class scope"));
+                return false;
+            }
+
             const QStringList captures = re_signal.capturedTexts();
 
             ASTFunction signal;
@@ -203,6 +243,11 @@ bool RepParser::parse()
             parseType.appendParams(signal);
             astClass.signalsList << signal;
         } else if (re_slot.exactMatch(line)) {
+            if (currentScope != ClassScope) {
+                setErrorString(QStringLiteral("SLOT: Can only be used in class scope"));
+                return false;
+            }
+
             const QStringList captures = re_slot.capturedTexts();
 
             QString returnTypeAndName = captures.at(1).trimmed();
@@ -227,26 +272,32 @@ bool RepParser::parse()
             astClass.slotsList << slot;
         } else if (re_end.exactMatch(line)) {
             m_ast.classes.append(astClass);
+            currentScope = GlobalScope;
         } else if (re_start.exactMatch(line)) {
+            currentScope = ClassScope;
+        } else if (re_comment.exactMatch(line)) {
+            // ignore
+        } else if (re_include.exactMatch(line)) {
+            m_ast.includes.append(line);
+        } else if (line.isEmpty()) {
+            // ignore
         } else {
-            if (!re_comment.exactMatch(line) && !line.isEmpty()) {
-               m_ast.includes.append(line);
-            }
+            setErrorString(QStringLiteral("Failed to parse line: %1").arg(line));
+            return false;
         }
     }
 
     return true;
 }
 
-// A helper function to parse modifier flag of property declaration
-static bool parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier)
+bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier)
 {
     if (flag == QStringLiteral("READONLY")) {
         modifier = ASTProperty::ReadOnly;
     } else if (flag == QStringLiteral("CONSTANT")) {
         modifier = ASTProperty::Constant;
     } else {
-        qWarning("invalid property declaration: flag %s is unknown", qPrintable(flag));
+        setErrorString(QStringLiteral("Invalid property declaration: flag %1 is unknown").arg(flag));
         return false;
     }
 
@@ -291,7 +342,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     }
 
     if (nameIndex == -1) {
-        qWarning("invalid property declaration: %s", qPrintable(propertyDeclaration));
+        setErrorString(QStringLiteral("PROP: Invalid property declaration: %1").arg(propertyDeclaration));
         return false;
     }
 

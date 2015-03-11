@@ -163,6 +163,7 @@ public:
     bool parse();
 
     AST ast() const;
+    QString errorString() const;
 
 private:
     struct TypeParser
@@ -175,10 +176,16 @@ private:
         QList<ASTDeclaration> arguments;
     };
 
+    void setErrorString(const QString &error);
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
+    /// A helper function to parse modifier flag of property declaration
+    bool parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier);
 
     QIODevice &m_outputDevice;
     AST m_ast;
+
+    QString m_errorString;
+    int m_currentLine;
 };
 
 #endif

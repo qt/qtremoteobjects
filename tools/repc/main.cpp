@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     const QStringList files = parser.positionalArguments();
 
     if (files.count() > 2) {
-        fprintf(stderr, qPrintable(QLatin1String(PROGRAM_NAME ": Too many input, output files specified: '") + files.join(QStringLiteral("' '")) + QStringLiteral("\'.\n")));
+        fprintf(stderr, "%s", qPrintable(QLatin1String(PROGRAM_NAME ": Too many input, output files specified: '") + files.join(QStringLiteral("' '")) + QStringLiteral("\'.\n")));
         parser.showHelp(1);
     }
 
@@ -243,6 +243,8 @@ int main(int argc, char **argv)
         RepParser parser(input);
         if (!parser.parse()) {
             fprintf(stderr, PROGRAM_NAME ": Can't parse input file.\n");
+            fprintf(stderr, "%s", PROGRAM_NAME ": ");
+            fprintf(stderr, "%s\n", qPrintable(parser.errorString()));
             return 1;
         }
         input.close();
