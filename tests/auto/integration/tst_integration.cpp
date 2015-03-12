@@ -76,9 +76,6 @@ private slots:
                                          "qt.remoteobjects.debug=false\n"
                                          "qt.remoteobjects.warning=false");
 
-        qRegisterMetaType<Temperature>();
-        qRegisterMetaTypeStreamOperators<Temperature>();
-
         //Setup registry
         //Registry needs to be created first until we get the retry mechanism implemented
         m_registryServer = QRemoteObjectNode::createRegistryHostNode();
