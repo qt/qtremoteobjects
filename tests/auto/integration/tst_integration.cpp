@@ -418,6 +418,24 @@ private slots:
         QCOMPARE(engine_r_inProc->rpm(), 1234);
     }
 
+    void clientBeforeServerTest() {
+
+        QRemoteObjectNode d_client = QRemoteObjectNode();
+        d_client.connect(QUrl("local:cBST"));
+        QSharedPointer<EngineReplica> engine_d(d_client.acquire<EngineReplica>());
+
+        QRemoteObjectNode d_server = QRemoteObjectNode::createHostNode(QUrl("local:cBST"));
+        d_server.enableRemoting<EngineSourceAPI>(engine.data());
+        QSignalSpy spy(engine_d.data(), SIGNAL(rpmChanged()));
+        engine->setRpm(50);
+
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+
+        QCOMPARE(engine_d->rpm(), 50);
+
+    }
+
 
 private:
     QScopedPointer<Engine> engine;
