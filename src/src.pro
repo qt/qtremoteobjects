@@ -1,2 +1,4 @@
 TEMPLATE = subdirs
-SUBDIRS = remoteobjects
+SUBDIRS += \
+    remoteobjects \
+    repparser
