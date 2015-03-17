@@ -230,11 +230,11 @@ int main(int argc, char **argv)
         }
         input.close();
         if (mode & OutRep) {
-            CppCodeGenerator generator(output);
+            CppCodeGenerator generator(&output);
             generator.generate(moc.classList);
         } else {
             Q_ASSERT(mode & OutReplica);
-            RepCodeGenerator generator(output);
+            RepCodeGenerator generator(&output);
             generator.generate(classList2AST(moc.classList), RepCodeGenerator::REPLICA, outputFile);
         }
         output.close();
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
             return 1;
         }
         input.close();
-        RepCodeGenerator generator(output);
+        RepCodeGenerator generator(&output);
         generator.generate(parser.ast(), (mode & OutSource) ? RepCodeGenerator::SOURCE
                                                             : RepCodeGenerator::REPLICA, outputFile);
         output.close();

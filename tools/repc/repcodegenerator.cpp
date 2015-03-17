@@ -85,14 +85,15 @@ static bool isBuiltinType(const QString &type)
     return (id < QMetaType::User);
 }
 
-RepCodeGenerator::RepCodeGenerator(QIODevice &outputDevice)
+RepCodeGenerator::RepCodeGenerator(QIODevice *outputDevice)
     : m_outputDevice(outputDevice)
 {
+    Q_ASSERT(m_outputDevice);
 }
 
 void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 {
-    QTextStream stream(&m_outputDevice);
+    QTextStream stream(m_outputDevice);
     if (fileName.isEmpty())
         stream << "#pragma once" << endl << endl;
     else {

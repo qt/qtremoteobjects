@@ -40,18 +40,19 @@
 ****************************************************************************/
 
 #include "cppcodegenerator.h"
+#include "moc.h"
 #include "utils.h"
 
-CppCodeGenerator::CppCodeGenerator(QIODevice &outputDevice)
+CppCodeGenerator::CppCodeGenerator(QIODevice *outputDevice)
     : m_outputDevice(outputDevice)
 {
+    Q_ASSERT(m_outputDevice);
 }
 
 void CppCodeGenerator::generate(const QList<ClassDef> &classList)
 {
     foreach (const ClassDef &cdef, classList)
-        m_outputDevice.write(generateClass(cdef));
+        m_outputDevice->write(generateClass(cdef));
 
-    m_outputDevice.write("\n");
-    m_outputDevice.close();
+    m_outputDevice->write("\n");
 }

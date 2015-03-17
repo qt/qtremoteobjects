@@ -66,7 +66,7 @@ public:
         SIMPLE_SOURCE
     };
 
-    explicit RepCodeGenerator(QIODevice &outputDevice);
+    explicit RepCodeGenerator(QIODevice *outputDevice);
 
     void generate(const AST &ast, Mode mode, QString fileName);
 
@@ -90,7 +90,7 @@ private:
     void generateSourceAPI(QStringList &out, const ASTClass &astClass);
 
 private:
-    QIODevice &m_outputDevice;
+    QIODevice *m_outputDevice;
 };
 
 #endif

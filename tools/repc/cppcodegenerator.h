@@ -42,20 +42,21 @@
 #ifndef CPPCODEGENERATOR_H
 #define CPPCODEGENERATOR_H
 
-#include "moc.h"
+#include <qglobal.h>
 
 QT_BEGIN_NAMESPACE
+struct ClassDef;
 class QIODevice;
 QT_END_NAMESPACE
 
 class CppCodeGenerator
 {
 public:
-    CppCodeGenerator(QIODevice &outputDevice);
+    CppCodeGenerator(QIODevice *outputDevice);
     void generate(const QList<ClassDef> &classList);
 
 private:
-    QIODevice &m_outputDevice;
+    QIODevice *m_outputDevice;
 };
 
 #endif // CPPCODEGENERATOR_H
