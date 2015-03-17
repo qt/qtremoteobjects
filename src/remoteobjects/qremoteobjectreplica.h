@@ -60,7 +60,7 @@ public:
     virtual ~QRemoteObjectReplica();
 
     bool isReplicaValid() const;
-    bool waitForSource(int timeout = 100);
+    bool waitForSource(int timeout = 30000);
     bool isInitialized() const;
     virtual void initialize();
 
