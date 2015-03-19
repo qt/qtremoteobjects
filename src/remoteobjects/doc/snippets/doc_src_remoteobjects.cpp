@@ -39,42 +39,54 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+//! [qremoteobjectnode_include]
+#include <QtRemoteObjects/QRemoteObjectNode>
+//! [qremoteobjectnode_include]
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
-
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+int main(int argc, char *argv[])
 {
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
+    QCoreApplication app(argc, argv);
 
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
+//! [create_registry]
+QRemoteObjectNode registryNode = QRemoteObjectNode::createRegistryHostNode();
+//! [create_registry]
 
-    friend class QRemoteObjectNode;
+//! [create_host_nodes]
+QRemoteObjectNode hostNode = QRemoteObjectNode::createHostNode(QUrl("local://mynode"));
+QRemoteObjectNode registeredHostNode = QRemoteObjectNode::createHostNodeConnectedToRegistry();
+//! [create_host_nodes]
 
-public:
-    ~QRemoteObjectRegistry();
+//! [create_connect_client_nodes]
+QRemoteObjectNode clientNode = QRemoteObjectNode();
+QRemoteObjectNode registryClientNode = QRemoteObjectNode::createNodeConnectedToRegistry();
+clientNode.connect(QUrl("local://mynode"));
+//! [create_connect_client_nodes]
 
-    QRemoteObjectSourceLocations sourceLocations() const;
+//! [share_source]
+MinuteTimer timer;
+hostNode.enableRemoting(&timer);
+//! [share_source]
 
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
+//! [api_source]
+#include "rep_TimeModel_source.h"
+MinuteTimer timer;
+hostNode.enableRemoting<MinuteTimerSourceAPI>(&timer);
+//! [api_source]
 
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
+//! [create_replica]
+#include "rep_TimeModel_replica.h"
+QScopedPointer<MinuteTimerReplica> d_ptr;
+//! [create_replica]
 
-private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
+//! [dynamic_replica]
+QRemoteObjectDynamicReplica *dynamicRep;
+//! [dynamic_replica]
 
-QT_END_NAMESPACE
+//! [acquire_replica]
+d_ptr->reset(clientNode.acquire("MinuteTimer"));
+*dynamicRep = clientNode.acquire("MinuteTimer");
+//! [acquire_replica]
 
-#endif
+    Q_UNUSED(timer);
+    return app.exec();
+}

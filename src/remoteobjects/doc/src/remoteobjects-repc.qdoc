@@ -39,42 +39,22 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+/*!
+\page remoteobjects-repc.html
+\title Qt Remote Objects Compiler
+\brief The Qt Remote Objects Compiler creates \l {Source} and \l {Replica} header files
+\ingroup overviews
+\keyword repc
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
+    \section1 REPC
+    The \underline {Rep}lica \underline {C}ompiler (repc) generates QObject header files based on an API definitation file called a template.  It generates both \l {Source} and \l {Replica} header files, and includes macros that can be added to your project file to automatically run repc, and add the resultant files to the list of files processed by \l{moc}{Meta Object Compiler} during the build process.
 
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
-{
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
-
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
-
-    friend class QRemoteObjectNode;
-
-public:
-    ~QRemoteObjectRegistry();
-
-    QRemoteObjectSourceLocations sourceLocations() const;
-
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
-
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
-
-private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
-
-QT_END_NAMESPACE
-
-#endif
+    \section1 Project file macros
+    \keyword QOBJECT_REPLICA
+    \section2 REPC_REPLICA
+    ...
+    \section2 REPC_SOURCE
+    ...
+    \section2 QOBJECT_REPLICA
+    ...
+*/

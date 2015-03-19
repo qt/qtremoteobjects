@@ -148,6 +148,9 @@ QRemoteObjectReplica *QRemoteObjectNodePrivate::acquire(const QMetaObject *meta,
     return instance;
 }
 
+/*!
+    Returns a pointer to the Node's \l {QRemoteObjectRegistry}, if the Node is using the Registry feature; otherwise it returns 0.
+*/
 const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 {
     return d_ptr->registry.data();
@@ -452,13 +455,68 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         onClientRead(connection);
 }
 
+/*!
+    \class QRemoteObjectNode
+    \inmodule QtRemoteObjects
+    \brief A Node on a Qt Remote Objects network
 
+    The QRemoteObjectNode class provides the entry point to a QtRemoteObjects
+    network. A network can be as simple as two Nodes, or an arbitrarily complex
+    set of processes and devices.
+
+    A QRemoteObjectNode that wants to export QRemoteObjectSource objects to the
+    network must be a Host Node. Such a Node can be connected to by other
+    Nodes. Nodes may connect to each other directly using \l connect, or they
+    can use the QRemoteObjectRegistry to simplify connections.
+
+    The QRemoteObjectRegistry is a special Replica available to every Node that
+    connects to the Registry Url. It knows how to connect to every
+    QRemoteObjectSource object on the network.
+*/
+
+/*!
+    \enum QRemoteObjectNode::ErrorCode
+
+    This enum type specifies the various error codes associated with QRemoteObjectNode errors:
+
+    \value NoError No error.
+    \value RegistryNotAcquired The registry could not be acquired.
+    \value RegistryAlreadyHosted The registry is already defined and hosting Sources.
+    \value NodeIsNoServer The given QRemoteObjectNode is not a host node.
+    \value ServerAlreadyCreated The host node has already been initialized.
+    \value UnintendedRegistryHosting An attempt was made to create a host QRemoteObjectNode and connect to itself as the registry.
+    \value OperationNotValidOnClientNode The attempted operation is not valid on a client QRemoteObjectNode.
+    \value SourceNotRegistered The given QRemoteObjectSource is not registered on this node.
+    \value MissingObjectName The given QObject does not have objectName() set.
+*/
+
+/*!
+    \fn ObjectType *QRemoteObjectNode::acquire()
+
+    Returns a pointer to a Replica of type ObjectType (which is a template
+    parameter and must inherit from \l QRemoteObjectReplica). That is, the it
+    must be a \l {repc} generated type.
+*/
+
+/*!
+    Default constructor for QRemoteObjectNode. A Node constructed in this
+    manner can not be connected to, and thus can not expose Source objects on
+    the network. It also will not include a QRemoteObjectRegistry.
+
+    \sa createHostNode(), createRegistryHostNode(), createNodeConnectedToRegistry(), createHostNodeConnectedToRegistry()
+*/
 QRemoteObjectNode::QRemoteObjectNode()
     : d_ptr(new QRemoteObjectNodePrivate)
 {
     qRegisterMetaTypeStreamOperators<QVector<int> >();
 }
 
+/*!
+    \internal Constructs a new host QRemoteObjectNode at \a hostAddress and
+    connected to the registry at \a registryAddress. If the given registry
+    address and host address are equal, this node will host the registry as
+    well.
+*/
 QRemoteObjectNode::QRemoteObjectNode(const QUrl &hostAddress, const QUrl &registryAddress)
     : d_ptr(new QRemoteObjectNodePrivate)
 {
@@ -475,10 +533,19 @@ QRemoteObjectNode::QRemoteObjectNode(const QUrl &hostAddress, const QUrl &regist
         setRegistryUrl(registryAddress);
 }
 
+/*!
+    Destructor for QRemoteObjectNode.
+*/
 QRemoteObjectNode::~QRemoteObjectNode()
 {
 }
 
+/*!
+    Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
+    is not a Host node, it return an empty QUrl.
+
+    \sa setHostUrl()
+*/
 QUrl QRemoteObjectNode::hostUrl() const
 {
     if (d_ptr->remoteObjectIo.isNull())
@@ -487,6 +554,15 @@ QUrl QRemoteObjectNode::hostUrl() const
     return d_ptr->remoteObjectIo->serverAddress();
 }
 
+/*!
+    Sets the \a hostAddress for a host QRemoteObjectNode. It is recommended
+    that the static constructors for a Node be used to establish a Host Node
+    during Node construction.
+
+    Returns \c true if the Host address is set, otherwise \c false.
+
+    \sa createHostNode(), createRegistryHostNode(), createHostNodeConnectedToRegistry()
+*/
 bool QRemoteObjectNode::setHostUrl(const QUrl &hostAddress)
 {
     if (!d_ptr->remoteObjectIo.isNull()) {
@@ -508,16 +584,34 @@ bool QRemoteObjectNode::setHostUrl(const QUrl &hostAddress)
     return true;
 }
 
+/*!
+    Returns the last error set.
+*/
 QRemoteObjectNode::ErrorCode QRemoteObjectNode::lastError() const
 {
     return d_ptr->m_lastError;
 }
 
+/*!
+    Returns the address of the registry as a QUrl.  This will be an empty QUrl if there is not registry in use.
+
+    \sa setRegistryUrl(), registry()
+*/
 QUrl QRemoteObjectNode::registryUrl() const
 {
     return d_ptr->registryAddress;
 }
 
+/*!
+    Sets the \a registryAddress of the registry for a QRemoteObjectNode. It is
+    recommended that the static constructors for a Node be used to establish a
+    Host Node during Node construction.
+
+    Returns \c true if the Registry is set and initialized, otherwise it
+    returns \c false. This call blocks waiting for the Registry to initialize.
+
+    \sa registryUrl(), createRegistryHostNode(), createNodeConnectedToRegistry(), createHostNodeConnectedToRegistry()
+*/
 bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
 {
     if (d_ptr->isInitialized.loadAcquire() || ! d_ptr->registry.isNull()) {
@@ -548,6 +642,11 @@ void QRemoteObjectNodePrivate::setRegistry(QRemoteObjectRegistry *reg)
     QObject::connect(reg, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), this, SLOT(onRemoteObjectSourceRemoved(QRemoteObjectSourceLocation)));
 }
 
+/*!
+    Sets the current QRemoteObjectNode to be the registry host. Returns \c
+    false if the registry is already being hosted or if the node has not been
+    initialized, and returns \c true if the registry is successfully set.
+*/
 bool QRemoteObjectNode::hostRegistry()
 {
     if (d_ptr->remoteObjectIo.isNull()) {
@@ -572,21 +671,37 @@ bool QRemoteObjectNode::hostRegistry()
     return true;
 }
 
+/*!
+    Constructs a new host QRemoteObjectNode with address \a hostAddress.
+
+    \warning This node will not be connected to the registry. To create a host
+    node connected to the registry, use createHostNodeConnectedToRegistry().
+*/
 QRemoteObjectNode QRemoteObjectNode::createHostNode(const QUrl &hostAddress)
 {
     return QRemoteObjectNode(hostAddress, QUrl());
 }
 
+/*!
+    Constructs a new host QRemoteObjectNode at \a hostAddress. The node will also host the registry.
+*/
 QRemoteObjectNode QRemoteObjectNode::createRegistryHostNode(const QUrl &hostAddress)
 {
     return QRemoteObjectNode(hostAddress, hostAddress);
 }
 
+/*!
+    Constructs a new client QRemoteObjectNode, connected to the registry located at \a registryAddress.
+*/
 QRemoteObjectNode QRemoteObjectNode::createNodeConnectedToRegistry(const QUrl &registryAddress)
 {
     return QRemoteObjectNode(QUrl(), registryAddress);
 }
 
+/*!
+    Constructs a new host QRemoteObjectNode at \a hostAddress, and connects it
+    to the registry located at \a registryAddress.
+*/
 QRemoteObjectNode QRemoteObjectNode::createHostNodeConnectedToRegistry(const QUrl &hostAddress, const QUrl &registryAddress)
 {
     if (hostAddress == registryAddress) { //Assume hosting registry is NOT intended
@@ -598,17 +713,41 @@ QRemoteObjectNode QRemoteObjectNode::createHostNodeConnectedToRegistry(const QUr
     return QRemoteObjectNode(hostAddress, registryAddress);
 }
 
+/*!
+    Connects a client node to the host node at \a address.
+
+    Connections will remain valid until the host node is deleted or no longer
+    accessible over a network.
+
+    Once a client is connected to a host, valid Replicas can then be acquired
+    if the corresponding Source is being remoted.
+*/
 void QRemoteObjectNode::connect(const QUrl &address)
 {
     d_ptr->initConnection(address);
 }
 
+/*!
+    \keyword dynamic acquire
+    Returns a QRemoteObjectDynamicReplica of the Source \a name.
+*/
 QRemoteObjectDynamicReplica *QRemoteObjectNode::acquire(const QString &name)
 {
     QRemoteObjectDynamicReplica *instance = new QRemoteObjectDynamicReplica;
     return static_cast<QRemoteObjectDynamicReplica*>(d_ptr->acquire(Q_NULLPTR, instance, name));
 }
 
+/*!
+    Enables a host node to dynamically provide remote access to the QObject \a
+    object. Client nodes connected to the node
+    hosting this object may obtain Replicas of this Source.
+
+    Returns \c false if the current node is a client node, or if the QObject is already
+    registered to be remoted, and \c true if remoting is successfully enabled
+    for the dynamic QObject.
+
+    \sa disableRemoting()
+*/
 bool QRemoteObjectNode::enableRemoting(QObject *object)
 {
     if (d_ptr->remoteObjectIo.isNull()) {
@@ -650,11 +789,56 @@ bool QRemoteObjectNode::enableRemoting(QAbstractItemModel *model, const QString 
     return enableRemoting(model, api, adapter);
 }
 
+/*!
+    \fn bool QRemoteObjectNode::enableRemoting(ObjectType *object)
+
+    This templated function overload enables a host node to provide remote
+    access to a QObject \a object with a specified (and compile-time checked)
+    interface. Client nodes connected to the node hosting this object may
+    obtain Replicas of this Source.
+
+    This is best illustrated by example:
+    \snippet doc_src_remoteobjects.cpp api_source
+
+    Here the MinuteTimerSourceAPI is the set of Signals/Slots/Properties
+    defined by the TimeModel.rep file. Compile time checks are made to verify
+    the input QObject can expose the requested API, it will fail to compile
+    otherwise. This allows a subset of \a object 's interface to be exposed,
+    and allows the types of conversions supported by Signal/Slot connections.
+
+    Returns \c false if the current node is a client node, or if the QObject is
+    already registered to be remoted, and \c true if remoting is successfully
+    enabled for the QObject.
+
+    \sa disableRemoting()
+*/
+
+/*!
+    \internal Enables a host node to provide remote access to a QObject \a
+    object with the API defined by \a api. Client nodes connected to the node
+    hosting this object may obtain Replicas of this Source.
+
+    Returns \c false if the current node is a client node, or if the QObject is
+    already registered to be remoted, and \c true if remoting is successfully
+    enabled for the QObject.
+
+    \sa disableRemoting()
+*/
 bool QRemoteObjectNode::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     return d_ptr->remoteObjectIo->enableRemoting(object, api, adapter);
 }
 
+/*!
+    Disables remote access for the QObject \a remoteObject. Returns \c false if
+    the current node is a client node or if the \a remoteObject is not
+    registered, and returns \c true if remoting is successfully disabled for
+    the Source object.
+
+    \warning Replicas of this object will no longer be valid after calling this method.
+
+    \sa enableRemoting()
+*/
 bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)
 {
     if (d_ptr->remoteObjectIo.isNull()) {
@@ -674,6 +858,10 @@ bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)
     return true;
 }
 
+/*!
+    \internal
+    Returns a Replica of the Source sharing information in the meta-object \a replicaMeta and class \a instance.
+*/
 QRemoteObjectReplica *QRemoteObjectNode::acquire(const QMetaObject *replicaMeta, QRemoteObjectReplica *instance, const QString &name)
 {
     return d_ptr->acquire(replicaMeta, instance, name.isEmpty() ? ::name(replicaMeta) : name);

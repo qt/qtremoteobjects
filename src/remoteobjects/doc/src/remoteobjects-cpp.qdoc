@@ -39,42 +39,20 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+/*!
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
+\module QtRemoteObjects
 
-QT_BEGIN_NAMESPACE
+\title Qt Remote Objects C++ Classes
+\brief The Qt Remote Objects module provides an easy to use mechanism for sharing a QObject's API (Properties/Signals/Slots) between processes.
+\ingroup modules
+\qtvariable remoteobjects
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
-{
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
+    To use the QtRemoteObjects in your application, add the following configuration option to your \c .pro file:
+    \snippet snippets.pro project_file_include
 
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
+    Use the following include in you source files:
+    \snippet doc_src_remoteobjects.h qtremoteobject_include
 
-    friend class QRemoteObjectNode;
-
-public:
-    ~QRemoteObjectRegistry();
-
-    QRemoteObjectSourceLocations sourceLocations() const;
-
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
-
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
-
-private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
-
-QT_END_NAMESPACE
-
-#endif
+    See the \l{Qt Remote Objects Getting Started} page for an introduction to the module.
+*/

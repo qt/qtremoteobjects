@@ -4,7 +4,8 @@ SUBDIRS = \
     server \
     CppClient \
     ModelViewClient \
-    ModelViewServer
+    ModelViewServer \
+    SimpleSwitch
 
 qtHaveModule(quick) {
     SUBDIRS += \

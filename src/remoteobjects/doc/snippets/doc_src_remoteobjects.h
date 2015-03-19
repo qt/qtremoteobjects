@@ -39,42 +39,34 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+//! [qtremoteobject_include]
+#include <QtRemoteObjects>
+//! [qtremoteobject_include]
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
+//! [implementing_source]
+#include "rep_TimeModel_source.h"
 
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+class MinuteTimer : public MinuteTimerSource
 {
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
-
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
-
-    friend class QRemoteObjectNode;
-
+Q_OBJECT
 public:
-    ~QRemoteObjectRegistry();
+    MinuteTimer(QObject *parent=Q_NULLPTR);
+    virtual ~MinuteTimer();
 
-    QRemoteObjectSourceLocations sourceLocations() const;
+public slots:
+    virtual void SetTimeZone(int zn) {  //this is a pure virtual method in MinuteTimerSource
+        qDebug()<<"SetTimeZone"<<zn;
+        if (zn != zone) {
+            zone = zn;
+        }
+    };
 
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
-
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
+protected:
+    void timerEvent(QTimerEvent *);
 
 private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
+    QTime time;
+    QBasicTimer timer;
+    int zone;
 };
-
-QT_END_NAMESPACE
-
-#endif
+//! [implementing_source]

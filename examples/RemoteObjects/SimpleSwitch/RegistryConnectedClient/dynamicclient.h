@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,42 +39,33 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+#ifndef _DYNAMICCLIENT_H
+#define _DYNAMICCLIENT_H
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
+#include <QObject>
+#include <QSharedPointer>
 
-QT_BEGIN_NAMESPACE
+#include <QRemoteObjectNode>
+#include <qremoteobjectdynamicreplica.h>
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+class DynamicClient : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
-
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
-
-    friend class QRemoteObjectNode;
-
 public:
-    ~QRemoteObjectRegistry();
-
-    QRemoteObjectSourceLocations sourceLocations() const;
+    DynamicClient(QSharedPointer<QRemoteObjectDynamicReplica> ptr);
+    ~DynamicClient();
 
 Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
+    void echoSwitchState(bool switchState);// this signal is connected with server_slot(..) slot of source object and echoes back switch state received from source
 
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
+public Q_SLOTS:
+    void recSwitchState_slot(); // slot to receive source state
+    void initConnection_slot();
 
 private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
-
-QT_END_NAMESPACE
+    bool clientSwitchState; // holds received server switch state
+    QSharedPointer<QRemoteObjectDynamicReplica> reptr;// holds reference to replica
+ };
 
 #endif
+

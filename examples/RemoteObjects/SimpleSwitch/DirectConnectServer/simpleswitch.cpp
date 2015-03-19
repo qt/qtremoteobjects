@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,42 +39,36 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+#include "simpleswitch.h"
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
-
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+// constructor
+SimpleSwitch::SimpleSwitch(QObject *parent) : SimpleSwitchSimpleSource(parent)
 {
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
+    stateChangeTimer = new QTimer(this); // Initialize timer
+    QObject::connect(stateChangeTimer, SIGNAL(timeout()), this, SLOT(timeout_slot())); // connect timeout() signal from stateChangeTimer to timeout_slot() of simpleSwitch
+    stateChangeTimer->start(2000); // Start timer and set timout to 2 seconds
+    qDebug() << "Source Node Started";
+}
 
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
+//destructor
+SimpleSwitch::~SimpleSwitch()
+{
+    stateChangeTimer->stop();
+}
 
-    friend class QRemoteObjectNode;
+void SimpleSwitch::server_slot(bool clientState)
+{
+    qDebug() << "Replica state is " << clientState; // print switch state echoed back by client
+}
 
-public:
-    ~QRemoteObjectRegistry();
+void SimpleSwitch::timeout_slot(void)
+{
+    // slot called on timer timeout
+    if (currState()) // check if current state is true, currState() is defined in repc generated rep_SimpleSwitch_source.h
+        setCurrState(false); // set state to false
+    else
+        setCurrState(true); // set state to true
+    qDebug() << "Source State is "<<currState();
 
-    QRemoteObjectSourceLocations sourceLocations() const;
+}
 
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
-
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
-
-private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
-
-QT_END_NAMESPACE
-
-#endif

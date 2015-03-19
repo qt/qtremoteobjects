@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,42 +39,38 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+#include "dynamicclient.h"
+ #include <QMetaMethod>
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
-
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+// constructor
+DynamicClient::DynamicClient(QSharedPointer<QRemoteObjectDynamicReplica> ptr) :
+    QObject(Q_NULLPTR), reptr(ptr)
 {
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
+    //connect signal for replica valid changed with signal slot initialization
+    QObject::connect(reptr.data(), SIGNAL(initialized()), this, SLOT(initConnection_slot()));
+}
 
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
+//destructor
+DynamicClient::~DynamicClient()
+{
 
-    friend class QRemoteObjectNode;
+}
 
-public:
-    ~QRemoteObjectRegistry();
+// Function to initialize connections between slots and signals
+void DynamicClient::initConnection_slot()
+{
 
-    QRemoteObjectSourceLocations sourceLocations() const;
+    // connect source replica signal currStateChanged() with client's recSwitchState() slot to receive source's current state
+   QObject::connect(reptr.data(), SIGNAL(currStateChanged()), this, SLOT(recSwitchState_slot()));
+   // connect client's echoSwitchState(..) signal with replica's server_slot(..) to echo back received state
+   QObject::connect(this, SIGNAL(echoSwitchState(bool)),reptr.data(), SLOT(server_slot(bool)));
+}
 
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
 
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
+void DynamicClient::recSwitchState_slot()
+{
+   clientSwitchState = reptr->property("currState").toBool(); // use replica property to get "currState" from source
+   qDebug() << "Received source state " << clientSwitchState;
+   Q_EMIT echoSwitchState(clientSwitchState); // Emit signal to echo received state back to server
+}
 
-private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
-
-QT_END_NAMESPACE
-
-#endif

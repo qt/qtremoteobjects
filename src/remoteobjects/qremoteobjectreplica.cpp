@@ -381,14 +381,67 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
         m_parentsNeedingConnect.append(rep);
 }
 
+/*!
+    \class QRemoteObjectReplica
+    \inmodule QtRemoteObjects
+    \brief A class interacting with (but not implementing) a Qt API on the Remote Object network
+
+    A Remote Object Replica is a QObject proxy for another QObject (called the
+    \l {Source} object). Once initialized, a Replica can be considered a
+    "latent copy" of the \l {Source} object. That is, every change to a
+    Q_PROPERTY on the \l {Source}, or Signal emitted by the \l {Source} will be
+    updated/emitted by all \l {Replica} objects. Latency
+    is introduced by process scheduling by any OSes involved and network
+    communication latency. As long as the Replica has been initialized and the
+    communication is not disrupted, receipt and order of changes is guaranteed.
+
+    The \l {isInitialized} and \l {isReplicaValid} properties (and corresponding \l {initialized()}/\l {isReplicaValidChanged()} Signals) allow the state of a \l {Replica} to be determined.
+
+    While Qt Remote Objects (QtRO) handles the initialization and synchronization of \l {Replica} objects, there are numerous steps happening behind the scenes which can fail and that aren't encountered in single process Qt applications.  See \l {Troubleshooting} for advice on how to handle such issues when using a Remote Objects network.
+*/
+
+/*!
+    \fn void QRemoteObjectReplica::isReplicaValidChanged()
+
+    This signal is emitted whenever a Replica's state toggles between valid and invalid.
+
+    A Replica is valid when there is a connection between its Node and the Source objects Host Node, and the Replica has been initialized.
+
+    \sa isReplicaValid(), initialized()
+*/
+
+/*!
+    \fn void QRemoteObjectReplica::initialized()
+
+    This signal is emitted once the Replica is initialized.
+
+    \sa isInitialized(), isReplicaValidChanged()
+*/
+
+/*!
+    \property QRemoteObjectReplica::isReplicaValid
+    \brief Whether the Replica is valid or not.
+
+    This property will be false until the Replica is initialized, at which point it is set to true.  If the connection to the Host Node (of the \l {Source}) is lost, it will become false until the connection is restored.
+*/
+
+/*!
+    \internal
+*/
 QRemoteObjectReplica::QRemoteObjectReplica(QObject *parent) : QObject(parent)
 {
 }
 
+/*!
+    \internal
+*/
 QRemoteObjectReplica::~QRemoteObjectReplica()
 {
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_D(QRemoteObjectReplica);
@@ -398,6 +451,9 @@ void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVarian
     d->_q_send(call, index, args);
 }
 
+/*!
+    \internal
+*/
 QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_D(QRemoteObjectReplica);
@@ -405,24 +461,38 @@ QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call c
     return d->_q_sendWithReply(call, index, args);
 }
 
+/*!
+    \internal
+*/
 const QVariant QRemoteObjectReplica::propAsVariant(int i) const
 {
     Q_D(const QRemoteObjectReplica);
     return d->getProperty(i);
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 {
     Q_D(QRemoteObjectReplica);
     d->setProperties(properties);
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
 {
     Q_D(QRemoteObjectReplica);
     d->setProperty(i, prop);
 }
 
+/*!
+    Returns \c true if this Replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
+
+    \sa isReplicaValid()
+*/
 bool QRemoteObjectReplica::isInitialized() const
 {
     Q_D(const QRemoteObjectReplica);
@@ -430,10 +500,18 @@ bool QRemoteObjectReplica::isInitialized() const
     return d->isInitialized();
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectReplica::initialize()
 {
 }
 
+/*!
+    Returns \c true if this Replica has been initialized and has a valid connection with the \l {QRemoteObjectNode} {Node} hosting the \l {Source}.  Returns \c false otherwise.
+
+    \sa isInitialized()
+*/
 bool QRemoteObjectReplica::isReplicaValid() const
 {
     Q_D(const QRemoteObjectReplica);
@@ -441,6 +519,11 @@ bool QRemoteObjectReplica::isReplicaValid() const
     return d->isReplicaValid();
 }
 
+/*!
+    Blocking call that waits for the Replica to become initialized or until the \a timeout (in ms) expires.  Returns \c true if the Replica is initialized when the call completes, \c false otherwise.
+
+    \sa isInitialized(), initialized()
+*/
 bool QRemoteObjectReplica::waitForSource(int timeout)
 {
     Q_D(QRemoteObjectReplica);

@@ -1,30 +1,34 @@
 include($QT_INSTALL_DOCS/global/qt-module-defaults.qdocconf)
 
 project                 = QtRemoteObjects
-description             = Qt RemoteObjects Reference Documentation
+description             = Qt Remote Objects Reference Documentation
 version                 = $QT_VERSION
 
 qhp.projects            = QtRemoteObjects
 
 qhp.QtRemoteObjects.file                = qtremoteobjects.qhp
 qhp.QtRemoteObjects.namespace           = org.qt-project.qtremoteobjects.$QT_VERSION_TAG
-qhp.QtRemoteObjects.virtualFolder       = qtremoteobjects
-qhp.QtRemoteObjects.indexTitle          = Qt RemoteObjects
+qhp.QtRemoteObjects.virtualFolder       = remoteobjects
+qhp.QtRemoteObjects.indexTitle          = Qt Remote Objects
 qhp.QtRemoteObjects.indexRoot           =
 
 qhp.QtRemoteObjects.filterAttributes    = qtremoteobjects $QT_VERSION qtrefdoc
 qhp.QtRemoteObjects.customFilters.Qt.name = QtRemoteObjects $QT_VERSION
 qhp.QtRemoteObjects.customFilters.Qt.filterAttributes = qtremoteobjects $QT_VERSION
-qhp.QtRemoteObjects.subprojects         = classes
+qhp.QtRemoteObjects.subprojects         = overviews classes repc
+qhp.QtRemoteObjects.subprojects.overviews.title = Getting Started
+qhp.QtRemoteObjects.subprojects.overviews.indexTitle = Qt Remote Objects Getting Started
+qhp.QtRemoteObjects.subprojects.overviews.selectors = fake:page,group,module
 qhp.QtRemoteObjects.subprojects.classes.title = C++ Classes
-qhp.QtRemoteObjects.subprojects.classes.indexTitle = Qt RemoteObjects C++ Classes
+qhp.QtRemoteObjects.subprojects.classes.indexTitle = Qt Remote Objects C++ Classes
 qhp.QtRemoteObjects.subprojects.classes.selectors = class fake:headerfile
 qhp.QtRemoteObjects.subprojects.classes.sortPages = true
 
 depends += qtcore \
+           qtnetwork \
            qtdoc
 
-tagfile                 = ../../../doc/qtremoteobjects/qtremoteobjects.tagsi
+tagfile                 = ../../../doc/qtremoteobjects/qtremoteobjects.tags
 
 headerdirs  += .. \
                 ../../remoteobjects
@@ -39,5 +43,5 @@ examplesinstallpath = RemoteObjects
 
 imagedirs   += images
 
-navigation.landingpage = "Qt RemoteObjects"
-navigation.cppclassespage = "Qt RemoteObjects C++ Classes"
+navigation.landingpage = "Qt Remote Objects"
+navigation.cppclassespage = "Qt Remote Objects C++ Classes"

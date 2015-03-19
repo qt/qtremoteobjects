@@ -5,6 +5,11 @@ QT += network core-private
 QT -= gui
 
 QMAKE_DOCS = $$PWD/doc/qtremoteobjects.qdocconf
+OTHER_FILES += $$PWD/doc/qtremoteobjects.qdocconf \
+               $$PWD/doc/src/remoteobjects-cpp.qdoc \
+               $$PWD/doc/src/remoteobjects-index.qdoc \
+               $$PWD/doc/src/remoteobjects-overview.qdoc \
+               $$PWD/doc/src/remoteobjects-repc.qdoc
 
 load(qt_module)
 

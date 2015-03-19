@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,42 +39,22 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+#include <QCoreApplication>
+#include "client.h"
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
-
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+int main(int argc, char *argv[])
 {
-    Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
+    QCoreApplication a(argc, argv);
 
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
 
-    friend class QRemoteObjectNode;
+    QSharedPointer<SimpleSwitchReplica> ptr;
 
-public:
-    ~QRemoteObjectRegistry();
+    QRemoteObjectNode repNode = QRemoteObjectNode(); // create remote object node
+    repNode.connect(); // connect with remote host node
 
-    QRemoteObjectSourceLocations sourceLocations() const;
+    ptr.reset(repNode.acquire<SimpleSwitchReplica>()); // acquire replica of source from host node
 
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
+    Client rswitch(ptr); // create client switch object and pass reference of replica to it
 
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
-
-private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
-
-QT_END_NAMESPACE
-
-#endif
+    return a.exec();
+}

@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,12 +39,23 @@
 **
 ****************************************************************************/
 
-/*!
-    \module QtRemoteObjects
-    \title Qt RemoteObjects C++ Classes
-    \ingroup modules
-    \qtvariable remote objects
+#include <QCoreApplication>
+#include "simpleswitch.h"
 
-    \brief The Qt RemoteObjects  module provides functionality for remoting QObjects.
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
 
-*/
+    SimpleSwitch srcSwitch; // create simple switch
+
+    QRemoteObjectNode regNode = QRemoteObjectNode::createRegistryHostNode(); // create node that hosts registy
+    QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNodeConnectedToRegistry(); // create node that will host source and connect to registry
+
+    //Note, you can add srcSwitch directly to regNode if desired.
+    //We use two Nodes here, as the regNode could easily be in a third process.
+
+    srcNode.enableRemoting(&srcSwitch); // enable remoting of source object
+
+    return a.exec();
+}
+

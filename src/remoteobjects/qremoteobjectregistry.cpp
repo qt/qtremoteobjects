@@ -47,11 +47,51 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QRemoteObjectRegistry
+    \inmodule QtRemoteObjects
+    \brief The Registry is a class that holds information about \l {Source} objects available on the Qt Remote Objects network
+
+    The Registry is a special Source/Replica pair held by a \l
+    {QRemoteObjectNode} {Node} itself. It knows about all other \l {Source}s
+    available on the network, and simplifies the process of connecting to other
+    \l {QRemoteObjectNode} {Node}s.
+*/
 QRemoteObjectRegistry::QRemoteObjectRegistry(QObject *parent) : QRemoteObjectReplica(parent)
 {
     connect(this, &QRemoteObjectRegistry::isReplicaValidChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
 }
 
+/*!
+    \fn void QRemoteObjectRegistry::remoteObjectAdded(const QRemoteObjectSourceLocation &entry)
+
+    This signal is emitted whenever a new Source location is added to the Registry.
+
+    \a entry is a QRemoteObjectSourceLocation, a typedef for QPair<QString, QUrl>.
+
+    \sa remoteObjectRemoved()
+*/
+
+/*!
+    \fn void QRemoteObjectRegistry::remoteObjectRemoved(const QRemoteObjectSourceLocation &entry)
+
+    This signal is emitted whenever a Source location is removed from the Registry.
+
+    \a entry is a QRemoteObjectSourceLocation, a typedef for QPair<QString, QUrl>.
+
+    \sa remoteObjectAdded()
+*/
+
+/*!
+    \property QRemoteObjectRegistry::sourceLocations
+    \brief The set of Sources known to the Registry.
+
+    This property is a QRemoteObjectSourceLocations, which is a typedef for QHash<QString, QUrl>.  Each known \l Source is the QString key, while the Url for the Host Node is the corresponding value for that key in the hash.
+*/
+
+/*!
+    Destructor for QRemoteObjectRegistry.
+*/
 QRemoteObjectRegistry::~QRemoteObjectRegistry()
 {}
 
@@ -69,11 +109,17 @@ void QRemoteObjectRegistry::initialize()
     setProperties(properties);
 }
 
+/*!
+    Returns a QRemoteObjectSourceLocations object, which is a typedef for QHash<QString, QUrl> that includes the name and location of all Sources known to the Registry.
+*/
 QRemoteObjectSourceLocations QRemoteObjectRegistry::sourceLocations() const
 {
     return propAsVariant(0).value<QRemoteObjectSourceLocations>();
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
 {
     if (hostedSources.contains(entry.first)) {
@@ -99,6 +145,9 @@ void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
     send(QMetaObject::InvokeMetaMethod, index, args);
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entry)
 {
     if (!hostedSources.contains(entry.first))

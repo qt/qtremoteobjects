@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,42 +39,22 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+#ifndef SIMPLESWITCH_H
+#define SIMPLESWITCH_H
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
+#include "rep_SimpleSwitch_source.h"
 
-QT_BEGIN_NAMESPACE
-
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+class SimpleSwitch : public SimpleSwitchSimpleSource
 {
     Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
-
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
-
-    friend class QRemoteObjectNode;
-
 public:
-    ~QRemoteObjectRegistry();
-
-    QRemoteObjectSourceLocations sourceLocations() const;
-
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
-
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
-
+    SimpleSwitch(QObject *parent=Q_NULLPTR);
+    ~SimpleSwitch();
+    virtual void server_slot(bool clientState);
+public Q_SLOTS:
+    void timeout_slot();
 private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
+    QTimer *stateChangeTimer;
 };
-
-QT_END_NAMESPACE
 
 #endif

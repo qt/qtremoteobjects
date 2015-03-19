@@ -62,7 +62,6 @@ public:
     bool isReplicaValid() const;
     bool waitForSource(int timeout = 30000);
     bool isInitialized() const;
-    virtual void initialize();
 
 Q_SIGNALS:
     void isReplicaValidChanged();
@@ -71,6 +70,7 @@ Q_SIGNALS:
 protected:
     explicit QRemoteObjectReplica(QObject *parent = Q_NULLPTR);
 
+    virtual void initialize();
     void send(QMetaObject::Call call, int index, const QVariantList &args);
     QRemoteObjectPendingCall sendWithReply(QMetaObject::Call call, int index, const QVariantList &args);
 

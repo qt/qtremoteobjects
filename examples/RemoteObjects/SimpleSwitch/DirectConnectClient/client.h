@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+** This file is part of the examples of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,42 +39,31 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTREGISTRY_P_H
-#define QREMOTEOBJECTREGISTRY_P_H
+#ifndef _CLIENT_H
+#define _CLIENT_H
 
-#include <QtRemoteObjects/qremoteobjectreplica.h>
+#include <QObject>
+#include <QSharedPointer>
 
-QT_BEGIN_NAMESPACE
+#include "rep_SimpleSwitch_replica.h"
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
+class Client : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
-
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
-
-    friend class QRemoteObjectNode;
-
 public:
-    ~QRemoteObjectRegistry();
-
-    QRemoteObjectSourceLocations sourceLocations() const;
+    Client(QSharedPointer<SimpleSwitchReplica> ptr);
+    ~Client();
+    void initConnections();// function connect signals and slots of source and client
 
 Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &entry);
+    void echoSwitchState(bool switchState);// this signal is connected with server_slot(..) on the source object and echoes back switch state received from source
 
-protected Q_SLOTS:
-    void addSource(const QRemoteObjectSourceLocation &entry);
-    void removeSource(const QRemoteObjectSourceLocation &entry);
-    void pushToRegistryIfNeeded();
-
+public Q_SLOTS:
+    void recSwitchState_slot(); // slot to receive source state
 private:
-    void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSourceLocations hostedSources;
-};
+    bool clientSwitchState; // holds received server switch state
+    QSharedPointer<SimpleSwitchReplica> reptr;// holds reference to replica
 
-QT_END_NAMESPACE
+ };
 
 #endif

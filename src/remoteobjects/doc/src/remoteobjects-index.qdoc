@@ -1,0 +1,377 @@
+/****************************************************************************
+**
+** Copyright (C) 2014 Ford Motor Company
+** Contact: http://www.qt-project.org/legal
+**
+** This file is part of the QtRemoteObjects module of the Qt Toolkit.
+**
+** $QT_BEGIN_LICENSE:LGPL$
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
+**
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
+**
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+/*!
+\page qtremoteobjects-index.html
+\title Qt Remote Objects
+\brief An introduction to Inter-Process Communication using Qt Remote Objects.
+
+\keyword Qt Remote Objects
+
+\section1 Remote Object Concepts
+
+Qt Remote Objects (QtRO) is an Inter-Process Communication (IPC) module
+developed for Qt. The idea is to extend existing Qt functionality to make an
+easy to use way of sharing information between processes or computers.
+
+One of the key features of Qt to enable this is the distinction between an
+objects API (defined by its Q_Property, Signals and Slots) and the
+implementation of that API. The idea of QtRO is to meet the expected API, even
+if the true QObject is in a different process. A Slot called on a copy of an
+object (called a \l {Replica} in QtRO) is forwarded to the true object (called
+a \l {Source} in QtRO) for handling. Updates to the \l {Source} (either
+property changes or emitted Signals) are forwarded to every \l {Replica}.
+
+A \l {Replica} is a light-weight proxy for the \l {Source} object, but one that
+supports the same connections and behavior of QObjects, which makes them as
+easy to use as any other QObject provided by Qt. Everything needed for the \l
+{Replica} to look like the \l {Source} object is handled behind the scenes by
+QtRO.
+
+Note that Remote Objects behave differently than traditional Remote Procedure
+Call (RPC) implementations. In RPC, the client makes a request and waits for
+the response. In RPC, the server does not push anything to the client unless it
+is in response to a request. The design of RPC is often such that different
+clients are independent of each other (for instance, two clients can ask a
+mapping service for directions and get different results). While it is possible
+to implement this in QtRO (as \l {Source} without properties, and Slots that
+have return values), it is designed more to hide the fact that the processing
+is really remote. You let a Node give you the \l {Replica} instead of creating
+it yourself, possibly use the status signals (\l
+{QRemoteObjectReplica::isReplicaValid} {isReplicaValid()}) but then interact
+with the object like you would any other QObject-based type.
+
+\section1 Uses
+
+Consider a sensor, a Global Position System (GPS) receiver for instance. In
+QtRO terms, the \l {Source} would be the process that directly interacts with
+the GPS hardware and derives your current location. The location would be
+exposed as QObject properties, and the periodic updates to location would
+update the properties and emit property changed signals. \l {Replica}s would be
+created in other processes and would always know your current location, but
+would not need any of the logic to compute the location from the sensor data.
+Connecting to the location changed Signal on the \l {Replica} would work as
+expected, as the signal emitted from the \l {Source} would trigger the Signal
+emission on every \l {Replica}.
+
+Another example of QtRO usage would be for a service (say access to a printer).
+The \l {Source} is again the process controlling the printer directly. Here you
+would again likely have properties for the ink levels or whether the printer is
+currently busy. But the key feature, being able to print something, needs to be
+passed back to the printer. This aligns with the Qt Slot mechanism, which QtRO
+uses as the way for \l {Replica}s to make calls on the \l {Source}. In effect,
+Properties and Signals go from \l {Source} to \l {Replica}s, while Slots go
+from (a) \l {Replica} to the \l {Source}. Assuming a print request is accepted,
+the printer status would change, which would change the status property. This
+would then be reported to all \l {Replica}s.
+
+\section1 Nodes
+
+QtRO needs a helper class to make this work, the QRemoteObjectNode.
+QRemoteObjectNodes (let's shorten the name to Node for now) are what enables
+the passing of information between processes. All of the QtRO functionality is
+enabled by a small number of distinct packets passing the necessary data
+between nodes.
+
+Each process that participates in QtRO's IPC will instantiate a Node using the
+default constructor or one of \l {QRemoteObjectNode::createHostNode}
+{QRemoteObjectNode's static generator methods}. There are different
+constructors to support different features of Nodes, specifically whether it
+can share out \l {Source} objects (called a "Host" Node) or whether it should connect
+to a {QRemoteObjectRegistry} {"Registry"}, which knows about (and how to
+connect to) available \l {Source} objects.
+
+QtRO works as a peer-to-peer network. That is, in order to \l
+{QRemoteObjectNode::acquire()} {acquire()} a valid \l {Replica}, the \l
+{Replica} Node needs a connection to the Node that Hosts its \l {Source}. A
+Host Node is a Node that allows other Nodes to connect to it, which is
+accomplished by giving Hosts unique addresses (the address is provided as a
+parameter to one of the static Node \l {QRemoteObjectNode::createHostNode}
+{generator methods}). The Node that a \l {Replica} is requested from must
+establish the connection to the Host Node in order to initialize the \l
+{Replica} and keep it up to date.
+
+\section1 Connecting Nodes using QtRO URLs
+
+Host Nodes use custom URLs to simplify connections. While the list will likely
+be extended, QtRO currently supports two types of connections. A "tcp"
+connection (using the standard tcp/ip protocol) supports connections between
+devices as well as between processes on the same device. The 2nd option is a
+"local" connection - which can have less overhead, depending on the underlying
+OS features - but does not support connectivity between devices.
+
+When using a local connection, a unique name must be used. For tcp connections,
+a unique address and port number combination much be used.
+
+There is currently no \l {http://www.zeroconf.org/} {zeroconf} facility
+included in QtRO. All processes or devices must therefore know a priori how to
+connect to each other. A \l {QRemoteObjectRegistry} (see below) can be used to
+simplify the connection process for a network with multiple Host Nodes.
+
+Connection types are summarized in the following table.
+    \table 90%
+    \header \li URL  \li Host Node           \li Connecting Node
+    \row    \li \l {QUrl}("local:replica")   \li \l {QLocalServer}("replica") \li \l {QLocalSocket}("replica")
+    \row    \li \l {QUrl}("tcp://192.168.1.1:9999")   \li \l {QTcpServer}("192.168.1.1",9999) \li \l {QTcpSocket}("192.168.1.1",9999)
+    \endtable
+
+Nodes have a couple of \l {QRemoteObjectNode::enableRemoting()}
+{enableRemoting()} methods that are used share objects on the network (this
+will produce an error if the Node is not a Host Node however). Other
+processes/devices that want to interact with a shared object use one of the \l
+{QRemoteObjectNode::acquire()} {Node's acquire()} methods to instantiate a
+Replica.
+
+\keyword Source
+\section1 Source objects
+
+A Remote Object Source is the QObject that is responsible for the
+implementation of the exposed API.
+
+At a high level, you have a choice of using a QObject type directly as a source
+or defining the desired API in a .rep template for use with the \l {repc}
+compiler.
+
+If you already have a fully defined QObject, it can become a Source simply by
+passing it to \l {QRemoteObjectNode::enableRemoting()}. This lets other
+processes/devices create a \l {Replica} of the object to interact with (see \l
+{Remote Object Interaction}). You can then instantiate \l
+{QRemoteObjectDynamicReplica}s of your object, or use the \l {QOBJECT_REPLICA}
+macro in your project file, which will use \l {repc} to create a header file
+describing the Replica for use in that process/on that device (and provides
+compile-time checks).
+
+Letting \l {repc} generate a \l {Source} header file for your project (using
+the \l {REPC_SOURCE} macro) provides three options of implementing the desired
+API. There is a <Type>SimpleSource class defined in the header, which provides
+basic getter/setter methods for each property and implements data members of
+the correct property type in the header. Here "<Type>" represents the class
+name from the .rep file, so if your class is of type "MyType" in the .rep file,
+there will be a MyTypeSimpleSource class declared in the produced header file.
+This is a fast way to get started using the API. To use this class, you need to
+inherit from this class and implement any defined Slots (which are pure virtual
+in the generated header file). Whatever logic is needed to manage the
+exposed properties and define when Signals need to be emitted would be added to
+the overriding class as well.
+
+If you need to hide the implementation details, you can use the <Type>Source
+class instead, which is the 2nd class declared in the same resulting header
+file. This class definition does not provide data members, and makes the
+getter/setter functions pure virtual as well. You have more flexibility in how
+you implement the class, although you need to write more code. This defines the
+API for both the Source and Replica side from a single .rep template file.
+
+Finally, the is the <Type>SourceAPI class generated in the header. This is a
+templated class, for use specifically by the templated version of \l
+{QRemoteObjectNode::enableRemoting()} function overload, which allows you to
+use any QObject that supports the desired API as the source. You will get
+compile-time warnings if the class does not provide the correct API, and using
+this class allows you to hide or convert properties or Signal/Slot parameters.
+
+Note in all cases, the QObject API is *not* exposed. For instance, while a \l
+{Replica} will have a destroyed signal, the destroyed signal of the Source is
+not propagated. The \l {Source} and each \l {Replica} are unique QObjects with
+their own connections. The API that is exposed is defined by the .rep template
+used by \l {repc}, or in the case of raw QObjects, all API elements defined in
+the inheritance chain from a specific ancestor. Unless you define
+Q_CLASSINFO("RemoteObject Type") in an ancestor, the QObject's parent is used.
+If Q_CLASSINFO("RemoteObject Type") is used, that class's API is the lowest
+level of API used.
+
+\section1 Identifying Sources
+
+Because more than one \l {Source} can be shared by a Host Node, each \l {Source} requires a name.  All \l {repc} generated headers include a way for the Node to determine the class name (Q_CLASSINFO for Replica/SimpleSource/Source types, or a static name() function for the SourceAPI type).  If you pass your own QObject type to \l {QRemoteObjectNode::enableRemoting()}, the name will be determined using the following logic:
+\list 1
+  \li If the object or any of its ancestors has Q_CLASSINFO of type "RemoteObject Type" defined, the provided name will be used.
+  \li Otherwise, the QObject's objectName (if set) will be used.
+  \li If neither is available, the call to \l {QRemoteObjectNode::enableRemoting()} will fail, returning False.
+\endlist
+
+\keyword Replica
+\section1 Replica objects
+
+A Remote Object Replica is a proxy object that has (approximately) the same API
+as the \l {Source} QObject it is replicating. There are a few additional
+properties and signals to make it possible to detect when the Replica is
+initialized or if it loses the connectivity to the \l {Source} object. There
+are a few other differences, such as a Constant Property on the Source cannot
+be Constant on the Replica - the value will not be known at the time the
+Replica is instantiated, it will only be known once the Replica is initialized
+(see \l {Remote Object Interaction}).
+
+A compiled Replica is a \l {QRemoteObjectReplica} based type, where the derived
+class definition is automatically generated by the \l {repc} compiler. Only a
+header file is generated (and using the REPC_REPLICA macro in your .pro file
+can make generation part of the build process), but it is a complete type.
+There is no public constructor, you need to use the \l
+{QRemoteObjectNode::acquire} template function to create the Replica instance.
+
+A \l {QRemoteObjectDynamicReplica} can be generated at runtime. To do so, you
+call the non-templated version of \l {QRemoteObjectNode::acquire}, passing in
+as an argument the \l {Source} name (a QString). Dynamic Replicas are a bit
+more verbose to use from C++, but do not require compilation and can be easily
+used in QML or (potentially) exposed to scripting languages such as Python.
+Dynamic Replicas do not support initial property values, and do not support
+introspection until they have been initialized.
+
+An important difference between these two ways of creating Replicas is the
+behavior before the Replica is initialized. Since a Dynamic Replica does not
+have a metaObject until after it is initialized, it basically has no API until
+after initialization occurs. No properties, and no Signals to connect Slots to.
+Because of the compile time creation of the metaObject for compiled Replicas,
+their API is available when the Replica is instantiated. You can even provide
+default values for Properties in the template file, which will be used until
+the Replica is initialized with current values from the Source.
+
+See \l {QRemoteObjectReplica} and \l {QRemoteObjectDynamicReplica}
+
+\section1 Replica Initialization
+
+A Host Node will share the list of Sources it hosts will every other Node that
+connects to it. It will send updates when Sources are added or removed from the
+list. In this way, a connected Node will always know what Sources it can attach
+to. Changes to a specific \l {Source} are only propagated to Nodes that have a Replica of
+that Source. This avoids unnecessary network traffic.
+
+When a Node acquires a Replica for a known Source, the Replica Node sends a
+request for that Source to the Host Node. Upon receipt of this request, the
+Host will create a reply packet with the current values of all properties of
+the Source. If the requested Replica is dynamic, it will include the API
+definition for the Source. The Replica Node will be included in the list of
+connections that receive changes to that Source from then on.
+
+If a Replica is instantiated but the Node is not connected to the Node that
+Hosts the requested Source (or that objects lives in a Host Node process, but
+sharing/remoting has not been enabled for the QObject), the Replica will still
+be created, it will just remain uninitialized.
+
+If, at a later time, the Replica Node gets notified that the requested Source is
+available from a connected Node, it will at that point request the Source and
+start the initialization process.
+
+If the connection to a Host Node is lost, the Replica will transition to the
+invalid state. It will attempt to reconnect and will re-initialize if the
+connection is restored (this making sure all Properties are current).
+
+\keyword Registry
+\section1 The Registry
+
+When you \l {QRemoteObjectNode::acquire} a Replica, the Node URL is not passed
+as an argument. This means you do not need to specific the Host Node, but it does
+require you to have some other means of connecting to that Host. Without the Registry, it is necessary to
+manually call \l {QRemoteObjectNode::connect}, from each Node, to every Host Node that has \l {Source} objects it should
+Replicate. This is fine for small or static networks, but does not scale.
+
+The Registry provides a simpler way to establish these connections. Every Node
+that wants to be part of the Registry's network connects to the Registry. The
+Registry is itself a specialized Source object, and thus is hosted by a Node.
+Connecting to the Registry is simply a matter of passing the Host Node URL to
+one of the static Node \l {QRemoteObjectNode::createHostNode}
+{generator methods} as follows:
+    \table
+    \header
+        \li Static method
+        \li Description
+    \row
+        \li \l {QRemoteObjectNode::createRegistryHostNode} {createRegistryHostNode}
+        \li This Node Hosts the Registry and is able to Host other Sources from the same URL.  Only one Node can Host the Registry for a network, although there can be multiple networks with their own Registries.
+    \row
+        \li \l {QRemoteObjectNode::createNodeConnectedToRegistry} {createNodeConnectedToRegistry}
+        \li This Node holds a Replica of the Registry so it knows about available \l {Source} objects, but is not a Host and cannot share \l {Source} objects on the network.
+    \row
+        \li \l {QRemoteObjectNode::createHostNodeConnectedToRegistry} {createHostNodeConnectedToRegistry}
+        \li This Node holds a Replica of the Registry so it knows about available \l {Source} objects.  It is also a Host, with its own URL, so it is able to share \l {Source} objects.
+    \endtable
+
+The Registry is tightly integrated with QtRO. Whenever a \l {Source} is added
+or removed, the name/URL are updated in the Registry automatically. So once
+your Node is connected to the Registry, it is not necessary to connect to any
+other Nodes manually. If you request an object on the network and you aren't
+connected to the Hosting Node, the Registry will know what URL to connect to
+and will initiate the connection. Once connected (and the list of available
+objects is passed along, including the desired \l {Source}), the initialization
+process for the requested \l Replica will automatically start.
+
+\section1 Remote Object Interaction
+
+Source/Replica interaction is directional. Property changes and Signal emission
+happen on the Source, and are propagated to all Replicas. If a Property is
+writable, you can call the setter function on a Replica. This will be forwarded
+to the Source, and if a change is made, it will be made on the Source and
+subsequently forwarded to all Replicas. To the Replica, it is then an
+asynchronous call, with latency before the change takes effect.
+
+While you can emit a Signal on a Replica, this may have unexpected results and
+is discouraged for that reason. It will only trigger Slots connected to the
+Replica itself, no Slots connected to the Source or other Replicas. Like
+property setters, Slot invocations on a Replica are forwarded to the Source to
+run.
+
+The behavior above is implemented automatically by QtRO, there is no need to
+write any Replica implementation code. It will be handled automatically at
+runtime for Dynamic Replicas, or at compile time for repc generated headers.
+
+\section1 Replica Ownership
+
+The acquire methods return a pointer to the Replica QObject instantiated by the
+Node. The Node has no way of knowing the intended lifetime of the Replica, so
+it is the responsibility of the calling program to delete the Replica when it
+is no longer needed.
+
+You can instantiate multiple copies of the same Replica (this may be necessary
+in QML for instance). All Replicas of the same Source from a single Node will
+share a private data member which handles the network communication. This means
+multiple instances of a \l {Replica} do not introduce additional network
+traffic, although there will be some additional processing overhead. Failing to
+delete Replicas will prevent the reference count on this private object to be
+invalid, and cause unnecessary network communication until the calling process
+exits. For this reason, it is recommended that \l {QScopedPointer} or \l
+{QSharedPointer} be used to help track a Replica lifetime.
+
+\section1 Remote Object public Classes
+
+The following classes make up the public interface for Qt Remote Objects:
+
+\generatelist{classesbymodule QtRemoteObjects}
+
+\section1 Troubleshooting
+...
+*/

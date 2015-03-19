@@ -46,15 +46,38 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QRemoteObjectDynamicReplica
+    \inmodule QtRemoteObjects
+    \brief A dynamically instantiated \l {Replica}
+
+    There are generated Replicas (ones that have header files produced by the \l {repc} {Replica Compiler}), and dynamic Replicas, which are generated on-the-fly.  This is the class for the dynamic type of Replica.
+
+    When the connection to the \l {Source} object is made, the initialization step passes the current property values (see \l {Replica Initialization}).  In a DynamicReplica, the Property/Signal/Slot details are also sent, allowing the Replica object to be created on-the-fly.  This can be conventient in QML or scripting, but has two primary disadvantages.  First, the object is in effect "empty" until it is successfully initialized by the \l {Source}.  Second, in C++, calls must be made using QMetaObject::invokeMethod(), as the moc generated lookup will not be available.
+
+    This class does not have a public constructor, it can only be instantiated by using the dynamic QRemoteObjectNode::acquire method.
+*/
+
 QRemoteObjectDynamicReplica::QRemoteObjectDynamicReplica(QObject *parent)
     : QRemoteObjectReplica(parent)
 {
 }
 
+/*!
+    Destroys the Dynamic Replica.
+
+    \sa {Replica Ownership}
+*/
 QRemoteObjectDynamicReplica::~QRemoteObjectDynamicReplica()
 {
 }
 
+/*!
+    \internal
+    Returns a pointer to the dynamically generated meta-object of this object, or 0 if the object is not initialized.  This function overrides the QObject::metaObject() virtual function to provide the same functionality for Dynamic Replicas.
+
+    \sa QObject::metaObject(), {Replica Initialization}
+*/
 const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 {
     Q_D(const QRemoteObjectReplica);
@@ -62,6 +85,12 @@ const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
     return d->m_metaObject ? d->m_metaObject : QRemoteObjectReplica::metaObject();
 }
 
+/*!
+    \internal
+    This function overrides the QObject::qt_metacast() virtual function to provide the same functionality for Dynamic Replicas.
+
+    \sa QObject::qt_metacast()
+*/
 void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
 {
     Q_D(QRemoteObjectReplica);
@@ -79,6 +108,12 @@ void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
     return QObject::qt_metacast(name);
 }
 
+/*!
+    \internal
+    This function overrides the QObject::qt_metacall() virtual function to provide the same functionality for Dynamic Replicas.
+
+    \sa QObject::qt_metacall()
+*/
 int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, void **argv)
 {
     Q_D(QRemoteObjectReplica);
