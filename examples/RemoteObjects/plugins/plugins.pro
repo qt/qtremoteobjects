@@ -3,7 +3,7 @@ QT += qml remoteobjects
 TEMPLATE = lib
 CONFIG += plugin
 
-REPC_REPLICA += $$PWD/../TimeModel.rep
+REPC_REPLICA += $$PWD/../timemodel.rep
 
 DESTDIR = imports/TimeExample
 TARGET  = qmlqtimeexampleplugin

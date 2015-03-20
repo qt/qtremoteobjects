@@ -1,7 +1,7 @@
 CONFIG   += console
 
 
-REPC_SOURCE += ../TimeModel.rep
+REPC_SOURCE += ../timemodel.rep
 QT = remoteobjects core
 
 SOURCES += TimeModel.cpp main.cpp

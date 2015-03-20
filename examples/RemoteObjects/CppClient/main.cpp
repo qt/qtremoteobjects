@@ -41,7 +41,7 @@
 
 #include <QCoreApplication>
 #include <QTimer>
-#include "rep_TimeModel_replica.h"
+#include "rep_timemodel_replica.h"
 
 class tester : public QObject
 {

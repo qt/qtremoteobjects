@@ -18,4 +18,4 @@ HEADERS += \
     client.h
 
 DISTFILES += \
-    SimpleSwitch.rep
+    simpleswitch.rep

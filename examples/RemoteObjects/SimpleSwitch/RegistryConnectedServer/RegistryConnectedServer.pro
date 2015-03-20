@@ -12,7 +12,7 @@ TARGET = RegistryConnectedServer
 CONFIG   += console
 CONFIG   -= app_bundle
 
-REPC_SOURCE = SimpleSwitch.rep
+REPC_SOURCE = simpleswitch.rep
 
 
 TEMPLATE = app
@@ -23,3 +23,6 @@ SOURCES += main.cpp \
 
 HEADERS += \
     simpleswitch.h
+
+DISTFILES += \
+    simpleswitch.rep

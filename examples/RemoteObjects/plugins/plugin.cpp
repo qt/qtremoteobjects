@@ -48,7 +48,7 @@
 #include <QCoreApplication>
 #include <QRemoteObjectReplica>
 #include <QRemoteObjectNode>
-#include "rep_TimeModel_replica.h"
+#include "rep_timemodel_replica.h"
 
 // Implements a "TimeModel" class with hour and minute properties
 // that change on-the-minute yet efficiently sleep the rest

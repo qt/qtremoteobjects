@@ -1,6 +1,6 @@
 QT       += core
 
-REPC_REPLICA += TimeModel.rep
+REPC_REPLICA += timemodel.rep
 QT += remoteobjects
 
 QT       -= gui
@@ -13,7 +13,7 @@ TEMPLATE = app
 SOURCES += main.cpp
 
 OTHER_FILES += \
-    TimeModel.rep
+    timemodel.rep
 
 target.path = $$[QT_INSTALL_EXAMPLES]/RemoteObjects/CppClient
 INSTALLS += target

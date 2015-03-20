@@ -64,7 +64,7 @@ void SimpleSwitch::server_slot(bool clientState)
 void SimpleSwitch::timeout_slot(void)
 {
     // slot called on timer timeout
-    if (currState()) // check if current state is true, currState() is defined in repc generated rep_SimpleSwitch_source.h
+    if (currState()) // check if current state is true, currState() is defined in repc generated rep_simpleswitch_source.h
         setCurrState(false); // set state to false
     else
         setCurrState(true); // set state to true

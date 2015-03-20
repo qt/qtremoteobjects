@@ -40,7 +40,7 @@
 ****************************************************************************/
 
 #include <QtCore>
-#include "rep_TimeModel_source.h"
+#include "rep_timemodel_source.h"
 
 class MinuteTimer : public MinuteTimerSimpleSource
 {

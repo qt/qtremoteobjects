@@ -42,7 +42,7 @@
 #ifndef SIMPLESWITCH_H
 #define SIMPLESWITCH_H
 
-#include "rep_SimpleSwitch_source.h"
+#include "rep_simpleswitch_source.h"
 
 class SimpleSwitch : public SimpleSwitchSimpleSource
 {
