@@ -42,7 +42,7 @@
 #ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_H
 #define QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_H
 
-#include "qtremoteobjectglobal.h"
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 #include <QAbstractItemModel>
 

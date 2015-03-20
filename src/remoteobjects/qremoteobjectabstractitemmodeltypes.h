@@ -49,7 +49,7 @@
 #include <QModelIndex>
 #include <QDebug>
 #include <qnamespace.h>
-#include "qtremoteobjectglobal.h"
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 QT_BEGIN_NAMESPACE
 
