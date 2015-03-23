@@ -41,6 +41,8 @@
 
 #include "qremoteobjectabstractitemadapter_p.h"
 
+#include <QItemSelectionModel>
+
 struct IndexRange
 {
     IndexRange() {}
@@ -84,18 +86,19 @@ inline QVector<int> filterRoles(const QVector<int> &roles, const QVector<int> &a
     return neededRoles;
 }
 
-QAbstractItemSourceAdapter::QAbstractItemSourceAdapter(QAbstractItemModel *obj, const QVector<int> &roles)
+QAbstractItemSourceAdapter::QAbstractItemSourceAdapter(QAbstractItemModel *obj, QItemSelectionModel *sel, const QVector<int> &roles)
     : QObject(obj),
       m_model(obj),
       m_availableRoles(roles)
 {
     registerTypes();
-    m_rowCount = m_model->rowCount(QModelIndex());
-    m_columnCount = m_model->columnCount();
+    m_selectionModel = sel;
     connect(m_model, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)), this, SLOT(sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
     connect(m_model, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sourceRowsInserted(QModelIndex,int,int)));
     connect(m_model, SIGNAL(rowsRemoved(QModelIndex,int,int)), this, SLOT(sourceRowsRemoved(QModelIndex,int,int)));
     connect(m_model, SIGNAL(rowsMoved(QModelIndex,int,int,QModelIndex,int)), this, SLOT(sourceRowsMoved(QModelIndex,int,int,QModelIndex,int)));
+    if (m_selectionModel)
+        connect(m_selectionModel, SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(sourceCurrentChanged(QModelIndex,QModelIndex)));
 }
 
 void QAbstractItemSourceAdapter::registerTypes()
@@ -110,56 +113,63 @@ void QAbstractItemSourceAdapter::registerTypes()
         qRegisterMetaTypeStreamOperators<DataEntries>();
         qRegisterMetaTypeStreamOperators<Qt::Orientation>();
         qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
+        qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
+        qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
+        qRegisterMetaType<QSize>();
     }
 }
 
-// start and end need to have the same nesting depth and will fetch ALL children
+QItemSelectionModel* QAbstractItemSourceAdapter::selectionModel() const
+{
+    return m_selectionModel;
+}
+
 DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
 {
-    DataEntries entries;
-    if (start.isEmpty() || end.isEmpty()) {
-        qCWarning(QT_REMOTEOBJECT_MODELS) << "requested indices are empty" << start << end << roles;
-        return entries;
-    }
+    qCDebug(QT_REMOTEOBJECT_MODELS) << "Requested rows" << "start=" << start << "end=" << end << "roles=" << roles;
+
+    Q_ASSERT(start.size() == end.size());
+    Q_ASSERT(!start.isEmpty());
 
     if (roles.isEmpty())
         roles << Qt::DisplayRole << Qt::BackgroundRole; //FIX
-    Q_ASSERT(start.size() == end.size());
-
-    qCWarning(QT_REMOTEOBJECT_MODELS) << "Requested rows" << start << end << roles;
 
     IndexList parentList = start;
+    Q_ASSERT(!parentList.isEmpty());
     parentList.pop_back();
     QModelIndex parent = toQModelIndex(parentList, m_model);
-    const ModelIndex currentIndex = start.last();
-    const ModelIndex lastIndex = end.last();
 
-    QVector<IndexRange> stack;
-    stack.push_back(IndexRange(parent, currentIndex.row, lastIndex.row, currentIndex.column, lastIndex.column));
-    while (!stack.isEmpty()) {
-        IndexRange range = stack.back();
-        QModelIndex parent = range.parent;
+    const int startRow = start.last().row;
+    const int startColumn = start.last().column;
+    const int rowCount = m_model->rowCount(parent);
+    const int columnCount = m_model->columnCount(parent);
 
-        const int rowCount = qMin(range.endRow, m_model->rowCount(parent) - 1);
-        const int columnCount = qMin(range.endColumn, m_model->columnCount(parent) - 1);
-        for (int row = range.startRow; row <= rowCount; ++row) {
-            for (int column = range.startColumn; column <= columnCount; ++column) {
-                const QModelIndex current = m_model->index(row, column, parent);
-                entries << qMakePair(toModelIndexList(current, m_model), collectData(current, m_model, roles));
+    DataEntries entries(rowCount, columnCount);
+    if (rowCount <= 0)
+        return entries;
+    const int endRow = std::min(end.last().row, rowCount - 1);
+    const int endColumn = std::min(end.last().column, columnCount - 1);
+    Q_ASSERT_X(endRow >= 0 && endRow < rowCount, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(endRow).arg(rowCount)));
+    Q_ASSERT_X(endColumn >= 0 && endColumn < columnCount, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(endColumn).arg(columnCount)));
 
-                const int rowCount = m_model->rowCount(current);
-                const int columnCount = m_model->columnCount(current);
-                if (rowCount && columnCount && current != parent)
-                    stack.push_back(IndexRange(current, 0, rowCount, 0, columnCount));
-            }
+    for (int row = startRow; row <= endRow; ++row) {
+        for (int column = startColumn; column <= endColumn; ++column) {
+            const QModelIndex current = m_model->index(row, column, parent);
+            Q_ASSERT(current.isValid());
+            const IndexList currentList = toModelIndexList(current, m_model);
+            const QVariantList data = collectData(current, m_model, roles);
+            const int currentRowCount = m_model->rowCount(current);
+            const int currentColumnCount = m_model->columnCount(current);
+            qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentList << "data=" << data;
+            entries.data << IndexValuePair(currentList, data, currentRowCount, currentColumnCount);
         }
-        stack.pop_back();
     }
     return entries;
 }
 
 QVariantList QAbstractItemSourceAdapter::replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles)
 {
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "orientations=" << orientations << "sections=" << sections << "roles=" << roles;
     QVariantList data;
     Q_ASSERT(roles.size() == sections.size());
     Q_ASSERT(roles.size() == orientations.size());
@@ -169,28 +179,48 @@ QVariantList QAbstractItemSourceAdapter::replicaHeaderRequest(QVector<Qt::Orient
     return data;
 }
 
+void QAbstractItemSourceAdapter::replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command)
+{
+    if (m_selectionModel)
+        m_selectionModel->setCurrentIndex(toQModelIndex(index, m_model), command);
+}
+
 void QAbstractItemSourceAdapter::sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QVector<int> & roles) const
 {
     QVector<int> neededRoles = filterRoles(roles, availableRoles());
-    if (neededRoles.isEmpty())
+    if (neededRoles.isEmpty()) {
+        qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "Needed roles is empty!";
         return;
-
-    emit dataChanged(toModelIndexList(topLeft, m_model), toModelIndexList(bottomRight, m_model), neededRoles);
+    }
+    Q_ASSERT(topLeft.isValid());
+    Q_ASSERT(bottomRight.isValid());
+    IndexList start = toModelIndexList(topLeft, m_model);
+    IndexList end = toModelIndexList(bottomRight, m_model);
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "neededRoles=" << neededRoles;
+    emit dataChanged(start, end, neededRoles);
 }
 
 void QAbstractItemSourceAdapter::sourceRowsInserted(const QModelIndex & parent, int start, int end)
 {
-    setRowCount(m_model->rowCount());
-    emit rowsInserted(toModelIndexList(parent, m_model), start, end);
+    IndexList parentList = toModelIndexList(parent, m_model);
+    emit rowsInserted(parentList, start, end);
 }
 
 void QAbstractItemSourceAdapter::sourceRowsRemoved(const QModelIndex & parent, int start, int end)
 {
-    setRowCount(m_model->rowCount());
-    emit rowsRemoved(toModelIndexList(parent, m_model), start, end);
+    IndexList parentList = toModelIndexList(parent, m_model);
+    emit rowsRemoved(parentList, start, end);
 }
 
 void QAbstractItemSourceAdapter::sourceRowsMoved(const QModelIndex & sourceParent, int sourceRow, int count, const QModelIndex & destinationParent, int destinationChild) const
 {
     emit rowsMoved(toModelIndexList(sourceParent, m_model), sourceRow, count, toModelIndexList(destinationParent, m_model), destinationChild);
+}
+
+void QAbstractItemSourceAdapter::sourceCurrentChanged(const QModelIndex & current, const QModelIndex & previous)
+{
+    IndexList currentIndex = toModelIndexList(current, m_model);
+    IndexList previousIndex = toModelIndexList(previous, m_model);
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentIndex << "previous=" << previousIndex;
+    emit currentChanged(currentIndex, previousIndex);
 }

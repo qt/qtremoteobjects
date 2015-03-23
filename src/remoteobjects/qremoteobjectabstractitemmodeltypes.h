@@ -47,6 +47,7 @@
 #include <QPair>
 #include <QVariant>
 #include <QModelIndex>
+#include <QItemSelectionModel>
 #include <QDebug>
 #include <qnamespace.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
@@ -65,6 +66,41 @@ struct ModelIndex
     inline bool operator!=(const ModelIndex &other) const { return !(*this == other); }
     int row;
     int column;
+};
+
+typedef QList<ModelIndex> IndexList;
+
+struct IndexValuePair
+{
+    IndexValuePair(const IndexList index = IndexList(), const QVariantList &data = QVariantList(), int rowCount = -1, int columnCount = -1)
+        : index(index)
+        , data(data)
+        , rowCount(rowCount)
+        , columnCount(columnCount)
+    {}
+
+    inline bool operator==(const IndexValuePair &other) const { return rowCount == other.rowCount && columnCount == other.columnCount && index == other.index && data == other.data; }
+    inline bool operator!=(const IndexValuePair &other) const { return !(*this == other); }
+
+    IndexList index;
+    QVariantList data;
+    int rowCount;
+    int columnCount;
+};
+
+struct DataEntries
+{
+    DataEntries(int rowCount = -1, int columnCount = -1)
+        : rowCount(rowCount)
+        , columnCount(columnCount)
+    {}
+
+    inline bool operator==(const DataEntries &other) const { return rowCount == other.rowCount && columnCount == other.columnCount && data == other.data; }
+    inline bool operator!=(const DataEntries &other) const { return !(*this == other); }
+
+    QVector<IndexValuePair> data;
+    int rowCount;
+    int columnCount;
 };
 
 inline QDebug& operator<<(QDebug &stream, const ModelIndex &index)
@@ -95,26 +131,67 @@ inline QDataStream& operator>>(QDataStream &stream, Qt::Orientation &orient)
     return ret;
 }
 
-typedef QList<ModelIndex> IndexList;
+inline QDataStream& operator<<(QDataStream &stream, QItemSelectionModel::SelectionFlags command)
+{
+    return stream << static_cast<int>(command);
+}
 
-typedef QPair<IndexList, QVariantList> IndexValuePair;
+inline QDataStream& operator>>(QDataStream &stream, QItemSelectionModel::SelectionFlags &command)
+{
+    int val;
+    QDataStream &ret = stream >> val;
+    command = static_cast<QItemSelectionModel::SelectionFlags>(val);
+    return ret;
+}
 
-typedef QVector<IndexValuePair> DataEntries;
+inline QDebug& operator<<(QDebug &stream, const DataEntries &entries)
+{
+    return stream.nospace() << "DataEntries[rowCount=" << entries.rowCount << ", columnCount=" << entries.columnCount << ", data=" << entries.data << "]";
+}
+
+inline QDataStream& operator<<(QDataStream &stream, const DataEntries &entries)
+{
+    return stream << entries.rowCount << entries.columnCount << entries.data;
+}
+
+inline QDataStream& operator>>(QDataStream &stream, DataEntries &entries)
+{
+    return stream >> entries.rowCount >> entries.columnCount >> entries.data;
+}
+
+inline QDebug& operator<<(QDebug &stream, const IndexValuePair &pair)
+{
+    return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << "]";
+}
+
+inline QDataStream& operator<<(QDataStream &stream, const IndexValuePair &pair)
+{
+    return stream << pair.index << pair.data << pair.rowCount << pair.columnCount;
+}
+
+inline QDataStream& operator>>(QDataStream &stream, IndexValuePair &pair)
+{
+    return stream >> pair.index >> pair.data >> pair.rowCount >> pair.columnCount;
+}
 
 inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model)
 {
     QModelIndex result;
-    Q_FOREACH (const ModelIndex &index, list)
+    Q_FOREACH (const ModelIndex &index, list) {
         result = model->index(index.row, index.column, result);
+        Q_ASSERT(result.isValid());
+    }
     return result;
 }
 
 inline IndexList toModelIndexList(const QModelIndex &index, const QAbstractItemModel *model)
 {
     IndexList list;
-    list << ModelIndex(index.row(), index.column());
-    for (QModelIndex curIndex = model->parent(index); curIndex.isValid(); curIndex = model->parent(curIndex))
-        list << ModelIndex(curIndex.row(), curIndex.column());
+    if (index.isValid()) {
+        list << ModelIndex(index.row(), index.column());
+        for (QModelIndex curIndex = model->parent(index); curIndex.isValid(); curIndex = model->parent(curIndex))
+            list.prepend(ModelIndex(curIndex.row(), curIndex.column()));
+    }
     return list;
 }
 
@@ -123,6 +200,7 @@ Q_DECLARE_METATYPE(IndexList)
 Q_DECLARE_METATYPE(DataEntries)
 Q_DECLARE_METATYPE(IndexValuePair)
 Q_DECLARE_METATYPE(Qt::Orientation)
+Q_DECLARE_METATYPE(QItemSelectionModel::SelectionFlags)
 
 QT_END_NAMESPACE
 

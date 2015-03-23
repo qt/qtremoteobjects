@@ -324,6 +324,7 @@ bool QConnectedReplicaPrivate::waitForFinished(const QRemoteObjectPendingCall& c
 
 const QVariant QConnectedReplicaPrivate::getProperty(int i) const
 {
+    Q_ASSERT_X(i >= 0 && i < m_propertyStorage.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(i).arg(m_propertyStorage.size())));
     return m_propertyStorage[i];
 }
 

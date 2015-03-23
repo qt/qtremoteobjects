@@ -55,7 +55,39 @@ const int HalfLookAhead = LookAhead/2;
 
 typedef QVector<QPair<int,QVariant> > CacheEntry;
 typedef QVector<CacheEntry> CachedRowEntry;
-typedef QVector<CachedRowEntry> CacheData;
+
+struct CacheData
+{
+    CacheData *parent;
+    QList<CacheData*> children;
+    CachedRowEntry cachedRowEntry;
+    int columnCount;
+
+    explicit CacheData(CacheData *parentItem = 0)
+        : parent(parentItem)
+        , columnCount(-1)
+    {}
+    ~CacheData() { qDeleteAll(children); }
+    void insertChildren(int start, int end) {
+        Q_ASSERT_X(start >= 0 && start <= end, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2")).arg(start).arg(end)));
+        for (int i = start; i <= end; ++i)
+            children.insert(i, new CacheData(this));
+    }
+    void removeChildren(int start, int end) {
+        Q_ASSERT_X(start >= 0 && start <= end, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2")).arg(start).arg(end)));
+        for (int i = start; i <= end; ++i)
+            delete children.takeAt(start);
+    }
+    void clearChildren() {
+        qDeleteAll(children);
+        children.clear();
+    }
+    void clear() {
+        cachedRowEntry.clear();
+        clearChildren();
+        columnCount = -1;
+    }
+};
 
 struct RequestedData
 {
@@ -105,36 +137,23 @@ public:
     ~QAbstractItemReplicaPrivate();
     void initialize();
     void registerTypes();
-    Q_PROPERTY(int rowCount READ rowCount NOTIFY rowCountChanged)
-    Q_PROPERTY(int columnCount READ columnCount NOTIFY columnCountChanged)
     Q_PROPERTY(QVector<int> availableRoles READ availableRoles NOTIFY availableRolesChanged)
-
-    int rowCount() const
-    {
-        return propAsVariant(0).value<int >();
-    }
-
-    int columnCount() const
-    {
-        return propAsVariant(1).value<int >();
-    }
 
     QVector<int> availableRoles() const
     {
-        return propAsVariant(2).value<QVector<int> >();
+        return propAsVariant(0).value<QVector<int> >();
     }
-    void setModel(QAbstractItemReplica *model) { q = model; setParent(model); }
 
+    void setModel(QAbstractItemReplica *model);
     void clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles);
 
 Q_SIGNALS:
-    void rowCountChanged();
-    void columnCountChanged();
     void availableRolesChanged();
     void dataChanged(IndexList topLeft, IndexList bottomRight, QVector<int> roles);
     void rowsInserted(IndexList parent, int first, int last);
     void rowsRemoved(IndexList parent, int first, int last);
     void rowsMoved(IndexList parent, int start, int end, IndexList destination, int row);
+    void currentChanged(IndexList current, IndexList previous);
     void modelReset();
     void headerDataChanged(Qt::Orientation,int,int);
 
@@ -153,21 +172,44 @@ public Q_SLOTS:
         __repc_args << QVariant::fromValue(orientations) << QVariant::fromValue(sections) << QVariant::fromValue(roles);
         return QRemoteObjectPendingReply<QVariantList>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
+    void replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command)
+    {
+        static int __repc_index = QAbstractItemReplicaPrivate::staticMetaObject.indexOfSlot("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
+        QVariantList __repc_args;
+        __repc_args << QVariant::fromValue(index) << QVariant::fromValue(command);
+        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);
+    }
     void onHeaderDataChanged(Qt::Orientation orientation, int first, int last);
     void onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles);
     void onRowsInserted(const IndexList &parent, int start, int end);
     void onRowsRemoved(const IndexList &parent, int start, int end);
     void onRowsMoved(IndexList srcParent, int srcRow, int count, IndexList destParent, int destRow);
+    void onCurrentChanged(IndexList current, IndexList previous);
     void onModelReset();
     void requestedData(QRemoteObjectPendingCallWatcher *);
     void requestedHeaderData(QRemoteObjectPendingCallWatcher *);
     void init();
     void fetchPendingData();
     void fetchPendingHeaderData();
+    void handleInitDone(QRemoteObjectPendingCallWatcher *watcher);
+    void handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher);
 
 public:
+    QScopedPointer<QItemSelectionModel> m_selectionModel;
     QVector<CacheEntry> m_headerData[2];
-    CacheData m_rows;
+
+    CacheData m_rootItem;
+    inline CacheData* cacheData(const QModelIndex &index) const {
+        Q_ASSERT(!index.isValid() || index.model() == q);
+        CacheData *data = index.isValid() ? static_cast<CacheData*>(index.internalPointer()) : const_cast<CacheData*>(&m_rootItem);
+        Q_ASSERT(data);
+        return data;
+    }
+    inline CacheData* cacheData(const IndexList &index) const {
+        return cacheData(toQModelIndex(index, q));
+    }
+    RowWatcher* doModelReset();
+
     int m_lastRequested;
     QVector<RequestedData> m_requestedData;
     QVector<RequestedHeaderData> m_requestedHeaderData;

@@ -54,6 +54,7 @@ class QRemoteObjectNodePrivate;
 class SourceApiMap;
 class QAbstractItemModel;
 class QAbstractItemReplica;
+class QItemSelectionModel;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode
 {
@@ -103,7 +104,7 @@ public:
         return enableRemoting(object, api);
     }
     bool enableRemoting(QObject *object);
-    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles);
+    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = 0);
     bool disableRemoting(QObject *remoteObject);
 
     ErrorCode lastError() const;

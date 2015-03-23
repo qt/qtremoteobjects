@@ -45,6 +45,7 @@
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 #include <QAbstractItemModel>
+#include <QItemSelectionModel>
 
 QT_BEGIN_NAMESPACE
 
@@ -56,11 +57,13 @@ class Q_REMOTEOBJECTS_EXPORT QAbstractItemReplica : public QAbstractItemModel
 public:
     ~QAbstractItemReplica();
 
-    QModelIndex parent(const QModelIndex & index) const  Q_DECL_OVERRIDE;
-    int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    QItemSelectionModel* selectionModel() const;
+
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    QModelIndex parent(const QModelIndex & index) const  Q_DECL_OVERRIDE;
     QModelIndex index(int row, int column, const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
     int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const Q_DECL_OVERRIDE;
     QVector<int> availableRoles() const;
     bool isInitialized() const;

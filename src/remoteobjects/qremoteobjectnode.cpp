@@ -778,12 +778,13 @@ bool QRemoteObjectNode::enableRemoting(QObject *object)
     return d_ptr->remoteObjectIo->enableRemoting(object, meta, name);
 }
 
-bool QRemoteObjectNode::enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles)
+bool QRemoteObjectNode::enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel)
 {
     //This looks complicated, but hopefully there is a way to have an adapter be a template
     //parameter and this makes sure that is supported.
     QObject *adapter = QAbstractItemSourceAdapter::staticMetaObject.newInstance(Q_ARG(QAbstractItemModel*, model),
-                                                                                    Q_ARG(QVector<int>, roles));
+                                                                                Q_ARG(QItemSelectionModel*, selectionModel),
+                                                                                Q_ARG(QVector<int>, roles));
     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemSourceAdapter> *api =
         new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemSourceAdapter>(name);
     return enableRemoting(model, api, adapter);
