@@ -12,4 +12,7 @@ class Engine
     SLOT(void unnormalizedSignature(int a, int b));
 
     SLOT(Temperature temperature())
+
+    SLOT(QString myTestString())
+    SLOT(setMyTestString(QString value))
 };

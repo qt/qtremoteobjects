@@ -94,9 +94,7 @@ public:
     const QMetaObject *m_metaObject;
 
     //Dynamic Replica data
-    QVector<bool> m_methodReturnTypeIsVoid;
-    QVector<QVector<int> > m_methodArgumentTypes;
-    int m_numSignals;
+    int m_numSignals;//TODO maybe here too
     int m_signalOffset;
     int m_methodOffset;
     int m_propertyOffset;

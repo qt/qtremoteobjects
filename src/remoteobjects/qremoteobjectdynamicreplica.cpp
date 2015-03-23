@@ -152,16 +152,19 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
         } else {
             // method relay from Replica to Source
-            const int methodIndex = id - d->m_numSignals;
-            qCDebug(QT_REMOTEOBJECT) << "method" << d->m_metaObject->method(saved_id).name() << "invoked.  Pending call (" << !d->m_methodReturnTypeIsVoid.at(methodIndex) << ")";
+            const QMetaMethod mm = d->m_metaObject->method(saved_id);
+            const QList<QByteArray> types = mm.parameterTypes();
 
+            const int typeSize = types.size();
             QVariantList args;
-            for (int i = 1; i <= d->m_methodArgumentTypes.at(methodIndex).size(); ++i) {
-                args << QVariant(d->m_methodArgumentTypes.at(methodIndex)[i-1], argv[i]);
+            args.reserve(typeSize);
+            for (int i = 0; i < typeSize; ++i) {
+                args.push_back(QVariant(QVariant::nameToType(types[i].constData()), argv[i + 1]));
             }
 
-            const bool returnTypeIsVoid = d->m_methodReturnTypeIsVoid.at(methodIndex);
-            if (returnTypeIsVoid)
+            qCDebug(QT_REMOTEOBJECT) << "method" << mm.methodSignature() << "invoked. Arguments=" << args;
+
+            if (mm.returnType() == QMetaType::Void)
                 QRemoteObjectReplica::send(QMetaObject::InvokeMetaMethod, saved_id, args);
             else {
                 QRemoteObjectPendingCall call = QRemoteObjectReplica::sendWithReply(QMetaObject::InvokeMetaMethod, saved_id, args);

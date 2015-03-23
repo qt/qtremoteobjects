@@ -65,8 +65,12 @@ public:
 public Q_SLOTS:
     void setpurchasedPart(bool value);
 
+    QString myTestString() { return _myTestString; }
+    void setMyTestString(QString value) { _myTestString = value; }
+
 private:
     bool _purchasedPart;
+    QString _myTestString;
     Temperature _temperature;
 };
 

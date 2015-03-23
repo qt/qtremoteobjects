@@ -227,10 +227,6 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
             return QByteArray();
         }
         ds << api->signalSignature(i);
-        const int n = api->signalParameterCount(i);
-        ds << quint32(n);
-        for (int j = 0; j < n; ++j)
-            ds << QVariant::typeToName(api->signalParameterType(i, j));
     }
 
     for (int i = 0; i < numMethods; ++i) {
@@ -241,10 +237,6 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
         }
         ds << api->methodSignature(i);
         ds << api->typeName(i);
-        const int n = api->methodParameterCount(i);
-        ds << quint32(n);
-        for (int j = 0; j < n; ++j)
-            ds << QVariant::typeToName(api->methodParameterType(i, j));
     }
 
     const int numProperties = api->propertyCount();
@@ -364,57 +356,34 @@ bool QInitDynamicPacket::deserialize(QDataStream& in)
 
 QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
                                                   int &outNumSignals,
-                                                  QVector<bool> &methodReturnTypeIsVoid,
-                                                  QVector<QVector<int> > &methodArgumentTypes,
                                                   QVector<QPair<QByteArray, QVariant> > *propertyValues) const
 {
     quint32 numSignals = 0;
     quint32 numMethods = 0;
     quint32 numProperties = 0;
 
-    methodArgumentTypes.clear();
-    methodReturnTypeIsVoid.clear();
-
     QDataStream ds(packetData);
     ds >> numSignals;
     outNumSignals = numSignals;
     ds >> numMethods;
 
-    methodArgumentTypes.resize(numSignals+numMethods);
-    methodReturnTypeIsVoid.resize(numMethods);
-
     int curIndex = 0;
 
     for (quint32 i = 0; i < numSignals; ++i) {
-        QByteArray signature, parameterType;
-        quint32 parameterCount = 0;
+        QByteArray signature;
 
         ds >> signature;
-        ds >> parameterCount;
-        methodArgumentTypes[curIndex].reserve(parameterCount);
-        for (quint32 pCount = 0; pCount < parameterCount; ++pCount) {
-            ds >> parameterType;
-            methodArgumentTypes[curIndex] << QVariant::nameToType(parameterType.constData());
-        }
         ++curIndex;
         builder.addSignal(signature);
     }
 
     for (quint32 i = 0; i < numMethods; ++i) {
-        QByteArray signature, returnType, parameterType;
-        quint32 parameterCount = 0;
+        QByteArray signature, returnType;
 
         ds >> signature;
         ds >> returnType;
-        ds >> parameterCount;
-        methodArgumentTypes[curIndex].reserve(parameterCount);
-        for (quint32 pCount = 0; pCount < parameterCount; ++pCount) {
-            ds >> parameterType;
-            methodArgumentTypes[curIndex] << QVariant::nameToType(parameterType.constData());
-        }
         ++curIndex;
         const bool isVoid = returnType.isEmpty() || returnType == QByteArrayLiteral("void");
-        methodReturnTypeIsVoid[i] = isVoid;
         if (isVoid)
             builder.addMethod(signature);
         else

@@ -230,7 +230,8 @@ private slots:
 
         QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
         Q_ASSERT(engine_r);
-        engine_r->waitForSource();
+        bool ok = engine_r->waitForSource();
+        QVERIFY(ok);
 
         const QMetaObject *metaObject = engine_r->metaObject();
         const int propIndex = metaObject->indexOfProperty("started");
@@ -251,6 +252,43 @@ private slots:
         QCOMPARE(call.returnValue().toBool(), true);
         started = property.read(engine_r.data()).value<bool>();
         QCOMPARE(started, true);
+    }
+
+    void slotTestDynamicReplicaWithArguments() {
+        QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
+        Q_ASSERT(engine_r);
+        bool ok = engine_r->waitForSource();
+        QVERIFY(ok);
+        const QMetaObject *metaObject = engine_r->metaObject();
+
+        int methodIndex = metaObject->indexOfMethod("setMyTestString(QString)");
+        QVERIFY(methodIndex >= 0);
+        QMetaMethod method = metaObject->method(methodIndex);
+        QVERIFY(method.isValid());
+
+        // The slot has no return-value, calling it with a Q_RETURN_ARG should fail.
+        QRemoteObjectPendingCall setCall;
+        QString s = QLatin1String("Hello World 1");
+        QVERIFY(!method.invoke(engine_r.data(), Q_RETURN_ARG(QRemoteObjectPendingCall, setCall), Q_ARG(QString, s)));
+        QVERIFY(!setCall.waitForFinished());
+        QVERIFY(!setCall.isFinished());
+        QCOMPARE(setCall.error(), QRemoteObjectPendingCall::InvalidMessage);
+
+        // Now call the method without return-value, that should succeed.
+        s = QLatin1String("Hello World 2");
+        QVERIFY(method.invoke(engine_r.data(), Q_ARG(QString, s)));
+
+        // Verify that the passed argument was proper set.
+        methodIndex = metaObject->indexOfMethod("myTestString()");
+        QVERIFY(methodIndex >= 0);
+        method = metaObject->method(methodIndex);
+        QRemoteObjectPendingCall getCall;
+        QVERIFY(method.invoke(engine_r.data(), Q_RETURN_ARG(QRemoteObjectPendingCall, getCall)));
+        QVERIFY(getCall.waitForFinished());
+        QVERIFY(getCall.isFinished());
+        QCOMPARE(getCall.error(), QRemoteObjectPendingCall::NoError);
+        QCOMPARE(getCall.returnValue().type(), QVariant::String);
+        QCOMPARE(getCall.returnValue().toString(), s);
     }
 
     void expapiTestDynamicReplica(){

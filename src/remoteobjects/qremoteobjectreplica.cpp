@@ -183,7 +183,7 @@ void QRemoteObjectReplicaPrivate::initializeMetaObject(const QInitDynamicPacket 
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
     QVector<QPair<QByteArray, QVariant> > propertyValues;
-    m_metaObject = packet->createMetaObject(builder, m_numSignals, m_methodReturnTypeIsVoid, m_methodArgumentTypes, &propertyValues);
+    m_metaObject = packet->createMetaObject(builder, m_numSignals, &propertyValues);
     m_methodOffset = m_signalOffset + m_numSignals;
     //rely on order of properties;
     QVariantList list;

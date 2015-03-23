@@ -147,8 +147,6 @@ public:
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QMetaObject *createMetaObject(QMetaObjectBuilder &builder,
                                   int &outNumSignals,
-                                  QVector<bool> &methodReturnTypeIsVoid,
-                                  QVector<QVector<int> > &methodArgumentTypes,
                                   QVector<QPair<QByteArray, QVariant> > *propertyValues = 0) const;
     QString name;
     QByteArray packetData;
