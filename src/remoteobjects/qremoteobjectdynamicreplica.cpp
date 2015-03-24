@@ -133,6 +133,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
             QRemoteObjectReplica::send(QMetaObject::WriteProperty, saved_id, args);
         } else {
             const QVariant value = propAsVariant(id);
+            QMetaType::destruct(mp.userType(), argv[0]);
             QMetaType::construct(mp.userType(), argv[0], value.data());
             const bool readStatus = true;
             // Caller supports QVariant returns? Then we can also report errors
@@ -164,7 +165,8 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 QRemoteObjectReplica::send(QMetaObject::InvokeMetaMethod, saved_id, args);
             else {
                 QRemoteObjectPendingCall call = QRemoteObjectReplica::sendWithReply(QMetaObject::InvokeMetaMethod, saved_id, args);
-                QMetaType::construct(qMetaTypeId<QRemoteObjectPendingCall>(), argv[0], &call);
+                if (argv[0])
+                    *(static_cast<QRemoteObjectPendingCall*>(argv[0])) = call;
             }
         }
 
