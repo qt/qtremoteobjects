@@ -73,6 +73,7 @@ class TestModelView: public QObject
 private slots:
     void initTestCase();
 
+    void testEmptyModel();
     void testInitialData();
     void testHeaderData();
     void testDataChanged();
@@ -116,6 +117,23 @@ void TestModelView::initTestCase()
     m_basicServer.enableRemoting(&m_sourceModel, "test", roles);
 
     m_client = QRemoteObjectNode::createNodeConnectedToRegistry();
+}
+
+void TestModelView::testEmptyModel()
+{
+    QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole;
+    QStandardItemModel emptyModel;
+    m_basicServer.enableRemoting(&emptyModel, "emptyModel", roles);
+
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("emptyModel"));
+    QSignalSpy spy(model.data(), SIGNAL(initialized()));
+    spy.wait();
+
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(model->rowCount(), emptyModel.rowCount());
+    QCOMPARE(model->columnCount(), emptyModel.columnCount());
+
+    compareData(&emptyModel, model.data());
 }
 
 void TestModelView::testInitialData()

@@ -194,10 +194,14 @@ void QAbstractItemReplicaPrivate::init()
     connect(watcher, &RowWatcher::finished, this, &QAbstractItemReplicaPrivate::requestedData);
     connect(watcher, &RowWatcher::finished, q, &QAbstractItemReplica::initialized);
     //Maybe fetch header data as well?
-    q->beginInsertRows(QModelIndex(), 0, rowCount() - 1);
-    q->endInsertRows();
-    q->beginInsertColumns(QModelIndex(), 0, columnCount() - 1);
-    q->endInsertColumns();
+    if (rowCount() > 0) {
+        q->beginInsertRows(QModelIndex(), 0, rowCount() - 1);
+        q->endInsertRows();
+    }
+    if (columnCount() > 0) {
+        q->beginInsertColumns(QModelIndex(), 0, columnCount() - 1);
+        q->endInsertColumns();
+    }
 }
 
 struct CacheRoleComparator
