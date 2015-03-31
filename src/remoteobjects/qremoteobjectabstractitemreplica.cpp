@@ -588,7 +588,7 @@ QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientati
     return QVariant();
 }
 
-bool QAbstractItemReplica::isInitalized()
+bool QAbstractItemReplica::isInitialized() const
 {
     return d->isInitialized();
 }

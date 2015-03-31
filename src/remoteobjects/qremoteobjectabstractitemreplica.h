@@ -63,7 +63,7 @@ public:
     int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const Q_DECL_OVERRIDE;
     QVector<int> availableRoles() const;
-    bool isInitalized();
+    bool isInitialized() const;
 
 Q_SIGNALS:
     void initialized();
