@@ -50,6 +50,12 @@ namespace {
 
 void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
 {
+    QVERIFY(sourceModel);
+    QVERIFY(replica);
+
+    QCOMPARE(replica->rowCount(), sourceModel->rowCount());
+    QCOMPARE(replica->columnCount(), sourceModel->columnCount());
+
     for (int i = 0; i < sourceModel->rowCount(); ++i) {
         for (int j = 0; j < sourceModel->columnCount(); ++j) {
             foreach (int role, replica->availableRoles()) {
@@ -130,8 +136,6 @@ void TestModelView::testEmptyModel()
     spy.wait();
 
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(model->rowCount(), emptyModel.rowCount());
-    QCOMPARE(model->columnCount(), emptyModel.columnCount());
 
     compareData(&emptyModel, model.data());
 }
@@ -143,8 +147,6 @@ void TestModelView::testInitialData()
     spy.wait();
 
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(model->rowCount(), m_sourceModel.rowCount());
-    QCOMPARE(model->columnCount(), m_sourceModel.columnCount());
 
     compareData(&m_sourceModel, model.data());
 }
