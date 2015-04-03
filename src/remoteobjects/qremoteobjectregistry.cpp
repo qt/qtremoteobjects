@@ -42,6 +42,7 @@
 #include "qremoteobjectregistry.h"
 #include "qremoteobjectreplica_p.h"
 
+#include <QDataStream>
 #include <QSet>
 
 

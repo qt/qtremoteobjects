@@ -42,6 +42,7 @@
 #ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
 #define QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
 
+#include <QDataStream>
 #include <QList>
 #include <QVector>
 #include <QPair>
