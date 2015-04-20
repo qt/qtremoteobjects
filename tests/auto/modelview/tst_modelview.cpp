@@ -65,6 +65,22 @@ void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemRepli
     }
 }
 
+void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
+{
+    QVERIFY(sourceModel);
+    QVERIFY(replica);
+
+    QCOMPARE(replica->rowCount(), sourceModel->rowCount());
+    QCOMPARE(replica->columnCount(), sourceModel->columnCount());
+
+    for (int i = 0; i < sourceModel->rowCount(); ++i) {
+        for (int j = 0; j < sourceModel->columnCount(); ++j) {
+            QEXPECT_FAIL("", "Flags need implementation", Continue);
+            QCOMPARE(replica->index(i, j).flags(), sourceModel->index(i, j).flags());
+        }
+    }
+}
+
 }
 
 class TestModelView: public QObject
@@ -82,6 +98,7 @@ private slots:
     void testEmptyModel();
     void testInitialData();
     void testHeaderData();
+    void testFlags();
     void testDataChanged();
     void testDataInsertion();
     void testDataRemoval();
@@ -91,7 +108,7 @@ private slots:
 
 void TestModelView::initTestCase()
 {
-    QLoggingCategory::setFilterRules("*.debug=true\n"
+    QLoggingCategory::setFilterRules("*.debug=false\n"
                                      "qt.remoteobjects.debug=false\n"
                                      "qt.remoteobjects.warning=false");
     //Setup registry
@@ -186,6 +203,29 @@ void TestModelView::testDataChanged()
     }
     QVERIFY(signalsReceived);
     compareData(&m_sourceModel, model.data());
+}
+
+void TestModelView::testFlags()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QSignalSpy spy(model.data(), SIGNAL(initialized()));
+    spy.wait();
+    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    for (int i = 10; i < 20; ++i) {
+        QStandardItem* item = m_sourceModel.item(i, 0);
+        item->setFlags(item->flags() & Qt::ItemIsEnabled);
+        QStandardItem* item2 = m_sourceModel.item(i, 1);
+        item2->setFlags(item2->flags() & Qt::ItemIsSelectable);
+    }
+
+    bool signalsReceived = false;
+    while (dataChangedSpy.wait()) {
+        signalsReceived = true;
+        if (dataChangedSpy.takeLast().at(1).value<QModelIndex>().row() == 19)
+            break;
+    }
+    QVERIFY(signalsReceived);
+    compareFlags(&m_sourceModel, model.data());
 }
 
 void TestModelView::testDataInsertion()
