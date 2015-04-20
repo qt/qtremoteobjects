@@ -61,6 +61,14 @@ QAbstractItemReplicaPrivate::QAbstractItemReplicaPrivate()
     , m_lastRequested(-1)
 {
     registerTypes();
+
+    connect(this, &QAbstractItemReplicaPrivate::dataChanged, this, &QAbstractItemReplicaPrivate::onDataChanged);
+    connect(this, &QAbstractItemReplicaPrivate::rowsInserted, this, &QAbstractItemReplicaPrivate::onRowsInserted);
+    connect(this, &QAbstractItemReplicaPrivate::rowsRemoved, this, &QAbstractItemReplicaPrivate::onRowsRemoved);
+    connect(this, &QAbstractItemReplicaPrivate::rowsMoved, this, &QAbstractItemReplicaPrivate::onRowsMoved);
+    connect(this, &QAbstractItemReplicaPrivate::currentChanged, this, &QAbstractItemReplicaPrivate::onCurrentChanged);
+    connect(this, &QAbstractItemReplicaPrivate::modelReset, this, &QAbstractItemReplicaPrivate::onModelReset);
+    connect(this, &QAbstractItemReplicaPrivate::headerDataChanged, this, &QAbstractItemReplicaPrivate::onHeaderDataChanged);
 }
 
 QAbstractItemReplicaPrivate::~QAbstractItemReplicaPrivate()
@@ -181,6 +189,8 @@ void QAbstractItemReplicaPrivate::onRowsInserted(const IndexList &parent, int st
     parentItem->insertChildren(start, end);
     q->endInsertRows();
 
+    // This is needed to trigger a new data() call to (re-)fetch the actual content
+    // of the newly added items.
     const int rowCount = q->rowCount(parentIndex);
     const int columnCount = q->columnCount(parentIndex);
     Q_ASSERT_X(rowCount > 0 && columnCount > 0, __FUNCTION__, qPrintable(QString(QLatin1String("rowCount=%1 columnCount=%2")).arg(rowCount).arg(columnCount)));
@@ -197,15 +207,16 @@ void QAbstractItemReplicaPrivate::onRowsRemoved(const IndexList &parent, int sta
     const QModelIndex parentIndex = toQModelIndex(parent, q);
     CacheData *parentItem = cacheData(parentIndex);
     q->beginRemoveRows(parentIndex, start, end);
+
+    // We need to also remove the items from the cache what needs to happen before
+    // the items are actually removed.
+    const IndexList startList = IndexList() << parent << ModelIndex(start, 0);
+    const IndexList endList = IndexList() << parent << ModelIndex(end, q->columnCount(parentIndex) - 1);
+    QVector<int> roles;
+    clearCache(startList, endList, roles);
+
     parentItem->removeChildren(start, end);
     q->endRemoveRows();
-
-    const int rowCount = q->rowCount(parentIndex);
-    const int columnCount = q->columnCount(parentIndex);
-    const QModelIndex startIndex = q->index(start, 0, parentIndex);
-    const QModelIndex endIndex = q->index(rowCount-1, columnCount-1, parentIndex);
-    Q_ASSERT_X(startIndex.isValid() && endIndex.isValid(), __FUNCTION__, qPrintable(QString(QLatin1String("startIndex.isValid=%1 endIndex.isValid=%2")).arg(startIndex.isValid()).arg(endIndex.isValid())));
-    emit q->dataChanged(startIndex, endIndex);
 }
 
 void QAbstractItemReplicaPrivate::onRowsMoved(IndexList srcParent, int srcRow, int count, IndexList destParent, int destRow)
@@ -240,49 +251,69 @@ void QAbstractItemReplicaPrivate::onCurrentChanged(IndexList current, IndexList 
 
 void QAbstractItemReplicaPrivate::handleInitDone(QRemoteObjectPendingCallWatcher *watcher)
 {
-    handleModelResetDone(watcher);
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
 
-    //TODO what if new data is added/changed in between?
-    connect(this, &QAbstractItemReplicaPrivate::dataChanged, this, &QAbstractItemReplicaPrivate::onDataChanged);
-    connect(this, &QAbstractItemReplicaPrivate::rowsInserted, this, &QAbstractItemReplicaPrivate::onRowsInserted);
-    connect(this, &QAbstractItemReplicaPrivate::rowsRemoved, this, &QAbstractItemReplicaPrivate::onRowsRemoved);
-    connect(this, &QAbstractItemReplicaPrivate::rowsMoved, this, &QAbstractItemReplicaPrivate::onRowsMoved);
-    connect(this, &QAbstractItemReplicaPrivate::currentChanged, this, &QAbstractItemReplicaPrivate::onCurrentChanged);
-    connect(this, &QAbstractItemReplicaPrivate::modelReset, this, &QAbstractItemReplicaPrivate::onModelReset);
-    connect(this, &QAbstractItemReplicaPrivate::headerDataChanged, this, &QAbstractItemReplicaPrivate::onHeaderDataChanged);
+    handleModelResetDone(watcher);
 
     emit q->initialized();
 }
 
 void QAbstractItemReplicaPrivate::handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher)
 {
-    DataEntries entries = watcher->returnValue().value<DataEntries>();
-    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "entries=" << entries;
+    const QSize size = watcher->returnValue().value<QSize>();
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "size=" << size;
 
     q->beginResetModel();
-    m_rootItem.clearChildren();
-    if (entries.rowCount > 0)
-        m_rootItem.insertChildren(0, entries.rowCount - 1);
-    m_rootItem.columnCount = entries.columnCount;
-    m_headerData[0].resize(entries.columnCount);
-    m_headerData[1].resize(entries.rowCount);
-    requestedData(watcher);
+    m_rootItem.clear();
+    if (size.height() > 0)
+        m_rootItem.insertChildren(0, size.height() - 1);
+    m_rootItem.columnCount = size.width();
+    m_headerData[0].resize(size.width());
+    m_headerData[1].resize(size.height());
     q->endResetModel();
+}
+
+void QAbstractItemReplicaPrivate::handleSizeDone(QRemoteObjectPendingCallWatcher *watcher)
+{
+    SizeWatcher *sizeWatcher = static_cast<SizeWatcher*>(watcher);
+    const QSize size = sizeWatcher->returnValue().value<QSize>();
+    CacheData *parentItem = cacheData(sizeWatcher->parentList);
+    const QModelIndex parent = toQModelIndex(sizeWatcher->parentList, q);
+    if (parentItem->children.isEmpty()) {
+        if (size.height() > 0) {
+            q->beginInsertRows(parent, 0, size.height() - 1);
+            parentItem->insertChildren(0, size.height() - 1);
+            q->endInsertRows();
+        }
+    } else {
+        Q_ASSERT_X(parentItem->children.count() == size.height(), __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(parentItem->children.count()).arg(size.height())));
+    }
+
+    if (size.width() != m_rootItem.columnCount) {
+        const int columnCount = std::max(0, m_rootItem.columnCount);
+        m_rootItem.columnCount = size.width();
+        if (size.width() > columnCount) {
+            Q_ASSERT(size.width() > 0);
+            q->beginInsertColumns(parent, columnCount, size.width() - 1);
+            q->endInsertColumns();
+        } else {
+            Q_ASSERT_X(size.width() == columnCount, __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(size.width()).arg(columnCount)));
+        }
+    }
 }
 
 void QAbstractItemReplicaPrivate::init()
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
-    RowWatcher *watcher = doModelReset();
-    connect(watcher, &RowWatcher::finished, this, &QAbstractItemReplicaPrivate::handleInitDone);
+    SizeWatcher *watcher = doModelReset();
+    connect(watcher, &SizeWatcher::finished, this, &QAbstractItemReplicaPrivate::handleInitDone);
 }
 
-RowWatcher* QAbstractItemReplicaPrivate::doModelReset()
+SizeWatcher* QAbstractItemReplicaPrivate::doModelReset()
 {
-    IndexList start(IndexList() << ModelIndex(0, 0));
-    IndexList end(IndexList() << ModelIndex(LookAhead, LookAhead));
-    QRemoteObjectPendingReply<DataEntries> reply = replicaRowRequest(start, end, availableRoles());
-    RowWatcher *watcher = new RowWatcher(start, end, availableRoles(), reply);
+    IndexList parentList;
+    QRemoteObjectPendingReply<QSize> reply = replicaSizeRequest(parentList);
+    SizeWatcher *watcher = new SizeWatcher(parentList, reply);
     return watcher;
 }
 
@@ -317,12 +348,12 @@ inline void fillCacheEntry(CacheEntry *entry, const QVariantList &data, const QV
 
 inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstractItemModel *model, const QVector<int> &roles)
 {
-    item->columnCount = pair.columnCount;
-
     CachedRowEntry &rowRef = item->cachedRowEntry;
     const QModelIndex index = toQModelIndex(pair.index, model);
     Q_ASSERT(index.isValid());
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "row=" << index.row() << "column=" << index.column();
+    item->hasChildren = pair.hasChildren;
+    item->flags = pair.flags;
     bool existed = false;
     for (int i = 0; i < rowRef.size(); ++i) {
         if (i == index.column()) {
@@ -336,7 +367,6 @@ inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstract
         fillCacheEntry(&entries, pair.data, roles);
         rowRef.append(entries);
     }
-
 }
 
 int collectEntriesForRow(DataEntries* filteredEntries, int row, const DataEntries &entries, int startIndex)
@@ -368,17 +398,16 @@ void QAbstractItemReplicaPrivate::requestedData(QRemoteObjectPendingCallWatcher 
     CacheData *parentItem = cacheData(parentList);
     DataEntries entries = watcher->returnValue().value<DataEntries>();
 
-    //TODO insertChildren/insertRows/insertColumns as needed
-    parentItem->columnCount = entries.columnCount;
-    Q_ASSERT_X(parentItem->children.count() == entries.rowCount, __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(parentItem->children.count()).arg(entries.rowCount)));
+    const int rowCount = parentItem->children.count();
+    const int columnCount = parentItem->columnCount;
 
-    if (entries.rowCount < 1)
+    if (rowCount < 1 || columnCount < 1)
         return;
 
     const int startRow = watcher->start.last().row;
-    const int endRow = qMin(watcher->end.last().row, entries.rowCount - 1);
+    const int endRow = std::min(watcher->end.last().row, rowCount - 1);
     const int startColumn = watcher->start.last().column;
-    const int endColumn = qMin(watcher->end.last().column, entries.columnCount - 1);
+    const int endColumn = std::min(watcher->end.last().column, columnCount - 1);
     Q_ASSERT_X(startRow >= 0 && startRow < parentItem->children.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(startRow).arg(parentItem->children.size())));
     Q_ASSERT_X(endRow >= 0 && endRow < parentItem->children.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(endRow).arg(parentItem->children.size())));
 
@@ -396,7 +425,6 @@ void QAbstractItemReplicaPrivate::requestedData(QRemoteObjectPendingCallWatcher 
     emit q->dataChanged(startIndex, endIndex, watcher->roles);
 }
 
-//TODO this is table optimized
 void QAbstractItemReplicaPrivate::fetchPendingData()
 {
     if (m_requestedData.isEmpty())
@@ -479,8 +507,8 @@ void QAbstractItemReplicaPrivate::fetchPendingData()
 void QAbstractItemReplicaPrivate::onModelReset()
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
-    RowWatcher *watcher = doModelReset();
-    connect(watcher, &RowWatcher::finished, this, &QAbstractItemReplicaPrivate::handleModelResetDone);
+    SizeWatcher *watcher = doModelReset();
+    connect(watcher, &SizeWatcher::finished, this, &QAbstractItemReplicaPrivate::handleModelResetDone);
 }
 
 void QAbstractItemReplicaPrivate::onHeaderDataChanged(Qt::Orientation orientation, int first, int last)
@@ -651,7 +679,7 @@ QVariant QAbstractItemReplica::data(const QModelIndex & index, int role) const
 
         IndexList parentList = toModelIndexList(index.parent(), this);
         IndexList start = IndexList() << parentList << ModelIndex(low, 0);
-        IndexList end = IndexList() << parentList << ModelIndex(high, parentItem->columnCount);
+        IndexList end = IndexList() << parentList << ModelIndex(high, std::max(0, parentItem->columnCount - 1));
         Q_ASSERT(toQModelIndex(start, this).isValid());
 
         RequestedData data;
@@ -696,9 +724,20 @@ QModelIndex QAbstractItemReplica::index(int row, int column, const QModelIndex &
 
     return createIndex(row, column, parentItem->children[row]);
 }
+bool QAbstractItemReplica::hasChildren(const QModelIndex &parent) const
+{
+    CacheData *parentItem = d->cacheData(parent);
+    return parentItem->hasChildren;
+}
 int QAbstractItemReplica::rowCount(const QModelIndex &parent) const
 {
     CacheData *parentItem = d->cacheData(parent);
+    if (parentItem->hasChildren && parentItem->children.isEmpty()) {
+        IndexList parentList = toModelIndexList(parent, this);
+        QRemoteObjectPendingReply<QSize> reply = d->replicaSizeRequest(parentList);
+        SizeWatcher *watcher = new SizeWatcher(parentList, reply);
+        connect(watcher, &SizeWatcher::finished, d.data(), &QAbstractItemReplicaPrivate::handleSizeDone);
+    }
     return parentItem->children.count();
 }
 int QAbstractItemReplica::columnCount(const QModelIndex &parent) const
@@ -706,7 +745,7 @@ int QAbstractItemReplica::columnCount(const QModelIndex &parent) const
     CacheData *parentItem = d->cacheData(parent);
     while (parentItem->columnCount < 0 && parentItem->parent)
         parentItem = parentItem->parent;
-    return qMax(0, parentItem->columnCount);
+    return std::max(0, parentItem->columnCount);
 }
 
 QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientation, int role) const
@@ -732,9 +771,27 @@ QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientati
     return QVariant();
 }
 
+Qt::ItemFlags QAbstractItemReplica::flags(const QModelIndex &index) const
+{
+    CacheData *item = d->cacheData(index);
+    return item->flags;
+}
+
 bool QAbstractItemReplica::isInitialized() const
 {
     return d->isInitialized();
+}
+
+bool QAbstractItemReplica::hasData(const QModelIndex &index, int role) const
+{
+    if (!d->isInitialized() || !index.isValid())
+        return false;
+    CacheData *item = d->cacheData(index);
+    bool cached = false;
+    const CachedRowEntry &entry = item->cachedRowEntry;
+    QVariant result = findData(entry, index, role, &cached);
+    Q_UNUSED(result);
+    return cached;
 }
 
 QVector<int> QAbstractItemReplica::availableRoles() const

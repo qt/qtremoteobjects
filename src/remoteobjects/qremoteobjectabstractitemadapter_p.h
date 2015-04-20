@@ -68,6 +68,7 @@ public Q_SLOTS:
         }
     }
 
+    QSize replicaSizeRequest(IndexList parentList);
     DataEntries replicaRowRequest(IndexList start, IndexList end, QVector<int> roles);
     QVariantList replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles);
     void replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command);
@@ -93,14 +94,13 @@ private:
     QVector<int> m_availableRoles;
 };
 namespace{
-    const int s3[] = {qMetaTypeId<IndexList>(), qMetaTypeId<IndexList>(), qMetaTypeId<QVector<int> >()};
-    const int s4[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int s5[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int s6[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>(), qMetaTypeId<IndexList>(),qMetaTypeId<int>()};
-    const int s7[] = {qMetaTypeId<IndexList>(), qMetaTypeId<IndexList>()};
-    const int s9[] = {qMetaTypeId<Qt::Orientation>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int * const signalArgTypes[] = {Q_NULLPTR, s3, s4, s5, s6, s7, Q_NULLPTR, s9};
-
+    const int s1[] = {qMetaTypeId<IndexList>(), qMetaTypeId<IndexList>(), qMetaTypeId<QVector<int> >()};
+    const int s2[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
+    const int s3[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
+    const int s4[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>(), qMetaTypeId<IndexList>(),qMetaTypeId<int>()};
+    const int s5[] = {qMetaTypeId<IndexList>(), qMetaTypeId<IndexList>()};
+    const int s7[] = {qMetaTypeId<Qt::Orientation>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
+    const int * const signalArgTypes[] = {Q_NULLPTR, s1, s2, s3, s4, s5, Q_NULLPTR, s7};
 }
 
 template <class ObjectType, class AdapterType>
@@ -121,10 +121,11 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         _signals[6] = qtro_signal_index<AdapterType>(&AdapterType::currentChanged, static_cast<void (QObject::*)(IndexList,IndexList)>(0),signalArgCount+5,signalArgTypes[5]);
         _signals[7] = qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(0),signalArgCount+6,signalArgTypes[6]);
         _signals[8] = qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(0),signalArgCount+7,signalArgTypes[7]);
-        _methods[0] = 3;
-        _methods[1] = qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",methodArgCount+0,methodArgTypes[0]);
-        _methods[2] = qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QVector<Qt::Orientation>,QVector<int>,QVector<int>)>(0),"replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)",methodArgCount+1,methodArgTypes[1]);
-        _methods[3] = qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(0),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",methodArgCount+2,methodArgTypes[2]);
+        _methods[0] = 4;
+        _methods[1] = qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(0),"replicaSizeRequest(IndexList)",methodArgCount+0,methodArgTypes[0]);
+        _methods[2] = qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",methodArgCount+1,methodArgTypes[1]);
+        _methods[3] = qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QVector<Qt::Orientation>,QVector<int>,QVector<int>)>(0),"replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)",methodArgCount+2,methodArgTypes[2]);
+        _methods[4] = qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(0),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",methodArgCount+3,methodArgTypes[3]);
     }
 
     QString name() const Q_DECL_OVERRIDE { return m_name; }
@@ -177,9 +178,10 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE
     {
         switch (index) {
-        case 0: return QByteArrayLiteral("replicaRowRequest(IndexList,IndexList,QVector<int>)");
-        case 1: return QByteArrayLiteral("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
-        case 2: return QByteArrayLiteral("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
+        case 0: return QByteArrayLiteral("replicaSizeRequest(IndexList)");
+        case 1: return QByteArrayLiteral("replicaRowRequest(IndexList,IndexList,QVector<int>)");
+        case 2: return QByteArrayLiteral("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
+        case 3: return QByteArrayLiteral("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
         }
         return QByteArrayLiteral("");
     }
@@ -190,9 +192,10 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     const QByteArray typeName(int index) const Q_DECL_OVERRIDE
     {
         switch (index) {
-        case 0: return QByteArrayLiteral("DataEntries");
-        case 1: return QByteArrayLiteral("QVariantList");
-        case 2: return QByteArrayLiteral("");
+        case 0: return QByteArrayLiteral("QSize");
+        case 1: return QByteArrayLiteral("DataEntries");
+        case 2: return QByteArrayLiteral("QVariantList");
+        case 3: return QByteArrayLiteral("");
         }
         return QByteArrayLiteral("");
     }
@@ -215,6 +218,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 0:
         case 1:
         case 2:
+        case 3:
             return true;
         }
         return false;
@@ -230,10 +234,10 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
 
     int _properties[2];
     int _signals[9];
-    int _methods[4];
+    int _methods[5];
     int signalArgCount[8];
-    int methodArgCount[3];
-    const int* methodArgTypes[3];
+    int methodArgCount[4];
+    const int* methodArgTypes[4];
     QString m_name;
 };
 

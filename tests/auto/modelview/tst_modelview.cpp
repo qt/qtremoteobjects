@@ -45,8 +45,45 @@
 #include <QRemoteObjectNode>
 #include <QAbstractItemReplica>
 #include <QStandardItemModel>
+#include <QEventLoop>
 
 namespace {
+
+QTextStream cout(stdout, QIODevice::WriteOnly);
+
+void dumpModel(const QAbstractItemModel *model, const QModelIndex &parent = QModelIndex())
+{
+    int level = 0;
+    for (QModelIndex idx = parent; idx.isValid(); idx = model->parent(idx), ++level);
+    const QHash<int,QByteArray> roles = model->roleNames();
+    for (int i = 0; i < model->rowCount(parent); ++i) {
+        for (int j = 0; j < model->columnCount(parent); ++j) {
+            const QModelIndex index = model->index(i, j);
+            Q_ASSERT(index.isValid());
+            QString s;
+            s.fill(QChar(' '), level*2);
+            cout << qPrintable(s);
+            cout << QString(QLatin1String("%1:%2")).arg(i).arg(j);
+            foreach (int role, roles.keys()) {
+                const QVariant v = model->data(index, role);
+                if (!v.isValid()) continue;
+                QString t;
+                QDebug(&t) << v;
+                cout << " " << QString::fromUtf8(roles[role]) << "=" << t.trimmed();
+            }
+
+            {
+                QString t;
+                QDebug(&t) << model->flags(index);
+                cout << " flags=" << t;
+            }
+
+            cout << "\n";
+            cout.flush();
+            dumpModel(model, index); // recursive
+        }
+    }
+}
 
 void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
 {
@@ -75,13 +112,141 @@ void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemRepl
 
     for (int i = 0; i < sourceModel->rowCount(); ++i) {
         for (int j = 0; j < sourceModel->columnCount(); ++j) {
-            QEXPECT_FAIL("", "Flags need implementation", Continue);
             QCOMPARE(replica->index(i, j).flags(), sourceModel->index(i, j).flags());
         }
     }
 }
 
 }
+
+class FetchData : public QObject
+{
+    Q_OBJECT
+public:
+    FetchData(const QAbstractItemReplica *replica) : QObject(), m_replica(replica) {
+        if (!m_replica->isInitialized()) {
+            QEventLoop l;
+            connect(m_replica, SIGNAL(initialized()), &l, SLOT(quit()));
+            l.exec();
+        }
+
+        connect(m_replica, &QAbstractItemReplica::dataChanged, this, &FetchData::dataChanged);
+    }
+
+    void addData(const QModelIndex &index, const QHash<int,QByteArray> &roles)
+    {
+        foreach (int role, roles.keys()) {
+            const bool cached = m_replica->hasData(index, role);
+            if (cached)
+                continue;
+            if (!m_pending.contains(index))
+                m_pending[index] = QVector<int>() << role;
+            else
+                m_pending[index].append(role);
+        }
+    }
+
+    void addIndex(const QModelIndex &parent, const QHash<int,QByteArray> &roles)
+    {
+        if (parent.isValid())
+            addData(parent, roles);
+        for (int i = 0; i < m_replica->rowCount(parent); ++i) {
+            for (int j = 0; j < m_replica->columnCount(parent); ++j) {
+                const QModelIndex index = m_replica->index(i, j);
+                Q_ASSERT(index.isValid());
+                addIndex(index, roles);
+            }
+        }
+    }
+
+    void addAll()
+    {
+#if 0
+        const QHash<int,QByteArray> roles = m_replica->roleNames();
+#else
+        QHash<int,QByteArray> roles;
+        roles[Qt::DisplayRole] = "text";
+        roles[Qt::BackgroundRole] = "background";
+#endif
+        addIndex(QModelIndex(), roles);
+    }
+
+    void fetch()
+    {
+        if (m_pending.isEmpty()) {
+            emitFetched();
+            return;
+        }
+        QHash<QPersistentModelIndex, QVector<int> > pending(m_pending);
+        pending.detach();
+        QHash<QPersistentModelIndex, QVector<int> >::ConstIterator it(pending.constBegin()), end(pending.constEnd());
+        for (; it != end; ++it) {
+            foreach (int role, it.value()) {
+                QVariant v = m_replica->data(it.key(), role);
+                Q_UNUSED(v);
+            }
+        }
+    }
+
+    void fetchAndWait()
+    {
+        QEventLoop l;
+        connect(this, SIGNAL(fetched()), &l, SLOT(quit()));
+        fetch();
+        l.exec();
+    }
+
+signals:
+    void fetched();
+
+private:
+    const QAbstractItemReplica *m_replica;
+    QHash<QPersistentModelIndex, QVector<int> > m_pending;
+
+    void emitFetched()
+    {
+        QTimer::singleShot(0, this, SIGNAL(fetched()));
+    }
+
+    void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>())
+    {
+        Q_ASSERT(topLeft.isValid());
+        Q_ASSERT(bottomRight.isValid());
+
+        const QModelIndex parent = topLeft.parent();
+        for (int i = topLeft.row(); i <= bottomRight.row(); ++i) {
+            for (int j = topLeft.column(); j <= bottomRight.column(); ++j) {
+                const QModelIndex index = m_replica->index(i, j, parent);
+                Q_ASSERT(index.isValid());
+                QHash<QPersistentModelIndex, QVector<int> >::Iterator it = m_pending.find(index);
+                if (it == m_pending.end())
+                    continue;
+
+#if 0
+                QVector<int> itroles = it.value();
+                if (roles.isEmpty()) {
+                    itroles.clear();
+                } else {
+                    foreach (int r, roles) {
+                        itroles.removeAll(r);
+                    }
+                }
+                if (itroles.isEmpty()) {
+                    m_pending.erase(it);
+                } else {
+                    m_pending[index] = itroles;
+                }
+#else
+                Q_UNUSED(roles);
+                m_pending.erase(it);
+#endif
+            }
+        }
+        if (m_pending.isEmpty()) {
+            emitFetched();
+        }
+    }
+};
 
 class TestModelView: public QObject
 {
@@ -108,7 +273,7 @@ private slots:
 
 void TestModelView::initTestCase()
 {
-    QLoggingCategory::setFilterRules("*.debug=false\n"
+    QLoggingCategory::setFilterRules("default.*=true\n"
                                      "qt.remoteobjects.debug=false\n"
                                      "qt.remoteobjects.warning=false");
     //Setup registry
@@ -149,10 +314,10 @@ void TestModelView::testEmptyModel()
     m_basicServer.enableRemoting(&emptyModel, "emptyModel", roles);
 
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("emptyModel"));
-    QSignalSpy spy(model.data(), SIGNAL(initialized()));
-    spy.wait();
 
-    QCOMPARE(spy.count(), 1);
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
 
     compareData(&emptyModel, model.data());
 }
@@ -160,10 +325,10 @@ void TestModelView::testEmptyModel()
 void TestModelView::testInitialData()
 {
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
-    QSignalSpy spy(model.data(), SIGNAL(initialized()));
-    spy.wait();
 
-    QCOMPARE(spy.count(), 1);
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
 
     compareData(&m_sourceModel, model.data());
 }
@@ -171,8 +336,11 @@ void TestModelView::testInitialData()
 void TestModelView::testHeaderData()
 {
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
-    QSignalSpy spy(model.data(), SIGNAL(initialized()));
-    spy.wait();
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
     // ask for all Data members first, so we don't have to wait for update signals
     QSignalSpy spyHeader(model.data(), SIGNAL(headerDataChanged(Qt::Orientation,int,int)));
     for (int i = 0; i < m_sourceModel.rowCount(); ++i)
@@ -180,31 +348,32 @@ void TestModelView::testHeaderData()
     for (int i = 0; i < m_sourceModel.columnCount(); ++i)
         model->headerData(i, Qt::Horizontal, Qt::DisplayRole);
     spyHeader.wait();
+
     for (int i = 0; i < m_sourceModel.rowCount(); ++i)
         QCOMPARE(model->headerData(i, Qt::Vertical, Qt::DisplayRole), m_sourceModel.headerData(i, Qt::Vertical, Qt::DisplayRole));
     for (int i = 0; i < m_sourceModel.columnCount(); ++i)
         QCOMPARE(model->headerData(i, Qt::Horizontal, Qt::DisplayRole), m_sourceModel.headerData(i, Qt::Horizontal, Qt::DisplayRole));
 }
 
-void TestModelView::testDataChanged()
+#if 0
+void TestModelView::testFlags()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
-    QSignalSpy spy(model.data(), SIGNAL(initialized()));
-    spy.wait();
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
-    for (int i = 10; i < 20; ++i)
-        m_sourceModel.setData(m_sourceModel.index(i, 1), QColor(Qt::blue), Qt::BackgroundRole);
-
-    bool signalsReceived = false;
-    while (dataChangedSpy.wait()) {
-        signalsReceived = true;
-        if (dataChangedSpy.takeLast().at(1).value<QModelIndex>().row() == 19)
-            break;
+    for (int i = 10; i < 20; ++i) {
+        QStandardItem* firstItem = m_sourceModel.item(i, 0);
+        QStandardItem* secondItem = m_sourceModel.item(i, 1);
+        firstItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+        secondItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
     }
-    QVERIFY(signalsReceived);
-    compareData(&m_sourceModel, model.data());
-}
 
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    compareFlags(&m_sourceModel, model.data());
+}
+#else
 void TestModelView::testFlags()
 {
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
@@ -227,12 +396,38 @@ void TestModelView::testFlags()
     QVERIFY(signalsReceived);
     compareFlags(&m_sourceModel, model.data());
 }
+#endif
+
+void TestModelView::testDataChanged()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    for (int i = 10; i < 20; ++i)
+        m_sourceModel.setData(m_sourceModel.index(i, 1), QColor(Qt::blue), Qt::BackgroundRole);
+
+    bool signalsReceived = false;
+    while (dataChangedSpy.wait()) {
+        signalsReceived = true;
+        if (dataChangedSpy.takeLast().at(1).value<QModelIndex>().row() == 19)
+            break;
+    }
+    QVERIFY(signalsReceived);
+    compareData(&m_sourceModel, model.data());
+}
 
 void TestModelView::testDataInsertion()
 {
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
-    QSignalSpy spy(model.data(), SIGNAL(initialized()));
-    spy.wait();
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
     QSignalSpy rowSpy(model.data(), SIGNAL(rowsInserted(QModelIndex,int,int)));
     m_sourceModel.insertRows(2, 9);
     rowSpy.wait();

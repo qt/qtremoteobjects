@@ -59,34 +59,42 @@ typedef QVector<CacheEntry> CachedRowEntry;
 struct CacheData
 {
     CacheData *parent;
-    QList<CacheData*> children;
     CachedRowEntry cachedRowEntry;
+
+    bool hasChildren;
+    Qt::ItemFlags flags;
+    QList<CacheData*> children;
     int columnCount;
 
     explicit CacheData(CacheData *parentItem = 0)
         : parent(parentItem)
-        , columnCount(-1)
+        , hasChildren(false)
+        , flags(Qt::NoItemFlags)
+        , columnCount(1)
     {}
     ~CacheData() { qDeleteAll(children); }
     void insertChildren(int start, int end) {
         Q_ASSERT_X(start >= 0 && start <= end, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2")).arg(start).arg(end)));
         for (int i = start; i <= end; ++i)
             children.insert(i, new CacheData(this));
+        if (!children.isEmpty())
+            hasChildren = true;
     }
     void removeChildren(int start, int end) {
-        Q_ASSERT_X(start >= 0 && start <= end, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2")).arg(start).arg(end)));
+        Q_ASSERT_X(start >= 0 && start <= end && end < children.count(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2 < %3")).arg(start).arg(end).arg(children.count())));
         for (int i = start; i <= end; ++i)
             delete children.takeAt(start);
-    }
-    void clearChildren() {
-        qDeleteAll(children);
-        children.clear();
+        if (children.isEmpty())
+            hasChildren = false;
     }
     void clear() {
         cachedRowEntry.clear();
-        clearChildren();
-        columnCount = -1;
+        qDeleteAll(children);
+        children.clear();
+        hasChildren = false;
+        columnCount = 1;
     }
+
 };
 
 struct RequestedData
@@ -101,6 +109,15 @@ struct RequestedHeaderData
     int role;
     int section;
     Qt::Orientation orientation;
+};
+
+class SizeWatcher : public QRemoteObjectPendingCallWatcher
+{
+public:
+    SizeWatcher(IndexList _parentList, const QRemoteObjectPendingReply<QSize> &reply)
+        : QRemoteObjectPendingCallWatcher(reply),
+          parentList(_parentList) {}
+    IndexList parentList;
 };
 
 class RowWatcher : public QRemoteObjectPendingCallWatcher
@@ -158,6 +175,13 @@ Q_SIGNALS:
     void headerDataChanged(Qt::Orientation,int,int);
 
 public Q_SLOTS:
+    QRemoteObjectPendingReply<QSize> replicaSizeRequest(IndexList parentList)
+    {
+        static int __repc_index = QAbstractItemReplicaPrivate::staticMetaObject.indexOfSlot("replicaSizeRequest(IndexList)");
+        QVariantList __repc_args;
+        __repc_args << QVariant::fromValue(parentList);
+        return QRemoteObjectPendingReply<QSize>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
+    }
     QRemoteObjectPendingReply<DataEntries> replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
     {
         static int __repc_index = QAbstractItemReplicaPrivate::staticMetaObject.indexOfSlot("replicaRowRequest(IndexList,IndexList,QVector<int>)");
@@ -193,6 +217,7 @@ public Q_SLOTS:
     void fetchPendingHeaderData();
     void handleInitDone(QRemoteObjectPendingCallWatcher *watcher);
     void handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher);
+    void handleSizeDone(QRemoteObjectPendingCallWatcher *watcher);
 
 public:
     QScopedPointer<QItemSelectionModel> m_selectionModel;
@@ -208,7 +233,7 @@ public:
     inline CacheData* cacheData(const IndexList &index) const {
         return cacheData(toQModelIndex(index, q));
     }
-    RowWatcher* doModelReset();
+    SizeWatcher* doModelReset();
 
     int m_lastRequested;
     QVector<RequestedData> m_requestedData;

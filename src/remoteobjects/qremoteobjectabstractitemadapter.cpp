@@ -124,6 +124,16 @@ QItemSelectionModel* QAbstractItemSourceAdapter::selectionModel() const
     return m_selectionModel;
 }
 
+QSize QAbstractItemSourceAdapter::replicaSizeRequest(IndexList parentList)
+{
+    QModelIndex parent = toQModelIndex(parentList, m_model);
+    const int rowCount = m_model->rowCount(parent);
+    const int columnCount = m_model->columnCount(parent);
+    const QSize size(columnCount, rowCount);
+    qCDebug(QT_REMOTEOBJECT_MODELS) << "parent" << parentList << "size=" << size;
+    return size;
+}
+
 DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << "Requested rows" << "start=" << start << "end=" << end << "roles=" << roles;
@@ -144,7 +154,7 @@ DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, Index
     const int rowCount = m_model->rowCount(parent);
     const int columnCount = m_model->columnCount(parent);
 
-    DataEntries entries(rowCount, columnCount);
+    DataEntries entries;
     if (rowCount <= 0)
         return entries;
     const int endRow = std::min(end.last().row, rowCount - 1);
@@ -158,10 +168,10 @@ DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, Index
             Q_ASSERT(current.isValid());
             const IndexList currentList = toModelIndexList(current, m_model);
             const QVariantList data = collectData(current, m_model, roles);
-            const int currentRowCount = m_model->rowCount(current);
-            const int currentColumnCount = m_model->columnCount(current);
+            const bool hasChildren = m_model->hasChildren(current);
+            const Qt::ItemFlags flags = m_model->flags(current);
             qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentList << "data=" << data;
-            entries.data << IndexValuePair(currentList, data, currentRowCount, currentColumnCount);
+            entries.data << IndexValuePair(currentList, data, hasChildren, flags);
         }
     }
     return entries;

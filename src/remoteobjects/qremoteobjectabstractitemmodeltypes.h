@@ -73,35 +73,28 @@ typedef QList<ModelIndex> IndexList;
 
 struct IndexValuePair
 {
-    IndexValuePair(const IndexList index_ = IndexList(), const QVariantList &data_ = QVariantList(), int rowCount_ = -1, int columnCount_ = -1)
+    explicit IndexValuePair(const IndexList index_ = IndexList(), const QVariantList &data_ = QVariantList(), bool hasChildren_ = false, const Qt::ItemFlags &flags_ = Qt::ItemFlags())
         : index(index_)
         , data(data_)
-        , rowCount(rowCount_)
-        , columnCount(columnCount_)
+        , flags(flags_)
+        , hasChildren(hasChildren_)
     {}
 
-    inline bool operator==(const IndexValuePair &other) const { return rowCount == other.rowCount && columnCount == other.columnCount && index == other.index && data == other.data; }
+    inline bool operator==(const IndexValuePair &other) const { return index == other.index && data == other.data && hasChildren == other.hasChildren && flags == other.flags; }
     inline bool operator!=(const IndexValuePair &other) const { return !(*this == other); }
 
     IndexList index;
     QVariantList data;
-    int rowCount;
-    int columnCount;
+    Qt::ItemFlags flags;
+    bool hasChildren;
 };
 
 struct DataEntries
 {
-    DataEntries(int rowCount_ = -1, int columnCount_ = -1)
-        : rowCount(rowCount_)
-        , columnCount(columnCount_)
-    {}
-
-    inline bool operator==(const DataEntries &other) const { return rowCount == other.rowCount && columnCount == other.columnCount && data == other.data; }
+    inline bool operator==(const DataEntries &other) const { return data == other.data; }
     inline bool operator!=(const DataEntries &other) const { return !(*this == other); }
 
     QVector<IndexValuePair> data;
-    int rowCount;
-    int columnCount;
 };
 
 inline QDebug& operator<<(QDebug &stream, const ModelIndex &index)
@@ -147,40 +140,58 @@ inline QDataStream& operator>>(QDataStream &stream, QItemSelectionModel::Selecti
 
 inline QDebug& operator<<(QDebug &stream, const DataEntries &entries)
 {
-    return stream.nospace() << "DataEntries[rowCount=" << entries.rowCount << ", columnCount=" << entries.columnCount << ", data=" << entries.data << "]";
+    return stream.nospace() << "DataEntries[" << entries.data << "]";
 }
 
 inline QDataStream& operator<<(QDataStream &stream, const DataEntries &entries)
 {
-    return stream << entries.rowCount << entries.columnCount << entries.data;
+    return stream << entries.data;
 }
 
 inline QDataStream& operator>>(QDataStream &stream, DataEntries &entries)
 {
-    return stream >> entries.rowCount >> entries.columnCount >> entries.data;
+    return stream >> entries.data;
 }
 
 inline QDebug& operator<<(QDebug &stream, const IndexValuePair &pair)
 {
-    return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << "]";
+    return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << ", hasChildren=" << pair.hasChildren << ", flags=" << pair.flags << "]";
 }
 
 inline QDataStream& operator<<(QDataStream &stream, const IndexValuePair &pair)
 {
-    return stream << pair.index << pair.data << pair.rowCount << pair.columnCount;
+    return stream << pair.index << pair.data << pair.hasChildren << static_cast<int>(pair.flags);
 }
 
 inline QDataStream& operator>>(QDataStream &stream, IndexValuePair &pair)
 {
-    return stream >> pair.index >> pair.data >> pair.rowCount >> pair.columnCount;
+    int flags;
+    QDataStream &ret = stream >> pair.index >> pair.data >> pair.hasChildren >> flags;
+    pair.flags = static_cast<Qt::ItemFlags>(flags);
+    return ret;
+}
+
+inline QString modelIndexToString(const IndexList &list)
+{
+    QString s;
+    QDebug(&s) << list;
+    return s;
+}
+
+inline QString modelIndexToString(const ModelIndex &index)
+{
+    QString s;
+    QDebug(&s) << index;
+    return s;
 }
 
 inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model)
 {
     QModelIndex result;
-    Q_FOREACH (const ModelIndex &index, list) {
+    for (int i = 0; i < list.count(); ++i) {
+        const ModelIndex &index = list[i];
         result = model->index(index.row, index.column, result);
-        Q_ASSERT(result.isValid());
+        Q_ASSERT_X(result.isValid(), __FUNCTION__, qPrintable(QString(QLatin1String("Invalid index=%1 in indexList=%2")).arg(modelIndexToString(list[i])).arg(modelIndexToString(list))));
     }
     return result;
 }
