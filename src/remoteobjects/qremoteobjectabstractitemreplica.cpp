@@ -687,7 +687,9 @@ QModelIndex QAbstractItemReplica::index(int row, int column, const QModelIndex &
     // hmpf, following works around a Q_ASSERT-bug in QAbstractItemView::setModel which does just call
     // d->model->index(0,0) without checking the range before-hand what triggers our assert in case the
     // model is empty when view::setModel is called :-/ So, work around with the following;
-    if (row == 0 && parentItem->children.count() == 0 && parentItem == &d->m_rootItem)
+    if (row < 0 || row >= parentItem->children.count())
+        return QModelIndex();
+    if (column < 0 || column >= parentItem->columnCount)
         return QModelIndex();
 
     Q_ASSERT_X(row >= 0 && row < parentItem->children.count(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(row).arg(parentItem->children.count())));
