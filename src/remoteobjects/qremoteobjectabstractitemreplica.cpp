@@ -653,7 +653,6 @@ QVariant QAbstractItemReplica::data(const QModelIndex & index, int role) const
         IndexList start = IndexList() << parentList << ModelIndex(low, 0);
         IndexList end = IndexList() << parentList << ModelIndex(high, parentItem->columnCount);
         Q_ASSERT(toQModelIndex(start, this).isValid());
-        Q_ASSERT(toQModelIndex(end, this).isValid());
 
         RequestedData data;
         QVector<int> roles;
