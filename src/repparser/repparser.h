@@ -128,9 +128,9 @@ Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 // The attribute of a POD
 struct PODAttribute
 {
-    explicit PODAttribute(const QString &type = QString(), const QString &name = QString())
-        : type(type),
-          name(name)
+    explicit PODAttribute(const QString &type_ = QString(), const QString &name_ = QString())
+        : type(type_),
+          name(name_)
     {}
     QString type;
     QString name;

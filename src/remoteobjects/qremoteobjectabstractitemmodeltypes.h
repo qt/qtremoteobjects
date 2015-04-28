@@ -57,9 +57,9 @@ QT_BEGIN_NAMESPACE
 struct ModelIndex
 {
     ModelIndex() : row(-1), column(-1) {}
-    ModelIndex(int row, int column)
-        : row(row)
-        , column(column)
+    ModelIndex(int row_, int column_)
+        : row(row_)
+        , column(column_)
     {}
 
     inline bool operator==(const ModelIndex &other) const { return row == other.row && column == other.column; }
@@ -72,11 +72,11 @@ typedef QList<ModelIndex> IndexList;
 
 struct IndexValuePair
 {
-    IndexValuePair(const IndexList index = IndexList(), const QVariantList &data = QVariantList(), int rowCount = -1, int columnCount = -1)
-        : index(index)
-        , data(data)
-        , rowCount(rowCount)
-        , columnCount(columnCount)
+    IndexValuePair(const IndexList index_ = IndexList(), const QVariantList &data_ = QVariantList(), int rowCount_ = -1, int columnCount_ = -1)
+        : index(index_)
+        , data(data_)
+        , rowCount(rowCount_)
+        , columnCount(columnCount_)
     {}
 
     inline bool operator==(const IndexValuePair &other) const { return rowCount == other.rowCount && columnCount == other.columnCount && index == other.index && data == other.data; }
@@ -90,9 +90,9 @@ struct IndexValuePair
 
 struct DataEntries
 {
-    DataEntries(int rowCount = -1, int columnCount = -1)
-        : rowCount(rowCount)
-        , columnCount(columnCount)
+    DataEntries(int rowCount_ = -1, int columnCount_ = -1)
+        : rowCount(rowCount_)
+        , columnCount(columnCount_)
     {}
 
     inline bool operator==(const DataEntries &other) const { return rowCount == other.rowCount && columnCount == other.columnCount && data == other.data; }

@@ -84,7 +84,7 @@ private:
     friend class QConnectedReplicaPrivate;
 };
 
-Q_DECLARE_METATYPE(QRemoteObjectPendingCall);
+Q_DECLARE_METATYPE(QRemoteObjectPendingCall)
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPendingCallWatcher: public QObject, public QRemoteObjectPendingCall
 {
