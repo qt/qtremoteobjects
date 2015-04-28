@@ -152,13 +152,13 @@ void QAbstractItemReplicaPrivate::clearCache(const IndexList &start, const Index
     QModelIndex parentIndex = startIndex.parent();
     CacheData *parentItem = cacheData(parentIndex);
 
-    const int startRow = start.first().row;
-    const int lastRow = end.first().row;
-    const int startColumn = start.first().column;
-    const int lastColumn = end.first().column;
+    const int startRow = start.last().row;
+    const int lastRow = end.last().row;
+    const int startColumn = start.last().column;
+    const int lastColumn = end.last().column;
     for (int row = startRow; row <= lastRow; ++row) {
+        Q_ASSERT_X(row >= 0 && row < parentItem->children.count(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(row).arg(parentItem->children.count())));
         for (int column = startColumn; column <= lastColumn; ++column) {
-            Q_ASSERT_X(row >= 0 && row < parentItem->children.count(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(row).arg(parentItem->children.count())));
             CachedRowEntry *entry = &(parentItem->children[row]->cachedRowEntry);
             removeIndexFromRow(q->index(row, column, parentIndex), roles, entry);
         }
