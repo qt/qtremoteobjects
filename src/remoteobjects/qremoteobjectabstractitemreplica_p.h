@@ -149,16 +149,23 @@ class QAbstractItemReplicaPrivate : public QRemoteObjectReplica
     Q_OBJECT
     //TODO Use an input name for the model on the Replica side
     Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "ServerModelAdapter")
+    Q_PROPERTY(QVector<int> availableRoles READ availableRoles NOTIFY availableRolesChanged)
+    Q_PROPERTY(QIntHash roleNames READ roleNames)
 public:
     QAbstractItemReplicaPrivate();
     ~QAbstractItemReplicaPrivate();
     void initialize();
     void registerTypes();
-    Q_PROPERTY(QVector<int> availableRoles READ availableRoles NOTIFY availableRolesChanged)
 
     QVector<int> availableRoles() const
     {
         return propAsVariant(0).value<QVector<int> >();
+    }
+
+    QHash<int, QByteArray> roleNames() const
+    {
+       QIntHash roles = propAsVariant(1).value<QIntHash>();
+       return roles;
     }
 
     void setModel(QAbstractItemReplica *model);

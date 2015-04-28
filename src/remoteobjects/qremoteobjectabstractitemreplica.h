@@ -68,6 +68,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const Q_DECL_OVERRIDE;
     Qt::ItemFlags flags(const QModelIndex &index) const;
     QVector<int> availableRoles() const;
+    QHash<int, QByteArray> roleNames() const;
 
     bool isInitialized() const;
     bool hasData(const QModelIndex &index, int role) const;

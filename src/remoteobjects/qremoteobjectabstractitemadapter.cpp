@@ -116,6 +116,8 @@ void QAbstractItemSourceAdapter::registerTypes()
         qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
         qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
         qRegisterMetaType<QSize>();
+        qRegisterMetaType<QIntHash>();
+        qRegisterMetaTypeStreamOperators<QIntHash>();
     }
 }
 

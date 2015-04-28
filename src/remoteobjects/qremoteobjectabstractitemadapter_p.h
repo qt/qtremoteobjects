@@ -56,6 +56,7 @@ class QAbstractItemSourceAdapter : public QObject
 public:
     Q_INVOKABLE explicit QAbstractItemSourceAdapter(QAbstractItemModel *object, QItemSelectionModel *sel, const QVector<int> &roles = QVector<int>());
     Q_PROPERTY(QVector<int> availableRoles READ availableRoles WRITE setAvailableRoles NOTIFY availableRolesChanged)
+    Q_PROPERTY(QIntHash roleNames READ roleNames)
     void registerTypes();
     QItemSelectionModel* selectionModel() const;
 
@@ -69,6 +70,8 @@ public Q_SLOTS:
             Q_EMIT availableRolesChanged();
         }
     }
+
+    QIntHash roleNames() const {return m_model->roleNames();}
 
     QSize replicaSizeRequest(IndexList parentList);
     DataEntries replicaRowRequest(IndexList start, IndexList end, QVector<int> roles);
@@ -112,8 +115,9 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         : SourceApiMap()
         , m_name(name)
     {
-        _properties[0] = 1;
+        _properties[0] = 2;
         _properties[1] = qtro_prop_index<AdapterType>(&AdapterType::availableRoles, static_cast<QVector<int> (QObject::*)()>(0),"availableRoles");
+        _properties[2] = qtro_prop_index<AdapterType>(&AdapterType::roleNames, static_cast<QIntHash (QObject::*)()>(0),"roleNames");
         _signals[0] = 8;
         _signals[1] = qtro_signal_index<AdapterType>(&AdapterType::availableRolesChanged, static_cast<void (QObject::*)()>(0),signalArgCount+0,signalArgTypes[0]);
         _signals[2] = qtro_signal_index<AdapterType>(&AdapterType::dataChanged, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),signalArgCount+1,signalArgTypes[1]);
@@ -160,6 +164,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     {
         switch (index) {
         case 0: return _properties[1];
+        case 1: return _properties[2];
         }
         return -1;
     }
@@ -229,12 +234,13 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     {
         switch (index) {
         case 0:
+        case 1:
             return true;
         }
         return false;
     }
 
-    int _properties[2];
+    int _properties[3];
     int _signals[9];
     int _methods[5];
     int signalArgCount[8];

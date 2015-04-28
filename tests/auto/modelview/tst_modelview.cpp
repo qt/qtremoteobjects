@@ -92,6 +92,7 @@ void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemRepli
 
     QCOMPARE(replica->rowCount(), sourceModel->rowCount());
     QCOMPARE(replica->columnCount(), sourceModel->columnCount());
+    QCOMPARE(replica->roleNames(), sourceModel->roleNames());
 
     for (int i = 0; i < sourceModel->rowCount(); ++i) {
         for (int j = 0; j < sourceModel->columnCount(); ++j) {
@@ -117,7 +118,39 @@ void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemRepl
     }
 }
 
-}
+// class to test cutom role names
+class RolenamesListModel : public QAbstractListModel
+{
+    Q_OBJECT
+public:
+    explicit RolenamesListModel(QObject *parent = 0) : QAbstractListModel(parent), numOfElements(0) { }
+    virtual int rowCount(const QModelIndex &parent ) const { Q_UNUSED(parent) return m_list.length(); }
+    virtual QVariant data(const QModelIndex &index, int role) const {
+        if (role == Qt::UserRole)
+           return m_list.at(index.row()).second;
+       else if (role == Qt::UserRole+1)
+           return m_list.at(index.row()).first;
+       else
+           return QVariant();
+   }
+    QHash<int, QByteArray> roleNames() const {
+        QHash<int, QByteArray> roles;
+        roles[Qt::UserRole] = "name";
+        roles[Qt::UserRole+1] = "pid";
+        return roles;
+    }
+   void addPair(const QVariant pid,const QVariant name) {
+       m_list.append(QPair<QVariant, QVariant>(pid, name));
+   }
+   void clearList() {
+       numOfElements = 0;
+       m_list.clear();
+   }
+   void setNumberofElements(quint32 arg) { numOfElements = arg; }
+private:
+    QVector<QPair<QVariant, QVariant> > m_list;
+    quint32 numOfElements;
+};
 
 class FetchData : public QObject
 {
@@ -161,13 +194,7 @@ public:
 
     void addAll()
     {
-#if 0
         const QHash<int,QByteArray> roles = m_replica->roleNames();
-#else
-        QHash<int,QByteArray> roles;
-        roles[Qt::DisplayRole] = "text";
-        roles[Qt::BackgroundRole] = "background";
-#endif
         addIndex(QModelIndex(), roles);
     }
 
@@ -248,6 +275,8 @@ private:
     }
 };
 
+} // namespace
+
 class TestModelView: public QObject
 {
     Q_OBJECT
@@ -268,6 +297,8 @@ private slots:
     void testDataInsertion();
     void testDataRemoval();
 
+    void testRoleNames();
+
     void cleanup();
 };
 
@@ -283,7 +314,13 @@ void TestModelView::initTestCase()
     m_basicServer = QRemoteObjectNode::createHostNodeConnectedToRegistry();
 
     static const int modelSize = 20;
+
     QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole;
+
+    QHash<int,QByteArray> roleNames;
+    roleNames[Qt::DisplayRole] = "text";
+    roleNames[Qt::BackgroundRole] = "background";
+    m_sourceModel.setItemRoleNames(roleNames);
 
     QStringList list;
     list.reserve(modelSize);
@@ -448,6 +485,39 @@ void TestModelView::testDataRemoval()
 {
     m_sourceModel.removeRows(2, 4);
     //Maybe some checks here?
+}
+
+void TestModelView::testRoleNames()
+{
+    m_registryServer = QRemoteObjectNode::createRegistryHostNode();
+
+    m_basicServer = QRemoteObjectNode::createHostNodeConnectedToRegistry();
+
+    QVector<int> roles = QVector<int>() << Qt::UserRole << Qt::UserRole+1;
+
+    RolenamesListModel listModel;
+    listModel.setNumberofElements(1000);
+    for (int i = 0;i < 1000;i++) {
+        QString name = QString("Data %1").arg(i);
+        QString pid = QString("%1").arg(i);
+        listModel.addPair(name, pid);
+    }
+
+    m_basicServer.enableRemoting(&listModel, "testRoleNames", roles);
+
+    m_client = QRemoteObjectNode::createNodeConnectedToRegistry();
+
+    QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("testRoleNames")));
+
+    FetchData f(repModel.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    // test custom role names
+    QCOMPARE(repModel.data()->roleNames(), listModel.roleNames());
+
+    // test data associated with custom roles
+    compareData(&listModel,repModel.data());
 }
 
 void TestModelView::cleanup()

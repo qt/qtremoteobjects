@@ -79,6 +79,7 @@ void QAbstractItemReplicaPrivate::initialize()
 {
     QVariantList properties;
     properties << QVariant::fromValue(QVector<int>());
+    properties << QVariant::fromValue(QIntHash());
     setProperties(properties);
 }
 
@@ -96,6 +97,8 @@ void QAbstractItemReplicaPrivate::registerTypes()
         qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
         qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
         qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
+        qRegisterMetaType<QIntHash>();
+        qRegisterMetaTypeStreamOperators<QIntHash>();
     }
 }
 
@@ -654,8 +657,7 @@ QItemSelectionModel* QAbstractItemReplica::selectionModel() const
 QVariant QAbstractItemReplica::data(const QModelIndex & index, int role) const
 {
     Q_ASSERT(index.isValid());
-    if (!(role == Qt::DisplayRole || role == Qt::BackgroundColorRole))
-        return QVariant();
+
     if (!d->isInitialized()) {
         qCDebug(QT_REMOTEOBJECT_MODELS)<<"Data not initialized yet";
         return QVariant();
@@ -797,6 +799,11 @@ bool QAbstractItemReplica::hasData(const QModelIndex &index, int role) const
 QVector<int> QAbstractItemReplica::availableRoles() const
 {
     return d->availableRoles();
+}
+
+QHash<int, QByteArray> QAbstractItemReplica::roleNames() const
+{
+    return d->roleNames();
 }
 
 QT_END_NAMESPACE
