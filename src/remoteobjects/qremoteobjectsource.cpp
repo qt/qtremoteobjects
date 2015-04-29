@@ -57,11 +57,11 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
-const int QRemoteObjectSourcePrivate::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
-const int QRemoteObjectSourcePrivate::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
+const int QRemoteObjectSource::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
+const int QRemoteObjectSource::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 
-QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const SourceApiMap *api,
-                                                       QObject *adapter, QRemoteObjectSourceIo *sourceIo)
+QRemoteObjectSource::QRemoteObjectSource(QObject *obj, const SourceApiMap *api,
+                                         QObject *adapter, QRemoteObjectSourceIo *sourceIo)
     : QObject(obj),
       m_object(obj),
       m_adapter(adapter),
@@ -84,12 +84,12 @@ QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const Sourc
         //We know no one will inherit from this class, so no need to worry about indices from
         //derived classes.
         if (m_api->isAdapterSignal(idx)) {
-            if (!QMetaObject::connect(adapter, sourceIndex, this, QRemoteObjectSourcePrivate::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+            if (!QMetaObject::connect(adapter, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
                 qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
                 return;
             }
         } else {
-            if (!QMetaObject::connect(obj, sourceIndex, this, QRemoteObjectSourcePrivate::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+            if (!QMetaObject::connect(obj, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
                 qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
                 return;
             }
@@ -101,7 +101,7 @@ QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const Sourc
     m_sourceIo->registerSource(this);
 }
 
-QRemoteObjectSourcePrivate::~QRemoteObjectSourcePrivate()
+QRemoteObjectSource::~QRemoteObjectSource()
 {
     m_sourceIo->unregisterSource(this);
     Q_FOREACH (ServerIoDevice *io, listeners) {
@@ -110,7 +110,7 @@ QRemoteObjectSourcePrivate::~QRemoteObjectSourcePrivate()
     delete m_api;
 }
 
-QVariantList QRemoteObjectSourcePrivate::marshalArgs(int index, void **a)
+QVariantList QRemoteObjectSource::marshalArgs(int index, void **a)
 {
     QVariantList list;
     const int N = m_api->signalParameterCount(index);
@@ -125,7 +125,7 @@ QVariantList QRemoteObjectSourcePrivate::marshalArgs(int index, void **a)
     return list;
 }
 
-bool QRemoteObjectSourcePrivate::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
+bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
 {
     QVarLengthArray<void*, 10> param(args.size() + 1);
 
@@ -168,7 +168,7 @@ inline Pair make_pair(QString first, QVariant second)
 { Pair p = { qMove(first), qMove(second) }; return p; }
 #endif
 
-void QRemoteObjectSourcePrivate::handleMetaCall(int index, QMetaObject::Call call, void **a)
+void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void **a)
 {
     if (listeners.empty())
         return;
@@ -200,7 +200,7 @@ void QRemoteObjectSourcePrivate::handleMetaCall(int index, QMetaObject::Call cal
         io->write(ba);
 }
 
-void QRemoteObjectSourcePrivate::addListener(ServerIoDevice *io, bool dynamic)
+void QRemoteObjectSource::addListener(ServerIoDevice *io, bool dynamic)
 {
     listeners.append(io);
 
@@ -213,7 +213,7 @@ void QRemoteObjectSourcePrivate::addListener(ServerIoDevice *io, bool dynamic)
     }
 }
 
-int QRemoteObjectSourcePrivate::removeListener(ServerIoDevice *io, bool shouldSendRemove)
+int QRemoteObjectSource::removeListener(ServerIoDevice *io, bool shouldSendRemove)
 {
     listeners.removeAll(io);
     if (shouldSendRemove)
@@ -224,7 +224,7 @@ int QRemoteObjectSourcePrivate::removeListener(ServerIoDevice *io, bool shouldSe
     return listeners.length();
 }
 
-int QRemoteObjectSourcePrivate::qt_metacall(QMetaObject::Call call, int methodId, void **a)
+int QRemoteObjectSource::qt_metacall(QMetaObject::Call call, int methodId, void **a)
 {
     methodId = QObject::qt_metacall(call, methodId, a);
     if (methodId < 0)

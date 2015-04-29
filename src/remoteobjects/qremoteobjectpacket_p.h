@@ -56,7 +56,7 @@
 QT_BEGIN_NAMESPACE
 
 class QMetaObjectBuilder;
-class QRemoteObjectSourcePrivate;
+class QRemoteObjectSource;
 
 namespace QRemoteObjectPackets {
 
@@ -108,11 +108,11 @@ public:
 class QInitPacketEncoder : public QRemoteObjectPacket
 {
 public:
-    inline QInitPacketEncoder(const QRemoteObjectSourcePrivate *_object)
+    inline QInitPacketEncoder(const QRemoteObjectSource *_object)
         : QRemoteObjectPacket(InitPacket), object(_object) {}
     QByteArray serialize() const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
-    const QRemoteObjectSourcePrivate *object;
+    const QRemoteObjectSource *object;
 private:
     QInitPacketEncoder() {}
 };
@@ -130,11 +130,11 @@ public:
 class QInitDynamicPacketEncoder : public QRemoteObjectPacket
 {
 public:
-    QInitDynamicPacketEncoder(const QRemoteObjectSourcePrivate *_object)
+    QInitDynamicPacketEncoder(const QRemoteObjectSource *_object)
         : QRemoteObjectPacket(InitDynamicPacket), object(_object) {}
     QByteArray serialize() const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
-    const QRemoteObjectSourcePrivate *object;
+    const QRemoteObjectSource *object;
 private:
     QInitDynamicPacketEncoder() {}
 };

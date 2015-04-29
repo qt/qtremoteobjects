@@ -53,7 +53,7 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectReplica;
-class QRemoteObjectSourcePrivate;
+class QRemoteObjectSource;
 class ClientIoDevice;
 
 namespace QRemoteObjectPackets {
@@ -150,7 +150,7 @@ public:
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) Q_DECL_OVERRIDE;
 
-    QPointer<QRemoteObjectSourcePrivate> connectionToSource;
+    QPointer<QRemoteObjectSource> connectionToSource;
 };
 
 QT_END_NAMESPACE

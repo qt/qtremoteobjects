@@ -51,7 +51,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QRemoteObjectSourcePrivate;
+class QRemoteObjectSource;
 class SourceApiMap;
 
 class QRemoteObjectSourceIo : public QObject
@@ -79,16 +79,16 @@ Q_SIGNALS:
 
 private:
     friend class QRemoteObjectNodePrivate;
-    friend class QRemoteObjectSourcePrivate;
+    friend class QRemoteObjectSource;
 
-    void registerSource(QRemoteObjectSourcePrivate *pp);
-    void unregisterSource(QRemoteObjectSourcePrivate *pp);
+    void registerSource(QRemoteObjectSource *pp);
+    void unregisterSource(QRemoteObjectSource *pp);
 
     QHash<QIODevice*, quint32> m_readSize;
     QConnectionServerFactory m_factory;
     QSet<ServerIoDevice*> m_connections;
-    QHash<QObject *, QRemoteObjectSourcePrivate*> m_objectToSourceMap;
-    QMap<QString, QRemoteObjectSourcePrivate*> m_remoteObjects;
+    QHash<QObject *, QRemoteObjectSource*> m_objectToSourceMap;
+    QMap<QString, QRemoteObjectSource*> m_remoteObjects;
     QSignalMapper m_serverDelete;
     QSignalMapper m_serverRead;
     QHash<ServerIoDevice*, QUrl> m_registryMapping;

@@ -53,13 +53,13 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectSourceIo;
 class ServerIoDevice;
 
-class QRemoteObjectSourcePrivate : public QObject
+class QRemoteObjectSource : public QObject
 {
 public:
-    explicit QRemoteObjectSourcePrivate(QObject *object, const SourceApiMap *,
-                                        QObject *adapter, QRemoteObjectSourceIo *sourceIo);
+    explicit QRemoteObjectSource(QObject *object, const SourceApiMap *,
+                                 QObject *adapter, QRemoteObjectSourceIo *sourceIo);
 
-    ~QRemoteObjectSourcePrivate();
+    ~QRemoteObjectSource();
 
     int qt_metacall(QMetaObject::Call call, int methodId, void **a);
     QList<ServerIoDevice*> listeners;

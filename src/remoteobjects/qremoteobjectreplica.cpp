@@ -544,7 +544,7 @@ const QVariant QInProcessReplicaPrivate::getProperty(int i) const
 {
     Q_ASSERT(connectionToSource);
     Q_ASSERT(connectionToSource->m_object);
-    const int index = i + QRemoteObjectSourcePrivate::qobjectPropertyOffset;
+    const int index = i + QRemoteObjectSource::qobjectPropertyOffset;
     Q_ASSERT(index >= 0 && index < connectionToSource->m_object->metaObject()->propertyCount());
     return connectionToSource->m_object->metaObject()->property(index).read(connectionToSource->m_object);
 }
@@ -558,7 +558,7 @@ void QInProcessReplicaPrivate::setProperty(int i, const QVariant &property)
 {
     Q_ASSERT(connectionToSource);
     Q_ASSERT(connectionToSource->m_object);
-    const int index = i + QRemoteObjectSourcePrivate::qobjectPropertyOffset;
+    const int index = i + QRemoteObjectSource::qobjectPropertyOffset;
     Q_ASSERT(index >= 0 && index < connectionToSource->m_object->metaObject()->propertyCount());
     connectionToSource->m_object->metaObject()->property(index).write(connectionToSource->m_object, property);
 }

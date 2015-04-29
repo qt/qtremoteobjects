@@ -123,7 +123,7 @@ QRemoteObjectReplica *QRemoteObjectNodePrivate::acquire(const QMetaObject *meta,
         instance->d_ptr = rep;
         rep->configurePrivate(instance);
     } else {
-        QMap<QString, QRemoteObjectSourcePrivate*>::const_iterator mapIt;
+        QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
         if (!remoteObjectIo.isNull() && map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
             QInProcessReplicaPrivate *rp = new QInProcessReplicaPrivate(name, meta);
             instance->d_ptr.reset(rp);

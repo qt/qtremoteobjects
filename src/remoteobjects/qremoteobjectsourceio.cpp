@@ -88,13 +88,13 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
         return false;
     }
 
-    new QRemoteObjectSourcePrivate(object, api, adapter, this);
+    new QRemoteObjectSource(object, api, adapter, this);
     return true;
 }
 
 bool QRemoteObjectSourceIo::disableRemoting(QObject *object)
 {
-    QRemoteObjectSourcePrivate *pp = m_objectToSourceMap.take(object);
+    QRemoteObjectSource *pp = m_objectToSourceMap.take(object);
     if (!pp)
         return false;
 
@@ -102,7 +102,7 @@ bool QRemoteObjectSourceIo::disableRemoting(QObject *object)
     return true;
 }
 
-void QRemoteObjectSourceIo::registerSource(QRemoteObjectSourcePrivate *pp)
+void QRemoteObjectSourceIo::registerSource(QRemoteObjectSource *pp)
 {
     Q_ASSERT(pp);
     const QString name = pp->m_api->name();
@@ -112,7 +112,7 @@ void QRemoteObjectSourceIo::registerSource(QRemoteObjectSourcePrivate *pp)
     emit remoteObjectAdded(qMakePair(name, serverAddress()));
 }
 
-void QRemoteObjectSourceIo::unregisterSource(QRemoteObjectSourcePrivate *pp)
+void QRemoteObjectSourceIo::unregisterSource(QRemoteObjectSource *pp)
 {
     Q_ASSERT(pp);
     const QString name = pp->m_api->name();
@@ -128,7 +128,7 @@ void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 
     qCDebug(QT_REMOTEOBJECT) << "OnServerDisconnect";
 
-    Q_FOREACH (QRemoteObjectSourcePrivate *pp, m_remoteObjects)
+    Q_FOREACH (QRemoteObjectSource *pp, m_remoteObjects)
         pp->removeListener(connection);
 
     const QUrl location = m_registryMapping.value(connection);
@@ -158,7 +158,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             const QString name = p->name;
             qCDebug(QT_REMOTEOBJECT) << "AddObject" << name << p->isDynamic;
             if (m_remoteObjects.contains(name)) {
-                QRemoteObjectSourcePrivate *pp = m_remoteObjects[name];
+                QRemoteObjectSource *pp = m_remoteObjects[name];
                 pp->addListener(connection, p->isDynamic);
             } else {
                 qCWarning(QT_REMOTEOBJECT) << "Request to attach to non-existent RemoteObjectSource:" << name;
@@ -171,7 +171,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             const QString name = p->name;
             qCDebug(QT_REMOTEOBJECT) << "RemoveObject" << name;
             if (m_remoteObjects.contains(name)) {
-                QRemoteObjectSourcePrivate *pp = m_remoteObjects[name];
+                QRemoteObjectSource *pp = m_remoteObjects[name];
                 const int count = pp->removeListener(connection);
                 Q_UNUSED(count);
                 //TODO - possible to have a timer that closes connections if not reopened within a timeout?
@@ -190,7 +190,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                 m_registryMapping[connection] = loc.second;
             }
             if (m_remoteObjects.contains(name)) {
-                QRemoteObjectSourcePrivate *pp = m_remoteObjects[name];
+                QRemoteObjectSource *pp = m_remoteObjects[name];
                 if (p->call == QMetaObject::InvokeMetaMethod) {
                     const int resolvedIndex = pp->m_api->sourceMethodIndex(p->index);
                     if (resolvedIndex < 0) { //Invalid index
