@@ -63,7 +63,7 @@ public:
 
     bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name);
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = Q_NULLPTR);
-    bool disableRemoting(QRemoteObjectSourcePrivate *pp);
+    bool disableRemoting(QObject *object);
 
     QUrl serverAddress() const;
 
@@ -71,7 +71,6 @@ public Q_SLOTS:
     void handleConnection();
     void onServerDisconnect(QObject *obj = Q_NULLPTR);
     void onServerRead(QObject *obj);
-    void clearRemoteObjectSource(const QString &name);
 
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
@@ -80,13 +79,18 @@ Q_SIGNALS:
 
 private:
     friend class QRemoteObjectNodePrivate;
+    friend class QRemoteObjectSourcePrivate;
+
+    void registerSource(QRemoteObjectSourcePrivate *pp);
+    void unregisterSource(QRemoteObjectSourcePrivate *pp);
+
     QHash<QIODevice*, quint32> m_readSize;
     QConnectionServerFactory m_factory;
     QSet<ServerIoDevice*> m_connections;
+    QHash<QObject *, QRemoteObjectSourcePrivate*> m_objectToSourceMap;
     QMap<QString, QRemoteObjectSourcePrivate*> m_remoteObjects;
     QSignalMapper m_serverDelete;
     QSignalMapper m_serverRead;
-    QSignalMapper m_remoteObjectDestroyed;
     QHash<ServerIoDevice*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
 };

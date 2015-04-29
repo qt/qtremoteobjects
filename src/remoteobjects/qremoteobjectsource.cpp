@@ -45,6 +45,7 @@
 #include "qconnectionabstractserver_p.h"
 #include "qremoteobjectpacket_p.h"
 #include "qtremoteobjectglobal.h"
+#include "qremoteobjectsourceio_p.h"
 
 #include <QMetaProperty>
 #include <QVarLengthArray>
@@ -59,11 +60,13 @@ using namespace QRemoteObjectPackets;
 const int QRemoteObjectSourcePrivate::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
 const int QRemoteObjectSourcePrivate::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 
-QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const SourceApiMap *api, QObject *adapter)
+QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const SourceApiMap *api,
+                                                       QObject *adapter, QRemoteObjectSourceIo *sourceIo)
     : QObject(obj),
       m_object(obj),
       m_adapter(adapter),
-      m_api(api)
+      m_api(api),
+      m_sourceIo(sourceIo)
 {
     if (!obj) {
         qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: Cannot replicate a NULL object" << m_api->name();
@@ -94,10 +97,13 @@ QRemoteObjectSourcePrivate::QRemoteObjectSourcePrivate(QObject *obj, const Sourc
 
         qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << meta->method(sourceIndex).name();
     }
+
+    m_sourceIo->registerSource(this);
 }
 
 QRemoteObjectSourcePrivate::~QRemoteObjectSourcePrivate()
 {
+    m_sourceIo->unregisterSource(this);
     Q_FOREACH (ServerIoDevice *io, listeners) {
         removeListener(io, true);
     }

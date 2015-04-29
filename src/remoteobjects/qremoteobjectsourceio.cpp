@@ -63,14 +63,11 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
     connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
     connect(&m_serverDelete, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerDisconnect);
     connect(&m_serverRead, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerRead);
-    connect(&m_remoteObjectDestroyed, static_cast<void (QSignalMapper::*)(const QString &)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::clearRemoteObjectSource);
 }
 
 QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
 {
-    Q_FOREACH (QRemoteObjectSourcePrivate *pp, m_remoteObjects) {
-        disableRemoting(pp);
-    }
+    qDeleteAll(m_remoteObjects.values());
 }
 
 bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name)
@@ -91,25 +88,37 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
         return false;
     }
 
-    QRemoteObjectSourcePrivate *pp = new QRemoteObjectSourcePrivate(object, api, adapter);
-    qCDebug(QT_REMOTEOBJECT) << "Registering" << name;
-
-    m_remoteObjects[name] = pp;
-    connect(pp, SIGNAL(destroyed()), &m_remoteObjectDestroyed, SLOT(map()));
-    m_remoteObjectDestroyed.setMapping(pp, name);
-    emit remoteObjectAdded(qMakePair(name, m_server->address()));
-
+    new QRemoteObjectSourcePrivate(object, api, adapter, this);
     return true;
 }
 
-bool QRemoteObjectSourceIo::disableRemoting(QRemoteObjectSourcePrivate *pp)
+bool QRemoteObjectSourceIo::disableRemoting(QObject *object)
 {
-    const QString name = pp->m_api->name();
-    clearRemoteObjectSource(name);
-    pp->setParent(Q_NULLPTR);
-    delete pp;
+    QRemoteObjectSourcePrivate *pp = m_objectToSourceMap.take(object);
+    if (!pp)
+        return false;
 
+    delete pp;
     return true;
+}
+
+void QRemoteObjectSourceIo::registerSource(QRemoteObjectSourcePrivate *pp)
+{
+    Q_ASSERT(pp);
+    const QString name = pp->m_api->name();
+    m_objectToSourceMap[pp->m_object] = pp;
+    m_remoteObjects[name] = pp;
+    qCDebug(QT_REMOTEOBJECT) << "Registering" << name;
+    emit remoteObjectAdded(qMakePair(name, serverAddress()));
+}
+
+void QRemoteObjectSourceIo::unregisterSource(QRemoteObjectSourcePrivate *pp)
+{
+    Q_ASSERT(pp);
+    const QString name = pp->m_api->name();
+    m_objectToSourceMap.remove(pp->m_object);
+    m_remoteObjects.remove(name);
+    emit remoteObjectRemoved(qMakePair(name, serverAddress()));
 }
 
 void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
@@ -239,12 +248,6 @@ void QRemoteObjectSourceIo::handleConnection()
     QRemoteObjectPackets::QObjectListPacket p(QStringList(m_remoteObjects.keys()));
     conn->write(p.serialize());
     qCDebug(QT_REMOTEOBJECT) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
-}
-
-void QRemoteObjectSourceIo::clearRemoteObjectSource(const QString &name)
-{
-    m_remoteObjects.remove(name);
-    emit remoteObjectRemoved(qMakePair(name, serverAddress()));
 }
 
 QUrl QRemoteObjectSourceIo::serverAddress() const

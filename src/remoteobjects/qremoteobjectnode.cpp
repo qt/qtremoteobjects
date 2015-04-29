@@ -847,11 +847,7 @@ bool QRemoteObjectNode::disableRemoting(QObject *remoteObject)
         return false;
     }
 
-    QRemoteObjectSourcePrivate *pp = remoteObject->findChild<QRemoteObjectSourcePrivate *>(QString(), Qt::FindDirectChildrenOnly);
-    if (!pp) //We must be calling unregister before register was called.
-        return false;
-
-    if (!d_ptr->remoteObjectIo->disableRemoting(pp)) {
+    if (!d_ptr->remoteObjectIo->disableRemoting(remoteObject)) {
         d_ptr->m_lastError = SourceNotRegistered;
         return false;
     }

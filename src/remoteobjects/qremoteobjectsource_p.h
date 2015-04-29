@@ -50,12 +50,14 @@
 
 QT_BEGIN_NAMESPACE
 
+class QRemoteObjectSourceIo;
 class ServerIoDevice;
 
 class QRemoteObjectSourcePrivate : public QObject
 {
 public:
-    explicit QRemoteObjectSourcePrivate(QObject *object, const SourceApiMap *, QObject *adapter);
+    explicit QRemoteObjectSourcePrivate(QObject *object, const SourceApiMap *,
+                                        QObject *adapter, QRemoteObjectSourceIo *sourceIo);
 
     ~QRemoteObjectSourcePrivate();
 
@@ -63,6 +65,7 @@ public:
     QList<ServerIoDevice*> listeners;
     QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;
+    QRemoteObjectSourceIo *m_sourceIo;
     bool hasAdapter() const { return m_adapter; }
 
     QVariantList marshalArgs(int index, void **a);
