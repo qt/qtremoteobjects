@@ -97,7 +97,7 @@ struct DataEntries
     QVector<IndexValuePair> data;
 };
 
-inline QDebug& operator<<(QDebug &stream, const ModelIndex &index)
+inline QDebug operator<<(QDebug stream, const ModelIndex &index)
 {
     return stream.nospace() << "ModelIndex[row=" << index.row << ", column=" << index.column << "]";
 }
@@ -138,7 +138,7 @@ inline QDataStream& operator>>(QDataStream &stream, QItemSelectionModel::Selecti
     return ret;
 }
 
-inline QDebug& operator<<(QDebug &stream, const DataEntries &entries)
+inline QDebug operator<<(QDebug stream, const DataEntries &entries)
 {
     return stream.nospace() << "DataEntries[" << entries.data << "]";
 }
@@ -153,7 +153,7 @@ inline QDataStream& operator>>(QDataStream &stream, DataEntries &entries)
     return stream >> entries.data;
 }
 
-inline QDebug& operator<<(QDebug &stream, const IndexValuePair &pair)
+inline QDebug operator<<(QDebug stream, const IndexValuePair &pair)
 {
     return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << ", hasChildren=" << pair.hasChildren << ", flags=" << pair.flags << "]";
 }

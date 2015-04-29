@@ -45,6 +45,8 @@
 #include "qremoteobjectabstractitemmodeltypes.h"
 #include "qremoteobjectsource.h"
 
+#include <QSize>
+
 class QAbstractItemModel;
 class QItemSelectionModel;
 
