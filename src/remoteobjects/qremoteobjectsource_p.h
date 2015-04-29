@@ -80,42 +80,42 @@ public:
 class DynamicApiMap : public SourceApiMap
 {
 public:
-    DynamicApiMap(const QMetaObject *meta, const QString &name);
+    DynamicApiMap(const QMetaObject *metaObject, const QString &name);
     ~DynamicApiMap() {}
-    QString name() const Q_DECL_OVERRIDE { return _name; }
-    int propertyCount() const Q_DECL_OVERRIDE { return _properties.size(); }
-    int signalCount() const Q_DECL_OVERRIDE { return _signals.size(); }
-    int methodCount() const Q_DECL_OVERRIDE { return _methods.size(); }
+    QString name() const Q_DECL_OVERRIDE { return m_name; }
+    int propertyCount() const Q_DECL_OVERRIDE { return m_properties.size(); }
+    int signalCount() const Q_DECL_OVERRIDE { return m_signals.size(); }
+    int methodCount() const Q_DECL_OVERRIDE { return m_methods.size(); }
     int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE
     {
         if (index < 0 || index >= propertyCount())
             return -1;
-        return _properties.at(index);
+        return m_properties.at(index);
     }
     int sourceSignalIndex(int index) const Q_DECL_OVERRIDE
     {
         if (index < 0 || index >= signalCount())
             return -1;
-        return _signals.at(index);
+        return m_signals.at(index);
     }
     int sourceMethodIndex(int index) const Q_DECL_OVERRIDE
     {
         if (index < 0 || index >= methodCount())
             return -1;
-        return _methods.at(index);
+        return m_methods.at(index);
     }
-    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(_signals.at(index)); }
-    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(_signals.at(sigIndex), paramIndex); }
-    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE { return signature(_signals.at(index)); }
-    int methodParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(_methods.at(index)); }
-    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(_methods.at(methodIndex), paramIndex); }
-    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE { return signature(_methods.at(index)); }
+    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(m_signals.at(index)); }
+    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(m_signals.at(sigIndex), paramIndex); }
+    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE { return signature(m_signals.at(index)); }
+    int methodParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(m_methods.at(index)); }
+    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(m_methods.at(methodIndex), paramIndex); }
+    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE { return signature(m_methods.at(index)); }
     QMetaMethod::MethodType methodType(int index) const Q_DECL_OVERRIDE;
     const QByteArray typeName(int index) const Q_DECL_OVERRIDE;
     int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE
     {
-        if (index >= 0 && index < _propertyAssociatedWithSignal.size())
-            return _propertyAssociatedWithSignal.at(index);
+        if (index >= 0 && index < m_propertyAssociatedWithSignal.size())
+            return m_propertyAssociatedWithSignal.at(index);
         return -1;
     }
     bool isDynamic() const Q_DECL_OVERRIDE { return true; }
@@ -125,20 +125,20 @@ private:
     const QByteArray signature(int objectIndex) const;
     inline void checkCache(int objectIndex) const
     {
-        if (objectIndex != _cachedMetamethodIndex) {
-            _cachedMetamethodIndex = objectIndex;
-            _cachedMetamethod = _meta->method(objectIndex);
+        if (objectIndex != m_cachedMetamethodIndex) {
+            m_cachedMetamethodIndex = objectIndex;
+            m_cachedMetamethod = m_metaObject->method(objectIndex);
         }
     }
 
-    QString _name;
-    QVector<int> _properties;
-    QVector<int> _signals;
-    QVector<int> _methods;
-    QVector<int> _propertyAssociatedWithSignal;
-    const QMetaObject *_meta;
-    mutable QMetaMethod _cachedMetamethod;
-    mutable int _cachedMetamethodIndex;
+    QString m_name;
+    QVector<int> m_properties;
+    QVector<int> m_signals;
+    QVector<int> m_methods;
+    QVector<int> m_propertyAssociatedWithSignal;
+    const QMetaObject *m_metaObject;
+    mutable QMetaMethod m_cachedMetamethod;
+    mutable int m_cachedMetamethodIndex;
 };
 
 QT_END_NAMESPACE

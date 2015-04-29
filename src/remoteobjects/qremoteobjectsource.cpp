@@ -236,70 +236,70 @@ int QRemoteObjectSource::qt_metacall(QMetaObject::Call call, int methodId, void 
     return -1;
 }
 
-DynamicApiMap::DynamicApiMap(const QMetaObject *meta, const QString &name)
-    : _name(name),
-      _meta(meta),
-      _cachedMetamethodIndex(-1)
+DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name)
+    : m_name(name),
+      m_metaObject(metaObject),
+      m_cachedMetamethodIndex(-1)
 {
-    const int propCount = meta->propertyCount();
-    const int propOffset = meta->propertyOffset();
-    _properties.reserve(propCount-propOffset);
+    const int propCount = metaObject->propertyCount();
+    const int propOffset = metaObject->propertyOffset();
+    m_properties.reserve(propCount-propOffset);
     int i = 0;
     for (i = propOffset; i < propCount; ++i) {
-        _properties << i;
-        const int notifyIndex = meta->property(i).notifySignalIndex();
+        m_properties << i;
+        const int notifyIndex = metaObject->property(i).notifySignalIndex();
         if (notifyIndex != -1) {
-            _signals << notifyIndex;
-            _propertyAssociatedWithSignal.append(i);
+            m_signals << notifyIndex;
+            m_propertyAssociatedWithSignal.append(i);
             //The starting values of _signals will be the notify signals
             //So if we are processing _signal with index i, api->sourcePropertyIndex(_propertyAssociatedWithSignal.at(i))
             //will be the property that changed.  This is only valid if i < _propertyAssociatedWithSignal.size().
         }
     }
-    const int methodCount = meta->methodCount();
-    const int methodOffset = meta->methodOffset();
+    const int methodCount = metaObject->methodCount();
+    const int methodOffset = metaObject->methodOffset();
     for (i = methodOffset; i < methodCount; ++i) {
-        const QMetaMethod mm = meta->method(i);
+        const QMetaMethod mm = metaObject->method(i);
         const QMetaMethod::MethodType m = mm.methodType();
         if (m == QMetaMethod::Signal) {
-            if (_signals.indexOf(i) >= 0) //Already added as a property notifier
+            if (m_signals.indexOf(i) >= 0) //Already added as a property notifier
                 continue;
-            _signals << i;
+            m_signals << i;
         } else if (m == QMetaMethod::Slot || m == QMetaMethod::Method)
-            _methods << i;
+            m_methods << i;
     }
 }
 
 int DynamicApiMap::parameterCount(int objectIndex) const
 {
     checkCache(objectIndex);
-    return _cachedMetamethod.parameterCount();
+    return m_cachedMetamethod.parameterCount();
 }
 
 int DynamicApiMap::parameterType(int objectIndex, int paramIndex) const
 {
     checkCache(objectIndex);
-    return _cachedMetamethod.parameterType(paramIndex);
+    return m_cachedMetamethod.parameterType(paramIndex);
 }
 
 const QByteArray DynamicApiMap::signature(int objectIndex) const
 {
     checkCache(objectIndex);
-    return _cachedMetamethod.methodSignature();
+    return m_cachedMetamethod.methodSignature();
 }
 
 QMetaMethod::MethodType DynamicApiMap::methodType(int index) const
 {
-    const int objectIndex = _methods.at(index);
+    const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);
-    return _cachedMetamethod.methodType();
+    return m_cachedMetamethod.methodType();
 }
 
 const QByteArray DynamicApiMap::typeName(int index) const
 {
-    const int objectIndex = _methods.at(index);
+    const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);
-    return _cachedMetamethod.typeName();
+    return m_cachedMetamethod.typeName();
 }
 
 QT_END_NAMESPACE
