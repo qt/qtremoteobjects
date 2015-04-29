@@ -181,7 +181,11 @@ void QAbstractItemReplicaPrivate::onRowsInserted(const IndexList &parent, int st
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "parent=" << parent;
 
-    const QModelIndex parentIndex = toQModelIndex(parent, q);
+    bool treeFullyLazyLoaded = true;
+    const QModelIndex parentIndex = toQModelIndex(parent, q, &treeFullyLazyLoaded);
+    if (!treeFullyLazyLoaded)
+        return;
+
     CacheData *parentItem = cacheData(parentIndex);
     q->beginInsertRows(parentIndex, start, end);
     parentItem->insertChildren(start, end);
@@ -202,17 +206,13 @@ void QAbstractItemReplicaPrivate::onRowsRemoved(const IndexList &parent, int sta
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "parent=" << parent;
 
-    const QModelIndex parentIndex = toQModelIndex(parent, q);
+    bool treeFullyLazyLoaded = true;
+    const QModelIndex parentIndex = toQModelIndex(parent, q, &treeFullyLazyLoaded);
+    if (!treeFullyLazyLoaded)
+        return;
+
     CacheData *parentItem = cacheData(parentIndex);
     q->beginRemoveRows(parentIndex, start, end);
-
-    // We need to also remove the items from the cache what needs to happen before
-    // the items are actually removed.
-    const IndexList startList = IndexList() << parent << ModelIndex(start, 0);
-    const IndexList endList = IndexList() << parent << ModelIndex(end, q->columnCount(parentIndex) - 1);
-    QVector<int> roles;
-    clearCache(startList, endList, roles);
-
     parentItem->removeChildren(start, end);
     q->endRemoveRows();
 }

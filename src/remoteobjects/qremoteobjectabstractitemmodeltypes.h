@@ -185,13 +185,21 @@ inline QString modelIndexToString(const ModelIndex &index)
     return s;
 }
 
-inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model)
+inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model, bool *ok = 0)
 {
     QModelIndex result;
     for (int i = 0; i < list.count(); ++i) {
         const ModelIndex &index = list[i];
         result = model->index(index.row, index.column, result);
-        Q_ASSERT_X(result.isValid(), __FUNCTION__, qPrintable(QString(QLatin1String("Invalid index=%1 in indexList=%2")).arg(modelIndexToString(list[i])).arg(modelIndexToString(list))));
+        if (!result.isValid()) {
+            if (ok) {
+                *ok = false;
+            } else {
+                qFatal("Internal error: invalid index=%s in indexList=%s",
+                       modelIndexToString(list[i]), modelIndexToString(list));
+            }
+            return QModelIndex();
+        }
     }
     return result;
 }
