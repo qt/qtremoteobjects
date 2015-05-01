@@ -392,14 +392,13 @@ void TestModelView::testHeaderData()
         QCOMPARE(model->headerData(i, Qt::Horizontal, Qt::DisplayRole), m_sourceModel.headerData(i, Qt::Horizontal, Qt::DisplayRole));
 }
 
-#if 0
 void TestModelView::testFlags()
 {
     for (int i = 10; i < 20; ++i) {
         QStandardItem* firstItem = m_sourceModel.item(i, 0);
         QStandardItem* secondItem = m_sourceModel.item(i, 1);
         firstItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-        secondItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+        secondItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEditable);
     }
 
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
@@ -409,21 +408,14 @@ void TestModelView::testFlags()
     f.fetchAndWait();
 
     compareFlags(&m_sourceModel, model.data());
-}
-#else
-void TestModelView::testFlags()
-{
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
-    QSignalSpy spy(model.data(), SIGNAL(initialized()));
-    spy.wait();
+
     QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
     for (int i = 10; i < 20; ++i) {
-        QStandardItem* item = m_sourceModel.item(i, 0);
-        item->setFlags(item->flags() & Qt::ItemIsEnabled);
-        QStandardItem* item2 = m_sourceModel.item(i, 1);
-        item2->setFlags(item2->flags() & Qt::ItemIsSelectable);
+        QStandardItem* firstItem = m_sourceModel.item(i, 0);
+        QStandardItem* secondItem = m_sourceModel.item(i, 1);
+        firstItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled | Qt::ItemIsTristate);
+        secondItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled);
     }
-
     bool signalsReceived = false;
     while (dataChangedSpy.wait()) {
         signalsReceived = true;
@@ -433,7 +425,6 @@ void TestModelView::testFlags()
     QVERIFY(signalsReceived);
     compareFlags(&m_sourceModel, model.data());
 }
-#endif
 
 void TestModelView::testDataChanged()
 {

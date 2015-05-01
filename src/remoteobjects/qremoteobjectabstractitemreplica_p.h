@@ -53,7 +53,17 @@ const int LookAhead = 100;
 const int HalfLookAhead = LookAhead/2;
 }
 
-typedef QVector<QPair<int,QVariant> > CacheEntry;
+struct CacheEntry
+{
+    typedef QVector<QPair<int,QVariant> > DataMap;
+    DataMap data;
+    Qt::ItemFlags flags;
+
+    explicit CacheEntry()
+        : flags(Qt::NoItemFlags)
+    {}
+};
+
 typedef QVector<CacheEntry> CachedRowEntry;
 
 struct CacheData
@@ -62,14 +72,12 @@ struct CacheData
     CachedRowEntry cachedRowEntry;
 
     bool hasChildren;
-    Qt::ItemFlags flags;
     QList<CacheData*> children;
     int columnCount;
 
     explicit CacheData(CacheData *parentItem = 0)
         : parent(parentItem)
         , hasChildren(false)
-        , flags(Qt::NoItemFlags)
         , columnCount(1)
     {}
     ~CacheData() { qDeleteAll(children); }
@@ -240,6 +248,17 @@ public:
     inline CacheData* cacheData(const IndexList &index) const {
         return cacheData(toQModelIndex(index, q));
     }
+    inline CacheEntry* cacheEntry(const QModelIndex &index) const {
+        CacheData *data = cacheData(index);
+        if (index.column() < 0 || index.column() >= data->cachedRowEntry.size())
+            return 0;
+        CacheEntry &entry = data->cachedRowEntry[index.column()];
+        return &entry;
+    }
+    inline CacheEntry* cacheEntry(const IndexList &index) const {
+        return cacheEntry(toQModelIndex(index, q));
+    }
+
     SizeWatcher* doModelReset();
 
     int m_lastRequested;

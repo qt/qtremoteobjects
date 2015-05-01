@@ -106,17 +106,17 @@ inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &rol
 {
     CachedRowEntry &entryRef = *entry;
     if (index.column() < entryRef.size()) {
-        CacheEntry &data = entryRef[index.column()];
+        CacheEntry &entry = entryRef[index.column()];
         if (roles.isEmpty()) {
-            data.clear();
+            entry.data.clear();
         } else {
             Q_FOREACH (int role, roles) {
                 int index = -1;
-                for (int j = 0; j < data.size(); ++j)
-                    if (data[j].first == role)
+                for (int j = 0; j < entry.data.size(); ++j)
+                    if (entry.data[j].first == role)
                         index = j;
                 if (index != -1)
-                    data.remove(index);
+                    entry.data.remove(index);
             }
         }
     }
@@ -331,20 +331,25 @@ struct CacheRoleComparator
     const int m_role;
 };
 
-inline void fillCacheEntry(CacheEntry *entry, const QVariantList &data, const QVector<int> &roles)
+inline void fillCacheEntry(CacheEntry *entry, const IndexValuePair &pair, const QVector<int> &roles)
 {
     Q_ASSERT(entry);
+
+    const QVariantList &data = pair.data;
     Q_ASSERT(roles.size() == data.size());
+
+    entry->flags = pair.flags;
+
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "data.size=" << data.size();
     for (int i = 0; i < data.size(); ++i) {
         const int role = roles[i];
         const QVariant dataVal = data[i];
         qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "role=" << role << "data=" << dataVal;
-        CacheEntry::iterator res = std::find_if(entry->begin(), entry->end(), CacheRoleComparator(role));
-        if (res != entry->end()) {
+        CacheEntry::DataMap::iterator res = std::find_if(entry->data.begin(), entry->data.end(), CacheRoleComparator(role));
+        if (res != entry->data.end()) {
             res->second = dataVal;
         } else {
-            entry->append(qMakePair(role, dataVal));
+            entry->data.append(qMakePair(role, dataVal));
         }
     }
 }
@@ -356,18 +361,17 @@ inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstract
     Q_ASSERT(index.isValid());
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "row=" << index.row() << "column=" << index.column();
     item->hasChildren = pair.hasChildren;
-    item->flags = pair.flags;
     bool existed = false;
     for (int i = 0; i < rowRef.size(); ++i) {
         if (i == index.column()) {
-            fillCacheEntry(&rowRef[i], pair.data, roles);
+            fillCacheEntry(&rowRef[i], pair, roles);
             existed = true;
         }
     }
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "existed=" << existed;
     if (!existed) {
         CacheEntry entries;
-        fillCacheEntry(&entries, pair.data, roles);
+        fillCacheEntry(&entries, pair, roles);
         rowRef.append(entries);
     }
 }
@@ -518,8 +522,9 @@ void QAbstractItemReplicaPrivate::onHeaderDataChanged(Qt::Orientation orientatio
 {
     // TODO clean cache
     const int index = orientation == Qt::Horizontal ? 0 : 1;
+    QVector<CacheEntry> &entries = m_headerData[index];
     for (int i = first; i < last; ++i )
-        m_headerData[index][i].clear();
+        entries[i].data.clear();
     emit q->headerDataChanged(orientation, first, last);
 }
 
@@ -581,7 +586,7 @@ void QAbstractItemReplicaPrivate::requestedHeaderData(QRemoteObjectPendingCallWa
         else
             verticalSections.append(watcher->sections[i]);
         const int index = watcher->orientations[i] == Qt::Horizontal ? 0 : 1;
-        QVector<Data> &dat = m_headerData[index][watcher->sections[i]];
+        QVector<Data> &dat = m_headerData[index][watcher->sections[i]].data;
         bool found = false;
         for (int j = 0; j < dat.size(); ++j) {
             if (dat[j].first == watcher->roles[i]) {
@@ -625,8 +630,8 @@ QVariant findData(const CachedRowEntry &row, const QModelIndex &index, int role,
         return QVariant();
     }
     const CacheEntry &entry = row[index.column()];
-    CacheEntry::const_iterator res = std::find_if(entry.constBegin(), entry.constEnd(), CacheRoleComparator(role));
-    if (res != entry.constEnd()) {
+    CacheEntry::DataMap::const_iterator res = std::find_if(entry.data.constBegin(), entry.data.constEnd(), CacheRoleComparator(role));
+    if (res != entry.data.constEnd()) {
         return res->second;
     } else {
         if (cached)
@@ -759,7 +764,7 @@ QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientati
     if (section >= elem.size())
         return QVariant();
 
-    const QVector<Entry> entries = elem.at(section);
+    const QVector<Entry> entries = elem.at(section).data;
     Q_FOREACH (const Entry &entry, entries)
         if (entry.first == role)
             return entry.second;
@@ -775,8 +780,8 @@ QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientati
 
 Qt::ItemFlags QAbstractItemReplica::flags(const QModelIndex &index) const
 {
-    CacheData *item = d->cacheData(index);
-    return item->flags;
+    CacheEntry *entry = d->cacheEntry(index);
+    return entry ? entry->flags : Qt::NoItemFlags;
 }
 
 bool QAbstractItemReplica::isInitialized() const
