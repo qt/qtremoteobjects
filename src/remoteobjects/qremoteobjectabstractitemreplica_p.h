@@ -55,8 +55,7 @@ const int HalfLookAhead = LookAhead/2;
 
 struct CacheEntry
 {
-    typedef QVector<QPair<int,QVariant> > DataMap;
-    DataMap data;
+    QMap<int, QVariant> data;
     Qt::ItemFlags flags;
 
     explicit CacheEntry()

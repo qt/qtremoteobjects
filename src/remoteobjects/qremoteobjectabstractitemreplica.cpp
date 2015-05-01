@@ -111,12 +111,7 @@ inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &rol
             entry.data.clear();
         } else {
             Q_FOREACH (int role, roles) {
-                int index = -1;
-                for (int j = 0; j < entry.data.size(); ++j)
-                    if (entry.data[j].first == role)
-                        index = j;
-                if (index != -1)
-                    entry.data.remove(index);
+                entry.data.remove(role);
             }
         }
     }
@@ -320,17 +315,6 @@ SizeWatcher* QAbstractItemReplicaPrivate::doModelReset()
     return watcher;
 }
 
-struct CacheRoleComparator
-{
-    CacheRoleComparator(int role) : m_role(role) {}
-    bool operator()(const QPair<int, QVariant> &data)
-    {
-        return m_role == data.first;
-    }
-
-    const int m_role;
-};
-
 inline void fillCacheEntry(CacheEntry *entry, const IndexValuePair &pair, const QVector<int> &roles)
 {
     Q_ASSERT(entry);
@@ -345,12 +329,7 @@ inline void fillCacheEntry(CacheEntry *entry, const IndexValuePair &pair, const 
         const int role = roles[i];
         const QVariant dataVal = data[i];
         qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "role=" << role << "data=" << dataVal;
-        CacheEntry::DataMap::iterator res = std::find_if(entry->data.begin(), entry->data.end(), CacheRoleComparator(role));
-        if (res != entry->data.end()) {
-            res->second = dataVal;
-        } else {
-            entry->data.append(qMakePair(role, dataVal));
-        }
+        entry->data[role] = dataVal;
     }
 }
 
@@ -572,7 +551,7 @@ void QAbstractItemReplicaPrivate::requestedHeaderData(QRemoteObjectPendingCallWa
 {
     HeaderWatcher *watcher = static_cast<HeaderWatcher *>(qobject);
     Q_ASSERT(watcher);
-    typedef QPair<int, QVariant> Data;
+
     QVariantList data = watcher->returnValue().value<QVariantList>();
     Q_ASSERT(watcher->orientations.size() == data.size());
     Q_ASSERT(watcher->sections.size() == data.size());
@@ -586,17 +565,9 @@ void QAbstractItemReplicaPrivate::requestedHeaderData(QRemoteObjectPendingCallWa
         else
             verticalSections.append(watcher->sections[i]);
         const int index = watcher->orientations[i] == Qt::Horizontal ? 0 : 1;
-        QVector<Data> &dat = m_headerData[index][watcher->sections[i]].data;
-        bool found = false;
-        for (int j = 0; j < dat.size(); ++j) {
-            if (dat[j].first == watcher->roles[i]) {
-                found = true;
-                dat[j].second = data[i];
-            }
-        }
-        if (!found)
-            dat.append(qMakePair(watcher->roles[i], data[i]));
-
+        const int role = watcher->roles[i];
+        QMap<int, QVariant> &dat = m_headerData[index][watcher->sections[i]].data;
+        dat[role] = data[i];
     }
     QVector<QPair<int, int> > horRanges = listRanges(horizontalSections);
     QVector<QPair<int, int> > verRanges = listRanges(verticalSections);
@@ -622,21 +593,14 @@ QAbstractItemReplica::~QAbstractItemReplica()
 
 QVariant findData(const CachedRowEntry &row, const QModelIndex &index, int role, bool *cached = 0)
 {
-    if (cached)
-        *cached = true;
-    if (index.column() >= row.size()) {
-        if (cached)
-            *cached = false;
-        return QVariant();
-    }
-    const CacheEntry &entry = row[index.column()];
-    CacheEntry::DataMap::const_iterator res = std::find_if(entry.data.constBegin(), entry.data.constEnd(), CacheRoleComparator(role));
-    if (res != entry.data.constEnd()) {
-        return res->second;
-    } else {
-        if (cached)
-            *cached = false;
-        return QVariant();
+    if (index.column() < row.size()) {
+        const CacheEntry &entry = row[index.column()];
+        QMap<int, QVariant>::ConstIterator it = entry.data.constFind(role);
+        if (it != entry.data.constEnd()) {
+            if (cached)
+                *cached = true;
+            return it.value();
+        }
     }
     if (cached)
         *cached = false;
@@ -764,10 +728,10 @@ QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientati
     if (section >= elem.size())
         return QVariant();
 
-    const QVector<Entry> entries = elem.at(section).data;
-    Q_FOREACH (const Entry &entry, entries)
-        if (entry.first == role)
-            return entry.second;
+    const QMap<int, QVariant> &dat = elem.at(section).data;
+    QMap<int, QVariant>::ConstIterator it = dat.constFind(role);
+    if (it != dat.constEnd())
+        return it.value();
 
     RequestedHeaderData data;
     data.role = role;
