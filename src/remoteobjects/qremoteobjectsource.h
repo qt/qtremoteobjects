@@ -69,6 +69,7 @@ static inline int qtro_prop_index(Func1, Func2, const char *propName)
 template <class ObjectType, typename Func1, typename Func2>
 static inline int qtro_signal_index(Func1 func, Func2, int *count, const int *types)
 {
+    Q_UNUSED(types);
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
     reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
@@ -105,6 +106,7 @@ static inline void qtro_method_test(Func1, Func2)
 template <class ObjectType, typename Func1, typename Func2>
 static inline int qtro_method_index(Func1, Func2, const char *methodName, int *count, const int *types)
 {
+    Q_UNUSED(types);
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
     reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
