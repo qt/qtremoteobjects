@@ -339,7 +339,8 @@ inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstract
     const QModelIndex index = toQModelIndex(pair.index, model);
     Q_ASSERT(index.isValid());
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "row=" << index.row() << "column=" << index.column();
-    item->hasChildren = pair.hasChildren;
+    if (index.column() == 0)
+        item->hasChildren = pair.hasChildren;
     bool existed = false;
     for (int i = 0; i < rowRef.size(); ++i) {
         if (i == index.column()) {
