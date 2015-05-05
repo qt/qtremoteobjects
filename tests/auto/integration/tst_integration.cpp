@@ -82,6 +82,8 @@ private slots:
 
         m_client = QRemoteObjectNode();
         m_registryClient = QRemoteObjectNode::createNodeConnectedToRegistry();
+        const bool res = m_registryClient.waitForRegistry(3000);
+        QVERIFY(res);
         //m_client.setObjectName("DirectTestClient");
         //m_registryClient.setObjectName("RegistryTestClient");
 
@@ -147,6 +149,8 @@ private slots:
 
     void noRegistryTest() {
         QRemoteObjectNode regReplica = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
+        const bool res = regReplica.waitForRegistry(3000);
+        QVERIFY(!res);
         QCOMPARE(regReplica.registry()->isInitialized(), false);
         QScopedPointer<Engine> localEngine(new Engine);
         regReplica.enableRemoting(localEngine.data());
@@ -155,6 +159,8 @@ private slots:
 
     void delayedRegistryTest() {
         QRemoteObjectNode regReplica = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
+        const bool res = regReplica.waitForRegistry(3000);
+        QVERIFY(!res);
         QCOMPARE(regReplica.registry()->isInitialized(), false);
         QScopedPointer<Engine> localEngine(new Engine);
         regReplica.enableRemoting(localEngine.data());

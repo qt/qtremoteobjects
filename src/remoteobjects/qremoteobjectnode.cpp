@@ -625,11 +625,7 @@ bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
     //Connect remoteObject[Added/Removed] to the registry Slot
     QObject::connect(d_ptr.data(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), d_ptr->registry.data(), SLOT(addSource(QRemoteObjectSourceLocation)));
     QObject::connect(d_ptr.data(), SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), d_ptr->registry.data(), SLOT(removeSource(QRemoteObjectSourceLocation)));
-    //TODO - what should happen if you register a RemoteObjectSource on the Registry node, but the RegistrySource isn't connected?
-    //Possible to have a way to cache the values, so they can be sent when a connection is made
-    //Or, return false on enableRemoting, with an error about not having the registry?
-    //Or possible to get the list of RemoteObjectSources from remoteObjectIo, and send when the connection is made (use that as the cache)
-    return d_ptr->registry->waitForSource();
+    return true;
 }
 
 void QRemoteObjectNodePrivate::setRegistry(QRemoteObjectRegistry *reg)
@@ -669,6 +665,16 @@ bool QRemoteObjectNode::hostRegistry()
     //onAdd/Remove update the known remoteObjects list in the RegistrySource, so no need to connect to the RegistrySource remoteObjectAdded/Removed signals
     d_ptr->setRegistry(acquire<QRemoteObjectRegistry>());
     return true;
+}
+
+/*!
+    Blocks until this Node's \l Registry is initialized or \a timeout (in
+    milliseconds) expires. Returns \c true if the \l Registry is successfully
+    initialized upon return, or \c false otherwise.
+*/
+bool QRemoteObjectNode::waitForRegistry(int timeout)
+{
+    return d_ptr->registry->waitForSource(timeout);
 }
 
 /*!
