@@ -196,7 +196,7 @@ inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel
                 *ok = false;
             } else {
                 qFatal("Internal error: invalid index=%s in indexList=%s",
-                       modelIndexToString(list[i]), modelIndexToString(list));
+                       qPrintable(modelIndexToString(list[i])), qPrintable(modelIndexToString(list)));
             }
             return QModelIndex();
         }
