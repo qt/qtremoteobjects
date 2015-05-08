@@ -165,6 +165,13 @@ void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entr
     send(QMetaObject::InvokeMetaMethod, index, args);
 }
 
+/*!
+    \internal
+    This internal function supports the edge case where the \l Registry
+    is connected after \l Source objects are added to this \l Node, or
+    the connection to the \l Registry is lost. When connected/reconnected, this
+    function synchronizes local \l Source objects with the \l Registry.
+*/
 void QRemoteObjectRegistry::pushToRegistryIfNeeded()
 {
     if (!isReplicaValid())

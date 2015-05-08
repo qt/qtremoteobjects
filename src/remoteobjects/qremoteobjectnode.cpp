@@ -784,6 +784,26 @@ bool QRemoteObjectNode::enableRemoting(QObject *object)
     return d_ptr->remoteObjectIo->enableRemoting(object, meta, name);
 }
 
+/*!
+    This overload of enableRemoting() is specific to \l QAbstractItemModel types
+    (or any type derived from \l QAbstractItemModel). This is useful if you want
+    to have a model and the HMI for the model in different processes.
+
+    The three required parameters are the \a model itself, the \a name by which
+    to lookup the model, and the \a roles that should be exposed on the Replica
+    side. If you want to synchronize selection between \l Source and \l
+    Replica, the optional \a selectionModel parameter can be used. This is only
+    recommended when using a single Replica.
+
+    Behind the scenes, Qt Remote Objects batches data() lookups and prefetches
+    data when possible to make the model interaction as responsive as possible.
+
+    Returns \c false if the current node is a client node, or if the QObject is already
+    registered to be remoted, and \c true if remoting is successfully enabled
+    for the QAbstractItemModel.
+
+    \sa disableRemoting()
+ */
 bool QRemoteObjectNode::enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel)
 {
     //This looks complicated, but hopefully there is a way to have an adapter be a template
@@ -870,6 +890,12 @@ QRemoteObjectReplica *QRemoteObjectNode::acquire(const QMetaObject *replicaMeta,
     return d_ptr->acquire(replicaMeta, instance, name.isEmpty() ? ::name(replicaMeta) : name);
 }
 
+/*!
+ Returns a pointer to a Replica which is specifically derived from \l
+ QAbstractItemModel. The \a name provided must match the name used with the
+ matching \l enableRemoting that put the Model on the network. The returned \c
+ model will be empty until it is initialized with the \l Source.
+ */
 QAbstractItemReplica *QRemoteObjectNode::acquireModel(const QString &name)
 {
     QAbstractItemReplicaPrivate *rep = acquire<QAbstractItemReplicaPrivate>(name);
