@@ -39,6 +39,8 @@
 **
 ****************************************************************************/
 
+#include "modeltest.h"
+
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QRemoteObjectReplica>
@@ -578,6 +580,8 @@ private slots:
 
     void testRoleNames();
 
+    void testModelTest();
+
     void cleanup();
 };
 
@@ -956,6 +960,17 @@ void TestModelView::testDataRemovalTree()
 {
     m_sourceModel.removeRows(2, 4);
     //Maybe some checks here?
+}
+
+void TestModelView::testModelTest()
+{
+    QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
+    ModelTest test(repModel.data());
+
+    FetchData f(repModel.data());
+    f.addAll();
+    f.fetchAndWait();
+    Q_UNUSED(test);
 }
 
 void TestModelView::cleanup()
