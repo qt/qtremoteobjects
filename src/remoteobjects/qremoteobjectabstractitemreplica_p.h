@@ -176,7 +176,7 @@ public:
     }
 
     void setModel(QAbstractItemReplica *model);
-    void clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles);
+    bool clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles);
 
 Q_SIGNALS:
     void availableRolesChanged();

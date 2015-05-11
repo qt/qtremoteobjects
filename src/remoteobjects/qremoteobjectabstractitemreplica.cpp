@@ -138,12 +138,17 @@ void QAbstractItemReplicaPrivate::setModel(QAbstractItemReplica *model)
     connect(m_selectionModel.data(), &QItemSelectionModel::currentChanged, this, OnConnectHandler(this));
 }
 
-void QAbstractItemReplicaPrivate::clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles = QVector<int>())
+bool QAbstractItemReplicaPrivate::clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles = QVector<int>())
 {
     Q_ASSERT(start.size() == end.size());
 
-    const QModelIndex startIndex = toQModelIndex(start, q);
-    const QModelIndex endIndex = toQModelIndex(end, q);
+    bool ok = true;
+    const QModelIndex startIndex = toQModelIndex(start, q, &ok);
+    if (!ok)
+        return false;
+    const QModelIndex endIndex = toQModelIndex(end, q, &ok);
+    if (!ok)
+        return false;
     Q_ASSERT(startIndex.isValid());
     Q_ASSERT(endIndex.isValid());
     Q_ASSERT(startIndex.parent() == endIndex.parent());
@@ -161,6 +166,7 @@ void QAbstractItemReplicaPrivate::clearCache(const IndexList &start, const Index
             removeIndexFromRow(q->index(row, column, parentIndex), roles, entry);
         }
     }
+    return true;
 }
 
 void QAbstractItemReplicaPrivate::onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles)
@@ -172,9 +178,10 @@ void QAbstractItemReplicaPrivate::onDataChanged(const IndexList &start, const In
     data.start = start;
     data.end = end;
     data.roles = roles;
-    clearCache(start, end, roles);
-    m_requestedData.append(data);
-    QMetaObject::invokeMethod(this, "fetchPendingData", Qt::QueuedConnection);
+    if (clearCache(start, end, roles)) {
+        m_requestedData.append(data);
+        QMetaObject::invokeMethod(this, "fetchPendingData", Qt::QueuedConnection);
+    }
 }
 
 void QAbstractItemReplicaPrivate::onRowsInserted(const IndexList &parent, int start, int end)
