@@ -47,6 +47,7 @@
 #include <QRemoteObjectNode>
 #include <QAbstractItemReplica>
 #include <QStandardItemModel>
+#include <QSortFilterProxyModel>
 #include <QEventLoop>
 
 #include <cstdlib>
@@ -581,6 +582,7 @@ private slots:
     void testRoleNames();
 
     void testModelTest();
+    void testSortFilterModel();
 
     void cleanup();
 };
@@ -971,6 +973,24 @@ void TestModelView::testModelTest()
     f.addAll();
     f.fetchAndWait();
     Q_UNUSED(test);
+}
+
+void TestModelView::testSortFilterModel()
+{
+    QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
+
+    FetchData f(repModel.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    QSortFilterProxyModel clientSort;
+    clientSort.setSourceModel(repModel.data());
+    clientSort.setSortRole(Qt::DisplayRole);
+    QSortFilterProxyModel sourceSort;
+    sourceSort.setSourceModel(&m_sourceModel);
+    sourceSort.setSortRole(Qt::DisplayRole);
+
+    compareTreeData(&sourceSort, &clientSort, repModel->availableRoles());
 }
 
 void TestModelView::cleanup()
