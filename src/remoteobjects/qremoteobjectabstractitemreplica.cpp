@@ -722,8 +722,6 @@ int QAbstractItemReplica::columnCount(const QModelIndex &parent) const
 
 QVariant QAbstractItemReplica::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    typedef QPair<int,QVariant> Entry;
-
     const int index = orientation == Qt::Horizontal ? 0 : 1;
     const QVector<CacheEntry> elem = d->m_headerData[index];
     if (section >= elem.size())
