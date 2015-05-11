@@ -187,6 +187,7 @@ Q_SIGNALS:
     void currentChanged(IndexList current, IndexList previous);
     void modelReset();
     void headerDataChanged(Qt::Orientation,int,int);
+    void columnsInserted(IndexList parent, int first, int last);
 
 public Q_SLOTS:
     QRemoteObjectPendingReply<QSize> replicaSizeRequest(IndexList parentList)
@@ -221,6 +222,7 @@ public Q_SLOTS:
     void onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles);
     void onRowsInserted(const IndexList &parent, int start, int end);
     void onRowsRemoved(const IndexList &parent, int start, int end);
+    void onColumnsInserted(const IndexList &parent, int start, int end);
     void onRowsMoved(IndexList srcParent, int srcRow, int count, IndexList destParent, int destRow);
     void onCurrentChanged(IndexList current, IndexList previous);
     void onModelReset();

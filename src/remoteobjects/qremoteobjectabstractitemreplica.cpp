@@ -64,6 +64,7 @@ QAbstractItemReplicaPrivate::QAbstractItemReplicaPrivate()
 
     connect(this, &QAbstractItemReplicaPrivate::dataChanged, this, &QAbstractItemReplicaPrivate::onDataChanged);
     connect(this, &QAbstractItemReplicaPrivate::rowsInserted, this, &QAbstractItemReplicaPrivate::onRowsInserted);
+    connect(this, &QAbstractItemReplicaPrivate::columnsInserted, this, &QAbstractItemReplicaPrivate::onColumnsInserted);
     connect(this, &QAbstractItemReplicaPrivate::rowsRemoved, this, &QAbstractItemReplicaPrivate::onRowsRemoved);
     connect(this, &QAbstractItemReplicaPrivate::rowsMoved, this, &QAbstractItemReplicaPrivate::onRowsMoved);
     connect(this, &QAbstractItemReplicaPrivate::currentChanged, this, &QAbstractItemReplicaPrivate::onCurrentChanged);
@@ -211,6 +212,26 @@ void QAbstractItemReplicaPrivate::onRowsInserted(const IndexList &parent, int st
     const QModelIndex endIndex = q->index(rowCount-1, columnCount-1, parentIndex);
     Q_ASSERT_X(startIndex.isValid() && endIndex.isValid(), __FUNCTION__, qPrintable(QString(QLatin1String("startIndex.isValid=%1 endIndex.isValid=%2")).arg(startIndex.isValid()).arg(endIndex.isValid())));
     emit q->dataChanged(startIndex, endIndex);
+}
+
+void QAbstractItemReplicaPrivate::onColumnsInserted(const IndexList &parent, int start, int end)
+{
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "parent=" << parent;
+
+    bool treeFullyLazyLoaded = true;
+    const QModelIndex parentIndex = toQModelIndex(parent, q, &treeFullyLazyLoaded);
+    if (!treeFullyLazyLoaded)
+        return;
+
+    CacheData *parentItem = cacheData(parentIndex);
+    q->beginInsertColumns(parentIndex, start, end);
+    parentItem->columnCount += end - start + 1;
+    q->endInsertColumns();
+    if (!parentItem->hasChildren && parentItem->children.size() > 0) {
+        parentItem->hasChildren = true;
+        emit q->dataChanged(parentIndex, parentIndex);
+    }
+
 }
 
 void QAbstractItemReplicaPrivate::onRowsRemoved(const IndexList &parent, int start, int end)

@@ -95,6 +95,7 @@ QAbstractItemSourceAdapter::QAbstractItemSourceAdapter(QAbstractItemModel *obj, 
     m_selectionModel = sel;
     connect(m_model, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)), this, SLOT(sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
     connect(m_model, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sourceRowsInserted(QModelIndex,int,int)));
+    connect(m_model, SIGNAL(columnsInserted(QModelIndex,int,int)), this, SLOT(sourceColumnsInserted(QModelIndex,int,int)));
     connect(m_model, SIGNAL(rowsRemoved(QModelIndex,int,int)), this, SLOT(sourceRowsRemoved(QModelIndex,int,int)));
     connect(m_model, SIGNAL(rowsMoved(QModelIndex,int,int,QModelIndex,int)), this, SLOT(sourceRowsMoved(QModelIndex,int,int,QModelIndex,int)));
     if (m_selectionModel)
@@ -216,6 +217,12 @@ void QAbstractItemSourceAdapter::sourceRowsInserted(const QModelIndex & parent, 
 {
     IndexList parentList = toModelIndexList(parent, m_model);
     emit rowsInserted(parentList, start, end);
+}
+
+void QAbstractItemSourceAdapter::sourceColumnsInserted(const QModelIndex & parent, int start, int end)
+{
+    IndexList parentList = toModelIndexList(parent, m_model);
+    emit columnsInserted(parentList, start, end);
 }
 
 void QAbstractItemSourceAdapter::sourceRowsRemoved(const QModelIndex & parent, int start, int end)
