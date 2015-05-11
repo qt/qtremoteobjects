@@ -202,16 +202,6 @@ void QAbstractItemReplicaPrivate::onRowsInserted(const IndexList &parent, int st
         parentItem->hasChildren = true;
         emit q->dataChanged(parentIndex, parentIndex);
     }
-
-    // This is needed to trigger a new data() call to (re-)fetch the actual content
-    // of the newly added items.
-    const int rowCount = q->rowCount(parentIndex);
-    const int columnCount = q->columnCount(parentIndex);
-    Q_ASSERT_X(rowCount > 0 && columnCount > 0, __FUNCTION__, qPrintable(QString(QLatin1String("rowCount=%1 columnCount=%2")).arg(rowCount).arg(columnCount)));
-    const QModelIndex startIndex = q->index(start, 0, parentIndex);
-    const QModelIndex endIndex = q->index(rowCount-1, columnCount-1, parentIndex);
-    Q_ASSERT_X(startIndex.isValid() && endIndex.isValid(), __FUNCTION__, qPrintable(QString(QLatin1String("startIndex.isValid=%1 endIndex.isValid=%2")).arg(startIndex.isValid()).arg(endIndex.isValid())));
-    emit q->dataChanged(startIndex, endIndex);
 }
 
 void QAbstractItemReplicaPrivate::onColumnsInserted(const IndexList &parent, int start, int end)
