@@ -47,11 +47,156 @@
 #include <QStandardItemModel>
 #include <QEventLoop>
 
+#include <cstdlib>
+
 namespace {
+
+inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
+{
+    QModelIndex left = lhs;
+    QModelIndex right = rhs;
+    while (left.row() == right.row() && left.column() == right.column() && left.isValid() && right.isValid()) {
+        left = left.parent();
+        right = right.parent();
+    }
+    if (left.isValid() || right.isValid())
+        return false;
+    return true;
+}
+
+QList<QStandardItem*> createInsertionChildren(int num, const QString& name, const QColor &background)
+{
+    QList<QStandardItem*> children;
+    for (int i = 0; i < num; ++i) {
+        QScopedPointer<QStandardItem> item(new QStandardItem(QStringLiteral("%1 %2").arg(name).arg(i+1)));
+        item->setBackground(background);
+        children.append(item.take());
+    }
+    return children;
+}
+
+struct InsertedRow
+{
+    InsertedRow(const QModelIndex &index = QModelIndex(), int start = -1, int end = -1)
+        : m_index(index)
+        , m_start(start)
+        , m_end(end){}
+    InsertedRow(const InsertedRow &other)
+        : m_index(other.m_index)
+        , m_start(other.m_start)
+        , m_end(other.m_end){}
+    bool match(const QList<QVariant> &signal) const
+    {
+        if (signal.size() != 3)
+            return false;
+        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
+                                   && signal[1].type() == QVariant::nameToType("int")
+                                   && signal[2].type() == QVariant::nameToType("int");
+        if (!matchingTypes)
+            return false;
+        const QModelIndex otherIndex = signal[0].value<QModelIndex>();
+        const int otherStart = signal[1].value<int>();
+        const int otherEnd = signal[2].value<int>();
+        return compareIndices(m_index, otherIndex) && (m_start == otherStart) && (m_end == otherEnd);
+    }
+
+    bool operator==(const QList<QVariant> &signal) const
+    {
+        return match(signal);
+    }
+
+    bool operator==(const InsertedRow &other) const
+    {
+        return m_index == other.m_index && m_start == other.m_start && m_end == other.m_end;
+    }
+
+    QModelIndex m_index;
+    int m_start;
+    int m_end;
+};
+
+inline QDebug operator <<(QDebug dbg, const InsertedRow &row)
+{
+    return dbg.nospace() << "Index(" << row.m_index << ", " << row.m_start << ", " << row.m_end << ")";
+}
+
+struct WaitForDataChanged
+{
+    struct IndexPair
+    {
+        QModelIndex topLeft;
+        QModelIndex bottomRight;
+    };
+
+    WaitForDataChanged(const QVector<QModelIndex> &pending, QSignalSpy *spy) : m_pending(pending), m_spy(spy){}
+    bool wait()
+    {
+        Q_ASSERT(m_spy);
+        const int maxRuns = m_pending.size();
+        int runs = 0;
+        bool cancel = false;
+        while (!cancel) {
+            const int numSignals = m_spy->size();
+            for (int i = 0; i < numSignals; ++i) {
+                const QList<QVariant> &signal = m_spy->at(i);
+                IndexPair pair = extractPair(signal);
+                checkAndRemoveRange(pair.topLeft, pair.bottomRight);
+                cancel = m_pending.isEmpty();
+            }
+            if (!cancel)
+                m_spy->wait();
+            ++runs;
+            if (runs >= maxRuns)
+                cancel = true;
+        }
+        return runs < maxRuns;
+    }
+
+    static IndexPair extractPair(const QList<QVariant> &signal)
+    {
+        IndexPair pair;
+        if (signal.size() != 3)
+            return pair;
+        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
+                                   && signal[1].type() == QVariant::nameToType("QModelIndex")
+                                   && signal[2].type() == QVariant::nameToType("QVector<int>");
+        if (!matchingTypes)
+            return pair;
+        const QModelIndex topLeft = signal[0].value<QModelIndex>();
+        const QModelIndex bottomRight = signal[1].value<QModelIndex>();
+        pair.topLeft = topLeft;
+        pair.bottomRight = bottomRight;
+        return pair;
+    }
+
+    void checkAndRemoveRange(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+    {
+        QVERIFY(topLeft.parent() == bottomRight.parent());
+        QVector<QModelIndex>  toRemove;
+        for (int i = 0; i < m_pending.size(); ++i) {
+            const QModelIndex &pending = m_pending.at(i);
+            if (pending.isValid()  && compareIndices(pending.parent(), topLeft.parent())) {
+                const bool fitLeft = topLeft.column() <= pending.column();
+                const bool fitRight = bottomRight.column() >= pending.column();
+                const bool fitTop = topLeft.row() <= pending.row();
+                const bool fitBottom = bottomRight.row() >= pending.row();
+                if (fitLeft && fitRight && fitTop && fitBottom)
+                    toRemove.append(pending);
+            }
+        }
+        foreach (const QModelIndex &index, toRemove) {
+            const int ind = m_pending.indexOf(index);
+            m_pending.remove(ind);
+        }
+    }
+
+    QVector<QModelIndex> m_pending;
+    QSignalSpy *m_spy;
+};
 
 QTextStream cout(stdout, QIODevice::WriteOnly);
 
-void dumpModel(const QAbstractItemModel *model, const QModelIndex &parent = QModelIndex())
+inline void dumpModel(const QAbstractItemModel *model, const QModelIndex &parent = QModelIndex())
 {
     int level = 0;
     for (QModelIndex idx = parent; idx.isValid(); idx = model->parent(idx), ++level);
@@ -103,6 +248,63 @@ void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemRepli
     }
 }
 
+void compareIndex(const QModelIndex &sourceIndex, const QModelIndex &replicaIndex,
+                  const QVector<int> &roles)
+{
+    QVERIFY(sourceIndex.isValid());
+    QVERIFY(replicaIndex.isValid());
+    foreach (int role, roles) {
+        QCOMPARE(replicaIndex.data(role), sourceIndex.data(role));
+    }
+    const QAbstractItemModel *sourceModel = sourceIndex.model();
+    const QAbstractItemModel *replicaModel = replicaIndex.model();
+    const int sourceRowCount = sourceModel->rowCount(sourceIndex);
+    const int replicaRowCount = replicaModel->rowCount(replicaIndex);
+    QCOMPARE(replicaRowCount, sourceRowCount);
+    const int sourceColumnCount = sourceModel->columnCount(sourceIndex);
+    const int replicaColumnCount = replicaModel->columnCount(replicaIndex);
+    QCOMPARE(replicaColumnCount, sourceColumnCount);
+    for (int i = 0; i < sourceRowCount; ++i) {
+        for (int j = 0; j < sourceColumnCount; ++j) {
+            compareIndex(sourceIndex.child(i, j), replicaIndex.child(i, j), roles);
+        }
+    }
+}
+
+void compareTreeData(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
+{
+    QVERIFY(sourceModel);
+    QVERIFY(replica);
+
+    QCOMPARE(replica->rowCount(), sourceModel->rowCount());
+    QCOMPARE(replica->columnCount(), sourceModel->columnCount());
+
+    for (int i = 0; i < sourceModel->rowCount(); ++i) {
+        for (int j = 0; j < sourceModel->columnCount(); ++j) {
+            const QModelIndex replicaIndex = replica->index(i, j);
+            const QModelIndex sourceIndex = sourceModel->index(i, j);
+            compareIndex(sourceIndex, replicaIndex, replica->availableRoles());
+        }
+    }
+}
+
+void compareTreeData(const QAbstractItemModel *sourceModel, const QAbstractItemModel *replica, const QVector<int> &roles)
+{
+    QVERIFY(sourceModel);
+    QVERIFY(replica);
+
+    QCOMPARE(replica->rowCount(), sourceModel->rowCount());
+    QCOMPARE(replica->columnCount(), sourceModel->columnCount());
+
+    for (int i = 0; i < sourceModel->rowCount(); ++i) {
+        for (int j = 0; j < sourceModel->columnCount(); ++j) {
+            const QModelIndex replicaIndex = replica->index(i, j);
+            const QModelIndex sourceIndex = sourceModel->index(i, j);
+            compareIndex(sourceIndex, replicaIndex, roles);
+        }
+    }
+}
+
 void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
 {
     QVERIFY(sourceModel);
@@ -113,6 +315,8 @@ void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemRepl
 
     for (int i = 0; i < sourceModel->rowCount(); ++i) {
         for (int j = 0; j < sourceModel->columnCount(); ++j) {
+            if (replica->index(i, j).flags() != sourceModel->index(i, j).flags())
+                qWarning() << sourceModel->index(i, j).flags() << replica->index(i, j).flags() << i << j;
             QCOMPARE(replica->index(i, j).flags(), sourceModel->index(i, j).flags());
         }
     }
@@ -150,6 +354,32 @@ private:
     QVector<QPair<QVariant, QVariant> > m_list;
 };
 
+QList<QStandardItem*> addChild(int numChilds, int nestingLevel)
+{
+    QList<QStandardItem*> result;
+    if (nestingLevel == 0)
+        return result;
+    for (int i = 0; i < numChilds; ++i) {
+        QStandardItem *child = new QStandardItem(QStringLiteral("Child num %1, nesting Level %2").arg(i+1).arg(nestingLevel));
+        if (i == 0) {
+            QList<QStandardItem*> res = addChild(numChilds, nestingLevel -1);
+            if (res.size() > 0)
+                child->appendRow(res);
+        }
+        result.push_back(child);
+    }
+    return result;
+}
+
+int getRandomNumber(int min, int max)
+{
+    int res = std::rand();
+    const int diff = (max - min);
+    res = res % diff;
+    res += min;
+    return res;
+}
+
 class FetchData : public QObject
 {
     Q_OBJECT
@@ -162,28 +392,31 @@ public:
         }
 
         connect(m_replica, &QAbstractItemReplica::dataChanged, this, &FetchData::dataChanged);
+        connect(m_replica, &QAbstractItemReplica::rowsInserted, this, &FetchData::rowsInserted);
     }
 
-    void addData(const QModelIndex &index, const QHash<int,QByteArray> &roles)
+    void addData(const QModelIndex &index, const QVector<int> &roles)
     {
-        foreach (int role, roles.keys()) {
+        foreach (int role, roles) {
             const bool cached = m_replica->hasData(index, role);
             if (cached)
                 continue;
             if (!m_pending.contains(index))
                 m_pending[index] = QVector<int>() << role;
-            else
-                m_pending[index].append(role);
+            else {
+                if (!m_pending[index].contains(role))
+                    m_pending[index].append(role);
+            }
         }
     }
 
-    void addIndex(const QModelIndex &parent, const QHash<int,QByteArray> &roles)
+    void addIndex(const QModelIndex &parent, const QVector<int> &roles)
     {
         if (parent.isValid())
             addData(parent, roles);
         for (int i = 0; i < m_replica->rowCount(parent); ++i) {
             for (int j = 0; j < m_replica->columnCount(parent); ++j) {
-                const QModelIndex index = m_replica->index(i, j);
+                const QModelIndex index = m_replica->index(i, j, parent);
                 Q_ASSERT(index.isValid());
                 addIndex(index, roles);
             }
@@ -192,13 +425,12 @@ public:
 
     void addAll()
     {
-        const QHash<int,QByteArray> roles = m_replica->roleNames();
-        addIndex(QModelIndex(), roles);
+        addIndex(QModelIndex(), m_replica->availableRoles());
     }
 
     void fetch()
     {
-        if (m_pending.isEmpty()) {
+        if (m_pending.isEmpty() && m_waitForInsertion.isEmpty()) {
             emitFetched();
             return;
         }
@@ -227,16 +459,45 @@ signals:
 private:
     const QAbstractItemReplica *m_replica;
     QHash<QPersistentModelIndex, QVector<int> > m_pending;
+    QSet<QPersistentModelIndex> m_waitForInsertion;
 
     void emitFetched()
     {
         QTimer::singleShot(0, this, SIGNAL(fetched()));
     }
 
+    void rowsInserted(const QModelIndex &parent, int first, int last)
+    {
+        static QVector<int> rolesV;
+        if (rolesV.isEmpty())
+            rolesV << Qt::DisplayRole << Qt::BackgroundRole;
+        m_waitForInsertion.remove(parent);
+        const int columnCount = m_replica->columnCount(parent);
+        if (!(m_replica->hasChildren(parent) && columnCount > 0 && m_replica->rowCount(parent) > 0))
+            qWarning() << m_replica->hasChildren(parent) << columnCount << m_replica->rowCount(parent) << parent.data();
+        QVERIFY(m_replica->hasChildren(parent) && columnCount > 0 && m_replica->rowCount(parent) > 0);
+        for (int i = first; i <= last; ++i) {
+            for (int j = 0; j < columnCount; ++j) {
+                const QModelIndex index = m_replica->index(i, j, parent);
+                const int childRowCount = m_replica->rowCount(index);
+
+                QVERIFY(index.isValid());
+                if (m_replica->hasChildren(index) && childRowCount == 0) {
+                    if (index.column() == 0)
+                        m_waitForInsertion.insert(index);
+                }
+                addIndex(index, rolesV);
+            }
+        }
+        if (m_replica->hasChildren(parent))
+            fetch();
+    }
+
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>())
     {
         Q_ASSERT(topLeft.isValid());
         Q_ASSERT(bottomRight.isValid());
+        Q_ASSERT(topLeft.parent() == bottomRight.parent());
 
         const QModelIndex parent = topLeft.parent();
         for (int i = topLeft.row(); i <= bottomRight.row(); ++i) {
@@ -249,6 +510,7 @@ private:
 
 #if 0
                 QVector<int> itroles = it.value();
+                itroles.detach();
                 if (roles.isEmpty()) {
                     itroles.clear();
                 } else {
@@ -264,10 +526,24 @@ private:
 #else
                 Q_UNUSED(roles);
                 m_pending.erase(it);
+                if (m_replica->hasChildren(index)) {
+                    // ask for the row count to get an update
+                    const int rowCount = m_replica->rowCount(index);
+                    for (int i = 0; i < rowCount; ++i) {
+                        const QModelIndex cIndex = m_replica->index(i, 0, index);
+                        Q_ASSERT(cIndex.isValid());
+                        addIndex(cIndex, m_replica->availableRoles());
+                    }
+                    if (rowCount)
+                        fetch();
+                    else if (index.column() == 0)
+                        m_waitForInsertion.insert(index);
+                }
 #endif
             }
         }
-        if (m_pending.isEmpty()) {
+
+        if (m_pending.isEmpty() && m_waitForInsertion.isEmpty()) {
             emitFetched();
         }
     }
@@ -290,11 +566,15 @@ private slots:
 
     void testEmptyModel();
     void testInitialData();
+    void testInitialDataTree();
     void testHeaderData();
     void testFlags();
     void testDataChanged();
+    void testDataChangedTree();
     void testDataInsertion();
+    void testDataInsertionTree();
     void testDataRemoval();
+    void testDataRemovalTree();
 
     void testRoleNames();
 
@@ -328,11 +608,13 @@ void TestModelView::initTestCase()
     hHeaderList << QStringLiteral("First Column with spacing") << QStringLiteral("Second Column with spacing");
     m_sourceModel.setHorizontalHeaderLabels(hHeaderList);
 
+    std::srand(0);
     for (int i = 0; i < modelSize; ++i) {
         QStandardItem *firstItem = new QStandardItem(QStringLiteral("FancyTextNumber %1").arg(i));
         QStandardItem *secondItem = new QStandardItem(QStringLiteral("FancyRow2TextNumber %1").arg(i));
         if (i % 2 == 0)
             firstItem->setBackground(Qt::red);
+        firstItem->appendRow(addChild(getRandomNumber(1, 3),getRandomNumber(1, 4)));
         QList<QStandardItem*> row;
         row << firstItem << secondItem;
         m_sourceModel.appendRow(row);
@@ -379,6 +661,17 @@ void TestModelView::testInitialData()
     compareData(&m_sourceModel, model.data());
 }
 
+void TestModelView::testInitialDataTree()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    compareTreeData(&m_sourceModel, model.data());
+}
+
 void TestModelView::testHeaderData()
 {
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
@@ -401,22 +694,53 @@ void TestModelView::testHeaderData()
         QCOMPARE(model->headerData(i, Qt::Horizontal, Qt::DisplayRole), m_sourceModel.headerData(i, Qt::Horizontal, Qt::DisplayRole));
 }
 
-void TestModelView::testFlags()
+void TestModelView::testDataChangedTree()
 {
-    for (int i = 10; i < 20; ++i) {
-        QStandardItem* firstItem = m_sourceModel.item(i, 0);
-        QStandardItem* secondItem = m_sourceModel.item(i, 1);
-        firstItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-        secondItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEditable);
-    }
-
     QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
     f.fetchAndWait();
 
-    compareFlags(&m_sourceModel, model.data());
+    compareTreeData(&m_sourceModel, model.data());
+    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    for (int i = 10; i < 20; ++i) {
+        const QModelIndex parent = m_sourceModel.index(i,0);
+        const int rowCount = m_sourceModel.rowCount(parent);
+        const int colCount = m_sourceModel.columnCount(parent);
+        for (int row = 0; row < rowCount; ++row) {
+            for (int col = 0; col < colCount; ++col) {
+                if (col % 2 == 0)
+                    m_sourceModel.setData(m_sourceModel.index(row, col, parent), QColor(Qt::gray), Qt::BackgroundRole);
+                else
+                    m_sourceModel.setData(m_sourceModel.index(row, col, parent), QColor(Qt::cyan), Qt::BackgroundRole);
+            }
+        }
+        m_sourceModel.setData(m_sourceModel.index(i, 1), QColor(Qt::magenta), Qt::BackgroundRole);
+    }
+
+    bool signalsReceived = false;
+    int runs = 0;
+    const int maxRuns = 10;
+    while (runs < maxRuns) {
+        if (dataChangedSpy.wait() &&!dataChangedSpy.isEmpty()) {
+            signalsReceived = true;
+            if (dataChangedSpy.takeLast().at(1).value<QModelIndex>().row() == 19)
+                break;
+        }
+        ++runs;
+    }
+    QVERIFY(signalsReceived);
+    compareTreeData(&m_sourceModel, model.data());
+}
+
+void TestModelView::testFlags()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
 
     QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
     for (int i = 10; i < 20; ++i) {
@@ -465,20 +789,146 @@ void TestModelView::testDataInsertion()
     f.addAll();
     f.fetchAndWait();
 
+    QVector<QModelIndex> pending;
+
+    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QVector<InsertedRow> insertedRows;
     QSignalSpy rowSpy(model.data(), SIGNAL(rowsInserted(QModelIndex,int,int)));
     m_sourceModel.insertRows(2, 9);
-    rowSpy.wait();
+    insertedRows.append(InsertedRow(QModelIndex(), 2, 10));
+    const int maxRuns = 10;
+    int runs = 0;
+    QVector<InsertedRow> rowsToRemove;
+    while (runs < maxRuns) {
+        ++runs;
+        if (rowSpy.wait() && !rowSpy.isEmpty()){
+
+            foreach (const InsertedRow &row, insertedRows) {
+                for (int i = 0; i < rowSpy.size(); ++i) {
+                    const QList<QVariant> &signal = rowSpy.at(i);
+                    if (row.match(signal)) {
+                        //fetch the data of the inserted index
+                        const QModelIndex &parent = signal.at(0).value<QModelIndex>();
+                        const int start = signal.at(1).value<int>();
+                        const int end = signal.at(2).value<int>();
+                        const int columnCount = model->columnCount(parent);
+                        for (int row = start; row <= end; ++row)
+                            for (int column = 0; column < columnCount; ++column) {
+                                model->data(model->index(row, column, parent), Qt::DisplayRole);
+                                model->data(model->index(row, column, parent), Qt::BackgroundRole);
+                                pending.append(model->index(row, column, parent));
+                            }
+                        rowsToRemove.append(row);
+                        break;
+                    }
+                }
+            }
+            foreach (const InsertedRow &row, rowsToRemove)
+                insertedRows.removeAll(row);
+            if (insertedRows.isEmpty())
+                break;
+        }
+
+    }
     QCOMPARE(rowSpy.count(), 1);
     QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
 
     // change one row to check for inconsistencies
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
     m_sourceModel.setData(m_sourceModel.index(0, 1), QColor(Qt::green), Qt::BackgroundRole);
     m_sourceModel.setData(m_sourceModel.index(0, 1), QLatin1String("foo"), Qt::DisplayRole);
+    pending.append(model->index(0, 1));
+    WaitForDataChanged w(pending, &dataChangedSpy);
 
-    dataChangedSpy.wait();
-    QVERIFY(dataChangedSpy.count() > 0);
+
+    QVERIFY(w.wait());
     compareData(&m_sourceModel, model.data());
+}
+
+void TestModelView::testDataInsertionTree()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    const QVector<int> roles = model->availableRoles();
+
+    QVector<InsertedRow> insertedRows;
+    QSignalSpy rowSpy(model.data(), SIGNAL(rowsInserted(QModelIndex,int,int)));
+
+    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QVector<QModelIndex> pending;
+
+    for (int i = 0; i < 9; ++ i) {
+        insertedRows.append(InsertedRow(QModelIndex(), 2 + i, 2 + i));
+        m_sourceModel.insertRow(2 + i, createInsertionChildren(2, QStringLiteral("insertedintree"), Qt::darkRed));
+        const QModelIndex childIndex = m_sourceModel.index(2 + i, 0);
+        const QModelIndex childIndex2 = m_sourceModel.index(2 + i, 1);
+        pending.append(childIndex);
+        pending.append(childIndex2);
+
+    }
+    const QModelIndex parent = m_sourceModel.index(10, 0);
+    QStandardItem* parentItem = m_sourceModel.item(10, 0);
+    for (int i = 0; i < 4; ++ i) {
+        insertedRows.append(InsertedRow(parent, i, i));
+        parentItem->insertRow(i, createInsertionChildren(2, QStringLiteral("insertedintreedeep"), Qt::darkCyan));
+        const QModelIndex childIndex = m_sourceModel.index(0, 0, parent);
+        const QModelIndex childIndex2 = m_sourceModel.index(0, 1, parent);
+        Q_ASSERT(childIndex.isValid());
+        Q_ASSERT(childIndex2.isValid());
+        pending.append(childIndex);
+        pending.append(childIndex2);
+    }
+
+    const int maxRuns = 10;
+    int runs = 0;
+    QVector<InsertedRow> rowsToRemove;
+    while (runs < maxRuns) {
+        ++runs;
+        if (rowSpy.wait() && !rowSpy.isEmpty()){
+
+            foreach (const InsertedRow &row, insertedRows) {
+                for (int i = 0; i < rowSpy.size(); ++i) {
+                    const QList<QVariant> &signal = rowSpy.at(i);
+                    if (row.match(signal)) {
+                        //fetch the data of the inserted index
+                        const QModelIndex &parent = signal.at(0).value<QModelIndex>();
+                        const int start = signal.at(1).value<int>();
+                        const int end = signal.at(2).value<int>();
+                        const int columnCount = model->columnCount(parent);
+                        for (int row = start; row <= end; ++row)
+                            for (int column = 0; column < columnCount; ++column) {
+                                model->data(model->index(row, column, parent), Qt::DisplayRole);
+                                model->data(model->index(row, column, parent), Qt::BackgroundRole);
+                                pending.append(model->index(row, column, parent));
+                            }
+                        rowsToRemove.append(row);
+                        break;
+                    }
+                }
+            }
+            foreach (const InsertedRow &row, rowsToRemove)
+                insertedRows.removeAll(row);
+            if (insertedRows.isEmpty())
+                break;
+        }
+
+    }
+    QVERIFY(rowSpy.count() == 13);
+    QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
+
+    // change one row to check for inconsistencies
+
+    pending << m_sourceModel.index(0, 0, parent);
+    WaitForDataChanged w(pending, &dataChangedSpy);
+    m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
+    m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
+
+    w.wait();
+
+    compareTreeData(&m_sourceModel, model.data());
 }
 
 void TestModelView::testDataRemoval()
@@ -500,6 +950,12 @@ void TestModelView::testRoleNames()
 
     // test data associated with custom roles
     compareData(&m_listModel,repModel.data());
+}
+
+void TestModelView::testDataRemovalTree()
+{
+    m_sourceModel.removeRows(2, 4);
+    //Maybe some checks here?
 }
 
 void TestModelView::cleanup()

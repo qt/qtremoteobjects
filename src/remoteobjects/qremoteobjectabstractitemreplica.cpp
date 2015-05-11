@@ -153,6 +153,7 @@ bool QAbstractItemReplicaPrivate::clearCache(const IndexList &start, const Index
     Q_ASSERT(startIndex.isValid());
     Q_ASSERT(endIndex.isValid());
     Q_ASSERT(startIndex.parent() == endIndex.parent());
+    Q_UNUSED(endIndex);
     QModelIndex parentIndex = startIndex.parent();
     CacheData *parentItem = cacheData(parentIndex);
 
