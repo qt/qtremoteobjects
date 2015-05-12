@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include <QTableView>
+#include <QTreeView>
 #include <QApplication>
 #include <QRemoteObjectNode>
 #include <QAbstractItemReplica>
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 
 
     QRemoteObjectNode node = QRemoteObjectNode::createNodeConnectedToRegistry();
-    QTableView view;
+    QTreeView view;
     view.setWindowTitle(QStringLiteral("RemoteView"));
     view.resize(640,480);
     view.setModel(node.acquireModel(QStringLiteral("RemoteModel")));

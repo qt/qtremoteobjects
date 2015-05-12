@@ -38,7 +38,7 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-#include <QTableView>
+#include <QTreeView>
 #include <QApplication>
 #include <QRemoteObjectNode>
 #include <QTimer>
@@ -50,7 +50,7 @@ struct TimerHandler : public QObject
 {
     Q_OBJECT
 public:
-    QAbstractItemModel *model;
+    QStandardItemModel *model;
 public Q_SLOTS:
     void changeData() {
         Q_ASSERT(model);
@@ -73,10 +73,31 @@ public Q_SLOTS:
         model->removeRows(2, 4);
     }
 
+    void changeFlags() {
+        QStandardItem *item = model->item(0, 0);
+        item->setEnabled(false);
+        item = item->child(0, 0);
+        item->setFlags(item->flags() & Qt::ItemIsSelectable);
+    }
+
     void moveData() {
         model->moveRows(QModelIndex(), 2, 4, QModelIndex(), 10);
     }
 };
+
+QList<QStandardItem*> addChild(int numChildren, int nestingLevel)
+{
+    QList<QStandardItem*> result;
+    if (nestingLevel == 0)
+        return result;
+    for (int i = 0; i < numChildren; ++i) {
+        QStandardItem *child = new QStandardItem(QStringLiteral("Child num %1, nesting Level %2").arg(i+1).arg(nestingLevel));
+        if (i == 0)
+            child->appendRow(addChild(numChildren, nestingLevel -1));
+        result.push_back(child);
+    }
+    return result;
+}
 
 int main(int argc, char *argv[])
 {
@@ -93,12 +114,15 @@ int main(int argc, char *argv[])
     list.reserve(modelSize);
     for (int i = 0; i < modelSize; ++i) {
         QStandardItem *firstItem = new QStandardItem(QStringLiteral("FancyTextNumber %1").arg(i));
+        if (i == 0)
+            firstItem->appendRow(addChild(2, 2));
         QStandardItem *secondItem = new QStandardItem(QStringLiteral("FancyRow2TextNumber %1").arg(i));
         if (i % 2 == 0)
             firstItem->setBackground(Qt::red);
         QList<QStandardItem*> row;
         row << firstItem << secondItem;
-        sourceModel.appendRow(row);
+        sourceModel.invisibleRootItem()->appendRow(row);
+        //sourceModel.appendRow(row);
         list << QStringLiteral("FancyTextNumber %1").arg(i);
     }
 
@@ -111,7 +135,7 @@ int main(int argc, char *argv[])
     QRemoteObjectNode node2 = QRemoteObjectNode::createHostNodeConnectedToRegistry();
     node2.enableRemoting(&sourceModel, QStringLiteral("RemoteModel"), roles);
 
-    QTableView view;
+    QTreeView view;
     view.setWindowTitle(QStringLiteral("SourceView"));
     view.setModel(&sourceModel);
     view.show();
@@ -119,6 +143,7 @@ int main(int argc, char *argv[])
     handler.model = &sourceModel;
     QTimer::singleShot(5000, &handler, SLOT(changeData()));
     QTimer::singleShot(10000, &handler, SLOT(insertData()));
+    QTimer::singleShot(11000, &handler, SLOT(changeFlags()));
     QTimer::singleShot(12000, &handler, SLOT(removeData()));
     QTimer::singleShot(13000, &handler, SLOT(moveData()));
 
