@@ -77,7 +77,7 @@ struct CacheData
     explicit CacheData(CacheData *parentItem = 0)
         : parent(parentItem)
         , hasChildren(false)
-        , columnCount(1)
+        , columnCount(0)
     {}
     ~CacheData() { qDeleteAll(children); }
     void insertChildren(int start, int end) {
@@ -99,7 +99,7 @@ struct CacheData
         qDeleteAll(children);
         children.clear();
         hasChildren = false;
-        columnCount = 1;
+        columnCount = 0;
     }
 
 };

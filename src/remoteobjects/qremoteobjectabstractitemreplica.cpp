@@ -197,6 +197,10 @@ void QAbstractItemReplicaPrivate::onRowsInserted(const IndexList &parent, int st
     q->beginInsertRows(parentIndex, start, end);
     parentItem->insertChildren(start, end);
     q->endInsertRows();
+    if (!parentItem->hasChildren && parentItem->columnCount > 0) {
+        parentItem->hasChildren = true;
+        emit q->dataChanged(parentIndex, parentIndex);
+    }
 
     // This is needed to trigger a new data() call to (re-)fetch the actual content
     // of the newly added items.
@@ -284,6 +288,21 @@ void QAbstractItemReplicaPrivate::handleSizeDone(QRemoteObjectPendingCallWatcher
     const QSize size = sizeWatcher->returnValue().value<QSize>();
     CacheData *parentItem = cacheData(sizeWatcher->parentList);
     const QModelIndex parent = toQModelIndex(sizeWatcher->parentList, q);
+
+    if (size.width() != parentItem->columnCount) {
+        const int columnCount = std::max(0, parentItem->columnCount);
+        Q_ASSERT_X(size.width() >= parentItem->columnCount, __FUNCTION__, qPrintable(QStringLiteral("The column count should only shrink in columnsRemoved!!")));
+        parentItem->columnCount = size.width();
+        if (size.width() > columnCount) {
+            Q_ASSERT(size.width() > 0);
+            q->beginInsertColumns(parent, columnCount, size.width() - 1);
+            q->endInsertColumns();
+        } else {
+            Q_ASSERT_X(size.width() == columnCount, __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(size.width()).arg(columnCount)));
+        }
+    }
+
+    Q_ASSERT_X(size.height() >= parentItem->children.count(), __FUNCTION__, qPrintable(QStringLiteral("The new size and the current size should match!!")));
     if (parentItem->children.isEmpty()) {
         if (size.height() > 0) {
             q->beginInsertRows(parent, 0, size.height() - 1);
@@ -294,17 +313,6 @@ void QAbstractItemReplicaPrivate::handleSizeDone(QRemoteObjectPendingCallWatcher
         Q_ASSERT_X(parentItem->children.count() == size.height(), __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(parentItem->children.count()).arg(size.height())));
     }
 
-    if (size.width() != m_rootItem.columnCount) {
-        const int columnCount = std::max(0, m_rootItem.columnCount);
-        m_rootItem.columnCount = size.width();
-        if (size.width() > columnCount) {
-            Q_ASSERT(size.width() > 0);
-            q->beginInsertColumns(parent, columnCount, size.width() - 1);
-            q->endInsertColumns();
-        } else {
-            Q_ASSERT_X(size.width() == columnCount, __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(size.width()).arg(columnCount)));
-        }
-    }
 }
 
 void QAbstractItemReplicaPrivate::init()
@@ -709,21 +717,28 @@ QModelIndex QAbstractItemReplica::index(int row, int column, const QModelIndex &
 bool QAbstractItemReplica::hasChildren(const QModelIndex &parent) const
 {
     CacheData *parentItem = d->cacheData(parent);
-    return parentItem->hasChildren;
+    if (parent.isValid() && parent.column() != 0)
+        return 0;
+    else
+        return parentItem->hasChildren;
 }
 int QAbstractItemReplica::rowCount(const QModelIndex &parent) const
 {
     CacheData *parentItem = d->cacheData(parent);
-    if (parentItem->hasChildren && parentItem->children.isEmpty()) {
+    const bool canHaveChildren = parentItem->hasChildren && parentItem->children.isEmpty() && parent.column() == 0;
+    if (canHaveChildren) {
         IndexList parentList = toModelIndexList(parent, this);
         QRemoteObjectPendingReply<QSize> reply = d->replicaSizeRequest(parentList);
         SizeWatcher *watcher = new SizeWatcher(parentList, reply);
         connect(watcher, &SizeWatcher::finished, d.data(), &QAbstractItemReplicaPrivate::handleSizeDone);
-    }
+    } else if (parent.column() > 0)
+        return 0;
     return parentItem->children.count();
 }
 int QAbstractItemReplica::columnCount(const QModelIndex &parent) const
 {
+    if (parent.isValid() && parent.column() > 0)
+        return 0;
     CacheData *parentItem = d->cacheData(parent);
     while (parentItem->columnCount < 0 && parentItem->parent)
         parentItem = parentItem->parent;
