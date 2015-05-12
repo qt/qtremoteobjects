@@ -633,12 +633,14 @@ QItemSelectionModel* QAbstractItemReplica::selectionModel() const
 
 QVariant QAbstractItemReplica::data(const QModelIndex & index, int role) const
 {
-    Q_ASSERT(index.isValid());
 
     if (!d->isInitialized()) {
         qCDebug(QT_REMOTEOBJECT_MODELS)<<"Data not initialized yet";
         return QVariant();
     }
+
+    if (!index.isValid())
+        return QVariant();
 
     CacheData *item = d->cacheData(index);
     CacheData *parentItem = item->parent;
@@ -675,7 +677,8 @@ QVariant QAbstractItemReplica::data(const QModelIndex & index, int role) const
 }
 QModelIndex QAbstractItemReplica::parent(const QModelIndex &index) const
 {
-    Q_ASSERT(index.isValid());
+    if (!index.isValid())
+        return QModelIndex();
     CacheData* item = d->cacheData(index);
     Q_ASSERT(item != &d->m_rootItem);
     Q_ASSERT(item->parent);
