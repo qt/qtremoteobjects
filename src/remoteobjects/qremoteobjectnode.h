@@ -104,7 +104,7 @@ public:
         ApiDefinition<ObjectType> *api = new ApiDefinition<ObjectType>;
         return enableRemoting(object, api);
     }
-    bool enableRemoting(QObject *object);
+    bool enableRemoting(QObject *object, const QString &name = QString());
     bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = 0);
     bool disableRemoting(QObject *remoteObject);
 

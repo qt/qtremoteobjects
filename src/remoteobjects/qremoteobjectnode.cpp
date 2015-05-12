@@ -748,13 +748,18 @@ QRemoteObjectDynamicReplica *QRemoteObjectNode::acquire(const QString &name)
     object. Client nodes connected to the node
     hosting this object may obtain Replicas of this Source.
 
+    The \a name defines the lookup-name under which the QObject can be acquired
+    using \a QRemoteObjectNode::acquire() . If not explicitly set then the name
+    given in the QCLASSINFO_REMOTEOBJECT_TYPE will be used. If no such macro
+    was defined for the QObject then the \a QObject::objectName() is used.
+
     Returns \c false if the current node is a client node, or if the QObject is already
     registered to be remoted, and \c true if remoting is successfully enabled
     for the dynamic QObject.
 
     \sa disableRemoting()
 */
-bool QRemoteObjectNode::enableRemoting(QObject *object)
+bool QRemoteObjectNode::enableRemoting(QObject *object, const QString &name)
 {
     if (d_ptr->remoteObjectIo.isNull()) {
         d_ptr->m_lastError = OperationNotValidOnClientNode;
@@ -762,10 +767,11 @@ bool QRemoteObjectNode::enableRemoting(QObject *object)
     }
 
     const QMetaObject *meta = object->metaObject();
-    QString name;
+    QString _name = name;
     const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
     if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
-        name = QString::fromLatin1(meta->classInfo(ind).value());
+        if (_name.isEmpty())
+            _name = QString::fromLatin1(meta->classInfo(ind).value());
         while (true) {
             Q_ASSERT(meta->superClass()); //This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
             if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE)) //At the point we don't find the same QCLASSINFO_REMOTEOBJECT_TYPE,
@@ -774,14 +780,16 @@ bool QRemoteObjectNode::enableRemoting(QObject *object)
             meta = meta->superClass();
         }
     } else { //This is a passed in QObject, use its API
-        name = object->objectName();
-        if (name.isEmpty()) {
-            d_ptr->m_lastError = MissingObjectName;
-            qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
-            return false;
+        if (_name.isEmpty()) {
+            _name = object->objectName();
+            if (_name.isEmpty()) {
+                d_ptr->m_lastError = MissingObjectName;
+                qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
+                return false;
+            }
         }
     }
-    return d_ptr->remoteObjectIo->enableRemoting(object, meta, name);
+    return d_ptr->remoteObjectIo->enableRemoting(object, meta, _name);
 }
 
 /*!
