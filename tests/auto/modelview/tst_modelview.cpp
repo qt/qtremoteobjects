@@ -809,10 +809,10 @@ void TestModelView::testDataInsertion()
         ++runs;
         if (rowSpy.wait() && !rowSpy.isEmpty()){
 
-            foreach (const InsertedRow &row, insertedRows) {
+            foreach (const InsertedRow &irow, insertedRows) {
                 for (int i = 0; i < rowSpy.size(); ++i) {
                     const QList<QVariant> &signal = rowSpy.at(i);
-                    if (row.match(signal)) {
+                    if (irow.match(signal)) {
                         //fetch the data of the inserted index
                         const QModelIndex &parent = signal.at(0).value<QModelIndex>();
                         const int start = signal.at(1).value<int>();
@@ -824,13 +824,13 @@ void TestModelView::testDataInsertion()
                                 model->data(model->index(row, column, parent), Qt::BackgroundRole);
                                 pending.append(model->index(row, column, parent));
                             }
-                        rowsToRemove.append(row);
+                        rowsToRemove.append(irow);
                         break;
                     }
                 }
             }
-            foreach (const InsertedRow &row, rowsToRemove)
-                insertedRows.removeAll(row);
+            foreach (const InsertedRow &irow, rowsToRemove)
+                insertedRows.removeAll(irow);
             if (insertedRows.isEmpty())
                 break;
         }
@@ -895,10 +895,10 @@ void TestModelView::testDataInsertionTree()
         ++runs;
         if (rowSpy.wait() && !rowSpy.isEmpty()){
 
-            foreach (const InsertedRow &row, insertedRows) {
+            foreach (const InsertedRow &irow, insertedRows) {
                 for (int i = 0; i < rowSpy.size(); ++i) {
                     const QList<QVariant> &signal = rowSpy.at(i);
-                    if (row.match(signal)) {
+                    if (irow.match(signal)) {
                         //fetch the data of the inserted index
                         const QModelIndex &parent = signal.at(0).value<QModelIndex>();
                         const int start = signal.at(1).value<int>();
@@ -910,13 +910,13 @@ void TestModelView::testDataInsertionTree()
                                 model->data(model->index(row, column, parent), Qt::BackgroundRole);
                                 pending.append(model->index(row, column, parent));
                             }
-                        rowsToRemove.append(row);
+                        rowsToRemove.append(irow);
                         break;
                     }
                 }
             }
-            foreach (const InsertedRow &row, rowsToRemove)
-                insertedRows.removeAll(row);
+            foreach (const InsertedRow &irow, rowsToRemove)
+                insertedRows.removeAll(irow);
             if (insertedRows.isEmpty())
                 break;
         }
