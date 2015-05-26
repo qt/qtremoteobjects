@@ -77,6 +77,7 @@ public Q_SLOTS:
     DataEntries replicaRowRequest(IndexList start, IndexList end, QVector<int> roles);
     QVariantList replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles);
     void replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command);
+    void replicaSetData(const IndexList &index, const QVariant &value, int role);
 
     void sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QVector<int> & roles = QVector<int> ()) const;
     void sourceRowsInserted(const QModelIndex & parent, int start, int end);
@@ -131,11 +132,12 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         _signals[7] = qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(0),signalArgCount+6,signalArgTypes[6]);
         _signals[8] = qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(0),signalArgCount+7,signalArgTypes[7]);
         _signals[9] = qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+8,signalArgTypes[8]);
-        _methods[0] = 4;
+        _methods[0] = 5;
         _methods[1] = qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(0),"replicaSizeRequest(IndexList)",methodArgCount+0,methodArgTypes[0]);
         _methods[2] = qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",methodArgCount+1,methodArgTypes[1]);
         _methods[3] = qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QVector<Qt::Orientation>,QVector<int>,QVector<int>)>(0),"replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)",methodArgCount+2,methodArgTypes[2]);
         _methods[4] = qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(0),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",methodArgCount+3,methodArgTypes[3]);
+        _methods[5] = qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(IndexList,QVariant,int)>(0),"replicaSetData(IndexList,QVariant,int)",methodArgCount+4,methodArgTypes[4]);
     }
 
     QString name() const Q_DECL_OVERRIDE { return m_name; }
@@ -194,6 +196,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 1: return QByteArrayLiteral("replicaRowRequest(IndexList,IndexList,QVector<int>)");
         case 2: return QByteArrayLiteral("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
         case 3: return QByteArrayLiteral("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
+        case 4: return QByteArrayLiteral("replicaSetData(IndexList,QVariant,int)");
         }
         return QByteArrayLiteral("");
     }
@@ -232,6 +235,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 1:
         case 2:
         case 3:
+        case 4:
             return true;
         }
         return false;
@@ -248,10 +252,10 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
 
     int _properties[3];
     int _signals[10];
-    int _methods[5];
+    int _methods[6];
     int signalArgCount[9];
-    int methodArgCount[4];
-    const int* methodArgTypes[4];
+    int methodArgCount[5];
+    const int* methodArgTypes[5];
     QString m_name;
 };
 

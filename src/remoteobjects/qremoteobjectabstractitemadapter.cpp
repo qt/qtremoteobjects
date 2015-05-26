@@ -137,6 +137,15 @@ QSize QAbstractItemSourceAdapter::replicaSizeRequest(IndexList parentList)
     return size;
 }
 
+void QAbstractItemSourceAdapter::replicaSetData(const IndexList &index, const QVariant &value, int role)
+{
+    const QModelIndex modelIndex = toQModelIndex(index, m_model);
+    Q_ASSERT(modelIndex.isValid());
+    const bool result = m_model->setData(modelIndex, value, role);
+    Q_ASSERT(result);
+    Q_UNUSED(result);
+}
+
 DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << "Requested rows" << "start=" << start << "end=" << end << "roles=" << roles;

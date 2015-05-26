@@ -651,6 +651,26 @@ QItemSelectionModel* QAbstractItemReplica::selectionModel() const
     return d->m_selectionModel.data();
 }
 
+bool QAbstractItemReplica::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (!index.isValid())
+        return false;
+    if (index.row() < 0 || index.row() >= rowCount(index.parent()))
+        return false;
+    if (index.column() < 0 || index.column() >= columnCount(index.parent()))
+        return false;
+
+    const QVector<int > &availRoles = availableRoles();
+    const QVector<int>::const_iterator res = std::find(availRoles.begin(), availRoles.end(), role);
+    if (res == availRoles.end()) {
+        qCWarning(QT_REMOTEOBJECT_MODELS) << "Tried to setData for index" << index << "on a not supported role" << role;
+        return false;
+    }
+    // sendInvocationRequest to change server side data;
+    d->replicaSetData(toModelIndexList(index, this), value, role);
+    return true;
+}
+
 QVariant QAbstractItemReplica::data(const QModelIndex & index, int role) const
 {
 

@@ -166,7 +166,7 @@ struct WaitForDataChanged
     bool wait()
     {
         Q_ASSERT(m_spy);
-        const int maxRuns = m_pending.size();
+        const int maxRuns = std::min(m_pending.size(), 100);
         int runs = 0;
         bool cancel = false;
         while (!cancel) {
@@ -178,7 +178,7 @@ struct WaitForDataChanged
                 cancel = m_pending.isEmpty();
             }
             if (!cancel)
-                m_spy->wait();
+                m_spy->wait(50);
             ++runs;
             if (runs >= maxRuns)
                 cancel = true;
@@ -607,6 +607,8 @@ private slots:
     void testDataChangedTree();
     void testDataInsertion();
     void testDataInsertionTree();
+    void testSetData();
+    void testSetDataTree();
     void testDataRemoval();
     void testDataRemovalTree();
 
@@ -1055,6 +1057,82 @@ void TestModelView::testSortFilterModel()
     sourceSort.setSortRole(Qt::DisplayRole);
 
     compareTreeData(&sourceSort, &clientSort, repModel->availableRoles());
+}
+
+void TestModelView::testSetData()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+    compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
+
+    //fetched and verified initial state, now setData on the client
+    QSignalSpy dataChangedSpy(&m_sourceModel, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedReplicaSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QVector<QModelIndex> pending;
+    QVector<QModelIndex> pendingReplica;
+    for (int row = 0, numRows = model->rowCount(); row < numRows; ++row) {
+        for (int column = 0, numColumns = model->columnCount(); column != numColumns; ++column) {
+            const QModelIndex index = model->index(row, column);
+            const QString newData = QStringLiteral("This entry was changed with setData");
+            QVERIFY(model->setData(index, newData, Qt::DisplayRole));
+            pending.append(m_sourceModel.index(row, column));
+            pendingReplica.append(model->index(row, column));
+        }
+    }
+    WaitForDataChanged waiter(pending, &dataChangedSpy);
+    QVERIFY(waiter.wait());
+    WaitForDataChanged waiterReplica(pendingReplica, &dataChangedReplicaSpy);
+    QVERIFY(waiterReplica.wait());
+    compareData(&m_sourceModel, model.data());
+}
+
+void TestModelView::testSetDataTree()
+{
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+    compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
+
+    //fetched and verified initial state, now setData on the client
+    QSignalSpy dataChangedSpy(&m_sourceModel, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedReplicaSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QVector<QModelIndex> pending;
+    QVector<QModelIndex> pendingReplica;
+
+    QVector<QModelIndex> stack;
+    stack.push_back(QModelIndex());
+    QVector<QModelIndex> sourceStack;
+    sourceStack.push_back(QModelIndex());
+
+
+    const QString newData = QStringLiteral("This entry was changed with setData in a tree");
+    while (!stack.isEmpty()) {
+        const QModelIndex parent = stack.takeLast();
+        const QModelIndex parentSource = sourceStack.takeLast();
+        for (int row = 0; row < model->rowCount(parent); ++row) {
+            for (int column = 0; column < model->columnCount(parent); ++column) {
+                const QModelIndex index = model->index(row, column, parent);
+                const QModelIndex indexSource = m_sourceModel.index(row, column, parentSource);
+                QVERIFY(model->setData(index, newData, Qt::DisplayRole));
+                pending.append(indexSource);
+                pendingReplica.append(index);
+                if (column == 0) {
+                    stack.push_back(index);
+                    sourceStack.push_back(indexSource);
+                }
+            }
+        }
+    }
+    WaitForDataChanged waiter(pending, &dataChangedSpy);
+    QVERIFY(waiter.wait());
+    WaitForDataChanged waiterReplica(pendingReplica, &dataChangedReplicaSpy);
+    QVERIFY(waiterReplica.wait());
+    compareData(&m_sourceModel, model.data());
 }
 
 void TestModelView::cleanup()

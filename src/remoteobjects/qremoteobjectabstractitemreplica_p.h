@@ -218,6 +218,13 @@ public Q_SLOTS:
         __repc_args << QVariant::fromValue(index) << QVariant::fromValue(command);
         send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);
     }
+    void replicaSetData(IndexList index, const QVariant &value, int role)
+    {
+        static int __repc_index = QAbstractItemReplicaPrivate::staticMetaObject.indexOfSlot("replicaSetData(IndexList,QVariant,int)");
+        QVariantList __repc_args;
+        __repc_args << QVariant::fromValue(index) << QVariant::fromValue(value) << QVariant::fromValue(role);
+        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);
+    }
     void onHeaderDataChanged(Qt::Orientation orientation, int first, int last);
     void onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles);
     void onRowsInserted(const IndexList &parent, int start, int end);
