@@ -54,6 +54,37 @@
 
 namespace {
 
+template <class Storage>
+bool waitForSignal(QVector<Storage> *storage, QSignalSpy *spy)
+{
+    if (!storage || !spy)
+        return false;
+    const int maxRuns = 10;
+    int runs = 0;
+    const int storageSize = storage->size();
+    QVector<Storage> rowsToRemove;
+    while (runs < maxRuns) {
+        ++runs;
+        if (spy->wait() && !spy->isEmpty()){
+
+            foreach (const Storage &row, *storage) {
+                for (int i = 0; i < spy->size(); ++i) {
+                    const QList<QVariant> &signal = spy->at(i);
+                    if (row.match(signal)) {
+                        rowsToRemove.append(row);
+                        break;
+                    }
+                }
+            }
+            foreach (const Storage &row, rowsToRemove)
+                storage->removeAll(row);
+            if (storage->isEmpty())
+                break;
+        }
+    }
+    return storage->isEmpty() && spy->size() == storageSize;
+}
+
 inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
 {
     QModelIndex left = lhs;
@@ -939,8 +970,41 @@ void TestModelView::testDataInsertionTree()
 
 void TestModelView::testDataRemoval()
 {
-    m_sourceModel.removeRows(2, 4);
-    //Maybe some checks here?
+    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+
+    FetchData f(model.data());
+    f.addAll();
+    f.fetchAndWait();
+
+    QVector<InsertedRow> removedRows;
+    QSignalSpy rowSpy(model.data(), SIGNAL(rowsRemoved(QModelIndex,int,int)));
+
+
+    const QModelIndex parent = m_sourceModel.index(10, 0);
+    m_sourceModel.removeRows(0, 4, parent);
+    removedRows.append(InsertedRow(parent, 0, 3));
+    QVERIFY(waitForSignal(&removedRows, &rowSpy));
+    rowSpy.clear();
+    QCOMPARE(m_sourceModel.rowCount(parent), model->rowCount(model->index(10, 0)));
+    m_sourceModel.removeRows(2, 9);
+    removedRows.append(InsertedRow(QModelIndex(), 2, 10));
+    QVERIFY(waitForSignal(&removedRows, &rowSpy));
+
+
+    QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
+
+    // change one row to check for inconsistencies
+
+    QVector<QModelIndex> pending;
+    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    pending << m_sourceModel.index(0, 0, parent);
+    WaitForDataChanged w(pending, &dataChangedSpy);
+    m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
+    m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
+
+    w.wait();
+
+    compareTreeData(&m_sourceModel, model.data());
 }
 
 void TestModelView::testRoleNames()
