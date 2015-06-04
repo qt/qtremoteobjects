@@ -750,7 +750,7 @@ bool QAbstractItemReplica::hasChildren(const QModelIndex &parent) const
 {
     CacheData *parentItem = d->cacheData(parent);
     if (parent.isValid() && parent.column() != 0)
-        return 0;
+        return false;
     else
         return parentItem->hasChildren;
 }
