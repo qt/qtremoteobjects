@@ -89,6 +89,12 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
     }
 
     new QRemoteObjectSource(object, api, adapter, this);
+    foreach (ServerIoDevice *conn, m_connections) {
+        QRemoteObjectPackets::QObjectListPacket p(QStringList(api->name()));
+        conn->write(p.serialize());
+    }
+    if (const int count = m_connections.size())
+        qCDebug(QT_REMOTEOBJECT) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
     return true;
 }
 
