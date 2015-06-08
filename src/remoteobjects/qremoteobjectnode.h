@@ -90,10 +90,10 @@ public:
     void connect(const QUrl &address=QUrl(QString::fromLatin1("local:replica")));
     const QRemoteObjectRegistry *registry() const;
     template < class ObjectType >
-    ObjectType *acquire()
+    ObjectType *acquire(const QString &name = QString())
     {
         ObjectType* replica = new ObjectType;
-        return qobject_cast< ObjectType* >(acquire(&ObjectType::staticMetaObject, replica));
+        return qobject_cast< ObjectType* >(acquire(&ObjectType::staticMetaObject, replica, name));
     }
     QRemoteObjectDynamicReplica *acquire(const QString &name);
     QAbstractItemReplica *acquireModel(const QString &name);
@@ -111,12 +111,6 @@ public:
     ErrorCode lastError() const;
 
 private:
-    template < class ObjectType >
-    ObjectType *acquire(const QString &name)
-    {
-        ObjectType* replica = new ObjectType;
-        return qobject_cast< ObjectType* >(acquire(&ObjectType::staticMetaObject, replica, name));
-    }
     QRemoteObjectNode(const QUrl &hostAddress, const QUrl &registryAddress);
     QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &name = QString::fromLatin1(""));
     bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=Q_NULLPTR);

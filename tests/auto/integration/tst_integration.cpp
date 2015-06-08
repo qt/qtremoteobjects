@@ -70,7 +70,9 @@ class tst_Integration: public QObject
     QRemoteObjectNode m_qobjectServer;
     QRemoteObjectNode m_qobjectClient;
     QScopedPointer<EngineReplica> m_regBase;
+    QScopedPointer<EngineReplica> m_regNamed;
     QScopedPointer<QRemoteObjectDynamicReplica> m_regDynamic;
+    QScopedPointer<QRemoteObjectDynamicReplica> m_regDynamicNamed;
     int m_regAdded;
 private slots:
 
@@ -129,6 +131,27 @@ private slots:
         QTest::qWait(20);
     }
 
+    void namedObjectTest() {
+        engine->setRpm(3333);
+        Engine *e = new Engine();
+        e->setRpm(4444);
+        m_basicServer.enableRemoting(e, "MyTestEngine");
+
+        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QSharedPointer<EngineReplica> namedEngine_r(m_client.acquire<EngineReplica>("MyTestEngine"));
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->cylinders(), 4);
+        QCOMPARE(engine_r->rpm(), 3333);
+        namedEngine_r->waitForSource();
+        QCOMPARE(namedEngine_r->cylinders(), 4);
+        QCOMPARE(namedEngine_r->rpm(), 4444);
+
+        delete e;
+        //Deleting the object before disable remoting will cause disable remoting to
+        //return false;
+        QVERIFY(!m_basicServer.disableRemoting(e));
+    }
+
     void onAdded(QRemoteObjectSourceLocation entry)
     {
         if (entry.first == "Engine") {
@@ -136,25 +159,36 @@ private slots:
             m_regBase.reset(m_registryClient.acquire<EngineReplica>());
             m_regDynamic.reset(m_registryClient.acquire("Engine"));
         }
+        if (entry.first == "MyTestEngine") {
+            m_regAdded += 2;
+            m_regNamed.reset(m_registryClient.acquire<EngineReplica>("MyTestEngine"));
+            m_regDynamicNamed.reset(m_registryClient.acquire("MyTestEngine"));
+        }
     }
 
     void registryAddedTest() {
         m_regAdded = 0;
-        connect(m_registryServer.registry(), &QRemoteObjectRegistry::remoteObjectAdded, this, &tst_Integration::onAdded);
+        connect(m_registryClient.registry(), &QRemoteObjectRegistry::remoteObjectAdded, this, &tst_Integration::onAdded);
 
-        QSignalSpy addedSpy(m_registryServer.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
+        QSignalSpy addedSpy(m_registryClient.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
 
         Engine e;
         e.setRpm(1111);
         m_localCentreServer.enableRemoting(&e);
-        while (m_regAdded < 1) {
-            bool added = addedSpy.wait();
-            QCOMPARE(added, true);
+        Engine e2;
+        e2.setRpm(2222);
+        m_localCentreServer.enableRemoting(&e2, "MyTestEngine");
+        while (m_regAdded < 3) {
+            QVERIFY(addedSpy.wait());
         }
         m_regBase->waitForSource(1000);
+        m_regNamed->waitForSource(1000);
         m_regDynamic->waitForSource(1000);
+        m_regDynamicNamed->waitForSource(1000);
         QVERIFY(m_regBase->isInitialized());
         QCOMPARE(m_regBase->rpm(),1111);
+        QVERIFY(m_regNamed->isInitialized());
+        QCOMPARE(m_regNamed->rpm(),2222);
 
         QVERIFY(m_regDynamic->isInitialized());
         const QMetaObject *metaObject = m_regDynamic->metaObject();
@@ -164,9 +198,13 @@ private slots:
         const QMetaProperty property = metaObject->property(propertyIndex);
         QVERIFY(property.isValid());
 
-        QCOMPARE(property.read(m_regDynamic.data()).toInt(),1111);
+        QCOMPARE(property.read(m_regDynamic.data()).toInt(),e.rpm());
+
+        QVERIFY(m_regDynamicNamed->isInitialized());
+        QCOMPARE(property.read(m_regDynamicNamed.data()).toInt(),e2.rpm());
 
         QVERIFY(m_localCentreServer.disableRemoting(&e));
+        QVERIFY(m_localCentreServer.disableRemoting(&e2));
     }
 
     void registryTest() {
