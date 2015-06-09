@@ -43,6 +43,7 @@
 
 #include "qremoteobjectpacket_p.h"
 #include "qremoteobjectsource_p.h"
+#include "qremoteobjectnode_p.h"
 #include "qtremoteobjectglobal.h"
 
 #include <QStringList>
@@ -53,11 +54,11 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
     : m_server(m_factory.createServer(address, this))
 {
     if (m_server->listen(address)) {
-        qCDebug(QT_REMOTEOBJECT) << "QRemoteObjectSourceIo is Listening" << address;
+        qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;
     } else {
-        qCDebug(QT_REMOTEOBJECT) << "Listen failed";
-        qCDebug(QT_REMOTEOBJECT) << address;
-        qCDebug(QT_REMOTEOBJECT) << m_server->serverError();
+        qRODebug(this) << "Listen failed";
+        qRODebug(this) << address;
+        qRODebug(this) << m_server->serverError();
     }
 
     connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
@@ -73,7 +74,7 @@ QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
 bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name)
 {
     if (m_remoteObjects.contains(name)) {
-        qCWarning(QT_REMOTEOBJECT) << "Tried to register QRemoteObjectSource twice" << name;
+        qROWarning(this) << "Tried to register QRemoteObjectSource twice" << name;
         return false;
     }
 
@@ -84,7 +85,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
 {
     const QString name = api->name();
     if (!api->isDynamic() && m_remoteObjects.contains(name)) {
-        qCWarning(QT_REMOTEOBJECT) << "Tried to register QRemoteObjectSource twice" << name;
+        qROWarning(this) << "Tried to register QRemoteObjectSource twice" << name;
         return false;
     }
 
@@ -94,7 +95,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
         conn->write(p.serialize());
     }
     if (const int count = m_connections.size())
-        qCDebug(QT_REMOTEOBJECT) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
+        qRODebug(this) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
     return true;
 }
 
@@ -114,7 +115,7 @@ void QRemoteObjectSourceIo::registerSource(QRemoteObjectSource *pp)
     const QString name = pp->m_api->name();
     m_objectToSourceMap[pp->m_object] = pp;
     m_remoteObjects[name] = pp;
-    qCDebug(QT_REMOTEOBJECT) << "Registering" << name;
+    qRODebug(this) << "Registering" << name;
     emit remoteObjectAdded(qMakePair(name, serverAddress()));
 }
 
@@ -132,7 +133,7 @@ void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
     ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
     m_connections.remove(connection);
 
-    qCDebug(QT_REMOTEOBJECT) << "OnServerDisconnect";
+    qRODebug(this) << "OnServerDisconnect";
 
     Q_FOREACH (QRemoteObjectSource *pp, m_remoteObjects)
         pp->removeListener(connection);
@@ -162,12 +163,12 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         {
             const QAddObjectPacket *p = static_cast<const QAddObjectPacket *>(packet);
             const QString name = p->name;
-            qCDebug(QT_REMOTEOBJECT) << "AddObject" << name << p->isDynamic;
+            qRODebug(this) << "AddObject" << name << p->isDynamic;
             if (m_remoteObjects.contains(name)) {
                 QRemoteObjectSource *pp = m_remoteObjects[name];
                 pp->addListener(connection, p->isDynamic);
             } else {
-                qCWarning(QT_REMOTEOBJECT) << "Request to attach to non-existent RemoteObjectSource:" << name;
+                qROWarning(this) << "Request to attach to non-existent RemoteObjectSource:" << name;
             }
             break;
         }
@@ -175,16 +176,16 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         {
             const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
             const QString name = p->name;
-            qCDebug(QT_REMOTEOBJECT) << "RemoveObject" << name;
+            qRODebug(this) << "RemoveObject" << name;
             if (m_remoteObjects.contains(name)) {
                 QRemoteObjectSource *pp = m_remoteObjects[name];
                 const int count = pp->removeListener(connection);
                 Q_UNUSED(count);
                 //TODO - possible to have a timer that closes connections if not reopened within a timeout?
             } else {
-                qCWarning(QT_REMOTEOBJECT) << "Request to detach from non-existent RemoteObjectSource:" << name;
+                qROWarning(this) << "Request to detach from non-existent RemoteObjectSource:" << name;
             }
-            qCDebug(QT_REMOTEOBJECT) << "RemoveObject finished" << name;
+            qRODebug(this) << "RemoveObject finished" << name;
             break;
         }
         case QRemoteObjectPacket::InvokePacket:
@@ -200,14 +201,14 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                 if (p->call == QMetaObject::InvokeMetaMethod) {
                     const int resolvedIndex = pp->m_api->sourceMethodIndex(p->index);
                     if (resolvedIndex < 0) { //Invalid index
-                        qCWarning(QT_REMOTEOBJECT) << "Invalid method invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
+                        qROWarning(this) << "Invalid method invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
                         //TODO - consider moving this to packet validation?
                         break;
                     }
                     if (pp->m_api->isAdapterMethod(p->index))
-                        qCDebug(QT_REMOTEOBJECT) << "Adapter (method) Invoke-->" << name << pp->m_adapter->metaObject()->method(resolvedIndex).name();
+                        qRODebug(this) << "Adapter (method) Invoke-->" << name << pp->m_adapter->metaObject()->method(resolvedIndex).name();
                     else
-                        qCDebug(QT_REMOTEOBJECT) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
+                        qRODebug(this) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
                     int typeId = QMetaType::type(pp->m_api->typeName(p->index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
@@ -221,28 +222,28 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                 } else {
                     const int resolvedIndex = pp->m_api->sourcePropertyIndex(p->index);
                     if (resolvedIndex < 0) {
-                        qCWarning(QT_REMOTEOBJECT) << "Invalid property invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
+                        qROWarning(this) << "Invalid property invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
                         //TODO - consider moving this to packet validation?
                         break;
                     }
                     if (pp->m_api->isAdapterProperty(p->index))
-                        qCDebug(QT_REMOTEOBJECT) << "Adapter (write property) Invoke-->" << name << pp->m_adapter->metaObject()->property(resolvedIndex).name();
+                        qRODebug(this) << "Adapter (write property) Invoke-->" << name << pp->m_adapter->metaObject()->property(resolvedIndex).name();
                     else
-                        qCDebug(QT_REMOTEOBJECT) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(resolvedIndex).name();
+                        qRODebug(this) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(resolvedIndex).name();
                     pp->invoke(QMetaObject::WriteProperty, pp->m_api->isAdapterProperty(p->index), resolvedIndex, p->args);
                 }
             }
             break;
         }
         default:
-            qCDebug(QT_REMOTEOBJECT) << "OnReadReady invalid type" << packet->id;
+            qRODebug(this) << "OnReadReady invalid type" << packet->id;
         }
     } while (connection->bytesAvailable()); // have bytes left over, so do another iteration
 }
 
 void QRemoteObjectSourceIo::handleConnection()
 {
-    qCDebug(QT_REMOTEOBJECT) << "handleConnection" << m_connections;
+    qRODebug(this) << "handleConnection" << m_connections;
 
     ServerIoDevice *conn = m_server->nextPendingConnection();
     m_connections.insert(conn);
@@ -253,7 +254,7 @@ void QRemoteObjectSourceIo::handleConnection()
 
     QRemoteObjectPackets::QObjectListPacket p(QStringList(m_remoteObjects.keys()));
     conn->write(p.serialize());
-    qCDebug(QT_REMOTEOBJECT) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
+    qRODebug(this) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
 }
 
 QUrl QRemoteObjectSourceIo::serverAddress() const

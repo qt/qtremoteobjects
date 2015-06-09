@@ -107,12 +107,12 @@ void QRemoteObjectNodePrivate::timerEvent(QTimerEvent*)
     if (pendingReconnect.isEmpty())
         reconnectTimer.stop();
 
-    qCDebug(QT_REMOTEOBJECT) << "timerEvent" << pendingReconnect.size();
+    qRODebug(this) << "timerEvent" << pendingReconnect.size();
 }
 
 QRemoteObjectReplica *QRemoteObjectNodePrivate::acquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
-    qCDebug(QT_REMOTEOBJECT) << "Starting acquire for" << name;
+    qRODebug(this) << "Starting acquire for" << name;
     isInitialized.storeRelease(1);
     openConnectionIfNeeded(name);
     QMutexLocker locker(&mutex);
@@ -143,7 +143,7 @@ QRemoteObjectReplica *QRemoteObjectNodePrivate::acquire(const QMetaObject *meta,
         }
         instance->initialize();
         replicas.insert(name, instance->d_ptr.toWeakRef());
-        qCDebug(QT_REMOTEOBJECT) << "Acquire - Created new instance" << name<<remoteObjectAddresses();
+        qRODebug(this) << "Acquire - Created new instance" << name<<remoteObjectAddresses();
     }
     return instance;
 }
@@ -166,13 +166,13 @@ void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectRepl
     for (int idx = memberOffset; idx < us->methodCount(); ++idx) {
         const QMetaMethod mm = us->method(idx);
 
-        qCDebug(QT_REMOTEOBJECT) << idx << mm.name();
+        qRODebug(this) << idx << mm.name();
         if (mm.methodType() != QMetaMethod::Signal)
             continue;
 
         // try to connect to a signal on the parent that has the same method signature
         QByteArray sig = QMetaObject::normalizedSignature(mm.methodSignature().constData());
-        qCDebug(QT_REMOTEOBJECT) << sig;
+        qRODebug(this) << sig;
         if (them->indexOfSignal(sig.constData()) == -1)
             continue;
 
@@ -182,25 +182,25 @@ void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectRepl
         Q_UNUSED(res);
         ++nConnections;
 
-        qCDebug(QT_REMOTEOBJECT) << sig << res;
+        qRODebug(this) << sig << res;
     }
 
-    qCDebug(QT_REMOTEOBJECT) << "# connections =" << nConnections;
+    qRODebug(this) << "# connections =" << nConnections;
 }
 
 void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
 {
-    qCDebug(QT_REMOTEOBJECT) << Q_FUNC_INFO << name << this;
+    qRODebug(this) << Q_FUNC_INFO << name << this;
     if (remoteObjectAddresses().contains(name)) {
         initConnection(remoteObjectAddresses()[name]);
-        qCDebug(QT_REMOTEOBJECT) << "openedConnection" << remoteObjectAddresses()[name];
+        qRODebug(this) << "openedConnection" << remoteObjectAddresses()[name];
     }
 }
 
 void QRemoteObjectNodePrivate::initConnection(const QUrl &address)
 {
     if (requestedUrls.contains(address)) {
-        qCWarning(QT_REMOTEOBJECT) << "Connection already initialized for " << address.toString();
+        qROWarning(this) << "Connection already initialized for " << address.toString();
         return;
     }
 
@@ -210,7 +210,7 @@ void QRemoteObjectNodePrivate::initConnection(const QUrl &address)
     Q_ASSERT_X(connection, Q_FUNC_INFO, "Could not create IODevice for client");
 
     knownNodes.insert(connection);
-    qCDebug(QT_REMOTEOBJECT) << "Replica Connection isValid" << connection->isOpen();
+    qRODebug(this) << "Replica Connection isValid" << connection->isOpen();
     connect(connection, SIGNAL(shouldReconnect(ClientIoDevice*)), this, SLOT(onShouldReconnect(ClientIoDevice*)));
     connection->connectToServer();
     connect(connection, SIGNAL(readyRead()), &clientRead, SLOT(map()));
@@ -233,13 +233,13 @@ bool QRemoteObjectNodePrivate::hasInstance(const QString &name)
 
 void QRemoteObjectNodePrivate::onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry)
 {
-    qCDebug(QT_REMOTEOBJECT) <<"onRemoteObjectSourceAdded"<< entry << replicas<<replicas.contains(entry.first);
+    qRODebug(this) << "onRemoteObjectSourceAdded" << entry << replicas << replicas.contains(entry.first);
     if (!entry.first.isEmpty()) {
         QRemoteObjectSourceLocations locs = registry->sourceLocations();
         locs[entry.first] = entry.second;
         //TODO Is there a way to extend QRemoteObjectSourceLocations in place?
         registry->setProperty(0, QVariant::fromValue(locs));
-        qCDebug(QT_REMOTEOBJECT) << "onRemoteObjectSourceAdded, now locations =" << locs;
+        qRODebug(this) << "onRemoteObjectSourceAdded, now locations =" << locs;
     }
     if (replicas.contains(entry.first)) //We have a replica waiting on this remoteObject
     {
@@ -251,7 +251,7 @@ void QRemoteObjectNodePrivate::onRemoteObjectSourceAdded(const QRemoteObjectSour
 
         initConnection(entry.second);
 
-        qCDebug(QT_REMOTEOBJECT) << "Called initConnection due to new RemoteObjectSource added via registry" << entry.first;
+        qRODebug(this) << "Called initConnection due to new RemoteObjectSource added via registry" << entry.first;
     }
 }
 
@@ -266,7 +266,7 @@ void QRemoteObjectNodePrivate::onRemoteObjectSourceRemoved(const QRemoteObjectSo
 
 void QRemoteObjectNodePrivate::onRegistryInitialized()
 {
-    qCDebug(QT_REMOTEOBJECT) << "Registry Initialized" << remoteObjectAddresses();
+    qRODebug(this) << "Registry Initialized" << remoteObjectAddresses();
 
     QHashIterator<QString, QUrl> i(remoteObjectAddresses());
     while (i.hasNext()) {
@@ -303,7 +303,7 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
     }
     if (!reconnectTimer.isActive()) {
         reconnectTimer.start(retryInterval, this);
-        qCDebug(QT_REMOTEOBJECT) << "Starting reconnect timer";
+        qRODebug(this) << "Starting reconnect timer";
     }
 }
 
@@ -323,9 +323,9 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     {
         const QObjectListPacket *p = static_cast<const QObjectListPacket *>(packet);
         const QSet<QString> newObjects = p->objects.toSet();
-        qCDebug(QT_REMOTEOBJECT) << "newObjects:" << newObjects;
+        qRODebug(this) << "newObjects:" << newObjects;
         Q_FOREACH (const QString &remoteObject, newObjects) {
-            qCDebug(QT_REMOTEOBJECT) << "  connectedSources.contains("<<remoteObject<<")"<<connectedSources.contains(remoteObject)<<replicas.contains(remoteObject);
+            qRODebug(this) << "  connectedSources.contains("<<remoteObject<<")"<<connectedSources.contains(remoteObject)<<replicas.contains(remoteObject);
             if (!connectedSources.contains(remoteObject)) {
                 connectedSources[remoteObject] = connection;
                 connection->addSource(remoteObject);
@@ -335,8 +335,8 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
                     if (rep && cRep->connectionToSource.isNull())
                     {
-                        qCDebug(QT_REMOTEOBJECT) << "Test" << remoteObject<<replicas.keys();
-                        qCDebug(QT_REMOTEOBJECT) << cRep;
+                        qRODebug(this) << "Test" << remoteObject<<replicas.keys();
+                        qRODebug(this) << cRep;
                         cRep->setConnection(connection);
                     } else if (!rep) { //replica has been deleted, remove from list
                         replicas.remove(remoteObject);
@@ -352,7 +352,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     {
         const QInitPacket *p = static_cast<const QInitPacket *>(packet);
         const QString object = p->name;
-        qCDebug(QT_REMOTEOBJECT) << "InitObject-->" <<object << this;
+        qRODebug(this) << "InitObject-->" <<object << this;
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
         if (rep)
         {
@@ -367,7 +367,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     {
         const QInitDynamicPacket *p = static_cast<const QInitDynamicPacket *>(packet);
         const QString object = p->name;
-        qCDebug(QT_REMOTEOBJECT) << "InitObject-->" <<object << this;
+        qRODebug(this) << "InitObject-->" <<object << this;
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
         if (rep)
         {
@@ -382,7 +382,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     case QRemoteObjectPacket::RemoveObject:
     {
         const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
-        qCDebug(QT_REMOTEOBJECT) << "RemoveObject-->" << p->name << this;
+        qRODebug(this) << "RemoveObject-->" << p->name << this;
         connectedSources.remove(p->name);
         connection->removeSource(p->name);
         if (replicas.contains(p->name)) { //We have a replica waiting on this remoteObject
@@ -404,7 +404,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     {
         const QPropertyChangePacket *p = static_cast<const QPropertyChangePacket *>(packet);
         const QString object = p->name;
-        qCDebug(QT_REMOTEOBJECT) << "PropertyChange-->" << p->name << QString::fromLatin1(p->propertyName.constData());
+        qRODebug(this) << "PropertyChange-->" << p->name << QString::fromLatin1(p->propertyName.constData());
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
         if (rep)
         {
@@ -430,7 +430,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             for (int i = 0; i < p->args.size(); i++) {
                 param[i + 1] = const_cast<void *>(p->args[i].data());
             }
-            qCDebug(QT_REMOTEOBJECT) << "Replica Invoke-->" << p->name << rep->m_metaObject->method(p->index+rep->m_signalOffset).name() << p->index << rep->m_signalOffset;
+            qRODebug(this) << "Replica Invoke-->" << p->name << rep->m_metaObject->method(p->index+rep->m_signalOffset).name() << p->index << rep->m_signalOffset;
             QMetaObject::activate(rep.data(), rep->metaObject(), p->index+rep->m_signalOffset, param.data());
         } else { //replica has been deleted, remove from list
             replicas.remove(p->name);
@@ -442,7 +442,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         const QInvokeReplyPacket *p = static_cast<const QInvokeReplyPacket *>(packet);
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
         if (rep) {
-            qCDebug(QT_REMOTEOBJECT) << "Received InvokeReplyPacket ack'ing serial id:" << p->ackedSerialId;
+            qRODebug(this) << "Received InvokeReplyPacket ack'ing serial id:" << p->ackedSerialId;
             rep->notifyAboutReply(p);
         } else { //replica has been deleted, remove from list
             replicas.remove(p->name);
@@ -541,6 +541,18 @@ QRemoteObjectNode::~QRemoteObjectNode()
 }
 
 /*!
+    Sets \a name as the internal name for this Node.  This
+    is then output as part of the logging (if enabled).
+    This is primarily useful if you merge log data from multiple nodes.
+*/
+void QRemoteObjectNode::setName(const QString &name)
+{
+    d_ptr->setObjectName(name);
+    if (d_ptr->remoteObjectIo)
+        d_ptr->remoteObjectIo->setObjectName(name);
+}
+
+/*!
     Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
     is not a Host node, it return an empty QUrl.
 
@@ -575,6 +587,9 @@ bool QRemoteObjectNode::setHostUrl(const QUrl &hostAddress)
     }
 
     d_ptr->remoteObjectIo.reset(new QRemoteObjectSourceIo(hostAddress));
+    //If we've given a name to the node, set it on the sourceIo as well
+    if (!d_ptr->objectName().isEmpty())
+        d_ptr->remoteObjectIo->setObjectName(d_ptr->objectName());
     //Since we don't know whether setHostUrl or setRegistryUrl/setRegistryHost will be called first,
     //break it into two pieces.  setHostUrl connects the RemoteObjectSourceIo->[add/remove]RemoteObjectSource to QRemoteObjectReplicaNode->[add/remove]RemoteObjectSource
     //setRegistry* calls appropriately connect RemoteObjecSourcetIo->[add/remove]RemoteObjectSource to the registry when it is created
@@ -784,7 +799,7 @@ bool QRemoteObjectNode::enableRemoting(QObject *object, const QString &name)
             _name = object->objectName();
             if (_name.isEmpty()) {
                 d_ptr->m_lastError = MissingObjectName;
-                qCWarning(QT_REMOTEOBJECT) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
+                qCWarning(QT_REMOTEOBJECT) << qPrintable(d_ptr->objectName()) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
                 return false;
             }
         }

@@ -54,6 +54,8 @@
 #include "rep_localdatacenter_replica.h"
 #include "rep_tcpdatacenter_replica.h"
 
+#define SET_NODE_NAME(obj) (obj).setName(QLatin1String(#obj))
+
 //DUMMY impl for variant comparison
 bool operator<(const QVector<int> &lhs, const QVector<int> &rhs)
 {
@@ -94,15 +96,17 @@ private slots:
         //Setup registry
         //Registry needs to be created first until we get the retry mechanism implemented
         m_registryServer = QRemoteObjectNode::createRegistryHostNode();
+        SET_NODE_NAME(m_registryServer);
 
         m_client = QRemoteObjectNode();
+        SET_NODE_NAME(m_client);
         m_registryClient = QRemoteObjectNode::createNodeConnectedToRegistry();
+        SET_NODE_NAME(m_registryClient);
         const bool res = m_registryClient.waitForRegistry(3000);
         QVERIFY(res);
-        //m_client.setObjectName("DirectTestClient");
-        //m_registryClient.setObjectName("RegistryTestClient");
 
         m_basicServer = QRemoteObjectNode::createHostNode(QUrl("tcp://localhost:9999"));
+        SET_NODE_NAME(m_basicServer);
 
         engine.reset(new Engine);
         speedometer.reset(new Speedometer);
@@ -116,6 +120,7 @@ private slots:
         QMetaType::registerComparators<QVector<int> >();
         qRegisterMetaTypeStreamOperators<QVector<int> >();
         m_localCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl("local:local"));
+        SET_NODE_NAME(m_localCentreServer);
         dataCenterLocal.reset(new LocalDataCenterSimpleSource);
         dataCenterLocal->setData1(5);
         dataCenterLocal->setData2(5.0);
@@ -124,6 +129,7 @@ private slots:
         m_localCentreServer.enableRemoting(dataCenterLocal.data());
 
         m_tcpCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl("tcp://localhost:19999"));
+        SET_NODE_NAME(m_tcpCentreServer);
         dataCenterTcp.reset(new TcpDataCenterSimpleSource);
         dataCenterTcp->setData1(5);
         dataCenterTcp->setData2(5.0);
@@ -246,6 +252,7 @@ private slots:
 
     void noRegistryTest() {
         QRemoteObjectNode regReplica = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
+        SET_NODE_NAME(regReplica);
         const bool res = regReplica.waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(regReplica.registry()->isInitialized(), false);
@@ -256,6 +263,7 @@ private slots:
 
     void delayedRegistryTest() {
         QRemoteObjectNode regReplica = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
+        SET_NODE_NAME(regReplica);
         const bool res = regReplica.waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(regReplica.registry()->isInitialized(), false);
@@ -265,6 +273,7 @@ private slots:
         QSignalSpy spy(regReplica.registry(), SIGNAL(initialized()));
         QSignalSpy addedSpy(regReplica.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
         QRemoteObjectNode regSource = QRemoteObjectNode::createRegistryHostNode(QUrl(QStringLiteral("local:testRegistry")));
+        SET_NODE_NAME(regSource);
         bool added = addedSpy.wait();
         QVERIFY(spy.count() > 0);
         QCOMPARE(added, true);
@@ -564,6 +573,7 @@ private slots:
 
     void apiTest() {
         m_qobjectServer = QRemoteObjectNode::createHostNode(QUrl("local:qobject"));
+        SET_NODE_NAME(m_qobjectServer);
 
         m_qobjectServer.enableRemoting<EngineSourceAPI>(engine.data());
 
@@ -591,6 +601,7 @@ private slots:
         const QScopedPointer<EngineReplica> engine_d(d_client.acquire<EngineReplica>());
 
         QRemoteObjectNode d_server = QRemoteObjectNode::createHostNode(QUrl("local:cBST"));
+        SET_NODE_NAME(d_server);
         d_server.enableRemoting<EngineSourceAPI>(engine.data());
         QSignalSpy spy(engine_d.data(), SIGNAL(rpmChanged()));
         engine->setRpm(50);

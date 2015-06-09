@@ -89,6 +89,7 @@ public:
     bool waitForRegistry(int timeout = 30000);
     void connect(const QUrl &address=QUrl(QString::fromLatin1("local:replica")));
     const QRemoteObjectRegistry *registry() const;
+    void setName(const QString &name);
     template < class ObjectType >
     ObjectType *acquire(const QString &name = QString())
     {
