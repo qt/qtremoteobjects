@@ -105,7 +105,7 @@ private slots:
         qRegisterMetaType<QVector<int> >();
         QMetaType::registerComparators<QVector<int> >();
         qRegisterMetaTypeStreamOperators<QVector<int> >();
-        m_localCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry();
+        m_localCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl("local:local"));
         dataCenterLocal.reset(new LocalDataCenterSimpleSource);
         dataCenterLocal->setData1(5);
         dataCenterLocal->setData2(5.0);
