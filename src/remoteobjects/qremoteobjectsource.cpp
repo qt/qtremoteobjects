@@ -127,6 +127,9 @@ QVariantList QRemoteObjectSource::marshalArgs(int index, void **a)
 
 bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
 {
+    int status = -1;
+    int flags = 0;
+
     QVarLengthArray<void*, 10> param(args.size() + 1);
 
     if (c == QMetaObject::InvokeMetaMethod) {
@@ -139,16 +142,25 @@ bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index
         for (int i = 0; i < args.size(); ++i) {
             param[i + 1] = const_cast<void*>(args.at(i).data());
         }
-
+    } else if (c == QMetaObject::WriteProperty) {
+        for (int i = 0; i < args.size(); ++i) {
+            param[i] = const_cast<void*>(args.at(i).data());
+        }
+        Q_ASSERT(param.size() == 2); // for return-value and setter value
+        // check QMetaProperty::write for an explanation of these
+        param.append(&status);
+        param.append(&flags);
     } else {
         for (int i = 0; i < args.size(); ++i) {
             param[i] = const_cast<void*>(args.at(i).data());
         }
-
     }
+    int r = -1;
     if (forAdapter)
-        return (m_adapter->qt_metacall(c, index, param.data()) == -1);
-    return (parent()->qt_metacall(c, index, param.data()) == -1);
+        r = m_adapter->qt_metacall(c, index, param.data());
+    else
+        r = parent()->qt_metacall(c, index, param.data());
+    return r == -1 && status == -1;
 }
 
 #ifdef Q_COMPILER_UNIFORM_INIT
