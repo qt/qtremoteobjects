@@ -417,6 +417,31 @@ private slots:
         engine_r->unnormalizedSignature(0, 0);
     }
 
+    void setterTest()
+    {
+        QSharedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged()));
+        engine_r->setRpm(42);
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(engine_r->rpm(), 42);
+    }
+
+    void dynamicSetterTest()
+    {
+        QSharedPointer<QRemoteObjectDynamicReplica> engine_dr(m_client.acquire("Engine"));
+        engine_dr->waitForSource();
+        const QMetaObject *metaObject = engine_dr->metaObject();
+        const int propIndex = metaObject->indexOfProperty("rpm");
+        const QMetaProperty mp =  metaObject->property(propIndex);
+        QSignalSpy spy(engine_dr.data(), QByteArray(QByteArrayLiteral("2")+mp.notifySignal().methodSignature().constData()));
+        mp.write(engine_dr.data(), 44);
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(mp.read(engine_dr.data()).toInt(), 44);
+    }
+
     void slotWithParameterTest() {
         engine->setRpm(0);
 
