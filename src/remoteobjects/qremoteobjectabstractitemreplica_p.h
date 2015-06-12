@@ -274,6 +274,7 @@ public:
     int m_lastRequested;
     QVector<RequestedData> m_requestedData;
     QVector<RequestedHeaderData> m_requestedHeaderData;
+    QVector<QRemoteObjectPendingCallWatcher*> m_pendingRequests;
     QAbstractItemReplica *q;
 };
 

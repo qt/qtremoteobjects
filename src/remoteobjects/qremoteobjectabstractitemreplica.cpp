@@ -74,6 +74,7 @@ QAbstractItemReplicaPrivate::QAbstractItemReplicaPrivate()
 
 QAbstractItemReplicaPrivate::~QAbstractItemReplicaPrivate()
 {
+    qDeleteAll(m_pendingRequests);
 }
 
 void QAbstractItemReplicaPrivate::initialize()
@@ -292,6 +293,8 @@ void QAbstractItemReplicaPrivate::handleModelResetDone(QRemoteObjectPendingCallW
     m_headerData[0].resize(size.width());
     m_headerData[1].resize(size.height());
     q->endResetModel();
+    m_pendingRequests.removeAll(watcher);
+    delete watcher;
 }
 
 void QAbstractItemReplicaPrivate::handleSizeDone(QRemoteObjectPendingCallWatcher *watcher)
@@ -324,13 +327,15 @@ void QAbstractItemReplicaPrivate::handleSizeDone(QRemoteObjectPendingCallWatcher
     } else {
         Q_ASSERT_X(parentItem->children.count() == size.height(), __FUNCTION__, qPrintable(QString(QLatin1String("%1 != %2")).arg(parentItem->children.count()).arg(size.height())));
     }
-
+    m_pendingRequests.removeAll(watcher);
+    delete watcher;
 }
 
 void QAbstractItemReplicaPrivate::init()
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
     SizeWatcher *watcher = doModelReset();
+    m_pendingRequests.push_back(watcher);
     connect(watcher, &SizeWatcher::finished, this, &QAbstractItemReplicaPrivate::handleInitDone);
 }
 
@@ -339,6 +344,7 @@ SizeWatcher* QAbstractItemReplicaPrivate::doModelReset()
     IndexList parentList;
     QRemoteObjectPendingReply<QSize> reply = replicaSizeRequest(parentList);
     SizeWatcher *watcher = new SizeWatcher(parentList, reply);
+    m_pendingRequests.push_back(watcher);
     return watcher;
 }
 
@@ -437,6 +443,8 @@ void QAbstractItemReplicaPrivate::requestedData(QRemoteObjectPendingCallWatcher 
     Q_ASSERT(startIndex.isValid());
     Q_ASSERT(endIndex.isValid());
     emit q->dataChanged(startIndex, endIndex, watcher->roles);
+    m_pendingRequests.removeAll(watcher);
+    delete watcher;
 }
 
 void QAbstractItemReplicaPrivate::fetchPendingData()
@@ -513,6 +521,7 @@ void QAbstractItemReplicaPrivate::fetchPendingData()
 
         QRemoteObjectPendingReply<DataEntries> reply = replicaRowRequest(data.start, data.end, data.roles);
         RowWatcher *watcher = new RowWatcher(data.start, data.end, data.roles, reply);
+        m_pendingRequests.push_back(watcher);
         connect(watcher, &RowWatcher::finished, this, &QAbstractItemReplicaPrivate::requestedData);
     }
     m_requestedData.clear();
@@ -549,6 +558,7 @@ void QAbstractItemReplicaPrivate::fetchPendingHeaderData()
     HeaderWatcher *watcher = new HeaderWatcher(orientations, sections, roles, reply);
     connect(watcher, &HeaderWatcher::finished, this, &QAbstractItemReplicaPrivate::requestedHeaderData);
     m_requestedHeaderData.clear();
+    m_pendingRequests.push_back(watcher);
 }
 
 static inline QVector<QPair<int, int> > listRanges(const QVector<int> &list)
@@ -604,6 +614,8 @@ void QAbstractItemReplicaPrivate::requestedHeaderData(QRemoteObjectPendingCallWa
         emit q->headerDataChanged(Qt::Horizontal, horRanges[i].first, horRanges[i].second);
     for (int i = 0; i < verRanges.size(); ++i)
         emit q->headerDataChanged(Qt::Vertical, verRanges[i].first, verRanges[i].second);
+    m_pendingRequests.removeAll(watcher);
+    delete watcher;
 }
 
 QAbstractItemReplica::QAbstractItemReplica(QAbstractItemReplicaPrivate *rep)
