@@ -58,6 +58,14 @@ bool operator<(const QVector<int> &lhs, const QVector<int> &rhs)
     return lhs.size() < rhs.size();
 }
 
+class TestLargeData: public QObject
+{
+    Q_OBJECT
+
+Q_SIGNALS:
+    void send(const QByteArray &data);
+};
+
 class tst_Integration: public QObject
 {
     Q_OBJECT
@@ -590,6 +598,47 @@ private slots:
 
     }
 
+    void largeDataLocalTest() {
+        TestLargeData t;
+        m_localCentreServer.enableRemoting(&t, "large");
+
+        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_registryClient.acquire("large"));
+        rep->waitForSource();
+        QVERIFY(rep->isInitialized());
+        const QMetaObject *metaObject = rep->metaObject();
+        const int sigIndex = metaObject->indexOfSignal("send(QByteArray)");
+        QVERIFY(sigIndex != -1);
+        const QMetaMethod mm =  metaObject->method(sigIndex);
+        QSignalSpy spy(rep.data(), QByteArray(QByteArrayLiteral("2")+mm.methodSignature().constData()));
+        const QByteArray data(16384,'y');
+        emit t.send(data);
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        const QList<QVariant> &arguments = spy.first();
+        QVERIFY(arguments.at(0).toByteArray() == data);
+        m_localCentreServer.disableRemoting(&t);
+    }
+
+    void largeDataTcpTest() {
+        TestLargeData t;
+        m_basicServer.enableRemoting(&t, "large");
+
+        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_client.acquire("large"));
+        rep->waitForSource();
+        QVERIFY(rep->isInitialized());
+        const QMetaObject *metaObject = rep->metaObject();
+        const int sigIndex = metaObject->indexOfSignal("send(QByteArray)");
+        QVERIFY(sigIndex != -1);
+        const QMetaMethod mm =  metaObject->method(sigIndex);
+        QSignalSpy spy(rep.data(), QByteArray(QByteArrayLiteral("2")+mm.methodSignature().constData()));
+        const QByteArray data(16384,'y');
+        emit t.send(data);
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+        const QList<QVariant> &arguments = spy.first();
+        QVERIFY(arguments.at(0).toByteArray() == data);
+        m_basicServer.disableRemoting(&t);
+    }
 
 private:
     QScopedPointer<Engine> engine;
