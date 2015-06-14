@@ -69,7 +69,7 @@ public:
     explicit QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *);
     virtual ~QRemoteObjectReplicaPrivate();
 
-    bool isDynamicReplica() const;
+    bool needsDynamicInitialization() const;
 
     virtual const QVariant getProperty(int i) const = 0;
     virtual void setProperties(const QVariantList &) = 0;

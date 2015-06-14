@@ -89,7 +89,7 @@ QConnectedReplicaPrivate::~QConnectedReplicaPrivate()
     }
 }
 
-bool QRemoteObjectReplicaPrivate::isDynamicReplica() const
+bool QRemoteObjectReplicaPrivate::needsDynamicInitialization() const
 {
     return m_metaObject == Q_NULLPTR;
 }
@@ -350,7 +350,7 @@ void QConnectedReplicaPrivate::setDisconnected()
 
 void QConnectedReplicaPrivate::requestRemoteObjectSource()
 {
-    QAddObjectPacket packet(m_objectName, isDynamicReplica());
+    QAddObjectPacket packet(m_objectName, needsDynamicInitialization());
     sendCommand(&packet);
 }
 
