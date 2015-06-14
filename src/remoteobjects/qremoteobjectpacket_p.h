@@ -146,7 +146,6 @@ public:
     QByteArray serialize() const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QMetaObject *createMetaObject(QMetaObjectBuilder &builder,
-                                  int &outNumSignals,
                                   QVector<QPair<QByteArray, QVariant> > *propertyValues = 0) const;
     QString name;
     QByteArray packetData;

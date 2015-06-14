@@ -355,7 +355,6 @@ bool QInitDynamicPacket::deserialize(QDataStream& in)
 }
 
 QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
-                                                  int &outNumSignals,
                                                   QVector<QPair<QByteArray, QVariant> > *propertyValues) const
 {
     quint32 numSignals = 0;
@@ -364,7 +363,6 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
 
     QDataStream ds(packetData);
     ds >> numSignals;
-    outNumSignals = numSignals;
     ds >> numMethods;
 
     int curIndex = 0;

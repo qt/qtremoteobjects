@@ -95,8 +95,8 @@ public:
 
     //Dynamic Replica data
     int m_numSignals;//TODO maybe here too
-    int m_signalOffset;
     int m_methodOffset;
+    int m_signalOffset;
     int m_propertyOffset;
 };
 

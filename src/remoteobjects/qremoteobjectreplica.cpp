@@ -63,17 +63,10 @@ QT_BEGIN_NAMESPACE
 using namespace QRemoteObjectPackets;
 
 QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta)
-    : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta),
+    : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0),
       m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount()),
       m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
 {
-    if (meta) {
-        m_methodOffset = m_signalOffset;
-        for (int i = m_signalOffset; i < meta->methodCount(); ++i) {
-            if (meta->method(i).methodType() == QMetaMethod::Signal)
-                ++m_methodOffset;
-        }
-    }
 }
 
 QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
@@ -183,8 +176,7 @@ void QRemoteObjectReplicaPrivate::initializeMetaObject(const QInitDynamicPacket 
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
     QVector<QPair<QByteArray, QVariant> > propertyValues;
-    m_metaObject = packet->createMetaObject(builder, m_numSignals, &propertyValues);
-    m_methodOffset = m_signalOffset + m_numSignals;
+    m_metaObject = packet->createMetaObject(builder, &propertyValues);
     //rely on order of properties;
     QVariantList list;
     typedef QPair<QByteArray, QVariant> PropertyPair;
@@ -364,13 +356,47 @@ void QConnectedReplicaPrivate::requestRemoteObjectSource()
 
 void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 {
-    for (int i = QRemoteObjectReplica::staticMetaObject.methodOffset(); i < m_metaObject->methodCount(); ++i) {
-        QMetaMethod mm = m_metaObject->method(i);
+    qCDebug(QT_REMOTEOBJECT) << "configurePrivate starting for" << this->m_objectName;
+    //We need to connect the Replicant only signals too
+    const QMetaObject *m =  qobject_cast<QRemoteObjectDynamicReplica *>(rep) ?
+                &QRemoteObjectReplica::staticMetaObject : &QRemoteObjectDynamicReplica::staticMetaObject;
+    for (int i = m->methodOffset(); i < m->methodCount(); ++i)
+    {
+        const QMetaMethod mm = m->method(i);
         if (mm.methodType() == QMetaMethod::Signal) {
             const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);
-            qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<mm.name();
+            qCDebug(QT_REMOTEOBJECT) << "  Rep connect"<<i<<res<<mm.name();
             Q_UNUSED(res);
         }
+    }
+    if (m_methodOffset == 0) //We haven't initialized the offsets yet
+    {
+        for (int i = m_signalOffset; i < m_metaObject->methodCount(); ++i) {
+            const QMetaMethod mm = m_metaObject->method(i);
+            if (mm.methodType() == QMetaMethod::Signal) {
+                ++m_numSignals;
+                const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);
+                qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<mm.name();
+                Q_UNUSED(res);
+            }
+        }
+        m_methodOffset = m_signalOffset + m_numSignals;
+        qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, signalOffset = %1, methodOffset = %2, #Signals = %3").arg(m_signalOffset).arg(m_methodOffset).arg(m_numSignals);
+    } else { //We have initialized offsets, this is an additional Replica attaching
+        for (int i = m_signalOffset; i < m_methodOffset; ++i) {
+            const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);
+            qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<m_metaObject->method(i).name();
+            Q_UNUSED(res);
+        }
+        if (isInitialized()) {
+            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate initialized, emitting signal on Replica");
+            emit rep->initialized(); //Emit from new replica only
+        }
+        if (!isReplicaValid()) {
+            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate not currently valid, emitting signal on Replica");
+            emit rep->isReplicaValidChanged(); //Emit from new replica only
+        }
+        qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, added Replica to existing ReplicaPrivate");
     }
 }
 
