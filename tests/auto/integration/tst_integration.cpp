@@ -41,6 +41,8 @@
 
 #include <QtTest/QtTest>
 #include <QMetaType>
+#include <QProcess>
+#include <QFileInfo>
 #include <qremoteobjectreplica.h>
 #include <QRemoteObjectNode>
 #include "engine.h"
@@ -639,6 +641,36 @@ private slots:
         QVERIFY(arguments.at(0).toByteArray() == data);
         m_basicServer.disableRemoting(&t);
     }
+
+#ifdef Q_OS_UNIX
+    void localServerConnectionTest()
+    {
+        QProcess testServer;
+        const QString progName = QStringLiteral("../localsockettestserver/localsockettestserver");
+        //create a fake socket as killing doesn't produce a necessarily unusable socket
+        QFile fake(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
+        fake.remove();
+        QVERIFY(fake.open(QFile::Truncate | QFile::WriteOnly));
+        QFileInfo info(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
+        QVERIFY(info.exists());
+
+        QRemoteObjectNode localSocketTestClient;
+        const QUrl connection = QUrl(QStringLiteral("local:crashMe"));
+        const QString objectname = QStringLiteral("connectme");
+        localSocketTestClient.connect(connection);
+        QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
+        QScopedPointer<QRemoteObjectDynamicReplica> replica;
+        replica.reset(localSocketTestClient.acquire(objectname));
+
+        testServer.start(progName);
+        QVERIFY(testServer.waitForStarted());
+        QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
+        replica->waitForSource(1000);
+        QVERIFY(replica->isInitialized());
+        testServer.terminate();
+        QVERIFY(testServer.waitForFinished());
+    }
+#endif
 
 private:
     QScopedPointer<Engine> engine;

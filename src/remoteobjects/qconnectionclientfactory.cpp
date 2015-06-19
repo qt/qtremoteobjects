@@ -175,6 +175,9 @@ void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
     case QLocalSocket::ConnectionError:
     case QLocalSocket::ConnectionRefusedError:
         //... TODO error reporting
+#ifdef Q_OS_UNIX
+        emit shouldReconnect(this);
+#endif
         break;
     default:
         break;
