@@ -131,9 +131,15 @@ QUrl LocalServerImpl::address() const
 bool LocalServerImpl::listen(const QUrl &address)
 {
 #ifdef Q_OS_UNIX
-    QLocalServer::removeServer(address.path());
-#endif
+    bool res = m_server.listen(address.path());
+    if (!res) {
+        QLocalServer::removeServer(address.path());
+        res = m_server.listen(address.path());
+    }
+    return res;
+#else
     return m_server.listen(address.path());
+#endif
 }
 
 QAbstractSocket::SocketError LocalServerImpl::serverError() const

@@ -670,6 +670,36 @@ private slots:
         testServer.terminate();
         QVERIFY(testServer.waitForFinished());
     }
+    // Tests to take over an existing socket if its still valid
+    void localServerConnectionTest2()
+    {
+        QProcess testServer;
+        const QString progName = QStringLiteral("../localsockettestserver/localsockettestserver");
+
+        testServer.start(progName);
+        QVERIFY(testServer.waitForStarted());
+        QFileInfo info(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
+        QVERIFY(info.exists());
+        testServer.kill();
+        testServer.waitForFinished();
+        QVERIFY(info.exists());
+
+        QRemoteObjectNode localSocketTestClient;
+        const QUrl connection = QUrl(QStringLiteral("local:crashMe"));
+        const QString objectname = QStringLiteral("connectme");
+        localSocketTestClient.connect(connection);
+        QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
+        QScopedPointer<QRemoteObjectDynamicReplica> replica;
+        replica.reset(localSocketTestClient.acquire(objectname));
+
+        testServer.start(progName);
+        QVERIFY(testServer.waitForStarted());
+        QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
+        replica->waitForSource(1000);
+        QVERIFY(replica->isInitialized());
+        testServer.terminate();
+        QVERIFY(testServer.waitForFinished());
+    }
 #endif
 
 private:
