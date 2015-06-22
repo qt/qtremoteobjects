@@ -515,9 +515,9 @@ private slots:
     }
 
     void dynamicReplicaTest() {
-        QRemoteObjectDynamicReplica *rep1 = m_registryClient.acquire("TcpDataCenter");
-        QRemoteObjectDynamicReplica *rep2 = m_registryClient.acquire("TcpDataCenter");
-        QRemoteObjectDynamicReplica *rep3 = m_registryClient.acquire("LocalDataCenter");
+        QScopedPointer<QRemoteObjectDynamicReplica> rep1(m_registryClient.acquire("TcpDataCenter"));
+        QScopedPointer<QRemoteObjectDynamicReplica> rep2(m_registryClient.acquire("TcpDataCenter"));
+        QScopedPointer<QRemoteObjectDynamicReplica> rep3(m_registryClient.acquire("LocalDataCenter"));
         rep1->waitForSource();
         rep2->waitForSource();
         rep3->waitForSource();
@@ -541,7 +541,7 @@ private slots:
                 QCOMPARE(propRhs.notifySignalIndex() != -1, true);
                 QCOMPARE(metaTcpRep1->method(propLhs.notifySignalIndex()).name(), metaTcpSource->method(propRhs.notifySignalIndex()).name());
             }
-            QCOMPARE(propLhs.read(rep1),  propRhs.read(dataCenterTcp.data()));
+            QCOMPARE(propLhs.read(rep1.data()),  propRhs.read(dataCenterTcp.data()));
         }
         for (int i = 0; i < metaLocalRep1->propertyCount(); ++i )
         {
@@ -555,7 +555,7 @@ private slots:
                 QCOMPARE(propRhs.notifySignalIndex() != -1, true);
                 QCOMPARE(metaTcpRep1->method(propLhs.notifySignalIndex()).name(), metaTcpSource->method(propRhs.notifySignalIndex()).name());
             }
-            QCOMPARE(propLhs.read(rep3),  propRhs.read(dataCenterLocal.data()));
+            QCOMPARE(propLhs.read(rep3.data()),  propRhs.read(dataCenterLocal.data()));
         }
 
     }
