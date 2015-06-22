@@ -166,7 +166,7 @@ bool LocalClientIo::isOpen()
 
 void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
 {
-    qCDebug(QT_REMOTEOBJECT) << "onError" << error;
+    qCDebug(QT_REMOTEOBJECT) << "onError" << error << m_socket.serverName();
 
     switch (error) {
     case QLocalSocket::ServerNotFoundError:     //Host not there, wait and try again
