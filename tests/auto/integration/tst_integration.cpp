@@ -144,11 +144,13 @@ private slots:
     void namedObjectTest() {
         engine->setRpm(3333);
         Engine *e = new Engine();
+        QScopedPointer<Engine> engineSave;
+        engineSave.reset(e);
         e->setRpm(4444);
         m_basicServer.enableRemoting(e, "MyTestEngine");
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
-        QSharedPointer<EngineReplica> namedEngine_r(m_client.acquire<EngineReplica>("MyTestEngine"));
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> namedEngine_r(m_client.acquire<EngineReplica>("MyTestEngine"));
         engine_r->waitForSource();
         QCOMPARE(engine_r->cylinders(), 4);
         QCOMPARE(engine_r->rpm(), 3333);
@@ -156,7 +158,7 @@ private slots:
         QCOMPARE(namedEngine_r->cylinders(), 4);
         QCOMPARE(namedEngine_r->rpm(), 4444);
 
-        delete e;
+        engineSave.reset();
         //Deleting the object before disable remoting will cause disable remoting to
         //return false;
         QVERIFY(!m_basicServer.disableRemoting(e));
@@ -220,8 +222,8 @@ private slots:
     }
 
     void registryTest() {
-        QSharedPointer<TcpDataCenterReplica> tcpCentre(m_registryClient.acquire<TcpDataCenterReplica>());
-        QSharedPointer<LocalDataCenterReplica> localCentre(m_registryClient.acquire<LocalDataCenterReplica>());
+        const QScopedPointer<TcpDataCenterReplica> tcpCentre(m_registryClient.acquire<TcpDataCenterReplica>());
+        const QScopedPointer<LocalDataCenterReplica> localCentre(m_registryClient.acquire<LocalDataCenterReplica>());
         tcpCentre->waitForSource(3000);
         localCentre->waitForSource(3000);
         //TODO this still fails intermittantly.  Fix that in another patch, though.
@@ -247,7 +249,7 @@ private slots:
         const bool res = regReplica.waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(regReplica.registry()->isInitialized(), false);
-        QScopedPointer<Engine> localEngine(new Engine);
+        const QScopedPointer<Engine> localEngine(new Engine);
         regReplica.enableRemoting(localEngine.data());
         QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
     }
@@ -257,7 +259,7 @@ private slots:
         const bool res = regReplica.waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(regReplica.registry()->isInitialized(), false);
-        QScopedPointer<Engine> localEngine(new Engine);
+        const QScopedPointer<Engine> localEngine(new Engine);
         regReplica.enableRemoting(localEngine.data());
         QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
         QSignalSpy spy(regReplica.registry(), SIGNAL(initialized()));
@@ -278,13 +280,13 @@ private slots:
     void basicTest() {
         engine->setRpm(1234);
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->rpm(), 1234);
     }
 
     void defaultValueTest() {
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->cylinders(), 4);
     }
@@ -292,7 +294,7 @@ private slots:
     void slotTest() {
         engine->setStarted(false);
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
 
@@ -309,7 +311,7 @@ private slots:
     void slotTestWithWatcher() {
         engine->setStarted(false);
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
 
@@ -329,7 +331,7 @@ private slots:
     void slotTestDynamicReplica() {
         engine->setStarted(false);
 
-        QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
         Q_ASSERT(engine_r);
         bool ok = engine_r->waitForSource();
         QVERIFY(ok);
@@ -356,7 +358,7 @@ private slots:
     }
 
     void slotTestDynamicReplicaWithArguments() {
-        QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
         Q_ASSERT(engine_r);
         bool ok = engine_r->waitForSource();
         QVERIFY(ok);
@@ -394,7 +396,7 @@ private slots:
 
     void expapiTestDynamicReplica(){
         engine->setStarted(false);
-        QSharedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire("Engine"));
         const QMetaObject *metaObject = engine_r->metaObject();
         const int propIndex = metaObject->indexOfProperty("purchasedPart");
         QVERIFY(propIndex < 0);
@@ -406,7 +408,7 @@ private slots:
     void slotTestInProcess() {
         engine->setStarted(false);
 
-        QSharedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
 
@@ -421,7 +423,7 @@ private slots:
 
     void slotTestWithUnnormalizedSignature()
     {
-        QSharedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
         engine_r->waitForSource();
 
         engine_r->unnormalizedSignature(0, 0);
@@ -429,7 +431,7 @@ private slots:
 
     void setterTest()
     {
-        QSharedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
         engine_r->waitForSource();
         QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged()));
         engine_r->setRpm(42);
@@ -440,7 +442,7 @@ private slots:
 
     void dynamicSetterTest()
     {
-        QSharedPointer<QRemoteObjectDynamicReplica> engine_dr(m_client.acquire("Engine"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(m_client.acquire("Engine"));
         engine_dr->waitForSource();
         const QMetaObject *metaObject = engine_dr->metaObject();
         const int propIndex = metaObject->indexOfProperty("rpm");
@@ -455,7 +457,7 @@ private slots:
     void slotWithParameterTest() {
         engine->setRpm(0);
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->rpm(), 0);
 
@@ -469,7 +471,7 @@ private slots:
     void slotWithUserReturnTypeTest() {
         engine->setTemperature(Temperature(400, "Kelvin"));
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QRemoteObjectPendingReply<Temperature> pendingReply = engine_r->temperature();
         pendingReply.waitForFinished();
@@ -480,18 +482,18 @@ private slots:
     void sequentialReplicaTest() {
         engine->setRpm(3456);
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->rpm(), 3456);
 
-        engine_r =  QSharedPointer<EngineReplica>(m_client.acquire< EngineReplica >());
+        engine_r.reset(m_client.acquire< EngineReplica >());
         engine_r->waitForSource();
         QCOMPARE(engine_r->rpm(), 3456);
     }
 
     void doubleReplicaTest() {
-        QSharedPointer<EngineReplica> engine_r1(m_client.acquire< EngineReplica >());
-        QSharedPointer<EngineReplica> engine_r2(m_client.acquire< EngineReplica >());
+        const QScopedPointer<EngineReplica> engine_r1(m_client.acquire< EngineReplica >());
+        const QScopedPointer<EngineReplica> engine_r2(m_client.acquire< EngineReplica >());
         engine->setRpm(3412);
 
         engine_r1->waitForSource();
@@ -505,9 +507,9 @@ private slots:
         engine->setRpm(1234);
         speedometer->setMph(70);
 
-        QSharedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         engine_r->waitForSource();
-        QSharedPointer<SpeedometerReplica> speedometer_r(m_client.acquire<SpeedometerReplica>());
+        const QScopedPointer<SpeedometerReplica> speedometer_r(m_client.acquire<SpeedometerReplica>());
         speedometer_r->waitForSource();
 
         QCOMPARE(engine_r->rpm(), 1234);
@@ -515,9 +517,9 @@ private slots:
     }
 
     void dynamicReplicaTest() {
-        QScopedPointer<QRemoteObjectDynamicReplica> rep1(m_registryClient.acquire("TcpDataCenter"));
-        QScopedPointer<QRemoteObjectDynamicReplica> rep2(m_registryClient.acquire("TcpDataCenter"));
-        QScopedPointer<QRemoteObjectDynamicReplica> rep3(m_registryClient.acquire("LocalDataCenter"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep1(m_registryClient.acquire("TcpDataCenter"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep2(m_registryClient.acquire("TcpDataCenter"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep3(m_registryClient.acquire("LocalDataCenter"));
         rep1->waitForSource();
         rep2->waitForSource();
         rep3->waitForSource();
@@ -569,14 +571,14 @@ private slots:
 
         m_qobjectClient = QRemoteObjectNode();
         m_qobjectClient.connect(QUrl("local:qobject"));
-        QSharedPointer<EngineReplica> engine_r(m_qobjectClient.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(m_qobjectClient.acquire<EngineReplica>());
         engine_r->waitForSource();
 
         QCOMPARE(engine_r->rpm(), 1234);
     }
 
     void apiInProcTest() {
-        QSharedPointer<EngineReplica> engine_r_inProc(m_qobjectServer.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r_inProc(m_qobjectServer.acquire<EngineReplica>());
         engine_r_inProc->waitForSource();
 
         QCOMPARE(engine_r_inProc->rpm(), 1234);
@@ -586,7 +588,7 @@ private slots:
 
         QRemoteObjectNode d_client = QRemoteObjectNode();
         d_client.connect(QUrl("local:cBST"));
-        QSharedPointer<EngineReplica> engine_d(d_client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_d(d_client.acquire<EngineReplica>());
 
         QRemoteObjectNode d_server = QRemoteObjectNode::createHostNode(QUrl("local:cBST"));
         d_server.enableRemoting<EngineSourceAPI>(engine.data());
@@ -604,7 +606,7 @@ private slots:
         TestLargeData t;
         m_localCentreServer.enableRemoting(&t, "large");
 
-        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_registryClient.acquire("large"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep(m_registryClient.acquire("large"));
         rep->waitForSource();
         QVERIFY(rep->isInitialized());
         const QMetaObject *metaObject = rep->metaObject();
@@ -625,7 +627,7 @@ private slots:
         TestLargeData t;
         m_basicServer.enableRemoting(&t, "large");
 
-        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_client.acquire("large"));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep(m_client.acquire("large"));
         rep->waitForSource();
         QVERIFY(rep->isInitialized());
         const QMetaObject *metaObject = rep->metaObject();
