@@ -72,7 +72,7 @@ QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, co
 QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
 {
     if (m_metaObject && qstrcmp(m_metaObject->className(), "QRemoteObjectDynamicReplica") == 0)
-        delete m_metaObject;
+        free(const_cast<QMetaObject*>(m_metaObject));
 }
 
 QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta)
