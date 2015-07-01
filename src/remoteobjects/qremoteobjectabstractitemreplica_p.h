@@ -82,10 +82,11 @@ struct CacheData
     ~CacheData() { qDeleteAll(children); }
     void insertChildren(int start, int end) {
         Q_ASSERT_X(start >= 0 && start <= end, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2")).arg(start).arg(end)));
-        for (int i = start; i <= end; ++i)
-            children.insert(i, new CacheData(this));
-        if (start == 0)
-            children[0]->columnCount = columnCount;
+        for (int i = start; i <= end; ++i) {
+            auto cacheData = new CacheData(this);
+            cacheData->columnCount = columnCount;
+            children.insert(i, cacheData);
+        }
         if (!children.isEmpty())
             hasChildren = true;
     }

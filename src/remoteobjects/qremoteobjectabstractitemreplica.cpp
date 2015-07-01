@@ -215,7 +215,14 @@ void QAbstractItemReplicaPrivate::onColumnsInserted(const IndexList &parent, int
     if (!treeFullyLazyLoaded)
         return;
 
+    //Since we need to support QAIM and models that don't emit columnCountChanged
+    //check if we have a constant columnCount everywhere if thats the case don't insert
+    //more columns
     CacheData *parentItem = cacheData(parentIndex);
+    CacheData *parentOfParent = parentItem->parent;
+    if (parentOfParent && parentItem != &m_rootItem)
+        if (parentOfParent->columnCount == parentItem->columnCount)
+            return;
     q->beginInsertColumns(parentIndex, start, end);
     parentItem->columnCount += end - start + 1;
     q->endInsertColumns();
