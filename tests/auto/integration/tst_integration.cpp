@@ -644,7 +644,8 @@ private slots:
         m_basicServer.disableRemoting(&t);
     }
 
-#ifdef Q_OS_UNIX
+//TODO check Mac support
+#ifdef Q_OS_LINUX
     void localServerConnectionTest()
     {
         QProcess testServer;
