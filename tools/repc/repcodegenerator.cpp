@@ -232,7 +232,7 @@ QString RepCodeGenerator::formatPropertyGettersAndSetters(const POD &pod)
 {
     // MSVC doesn't like adjacent string literal concatenation within QStringLiteral, so keep it in one line:
     QString templateString
-            = QStringLiteral("    %1 %2() const { return _%2; }\n    void set%3(%1 %2) { if (%2 != _%2) { _%2 = %2; Q_EMIT %2Changed(); } }\n");
+            = QStringLiteral("    %1 %2() const { return _%2; }\n    void set%3(%1 %2) { if (%2 != _%2) { _%2 = %2; Q_EMIT %2Changed(_%2); } }\n");
     return formatTemplateStringArgTypeNameCapitalizedName(2, 9, qMove(templateString), pod);
 }
 
@@ -240,14 +240,17 @@ QString RepCodeGenerator::formatSignals(const POD &pod)
 {
     QString out;
     const QString prefix = QStringLiteral("    void ");
-    const QString suffix = QStringLiteral("Changed();\n");
+    const QString mid = QStringLiteral("Changed(");
+    const QString suffix = QStringLiteral(");\n");
     const int expectedOutSize
-            = accumulatedSizeOfNames(pod.attributes)
-            + pod.attributes.size() * (prefix.size() + suffix.size());
+            = accumulatedSizeOfNames(pod.attributes) + accumulatedSizeOfTypes(pod.attributes)
+            + pod.attributes.size() * (prefix.size() + mid.size() + suffix.size());
     out.reserve(expectedOutSize);
     foreach (const PODAttribute &a, pod.attributes) {
         out += prefix;
         out += a.name;
+        out += mid;
+        out += a.type;
         out += suffix;
     }
     Q_ASSERT(out.size() == expectedOutSize);
@@ -469,7 +472,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
                 out << QStringLiteral("        if (%1 != _%1)").arg(property.name);
                 out << QStringLiteral("        {");
                 out << QStringLiteral("            _%1 = %1;").arg(property.name);
-                out << QStringLiteral("            Q_EMIT %1Changed();").arg(property.name);
+                out << QStringLiteral("            Q_EMIT %1Changed(_%1);").arg(property.name);
                 out << QStringLiteral("        }");
                 out << QStringLiteral("    }");
             }
@@ -482,7 +485,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         out << QStringLiteral("Q_SIGNALS:");
         foreach (const ASTProperty &property, astClass.properties) {
             if (property.modifier != ASTProperty::Constant)
-                out << QStringLiteral("    void %1Changed();").arg(property.name);
+                out << QStringLiteral("    void %1Changed(%2);").arg(property.name).arg(property.type);
         }
 
         foreach (const ASTFunction &signal, astClass.signalsList)

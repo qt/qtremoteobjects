@@ -104,6 +104,20 @@ bool QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
     connectionToSource->write(packet->serialize());
     return true;
 }
+#ifdef Q_COMPILER_UNIFORM_INIT
+// QPair (like any class) can be initialized with { }
+typedef QPair<int,void*> SignalPair;
+inline SignalPair make_pair(int first, void *second)
+{ return { qMove(first), qMove(second) }; }
+#else
+// QPair can't be initialized with { }, need to use a POD
+struct SignalPair {
+    int first;
+    void *second;
+};
+inline SignalPair make_pair(int first, void *second)
+{ SignalPair p = { qMove(first), qMove(second) }; return p; }
+#endif
 
 void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
 {
@@ -111,7 +125,8 @@ void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
     quint32 nParam, len;
     QDataStream in(packetData);
     in >> nParam;
-    QVector<int> signalList;
+    QVector<SignalPair> signalList;
+    signalList.reserve(nParam);
     QVariant value;
     const int offset = m_metaObject->propertyOffset();
     for (quint32 i = 0; i < nParam; ++i) {
@@ -125,20 +140,14 @@ void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
             m_propertyStorage[index] = value;
             int notifyIndex = m_metaObject->property(index+offset).notifySignalIndex();
             if (notifyIndex >= 0)
-                signalList.append(notifyIndex);
+                signalList.append(make_pair(notifyIndex, m_propertyStorage[index].data()));
         }
         qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << index << m_metaObject->property(index+offset).name() << value.typeName() << value.toString();
     }
 
-    //Note: Because we are generating the notify signals ourselves, we know there will be no parameters
-    //This allows us to pass noArgs to qt_metacall
-    void *noArgs[] = {0};
-    Q_FOREACH (int index, signalList) {
-        qCDebug(QT_REMOTEOBJECT) << " Before activate" << index << m_metaObject->property(index).name();
-        QMetaObject::activate(this, metaObject(), index, noArgs);
-    }
-
     //initialized and validChanged need to be sent manually, since they are not in the derived classes
+    //We should emit initialized before emitting any changed signals in case connections are made in a
+    //Slot responding to initialized/validChanged.
     if (isSet.fetchAndStoreRelease(2) > 0) {
         //We are already initialized, now we are valid again
         emitValidChanged();
@@ -147,7 +156,15 @@ void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
         emitInitialized();
         emitValidChanged();
     }
-    qCDebug(QT_REMOTEOBJECT) << "isSet = true";
+
+    void *args[] = {Q_NULLPTR, Q_NULLPTR};
+    foreach (const SignalPair &row, signalList) {
+        qCDebug(QT_REMOTEOBJECT) << " Before activate" << row.first << m_metaObject->property(row.first).name();
+        args[1] = row.second;
+        QMetaObject::activate(this, metaObject(), row.first, args);
+    }
+
+    qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
 }
 
 void QRemoteObjectReplicaPrivate::emitValidChanged()
@@ -191,12 +208,10 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QInitDynamicPacket *pa
     foreach (QRemoteObjectReplica *obj, m_parentsNeedingConnect)
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();
-    void *noArgs[] = {0};
-    for (int index = 0; index < metaObject()->propertyCount(); ++index) {
-        qCDebug(QT_REMOTEOBJECT) << " Before activate" << index << m_metaObject->property(index).name();
-        QMetaObject::activate(this, metaObject(), index, noArgs);
-    }
+
     //initialized and validChanged need to be sent manually, since they are not in the derived classes
+    //We should emit initialized before emitting any changed signals in case connections are made in a
+    //Slot responding to initialized/validChanged.
     if (isSet.fetchAndStoreRelease(2) > 0) {
         //We are already initialized, now we are valid again
         emitValidChanged();
@@ -205,7 +220,18 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QInitDynamicPacket *pa
         emitInitialized();
         emitValidChanged();
     }
-    qCDebug(QT_REMOTEOBJECT) << "isSet = true";
+
+    void *args[] = {Q_NULLPTR, Q_NULLPTR};
+    for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
+        const QMetaProperty mp = m_metaObject->property(index);
+        if (mp.hasNotifySignal()) {
+            qCDebug(QT_REMOTEOBJECT) << " Before activate" << index << m_metaObject->property(index).name();
+            args[1] = this->m_propertyStorage[index-m_propertyOffset].data();
+            QMetaObject::activate(this, metaObject(), mp.notifySignalIndex(), args);
+        }
+    }
+
+    qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
 }
 
 bool QConnectedReplicaPrivate::isInitialized() const
