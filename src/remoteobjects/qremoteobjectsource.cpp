@@ -163,23 +163,6 @@ bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index
     return r == -1 && status == -1;
 }
 
-#ifdef Q_COMPILER_UNIFORM_INIT
-// QPair (like any class) can be initialized with { }
-typedef QPair<QString,QVariant> Pair;
-inline Pair make_pair(QString first, QVariant second)
-{ return { qMove(first), qMove(second) }; }
-#else
-// QPair can't be initialized with { }, need to use a POD
-struct Pair {
-    QString first;
-    QVariant second;
-};
-inline QDataStream &operator<<(QDataStream &s, const Pair &p)
-{ return s << p.first << p.second; }
-inline Pair make_pair(QString first, QVariant second)
-{ Pair p = { qMove(first), qMove(second) }; return p; }
-#endif
-
 void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void **a)
 {
     if (listeners.empty())
