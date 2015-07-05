@@ -170,6 +170,7 @@ bool QInitPacket::deserialize(QDataStream& in)
 
     //Make sure the bytearray holds valid properties
     QDataStream validate(packetData);
+    validate.setVersion(dataStreamVersion);
     const int packetLen = packetData.size();
     quint32 nParam, len;
     quint8 c;
@@ -301,6 +302,7 @@ bool QInitDynamicPacket::deserialize(QDataStream& in)
     //Make sure the bytearray holds valid properties // TODO maybe really evaluate
     return true;
     QDataStream validate(packetData);
+    validate.setVersion(dataStreamVersion);
     int packetLen = packetData.size();
     quint32 nParam, len, propLen;
     quint8 c;
@@ -362,6 +364,7 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
     quint32 numProperties = 0;
 
     QDataStream ds(packetData);
+    ds.setVersion(dataStreamVersion);
     ds >> numSignals;
     ds >> numMethods;
 

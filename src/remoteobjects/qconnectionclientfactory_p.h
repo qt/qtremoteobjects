@@ -87,6 +87,7 @@ Q_SIGNALS:
 protected:
     virtual void doClose() = 0;
     inline bool isClosing();
+    QDataStream m_dataStream;
 
 private:
     bool m_isClosing;

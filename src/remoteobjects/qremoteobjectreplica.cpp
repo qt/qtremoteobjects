@@ -123,7 +123,9 @@ void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
 {
     qCDebug(QT_REMOTEOBJECT) << "initialize()" << m_propertyStorage.size();
     quint32 nParam, len;
+    //TODO Make this part of packet deserialize?
     QDataStream in(packetData);
+    in.setVersion(QRemoteObjectPackets::dataStreamVersion);
     in >> nParam;
     QVector<SignalPair> signalList;
     signalList.reserve(nParam);

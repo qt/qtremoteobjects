@@ -72,6 +72,7 @@ public:
     virtual qint64 bytesAvailable();
     QRemoteObjectPackets::QRemoteObjectPacket *packet() const;
     virtual QIODevice *connection() const = 0;
+    void initializeDataStream();
 
 Q_SIGNALS:
     void disconnected();
@@ -84,6 +85,7 @@ private:
     bool m_isClosing;
     quint32 m_curReadSize;
     QRemoteObjectPackets::QRemoteObjectPacket *m_packet;
+    QDataStream m_dataStream;
 };
 
 
@@ -97,11 +99,14 @@ public:
     virtual ~QConnectionAbstractServer();
 
     virtual bool hasPendingConnections() const = 0;
-    virtual ServerIoDevice* nextPendingConnection() = 0;
+    ServerIoDevice* nextPendingConnection();
     virtual QUrl address() const = 0;
     virtual bool listen(const QUrl &address) = 0;
     virtual QAbstractSocket::SocketError serverError() const = 0;
     virtual void close() = 0;
+
+protected:
+    virtual ServerIoDevice* _nextPendingConnection() = 0;
 
 Q_SIGNALS:
     void newConnection();

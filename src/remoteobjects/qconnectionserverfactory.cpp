@@ -106,7 +106,7 @@ LocalServerImpl::~LocalServerImpl()
     m_server.close();
 }
 
-ServerIoDevice *LocalServerImpl::nextPendingConnection()
+ServerIoDevice *LocalServerImpl::_nextPendingConnection()
 {
     if (!m_server.isListening())
         return Q_NULLPTR;
@@ -164,7 +164,7 @@ TcpServerImpl::~TcpServerImpl()
     close();
 }
 
-ServerIoDevice *TcpServerImpl::nextPendingConnection()
+ServerIoDevice *TcpServerImpl::_nextPendingConnection()
 {
     if (!m_server.isListening())
         return Q_NULLPTR;

@@ -49,6 +49,7 @@ QT_BEGIN_NAMESPACE
 ServerIoDevice::ServerIoDevice(QObject *parent)
     : QObject(parent), m_isClosing(false), m_curReadSize(0), m_packet(Q_NULLPTR)
 {
+    m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
 }
 
 ServerIoDevice::~ServerIoDevice()
@@ -60,12 +61,11 @@ bool ServerIoDevice::read()
 {
     qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()" << m_curReadSize << bytesAvailable();
 
-    QDataStream in(connection());
     if (m_curReadSize == 0) {
         if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
             return false;
 
-        in >> m_curReadSize;
+        m_dataStream >> m_curReadSize;
     }
 
     qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
@@ -75,7 +75,7 @@ bool ServerIoDevice::read()
 
     m_curReadSize = 0;
     delete m_packet;
-    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(in);
+    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(m_dataStream);
     return  m_packet && m_packet->id != QRemoteObjectPackets::QRemoteObjectPacket::Invalid;
 }
 
@@ -101,6 +101,11 @@ QRemoteObjectPackets::QRemoteObjectPacket *ServerIoDevice::packet() const
     return m_packet;
 }
 
+void ServerIoDevice::initializeDataStream()
+{
+    m_dataStream.setDevice(connection());
+    m_dataStream.resetStatus();
+}
 
 QConnectionAbstractServer::QConnectionAbstractServer(QObject *parent)
     : QObject(parent)
@@ -109,6 +114,13 @@ QConnectionAbstractServer::QConnectionAbstractServer(QObject *parent)
 
 QConnectionAbstractServer::~QConnectionAbstractServer()
 {
+}
+
+ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
+{
+    ServerIoDevice *iodevice = _nextPendingConnection();
+    iodevice->initializeDataStream();
+    return iodevice;
 }
 
 QT_END_NAMESPACE

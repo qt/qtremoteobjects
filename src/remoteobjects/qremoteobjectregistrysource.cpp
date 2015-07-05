@@ -41,8 +41,6 @@
 
 #include "qremoteobjectregistrysource_p.h"
 
-#include <QDataStream>
-
 QT_BEGIN_NAMESPACE
 
 QRegistrySource::QRegistrySource(QObject *parent)

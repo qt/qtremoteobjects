@@ -89,7 +89,7 @@ public:
     ~LocalServerImpl();
 
     bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *nextPendingConnection() Q_DECL_OVERRIDE;
+    ServerIoDevice *_nextPendingConnection() Q_DECL_OVERRIDE;
     QUrl address() const Q_DECL_OVERRIDE;
     bool listen(const QUrl &address) Q_DECL_OVERRIDE;
     QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
@@ -110,7 +110,7 @@ public:
     ~TcpServerImpl();
 
     bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *nextPendingConnection() Q_DECL_OVERRIDE;
+    ServerIoDevice *_nextPendingConnection() Q_DECL_OVERRIDE;
     QUrl address() const Q_DECL_OVERRIDE;
     bool listen(const QUrl &address) Q_DECL_OVERRIDE;
     QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;

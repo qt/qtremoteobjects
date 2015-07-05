@@ -53,6 +53,7 @@ QT_BEGIN_NAMESPACE
 ClientIoDevice::ClientIoDevice(QObject *parent)
     : QObject(parent), m_isClosing(false), m_curReadSize(0), m_packet(Q_NULLPTR)
 {
+    m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
 }
 
 ClientIoDevice::~ClientIoDevice()
@@ -70,12 +71,11 @@ bool ClientIoDevice::read()
 {
     qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()" << m_curReadSize << bytesAvailable();
 
-    QDataStream in(connection());
     if (m_curReadSize == 0) {
         if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
             return false;
 
-        in >> m_curReadSize;
+        m_dataStream >> m_curReadSize;
     }
 
     qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
@@ -85,7 +85,7 @@ bool ClientIoDevice::read()
 
     m_curReadSize = 0;
     delete m_packet;
-    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(in);
+    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(m_dataStream);
     return m_packet && m_packet->id != QRemoteObjectPackets::QRemoteObjectPacket::Invalid;
 }
 
@@ -190,6 +190,10 @@ void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
         m_socket.abort();
         emit shouldReconnect(this);
     }
+    if (state == QLocalSocket::ConnectedState) {
+        m_dataStream.setDevice(connection());
+        m_dataStream.resetStatus();
+    }
 }
 
 
@@ -262,6 +266,10 @@ void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
     if (state == QAbstractSocket::ClosingState && !isClosing()) {
         m_socket.abort();
         emit shouldReconnect(this);
+    }
+    if (state == QAbstractSocket::ConnectedState) {
+        m_dataStream.setDevice(connection());
+        m_dataStream.resetStatus();
     }
 }
 

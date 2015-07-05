@@ -60,12 +60,15 @@ class QRemoteObjectSource;
 
 namespace QRemoteObjectPackets {
 
+const int dataStreamVersion = QDataStream::Qt_5_0;
+
 //Helper class for creating a QByteArray from a QRemoteObjectPacket
 class DataStreamPacket : public QDataStream
 {
 public:
     DataStreamPacket(quint16 id) : QDataStream(&array, QIODevice::WriteOnly)
     {
+        this->setVersion(dataStreamVersion);
         *this << quint32(0);
         *this << id;
     }
