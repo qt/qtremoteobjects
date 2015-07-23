@@ -45,6 +45,7 @@
 #include <QAbstractSocket>
 #include <QIODevice>
 #include <QObject>
+#include <QDataStream>
 #include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE
