@@ -96,10 +96,11 @@ bool QRemoteObjectReplicaPrivate::needsDynamicInitialization() const
 
 bool QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
 {
-    Q_ASSERT(!connectionToSource.isNull());
-
-    if (!connectionToSource->isOpen())
+    if (connectionToSource.isNull() || !connectionToSource->isOpen()) {
+        if (connectionToSource.isNull())
+            qCWarning(QT_REMOTEOBJECT) << "connectionToSource is null";
         return false;
+    }
 
     connectionToSource->write(packet->serialize());
     return true;
