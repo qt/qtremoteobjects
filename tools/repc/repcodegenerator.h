@@ -79,8 +79,6 @@ private:
     void generatePOD(QTextStream &out, const POD &pod);
     QString formatQPropertyDeclarations(const POD &pod);
     QString formatConstructors(const POD &pod);
-    QString formatCopyConstructor(const POD &pod);
-    QString formatCopyAssignmentOperator(const POD &pod);
     QString formatPropertyGettersAndSetters(const POD &pod);
     QString formatSignals(const POD &pod);
     QString formatDataMembers(const POD &pod);

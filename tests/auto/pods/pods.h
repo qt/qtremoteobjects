@@ -39,15 +39,14 @@
 
 
 #include <QString>
-class PodI : public QObject
+class PodI
 {
-    Q_OBJECT
-    Q_PROPERTY(int i READ i WRITE setI NOTIFY iChanged)
+    Q_GADGET
+    Q_PROPERTY(int i READ i WRITE setI)
 public:
-    explicit PodI(QObject *parent = Q_NULLPTR) : QObject(parent), _i() {}
-    explicit PodI(int i, QObject *parent = Q_NULLPTR) : QObject(parent), _i(i) {}
+    explicit PodI() : _i() {}
+    explicit PodI(int i) : _i(i) {}
     PodI(const PodI& other)
-        : QObject()
     {
         QtRemoteObjects::copyStoredProperties(&other, this);
     }
@@ -60,9 +59,7 @@ public:
     }
 
     int i() const { return _i; }
-    void setI(int i) { if (i != _i) { _i = i; Q_EMIT iChanged(); } }
-Q_SIGNALS:
-    void iChanged();
+    void setI(int i) { if (i != _i) { _i = i; } }
 private:
     int _i;
 };
@@ -77,17 +74,14 @@ inline QDataStream &operator>>(QDataStream &ds, PodI &obj) {
     return ds;
 }
 
-Q_DECLARE_METATYPE(PodI)
-
-class PodF : public QObject
+class PodF
 {
-    Q_OBJECT
-    Q_PROPERTY(float f READ f WRITE setF NOTIFY fChanged)
+    Q_GADGET
+    Q_PROPERTY(float f READ f WRITE setF)
 public:
-    explicit PodF(QObject *parent = Q_NULLPTR) : QObject(parent), _f() {}
-    explicit PodF(float f, QObject *parent = Q_NULLPTR) : QObject(parent), _f(f) {}
+    explicit PodF() : _f() {}
+    explicit PodF(float f) : _f(f) {}
     PodF(const PodF& other)
-        : QObject()
     {
         QtRemoteObjects::copyStoredProperties(&other, this);
     }
@@ -100,9 +94,7 @@ public:
     }
 
     float f() const { return _f; }
-    void setF(float f) { if (f != _f) { _f = f; Q_EMIT fChanged(); } }
-Q_SIGNALS:
-    void fChanged();
+    void setF(float f) { if (f != _f) { _f = f; } }
 private:
     float _f;
 };
@@ -117,17 +109,14 @@ inline QDataStream &operator>>(QDataStream &ds, PodF &obj) {
     return ds;
 }
 
-Q_DECLARE_METATYPE(PodF)
-
-class PodS : public QObject
+class PodS
 {
-    Q_OBJECT
-    Q_PROPERTY(QString s READ s WRITE setS NOTIFY sChanged)
+    Q_GADGET
+    Q_PROPERTY(QString s READ s WRITE setS)
 public:
-    explicit PodS(QObject *parent = Q_NULLPTR) : QObject(parent), _s() {}
-    explicit PodS(QString s, QObject *parent = Q_NULLPTR) : QObject(parent), _s(s) {}
+    explicit PodS() : _s() {}
+    explicit PodS(QString s) : _s(s) {}
     PodS(const PodS& other)
-        : QObject()
     {
         QtRemoteObjects::copyStoredProperties(&other, this);
     }
@@ -140,9 +129,7 @@ public:
     }
 
     QString s() const { return _s; }
-    void setS(QString s) { if (s != _s) { _s = s; Q_EMIT sChanged(); } }
-Q_SIGNALS:
-    void sChanged();
+    void setS(QString s) { if (s != _s) { _s = s; } }
 private:
     QString _s;
 };
@@ -157,19 +144,16 @@ inline QDataStream &operator>>(QDataStream &ds, PodS &obj) {
     return ds;
 }
 
-Q_DECLARE_METATYPE(PodS)
-
-class PodIFS : public QObject
+class PodIFS
 {
-    Q_OBJECT
-    Q_PROPERTY(int i READ i WRITE setI NOTIFY iChanged)
-    Q_PROPERTY(float f READ f WRITE setF NOTIFY fChanged)
-    Q_PROPERTY(QString s READ s WRITE setS NOTIFY sChanged)
+    Q_GADGET
+    Q_PROPERTY(int i READ i WRITE setI)
+    Q_PROPERTY(float f READ f WRITE setF)
+    Q_PROPERTY(QString s READ s WRITE setS)
 public:
-    explicit PodIFS(QObject *parent = Q_NULLPTR) : QObject(parent), _i(), _f(), _s() {}
-    explicit PodIFS(int i, float f, QString s, QObject *parent = Q_NULLPTR) : QObject(parent), _i(i), _f(f), _s(s) {}
+    explicit PodIFS() : _i(), _f(), _s() {}
+    explicit PodIFS(int i, float f, QString s) : _i(i), _f(f), _s(s) {}
     PodIFS(const PodIFS& other)
-        : QObject()
     {
         QtRemoteObjects::copyStoredProperties(&other, this);
     }
@@ -182,15 +166,11 @@ public:
     }
 
     int i() const { return _i; }
-    void setI(int i) { if (i != _i) { _i = i; Q_EMIT iChanged(); } }
+    void setI(int i) { if (i != _i) { _i = i; } }
     float f() const { return _f; }
-    void setF(float f) { if (f != _f) { _f = f; Q_EMIT fChanged(); } }
+    void setF(float f) { if (f != _f) { _f = f; } }
     QString s() const { return _s; }
-    void setS(QString s) { if (s != _s) { _s = s; Q_EMIT sChanged(); } }
-Q_SIGNALS:
-    void iChanged();
-    void fChanged();
-    void sChanged();
+    void setS(QString s) { if (s != _s) { _s = s; } }
 private:
     int _i;
     float _f;
@@ -206,7 +186,4 @@ inline QDataStream &operator>>(QDataStream &ds, PodIFS &obj) {
     QtRemoteObjects::copyStoredProperties(ds, &obj);
     return ds;
 }
-
-Q_DECLARE_METATYPE(PodIFS)
-
 

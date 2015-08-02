@@ -51,7 +51,6 @@ class tst_Pods : public QObject {
 
 private Q_SLOTS:
     void testConstructors();
-    void testParent();
     void testMarshalling();
 };
 
@@ -66,18 +65,6 @@ void tst_Pods::testConstructors()
 
     PodI pi3(pi2);
     QCOMPARE(pi3.i(), pi2.i());
-
-    PodI pi4(static_cast<QObject*>(Q_NULLPTR));
-    QCOMPARE(pi4.i(), 0);
-
-    PodI pi5(1, static_cast<QObject*>(Q_NULLPTR));
-    QCOMPARE(pi5.i(), 1);
-}
-
-void tst_Pods::testParent()
-{
-    PodI pi;
-    QVERIFY(!pi.parent());
 }
 
 void tst_Pods::testMarshalling()
@@ -87,10 +74,6 @@ void tst_Pods::testMarshalling()
 
     {
         PodI i1(1), i2(2), i3(3), iDeadBeef(0xdeadbeef);
-        Q_SET_OBJECT_NAME(i1);
-        Q_SET_OBJECT_NAME(i2);
-        Q_SET_OBJECT_NAME(i3);
-        Q_SET_OBJECT_NAME(iDeadBeef);
         ds << i1 << i2 << i3 << iDeadBeef;
     }
 
@@ -99,11 +82,6 @@ void tst_Pods::testMarshalling()
     {
         PodI i1, i2, i3, iDeadBeef;
         ds >> i1 >> i2 >> i3 >> iDeadBeef;
-
-        QCOMPARE(i1.objectName(), QLatin1String("i1"));
-        QCOMPARE(i2.objectName(), QLatin1String("i2"));
-        QCOMPARE(i3.objectName(), QLatin1String("i3"));
-        QCOMPARE(iDeadBeef.objectName(), QLatin1String("iDeadBeef"));
 
         QCOMPARE(i1.i(), 1);
         QCOMPARE(i2.i(), 2);

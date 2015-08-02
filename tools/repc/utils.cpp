@@ -55,11 +55,11 @@ static QByteArray join(const QList<QByteArray> &array, const QByteArray &separat
     return res;
 }
 
-static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties)
+static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties, bool isPod=false)
 {
     QList<QByteArray> ret;
     foreach (const PropertyDef& property, properties) {
-        if (property.notifyId == -1 && !property.constant) {
+        if (!isPod && property.notifyId == -1 && !property.constant) {
             qWarning() << "Skipping property" << property.name << "because is non-notifiable & non-constant";
             continue; // skip non-notifiable properties
         }
@@ -120,7 +120,7 @@ QByteArray generateClass(const ClassDef &cdef)
 {
     QList<FunctionDef> signalList = cleanedSignalList(cdef);
     if (signalList.isEmpty() && cdef.slotList.isEmpty())
-        return "POD " + cdef.classname + "(" + join(generateProperties(cdef.propertyList), ", ") + ")\n";
+        return "POD " + cdef.classname + "(" + join(generateProperties(cdef.propertyList, true), ", ") + ")\n";
 
     QByteArray ret("class " + cdef.classname + "\n{\n");
     ret += "    PROP(" + join(generateProperties(cdef.propertyList), ");\n    PROP(") + ");\n";
@@ -134,8 +134,7 @@ static QVector<PODAttribute> propertyList2PODAttributes(const QList<PropertyDef>
 {
     QVector<PODAttribute> ret;
     foreach (const PropertyDef &prop, list)
-        if (prop.notifyId != -1) // skip non-notifiable properties
-            ret.push_back(PODAttribute(_(prop.type), _(prop.name)));
+        ret.push_back(PODAttribute(_(prop.type), _(prop.name)));
     return ret;
 }
 

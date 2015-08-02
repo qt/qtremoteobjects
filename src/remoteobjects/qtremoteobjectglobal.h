@@ -81,16 +81,34 @@ inline QString tcp() { return QStringLiteral("tcp"); }
 
 }
 
-namespace QtRemoteObjects {
-
-Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QObject *src, QObject *dst);
-Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QObject *src, QDataStream &dst);
-Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(QDataStream &src, QObject *dst);
-
-}
-
 Q_DECLARE_LOGGING_CATEGORY(QT_REMOTEOBJECT)
 Q_DECLARE_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS)
+
+namespace QtRemoteObjects {
+
+Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst);
+Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &dst);
+Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst);
+
+template <typename T>
+void copyStoredProperties(const T *src, T *dst)
+{
+    copyStoredProperties(&T::staticMetaObject, src, dst);
+}
+
+template <typename T>
+void copyStoredProperties(const T *src, QDataStream &dst)
+{
+    copyStoredProperties(&T::staticMetaObject, src, dst);
+}
+
+template <typename T>
+void copyStoredProperties(QDataStream &src, T *dst)
+{
+    copyStoredProperties(&T::staticMetaObject, src, dst);
+}
+
+}
 
 QT_END_NAMESPACE
 

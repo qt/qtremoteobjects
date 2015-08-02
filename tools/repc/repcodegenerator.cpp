@@ -185,76 +185,34 @@ static QString formatTemplateStringArgTypeNameCapitalizedName(int numberOfTypeOc
 
 QString RepCodeGenerator::formatQPropertyDeclarations(const POD &pod)
 {
-    return formatTemplateStringArgTypeNameCapitalizedName(1, 4, QStringLiteral("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3 NOTIFY %2Changed)\n"), pod);
+    return formatTemplateStringArgTypeNameCapitalizedName(1, 3, QStringLiteral("    Q_PROPERTY(%1 %2 READ %2 WRITE set%3)\n"), pod);
 }
 
 QString RepCodeGenerator::formatConstructors(const POD &pod)
 {
-    QString initializerString = QStringLiteral("QObject(parent)");
+    QString initializerString = QStringLiteral(": ");
     QString defaultInitializerString = initializerString;
     QString argString;
     foreach (const PODAttribute &a, pod.attributes) {
-        initializerString += QString::fromLatin1(", _%1(%1)").arg(a.name);
-        defaultInitializerString += QString::fromLatin1(", _%1()").arg(a.name);
+        initializerString += QString::fromLatin1("_%1(%1), ").arg(a.name);
+        defaultInitializerString += QString::fromLatin1("_%1(), ").arg(a.name);
         argString += QString::fromLatin1("%1 %2, ").arg(a.type, a.name);
     }
     argString.chop(2);
+    initializerString.chop(2);
+    defaultInitializerString.chop(2);
 
-    return QString::fromLatin1("    explicit %1(QObject *parent = Q_NULLPTR) : %2 {}\n"
-                   "    explicit %1(%3, QObject *parent = Q_NULLPTR) : %4 {}\n")
+    return QString::fromLatin1("    %1() %2 {}\n"
+                   "    explicit %1(%3) %4 {}\n")
             .arg(pod.name, defaultInitializerString, argString, initializerString);
-}
-
-QString RepCodeGenerator::formatCopyConstructor(const POD &pod)
-{
-    return QLatin1String("    ") + pod.name + QLatin1String("(const ") + pod.name + QLatin1String("& other)\n"
-           "        : QObject()\n"
-           "    {\n"
-           "        QtRemoteObjects::copyStoredProperties(&other, this);\n"
-           "    }\n"
-           "\n")
-           ;
-}
-
-QString RepCodeGenerator::formatCopyAssignmentOperator(const POD &pod)
-{
-    return QLatin1String("    ") + pod.name + QLatin1String(" &operator=(const ") + pod.name + QLatin1String(" &other)\n"
-           "    {\n"
-           "        if (this != &other)\n"
-           "            QtRemoteObjects::copyStoredProperties(&other, this);\n"
-           "        return *this;\n"
-           "    }\n"
-           "\n")
-           ;
 }
 
 QString RepCodeGenerator::formatPropertyGettersAndSetters(const POD &pod)
 {
     // MSVC doesn't like adjacent string literal concatenation within QStringLiteral, so keep it in one line:
     QString templateString
-            = QStringLiteral("    %1 %2() const { return _%2; }\n    void set%3(%1 %2) { if (%2 != _%2) { _%2 = %2; Q_EMIT %2Changed(_%2); } }\n");
-    return formatTemplateStringArgTypeNameCapitalizedName(2, 9, qMove(templateString), pod);
-}
-
-QString RepCodeGenerator::formatSignals(const POD &pod)
-{
-    QString out;
-    const QString prefix = QStringLiteral("    void ");
-    const QString mid = QStringLiteral("Changed(");
-    const QString suffix = QStringLiteral(");\n");
-    const int expectedOutSize
-            = accumulatedSizeOfNames(pod.attributes) + accumulatedSizeOfTypes(pod.attributes)
-            + pod.attributes.size() * (prefix.size() + mid.size() + suffix.size());
-    out.reserve(expectedOutSize);
-    foreach (const PODAttribute &a, pod.attributes) {
-        out += prefix;
-        out += a.name;
-        out += mid;
-        out += a.type;
-        out += suffix;
-    }
-    Q_ASSERT(out.size() == expectedOutSize);
-    return out;
+            = QStringLiteral("    %1 %2() const { return _%2; }\n    void set%3(%1 %2) { if (%2 != _%2) { _%2 = %2; } }\n");
+    return formatTemplateStringArgTypeNameCapitalizedName(2, 8, qMove(templateString), pod);
 }
 
 QString RepCodeGenerator::formatDataMembers(const POD &pod)
@@ -295,24 +253,19 @@ QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
 
 void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
 {
-    out << "class " << pod.name << " : public QObject\n"
+    out << "class " << pod.name << "\n"
            "{\n"
-           "    Q_OBJECT\n"
+           "    Q_GADGET\n"
         <<      formatQPropertyDeclarations(pod)
         << "public:\n"
         <<      formatConstructors(pod)
-        <<      formatCopyConstructor(pod)
-        <<      formatCopyAssignmentOperator(pod)
         <<      formatPropertyGettersAndSetters(pod)
-        << "Q_SIGNALS:\n"
-        <<      formatSignals(pod)
         << "private:\n"
         <<      formatDataMembers(pod)
         << "};\n"
            "\n"
         << formatMarshallingOperators(pod)
         << "\n"
-           "Q_DECLARE_METATYPE(" << pod.name << ")\n"
            "\n"
            ;
 }

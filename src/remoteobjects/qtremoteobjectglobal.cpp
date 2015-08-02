@@ -41,6 +41,7 @@
 
 #include "qtremoteobjectglobal.h"
 
+#include <QDataStream>
 #include <QMetaObject>
 #include <QMetaProperty>
 
@@ -51,66 +52,48 @@ Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS, "qt.remoteobjects.models")
 
 namespace QtRemoteObjects {
 
-void copyStoredProperties(const QObject *src, QObject *dst)
+void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst)
 {
     if (!src) {
-        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a null QObject";
+        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a null source";
         return;
     }
     if (!dst) {
-        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy to a null QObject";
+        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy to a null destination";
         return;
     }
 
-    const QMetaObject * const mof = src->metaObject();
-    const QMetaObject * const mot = dst->metaObject();
-    if (mof->propertyCount() != mot->propertyCount()) {
-        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a different QObject";
-        return;
-    }
-
-    for (int i = 0, end = mof->propertyCount(); i != end; ++i) {
-        const QMetaProperty mpf = mof->property(i);
-        if (!mpf.isStored(src))
-            continue;
-        const QMetaProperty mpt = mot->property(i);
-        mpt.write(dst, mpf.read(src));
+    for (int i = 0, end = mo->propertyCount(); i != end; ++i) {
+        const QMetaProperty mp = mo->property(i);
+        mp.writeOnGadget(dst, mp.readOnGadget(src));
     }
 }
 
-void copyStoredProperties(const QObject *src, QDataStream &dst)
+void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &dst)
 {
     if (!src) {
-        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a null QObject";
+        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a null source";
         return;
     }
 
-    const QMetaObject * const mof = src->metaObject();
-
-    for (int i = 0, end = mof->propertyCount(); i != end; ++i) {
-        const QMetaProperty mpf = mof->property(i);
-        if (!mpf.isStored(src))
-            continue;
-        dst << mpf.read(src);
+    for (int i = 0, end = mo->propertyCount(); i != end; ++i) {
+        const QMetaProperty mp = mo->property(i);
+        dst << mp.readOnGadget(src);
     }
 }
 
-void copyStoredProperties(QDataStream &src, QObject *dst)
+void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst)
 {
     if (!dst) {
-        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy to a null QObject";
+        qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy to a null destination";
         return;
     }
 
-    const QMetaObject * const mot = dst->metaObject();
-
-    for (int i = 0, end = mot->propertyCount(); i != end; ++i) {
-        const QMetaProperty mpt = mot->property(i);
-        if (!mpt.isStored(dst))
-            continue;
+    for (int i = 0, end = mo->propertyCount(); i != end; ++i) {
+        const QMetaProperty mp = mo->property(i);
         QVariant v;
         src >> v;
-        mpt.write(dst, v);
+        mp.writeOnGadget(dst, v);
     }
 }
 
