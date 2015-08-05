@@ -614,13 +614,42 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
     out << QStringLiteral("            return -1;");
     out << QStringLiteral("        return _methods[index+1];");
     out << QStringLiteral("    }");
-    out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return signalArgCount[index]; }");
-    out << QString::fromLatin1("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE "
-                               "{ return signalArgTypes[sigIndex][paramIndex]; }");
-    out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE { return methodArgCount[index]; }");
-    out << QString::fromLatin1("    int methodParameterType(int methodIndex, int paramIndex) const "
-                               "Q_DECL_OVERRIDE { return methodArgTypes[methodIndex][paramIndex]; }");
-
+    if (signalCount+changedCount > 0) {
+        out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE");
+        out << QStringLiteral("    {");
+        out << QStringLiteral("        if (index < 0 || index >= _signals[0])");
+        out << QStringLiteral("            return -1;");
+        out << QStringLiteral("        return signalArgCount[index];");
+        out << QStringLiteral("    }");
+        out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE");
+        out << QStringLiteral("    {");
+        out << QStringLiteral("        if (sigIndex < 0 || sigIndex >= _signals[0] || paramIndex < 0 || paramIndex >= signalArgCount[sigIndex])");
+        out << QStringLiteral("            return -1;");
+        out << QStringLiteral("        return signalArgTypes[sigIndex][paramIndex];");
+        out << QStringLiteral("    }");
+    } else {
+        out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE { Q_UNUSED(index); return -1; }");
+        out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE");
+        out << QStringLiteral("    { Q_UNUSED(sigIndex); Q_UNUSED(paramIndex); return -1 }");
+    }
+    if (slotCount) {
+        out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE");
+        out << QStringLiteral("    {");
+        out << QStringLiteral("        if (index < 0 || index >= _methods[0])");
+        out << QStringLiteral("            return -1;");
+        out << QStringLiteral("        return methodArgCount[index];");
+        out << QStringLiteral("    }");
+        out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE");
+        out << QStringLiteral("    {");
+        out << QStringLiteral("        if (methodIndex < 0 || methodIndex >= _methods[0] || paramIndex < 0 || paramIndex >= methodArgCount[methodIndex])");
+        out << QStringLiteral("            return -1;");
+        out << QStringLiteral("        return methodArgTypes[methodIndex][paramIndex];");
+        out << QStringLiteral("    }");
+    } else {
+        out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE { Q_UNUSED(index); return -1; }");
+        out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE");
+        out << QStringLiteral("    { Q_UNUSED(methodIndex); Q_UNUSED(paramIndex); return -1; }");
+    }
     //propertyIndexFromSignal method
     out << QStringLiteral("    int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE");
     out << QStringLiteral("    {");
