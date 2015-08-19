@@ -9,4 +9,5 @@ sub_integration.target = sub-integration
 sub_integration.depends = sub-localsockettestserver
 
 SUBDIRS += repc sub_integration modelview cmake pods repparser \
-           sub_localsockettestserver
+           sub_localsockettestserver benchmarks
+
