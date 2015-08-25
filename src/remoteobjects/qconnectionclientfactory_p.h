@@ -66,7 +66,7 @@ public:
     explicit ClientIoDevice(QObject *parent = Q_NULLPTR);
     virtual ~ClientIoDevice();
 
-    bool read();
+    QRemoteObjectPackets::QRemoteObjectPacket* read();
     virtual void write(const QByteArray &data);
     virtual void write(const QByteArray &data, qint64);
     void close();
@@ -101,6 +101,7 @@ private:
     quint32 m_curReadSize;
     QRemoteObjectPackets::QRemoteObjectPacket* m_packet;
     QSet<QString> m_remoteObjects;
+    QVector<QRemoteObjectPackets::QRemoteObjectPacket*> m_packetStorage;
 };
 
 bool ClientIoDevice::isClosing()

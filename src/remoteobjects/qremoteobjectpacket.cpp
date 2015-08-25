@@ -53,49 +53,89 @@ namespace QRemoteObjectPackets {
 
 QRemoteObjectPacket::~QRemoteObjectPacket(){}
 
-QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in)
+QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in, QVector<QRemoteObjectPacket*> *buffer)
 {
     QRemoteObjectPacket *packet = Q_NULLPTR;
     quint16 type;
     in >> type;
     switch (type) {
     case InitPacket:
-        packet = new QInitPacket;
+        if (!buffer->at(InitPacket)) {
+            packet = new QInitPacket;
+            (*buffer)[InitPacket] = packet;
+        } else {
+            packet = buffer->at(InitPacket);
+        }
         if (packet->deserialize(in))
             packet->id = InitPacket;
         break;
     case InitDynamicPacket:
-        packet = new QInitDynamicPacket;
+        if (!buffer->at(InitDynamicPacket)) {
+            packet = new QInitDynamicPacket;
+            (*buffer)[InitDynamicPacket] = packet;
+        } else {
+            packet = buffer->at(InitDynamicPacket);
+        }
         if (packet->deserialize(in))
             packet->id = InitDynamicPacket;
         break;
     case AddObject:
-        packet = new QAddObjectPacket;
+        if (!buffer->at(AddObject)) {
+            packet = new QAddObjectPacket;
+            (*buffer)[AddObject] = packet;
+        } else {
+            packet = buffer->at(AddObject);
+        }
         if (packet->deserialize(in))
             packet->id = AddObject;
         break;
     case RemoveObject:
-        packet = new QRemoveObjectPacket;
+        if (!buffer->at(RemoveObject)) {
+            packet = new QRemoveObjectPacket;
+            (*buffer)[RemoveObject] = packet;
+        } else {
+            packet = buffer->at(RemoveObject);
+        }
         if (packet->deserialize(in))
             packet->id = RemoveObject;
         break;
     case InvokePacket:
-        packet = new QInvokePacket;
+        if (!buffer->at(InvokePacket)) {
+            packet = new QInvokePacket;
+            (*buffer)[InvokePacket] = packet;
+        } else {
+            packet = buffer->at(InvokePacket);
+        }
         if (packet->deserialize(in))
             packet->id = InvokePacket;
         break;
     case InvokeReplyPacket:
-        packet = new QInvokeReplyPacket;
+        if (!buffer->at(InvokeReplyPacket)) {
+            packet = new QInvokeReplyPacket;
+            (*buffer)[InvokeReplyPacket] = packet;
+        } else {
+            packet = buffer->at(InvokeReplyPacket);
+        }
         if (packet->deserialize(in))
             packet->id = InvokeReplyPacket;
         break;
     case PropertyChangePacket:
-        packet = new QPropertyChangePacket;
+        if (!buffer->at(PropertyChangePacket)) {
+            packet = new QPropertyChangePacket;
+            (*buffer)[PropertyChangePacket] = packet;
+        } else {
+            packet = buffer->at(PropertyChangePacket);
+        }
         if (packet->deserialize(in))
             packet->id = PropertyChangePacket;
         break;
     case ObjectList:
-        packet = new QObjectListPacket;
+        if (!buffer->at(ObjectList)) {
+            packet = new QObjectListPacket;
+            (*buffer)[ObjectList] = packet;
+        } else {
+            packet = buffer->at(ObjectList);
+        }
         if (packet->deserialize(in))
             packet->id = ObjectList;
         break;
@@ -494,6 +534,16 @@ bool QInvokeReplyPacket::deserialize(QDataStream& in)
     in >> ackedSerialId;
     in >> value;
     return true;
+}
+
+void serializePropertyChangePacket(DataStreamPacket *packet, const QString &name, const char *propertyName, const QVariant &value)
+{
+    DataStreamPacket &ds = *packet;
+    ds.setId(QRemoteObjectPacket::PropertyChangePacket);
+    ds << name;
+    ds.writeBytes(propertyName, strlen(propertyName));
+    ds << value;
+    ds.finishPacket();
 }
 
 void QPropertyChangePacket::serialize(DataStreamPacket *packet) const

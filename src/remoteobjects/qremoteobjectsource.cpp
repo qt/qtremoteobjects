@@ -173,13 +173,11 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
         if (m_api->isAdapterProperty(index)) {
             const QMetaProperty mp = m_adapter->metaObject()->property(propertyIndex);
             qCDebug(QT_REMOTEOBJECT) << "Invoke Property (adapter)" << propertyIndex << mp.name() << mp.read(m_adapter);
-            QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_adapter));
-            p.serialize(&m_packet);
+            serializePropertyChangePacket(&m_packet, m_api->name(), mp.name(), mp.read(m_object));
         } else {
             const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
             qCDebug(QT_REMOTEOBJECT) << "Invoke Property" << propertyIndex << mp.name() << mp.read(m_object);
-            QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_object));
-            p.serialize(&m_packet);
+            serializePropertyChangePacket(&m_packet, m_api->name(), mp.name(), mp.read(m_object));
         }
         m_packet.baseAddress = m_packet.size;
     }

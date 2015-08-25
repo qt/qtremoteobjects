@@ -88,6 +88,7 @@ private:
     quint32 m_curReadSize;
     QRemoteObjectPackets::QRemoteObjectPacket *m_packet;
     QDataStream m_dataStream;
+    QVector<QRemoteObjectPackets::QRemoteObjectPacket*> m_packetStorage;
 };
 
 

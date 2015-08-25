@@ -52,13 +52,14 @@ QT_BEGIN_NAMESPACE
 
 ClientIoDevice::ClientIoDevice(QObject *parent)
     : QObject(parent), m_isClosing(false), m_curReadSize(0), m_packet(Q_NULLPTR)
+    , m_packetStorage(QRemoteObjectPackets::QRemoteObjectPacket::ObjectList + 1, Q_NULLPTR)
 {
     m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
 }
 
 ClientIoDevice::~ClientIoDevice()
 {
-    delete m_packet;
+    qDeleteAll(m_packetStorage);
 }
 
 void ClientIoDevice::close()
@@ -67,13 +68,13 @@ void ClientIoDevice::close()
     doClose();
 }
 
-bool ClientIoDevice::read()
+QRemoteObjectPackets::QRemoteObjectPacket* ClientIoDevice::read()
 {
     qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()" << m_curReadSize << bytesAvailable();
 
     if (m_curReadSize == 0) {
         if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
-            return false;
+            return Q_NULLPTR;
 
         m_dataStream >> m_curReadSize;
     }
@@ -81,12 +82,11 @@ bool ClientIoDevice::read()
     qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
 
     if (bytesAvailable() < m_curReadSize)
-        return false;
+        return Q_NULLPTR;
 
     m_curReadSize = 0;
-    delete m_packet;
-    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(m_dataStream);
-    return m_packet && m_packet->id != QRemoteObjectPackets::QRemoteObjectPacket::Invalid;
+    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(m_dataStream, &m_packetStorage);
+    return m_packet->id != QRemoteObjectPackets::QRemoteObjectPacket::Invalid ? m_packet : Q_NULLPTR;
 }
 
 void ClientIoDevice::write(const QByteArray &data)

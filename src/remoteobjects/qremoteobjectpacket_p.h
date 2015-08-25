@@ -84,7 +84,7 @@ public:
     virtual ~QRemoteObjectPacket();
     virtual void serialize(DataStreamPacket *) const = 0;
     virtual bool deserialize(QDataStream&) = 0;
-    static QRemoteObjectPacket* fromDataStream(QDataStream&);
+    static QRemoteObjectPacket* fromDataStream(QDataStream&, QVector<QRemoteObjectPacket*> *buffer);
     quint16 id;
 };
 
@@ -225,6 +225,9 @@ public:
     // reply payload
     QVariant value;
 };
+
+//TODO do we need the object name or could we go with an id in backend code, this could be a costly allocation
+void serializePropertyChangePacket(DataStreamPacket *stream, const QString &name, const char *propertyName, const QVariant &value);
 
 class QPropertyChangePacket : public QRemoteObjectPacket
 {
