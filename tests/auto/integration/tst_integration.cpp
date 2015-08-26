@@ -349,7 +349,11 @@ private slots:
         engine->setStarted(false);
 
         const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
-        engine_r->waitForSource();
+        QEventLoop loop;
+        QTimer::singleShot(100, &loop, "quit");
+        connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
+        if (!engine_r->isInitialized())
+            loop.exec();
         QCOMPARE(engine_r->started(), false);
 
         QRemoteObjectPendingReply<bool> reply = engine_r->start();
@@ -366,7 +370,11 @@ private slots:
         engine->setStarted(false);
 
         const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
-        engine_r->waitForSource();
+        QEventLoop loop;
+        QTimer::singleShot(100, &loop, "quit");
+        connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
+        if (!engine_r->isInitialized())
+            loop.exec();
         QCOMPARE(engine_r->started(), false);
 
         QRemoteObjectPendingReply<bool> reply = engine_r->start();
@@ -387,8 +395,11 @@ private slots:
 
         const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire(QStringLiteral("Engine")));
         Q_ASSERT(engine_r);
-        bool ok = engine_r->waitForSource();
-        QVERIFY(ok);
+        QEventLoop loop;
+        QTimer::singleShot(100, &loop, "quit");
+        connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
+        if (!engine_r->isInitialized())
+            loop.exec();
 
         const QMetaObject *metaObject = engine_r->metaObject();
         const int propIndex = metaObject->indexOfProperty("started");
