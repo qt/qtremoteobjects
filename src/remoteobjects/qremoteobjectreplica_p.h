@@ -46,8 +46,11 @@
 
 #include "qremoteobjectpendingcall.h"
 
+#include "qremoteobjectpacket_p.h"
+
 #include <QPointer>
 #include <QVector>
+#include <QDataStream>
 #include <qcompilerdetection.h>
 
 QT_BEGIN_NAMESPACE
@@ -134,6 +137,7 @@ public:
     // pending call data
     int m_curSerialId;
     QHash<int, QRemoteObjectPendingCall> m_pendingCalls;
+    QRemoteObjectPackets::DataStreamPacket m_packet;
 };
 
 class QInProcessReplicaPrivate : public QRemoteObjectReplicaPrivate

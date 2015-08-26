@@ -44,6 +44,7 @@
 
 #include "qconnectionserverfactory_p.h"
 #include "qtremoteobjectglobal.h"
+#include "qremoteobjectpacket_p.h"
 
 #include <QIODevice>
 #include <QScopedPointer>
@@ -93,6 +94,7 @@ private:
     QSignalMapper m_serverRead;
     QHash<ServerIoDevice*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
+    QRemoteObjectPackets::DataStreamPacket m_packet;
 };
 
 QT_END_NAMESPACE

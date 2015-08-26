@@ -105,7 +105,7 @@ QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in)
     return packet;
 }
 
-QByteArray QInitPacketEncoder::serialize() const
+void QInitPacketEncoder::serialize(DataStreamPacket *packet) const
 {
     const QMetaObject *meta = object->m_object->metaObject();
     const QMetaObject *adapterMeta = Q_NULLPTR;
@@ -113,9 +113,11 @@ QByteArray QInitPacketEncoder::serialize() const
         adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(InitPacket);
+    QIODevice * dev = ds.device();
     ds << api->name();
-    qint64 postNamePosition = ds.device()->pos();
+    const qint64 postNamePosition = dev->pos();
     ds << quint32(0);
 
     //Now copy the property data
@@ -126,7 +128,8 @@ QByteArray QInitPacketEncoder::serialize() const
         const int index = api->sourcePropertyIndex(i);
         if (index < 0) {
             qCWarning(QT_REMOTEOBJECT) << "QInitPacketEncoder - Found invalid property.  Index not found:" << i << "Dropping invalid packet.";
-            return QByteArray();
+            ds.size = 0;
+            return;
         }
         if (api->isAdapterProperty(i)) {
             const QMetaProperty mp = adapterMeta->property(index);
@@ -140,9 +143,11 @@ QByteArray QInitPacketEncoder::serialize() const
     }
 
     //Now go back and set the size of the rest of the data so we can treat is as a QByteArray
-    ds.device()->seek(postNamePosition);
-    ds << quint32(ds.array.length() - sizeof(quint32) - postNamePosition);
-    return ds.finishPacket();
+    const int size = dev->pos();
+    dev->seek(postNamePosition);
+    ds << quint32(size - sizeof(quint32) - postNamePosition);
+    dev->seek(size);
+    ds.finishPacket();
 }
 
 bool QInitPacketEncoder::deserialize(QDataStream &)
@@ -151,10 +156,10 @@ bool QInitPacketEncoder::deserialize(QDataStream &)
     return false;
 }
 
-QByteArray QInitPacket::serialize() const
+void QInitPacket::serialize(DataStreamPacket*) const
 {
     Q_ASSERT(false); //Use QInitPacketEncoder::serialize()
-    return QByteArray();
+    return;
 }
 
 bool QInitPacket::deserialize(QDataStream& in)
@@ -202,7 +207,7 @@ bool QInitPacket::deserialize(QDataStream& in)
     return true;
 }
 
-QByteArray QInitDynamicPacketEncoder::serialize() const
+void QInitDynamicPacketEncoder::serialize(DataStreamPacket *packet) const
 {
     const QMetaObject *meta = object->m_object->metaObject();
     const QMetaObject *adapterMeta = Q_NULLPTR;
@@ -210,9 +215,11 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
         adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(InitDynamicPacket);
+    QIODevice *dev = ds.device();
     ds << api->name();
-    qint64 postNamePosition = ds.device()->pos();
+    const qint64 postNamePosition = dev->pos();
     ds << quint32(0);
 
     //Now copy the property data
@@ -225,7 +232,8 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
         const int index = api->sourceSignalIndex(i);
         if (index < 0) {
             qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid signal.  Index not found:" << i << "Dropping invalid packet.";
-            return QByteArray();
+            ds.size = 0;
+            return;
         }
         ds << api->signalSignature(i);
     }
@@ -234,7 +242,8 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
         const int index = api->sourceMethodIndex(i);
         if (index < 0) {
             qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid method.  Index not found:" << i << "Dropping invalid packet.";
-            return QByteArray();
+            ds.size = 0;
+            return;
         }
         ds << api->methodSignature(i);
         ds << api->typeName(i);
@@ -247,7 +256,8 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
         const int index = api->sourcePropertyIndex(i);
         if (index < 0) {
             qCWarning(QT_REMOTEOBJECT) << "QInitDynamicPacketEncoder - Found invalid method.  Index not found:" << i << "Dropping invalid packet.";
-            return QByteArray();
+            ds.size = 0;
+            return;
         }
         if (api->isAdapterProperty(i)) {
             const QMetaProperty mp = adapterMeta->property(index);
@@ -271,9 +281,11 @@ QByteArray QInitDynamicPacketEncoder::serialize() const
     }
 
     //Now go back and set the size of the rest of the data so we can treat is as a QByteArray
-    ds.device()->seek(postNamePosition);
-    ds << quint32(ds.array.length() - sizeof(quint32) - postNamePosition);
-    return ds.finishPacket();
+    const int size = dev->pos();
+    dev->seek(postNamePosition);
+    ds << quint32(size - sizeof(quint32) - postNamePosition);
+    dev->seek(size);
+    ds.finishPacket();
 }
 
 bool QInitDynamicPacketEncoder::deserialize(QDataStream &)
@@ -282,10 +294,10 @@ bool QInitDynamicPacketEncoder::deserialize(QDataStream &)
     return false;
 }
 
-QByteArray QInitDynamicPacket::serialize() const
+void QInitDynamicPacket::serialize(DataStreamPacket*) const
 {
     Q_ASSERT(false); //Use QInitDynamicPacketEncoder::serialize()
-    return QByteArray();
+    return;
 }
 
 bool QInitDynamicPacket::deserialize(QDataStream& in)
@@ -414,12 +426,13 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
 }
 
 
-QByteArray QAddObjectPacket::serialize() const
+void QAddObjectPacket::serialize(DataStreamPacket *packet) const
 {
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(AddObject);
     ds << name;
     ds << isDynamic;
-    return ds.finishPacket();
+    ds.finishPacket();
 }
 
 bool QAddObjectPacket::deserialize(QDataStream& in)
@@ -429,11 +442,12 @@ bool QAddObjectPacket::deserialize(QDataStream& in)
     return true;
 }
 
-QByteArray QRemoveObjectPacket::serialize() const
+void QRemoveObjectPacket::serialize(DataStreamPacket *packet) const
 {
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(RemoveObject);
     ds << name;
-    return ds.finishPacket();
+    ds.finishPacket();
 }
 
 bool QRemoveObjectPacket::deserialize(QDataStream& in)
@@ -442,15 +456,16 @@ bool QRemoveObjectPacket::deserialize(QDataStream& in)
     return true;
 }
 
-QByteArray QInvokePacket::serialize() const
+void QInvokePacket::serialize(DataStreamPacket *packet) const
 {
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(InvokePacket);
     ds << name;
     ds << call;
     ds << index;
     ds << args;
     ds << serialId;
-    return ds.finishPacket();
+    ds.finishPacket();
 }
 
 bool QInvokePacket::deserialize(QDataStream& in)
@@ -463,13 +478,14 @@ bool QInvokePacket::deserialize(QDataStream& in)
     return true;
 }
 
-QByteArray QInvokeReplyPacket::serialize() const
+void QInvokeReplyPacket::serialize(DataStreamPacket *packet) const
 {
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(InvokeReplyPacket);
     ds << name;
     ds << ackedSerialId;
     ds << value;
-    return ds.finishPacket();
+    ds.finishPacket();
 }
 
 bool QInvokeReplyPacket::deserialize(QDataStream& in)
@@ -480,13 +496,14 @@ bool QInvokeReplyPacket::deserialize(QDataStream& in)
     return true;
 }
 
-QByteArray QPropertyChangePacket::serialize() const
+void QPropertyChangePacket::serialize(DataStreamPacket *packet) const
 {
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(PropertyChangePacket);
     ds << name;
     ds << propertyName;
     ds << value;
-    return ds.finishPacket();
+    ds.finishPacket();
 }
 
 bool QPropertyChangePacket::deserialize(QDataStream& in)
@@ -497,11 +514,12 @@ bool QPropertyChangePacket::deserialize(QDataStream& in)
     return true;
 }
 
-QByteArray QObjectListPacket::serialize() const
+void QObjectListPacket::serialize(DataStreamPacket *packet) const
 {
-    DataStreamPacket ds(id);
+    DataStreamPacket &ds = *packet;
+    ds.setId(ObjectList);
     ds << objects;
-    return ds.finishPacket();
+    ds.finishPacket();
 }
 
 bool QObjectListPacket::deserialize(QDataStream& in)

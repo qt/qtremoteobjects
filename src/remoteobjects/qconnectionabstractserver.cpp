@@ -91,6 +91,12 @@ void ServerIoDevice::write(const QByteArray &data)
         connection()->write(data);
 }
 
+void ServerIoDevice::write(const QByteArray &data, qint64 size)
+{
+    if (connection()->isOpen() && !m_isClosing)
+        connection()->write(data.data(), size);
+}
+
 qint64 ServerIoDevice::bytesAvailable()
 {
     return connection()->bytesAvailable();

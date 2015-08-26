@@ -68,6 +68,7 @@ public:
 
     bool read();
     virtual void write(const QByteArray &data);
+    virtual void write(const QByteArray &data, qint64);
     void close();
     virtual void connectToServer() = 0;
     virtual qint64 bytesAvailable();

@@ -168,31 +168,31 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
     if (listeners.empty())
         return;
 
-    QByteArray ba;
-
     const int propertyIndex = m_api->propertyIndexFromSignal(index);
     if (propertyIndex >= 0) {
         if (m_api->isAdapterProperty(index)) {
             const QMetaProperty mp = m_adapter->metaObject()->property(propertyIndex);
             qCDebug(QT_REMOTEOBJECT) << "Invoke Property (adapter)" << propertyIndex << mp.name() << mp.read(m_adapter);
             QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_adapter));
-            ba = p.serialize();
+            p.serialize(&m_packet);
         } else {
             const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
             qCDebug(QT_REMOTEOBJECT) << "Invoke Property" << propertyIndex << mp.name() << mp.read(m_object);
             QPropertyChangePacket p(m_api->name(), mp.name(), mp.read(m_object));
-            ba = p.serialize();
+            p.serialize(&m_packet);
         }
+        m_packet.baseAddress = m_packet.size;
     }
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
     QInvokePacket p(m_api->name(), call, index, marshalArgs(index, a));
 
-    ba += p.serialize();
+    p.serialize(&m_packet);
+    m_packet.baseAddress = 0;
 
     Q_FOREACH (ServerIoDevice *io, listeners)
-        io->write(ba);
+        io->write(m_packet.array, m_packet.size);
 }
 
 void QRemoteObjectSource::addListener(ServerIoDevice *io, bool dynamic)
@@ -201,10 +201,12 @@ void QRemoteObjectSource::addListener(ServerIoDevice *io, bool dynamic)
 
     if (dynamic) {
         QRemoteObjectPackets::QInitDynamicPacketEncoder p(this);
-        io->write(p.serialize());
+        p.serialize(&m_packet);
+        io->write(m_packet.array, m_packet.size);
     } else {
         QRemoteObjectPackets::QInitPacketEncoder p(this);
-        io->write(p.serialize());
+        p.serialize(&m_packet);
+        io->write(m_packet.array, m_packet.size);
     }
 }
 
@@ -214,7 +216,8 @@ int QRemoteObjectSource::removeListener(ServerIoDevice *io, bool shouldSendRemov
     if (shouldSendRemove)
     {
         QRemoveObjectPacket p(m_api->name());
-        io->write(p.serialize());
+        p.serialize(&m_packet);
+        io->write(m_packet.array, m_packet.size);
     }
     return listeners.length();
 }

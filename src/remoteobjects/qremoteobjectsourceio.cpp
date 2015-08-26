@@ -90,10 +90,10 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
     }
 
     new QRemoteObjectSource(object, api, adapter, this);
-    foreach (ServerIoDevice *conn, m_connections) {
-        QRemoteObjectPackets::QObjectListPacket p(QStringList(api->name()));
-        conn->write(p.serialize());
-    }
+    QRemoteObjectPackets::QObjectListPacket p(QStringList(api->name()));
+    p.serialize(&m_packet);
+    foreach (ServerIoDevice *conn, m_connections)
+        conn->write(m_packet.array, m_packet.size);
     if (const int count = m_connections.size())
         qRODebug(this) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
     return true;
@@ -217,7 +217,8 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     // send reply if wanted
                     if (p->serialId >= 0) {
                         QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
-                        connection->write(replyPacket.serialize());
+                        replyPacket.serialize(&m_packet);
+                        connection->write(m_packet.array, m_packet.size);
                     }
                 } else {
                     const int resolvedIndex = pp->m_api->sourcePropertyIndex(p->index);
@@ -253,7 +254,8 @@ void QRemoteObjectSourceIo::handleConnection()
     m_serverRead.setMapping(conn, conn);
 
     QRemoteObjectPackets::QObjectListPacket p(QStringList(m_remoteObjects.keys()));
-    conn->write(p.serialize());
+    p.serialize(&m_packet);
+    conn->write(m_packet.array, m_packet.size);
     qRODebug(this) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
 }
 

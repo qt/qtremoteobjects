@@ -102,7 +102,8 @@ bool QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
         return false;
     }
 
-    connectionToSource->write(packet->serialize());
+    packet->serialize(&m_packet);
+    connectionToSource->write(m_packet.array, m_packet.size);
     return true;
 }
 #ifdef Q_COMPILER_UNIFORM_INIT
@@ -277,7 +278,7 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
         if (index < m_methodOffset) //index - m_methodOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid method invocation.  Index not found:" << index << "( offset =" << m_methodOffset << ") object:" << m_objectName << this->m_metaObject->method(index).name();
         else {
-            QInvokePacket package = QInvokePacket(m_objectName, call, index - m_methodOffset, args);
+            QInvokePacket package(m_objectName, call, index - m_methodOffset, args);
             sendCommand(&package);
         }
     } else {
@@ -285,7 +286,7 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
         if (index < m_propertyOffset) //index - m_propertyOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid property invocation.  Index not found:" << index << "( offset =" << m_propertyOffset << ") object:" << m_objectName << this->m_metaObject->property(index).name();
         else {
-            QInvokePacket package = QInvokePacket(m_objectName, call, index - m_propertyOffset, args);
+            QInvokePacket package(m_objectName, call, index - m_propertyOffset, args);
             sendCommand(&package);
         }
     }

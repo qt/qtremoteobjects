@@ -62,27 +62,7 @@ namespace QRemoteObjectPackets {
 
 const int dataStreamVersion = QDataStream::Qt_5_0;
 
-//Helper class for creating a QByteArray from a QRemoteObjectPacket
-class DataStreamPacket : public QDataStream
-{
-public:
-    DataStreamPacket(quint16 id) : QDataStream(&array, QIODevice::WriteOnly)
-    {
-        this->setVersion(dataStreamVersion);
-        *this << quint32(0);
-        *this << id;
-    }
-    QByteArray finishPacket()
-    {
-        this->device()->seek(0);
-        *this << quint32(array.length() - sizeof(quint32));
-        return array;
-    }
-    QByteArray array;
-
-private:
-    Q_DISABLE_COPY(DataStreamPacket)
-};
+class DataStreamPacket;
 
 class QRemoteObjectPacket
 {
@@ -102,10 +82,43 @@ public:
 
     QRemoteObjectPacket(quint64 _id = Invalid) : id(_id) {}
     virtual ~QRemoteObjectPacket();
-    virtual QByteArray serialize() const = 0;
+    virtual void serialize(DataStreamPacket *) const = 0;
     virtual bool deserialize(QDataStream&) = 0;
     static QRemoteObjectPacket* fromDataStream(QDataStream&);
     quint16 id;
+};
+
+//Helper class for creating a QByteArray from a QRemoteObjectPacket
+class DataStreamPacket : public QDataStream
+{
+public:
+    DataStreamPacket(quint16 id = QRemoteObjectPacket::InvokePacket)
+        : QDataStream(&array, QIODevice::WriteOnly)
+        , baseAddress(0)
+    {
+        this->setVersion(dataStreamVersion);
+        *this << quint32(0);
+        *this << id;
+    }
+    void setId(quint16 id)
+    {
+        device()->seek(baseAddress);
+        *this << quint32(0);
+        *this << id;
+    }
+
+    void finishPacket()
+    {
+        size = device()->pos();
+        device()->seek(baseAddress);
+        *this << quint32(size - baseAddress - sizeof(quint32));
+    }
+    QByteArray array;
+    int baseAddress;
+    int size;
+
+private:
+    Q_DISABLE_COPY(DataStreamPacket)
 };
 
 class QInitPacketEncoder : public QRemoteObjectPacket
@@ -113,7 +126,7 @@ class QInitPacketEncoder : public QRemoteObjectPacket
 public:
     inline QInitPacketEncoder(const QRemoteObjectSource *_object)
         : QRemoteObjectPacket(InitPacket), object(_object) {}
-    QByteArray serialize() const Q_DECL_OVERRIDE;
+    void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     const QRemoteObjectSource *object;
 private:
@@ -124,7 +137,7 @@ class QInitPacket : public QRemoteObjectPacket
 {
 public:
     inline QInitPacket() : QRemoteObjectPacket() {}
-    QByteArray serialize() const Q_DECL_OVERRIDE;
+    void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QString name;
     QByteArray packetData;
@@ -135,7 +148,7 @@ class QInitDynamicPacketEncoder : public QRemoteObjectPacket
 public:
     QInitDynamicPacketEncoder(const QRemoteObjectSource *_object)
         : QRemoteObjectPacket(InitDynamicPacket), object(_object) {}
-    QByteArray serialize() const Q_DECL_OVERRIDE;
+    void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     const QRemoteObjectSource *object;
 private:
@@ -146,7 +159,7 @@ class QInitDynamicPacket : public QRemoteObjectPacket
 {
 public:
     inline QInitDynamicPacket() : QRemoteObjectPacket() {}
-    QByteArray serialize() const Q_DECL_OVERRIDE;
+    void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QMetaObject *createMetaObject(QMetaObjectBuilder &builder,
                                   QVector<QPair<QByteArray, QVariant> > *propertyValues = 0) const;
@@ -161,7 +174,7 @@ public:
        isDynamic(false) {}
     inline QAddObjectPacket(const QString &_name, bool _isDynamic)
         : QRemoteObjectPacket(AddObject), name(_name), isDynamic(_isDynamic) {}
-    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QString name;
     bool isDynamic;
@@ -173,7 +186,7 @@ public:
     inline QRemoveObjectPacket() : QRemoteObjectPacket() {}
     inline QRemoveObjectPacket(const QString &_name)
         : QRemoteObjectPacket(RemoveObject), name(_name) {}
-    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QString name;
 };
@@ -185,7 +198,7 @@ public:
       call(-1), index(-1), serialId(-1) {}
     inline QInvokePacket(const QString &_name, int _call, int _index, QVariantList _args, int _serialId = -1)
         : QRemoteObjectPacket(InvokePacket), name(_name), call(_call), index(_index), args(_args), serialId(_serialId) {}
-    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
 
     QString name;
@@ -203,7 +216,7 @@ public:
         , ackedSerialId(-1) {}
     inline QInvokeReplyPacket(const QString &_name, int _ackedSerialId, const QVariant &_value = QVariant())
         : QRemoteObjectPacket(InvokeReplyPacket), name(_name), ackedSerialId(_ackedSerialId), value(_value) {}
-    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
 
     QString name;
@@ -219,7 +232,7 @@ public:
     inline QPropertyChangePacket() : QRemoteObjectPacket() {}
     inline QPropertyChangePacket(const QString &_name, const char *_propertyNameChar, const QVariant &_value)
         : QRemoteObjectPacket(PropertyChangePacket), name(_name), propertyName(_propertyNameChar), value(_value) {}
-    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QString name;
     QByteArray propertyName;
@@ -232,7 +245,7 @@ public:
     inline QObjectListPacket() : QRemoteObjectPacket() {}
     inline QObjectListPacket(const QStringList &_objects)
         : QRemoteObjectPacket(ObjectList), objects(_objects) {}
-    virtual QByteArray serialize() const Q_DECL_OVERRIDE;
+    virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QStringList objects;
 };

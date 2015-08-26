@@ -47,6 +47,7 @@
 #include <QMetaProperty>
 #include <QVector>
 #include "qremoteobjectsource.h"
+#include "qremoteobjectpacket_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -62,10 +63,11 @@ public:
     ~QRemoteObjectSource();
 
     int qt_metacall(QMetaObject::Call call, int methodId, void **a);
-    QList<ServerIoDevice*> listeners;
+    QVector<ServerIoDevice*> listeners;
     QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;
     QRemoteObjectSourceIo *m_sourceIo;
+    QRemoteObjectPackets::DataStreamPacket m_packet;
     bool hasAdapter() const { return m_adapter; }
 
     QVariantList marshalArgs(int index, void **a);
