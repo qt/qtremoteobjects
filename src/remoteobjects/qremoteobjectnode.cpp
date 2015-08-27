@@ -404,12 +404,12 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     {
         const QPropertyChangePacket *p = static_cast<const QPropertyChangePacket *>(packet);
         const QString object = p->name;
-        qRODebug(this) << "PropertyChange-->" << p->name << QString::fromLatin1(p->propertyName.constData());
+        qRODebug(this) << "PropertyChange-->" << p->name << QString::fromLatin1(p->propertyName.string);
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
         if (rep)
         {
             const int offset = rep->m_metaObject->propertyOffset();
-            const int index = rep->m_metaObject->indexOfProperty(p->propertyName.constData())-offset;
+            const int index = rep->m_metaObject->indexOfProperty(p->propertyName.string)-offset;
             rep->setProperty(index, p->value);
         } else { //replica has been deleted, remove from list
             replicas.remove(p->name);

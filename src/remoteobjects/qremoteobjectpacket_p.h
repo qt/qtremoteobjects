@@ -53,6 +53,8 @@
 #include <QtCore/QVariant>
 #include <QtCore/QLoggingCategory>
 
+#include <cstdlib>
+
 QT_BEGIN_NAMESPACE
 
 class QMetaObjectBuilder;
@@ -229,6 +231,55 @@ public:
 //TODO do we need the object name or could we go with an id in backend code, this could be a costly allocation
 void serializePropertyChangePacket(DataStreamPacket *stream, const QString &name, const char *propertyName, const QVariant &value);
 
+struct RawString {
+    RawString() : string(Q_NULLPTR), m_size(0u), bufferSize(0u){}
+    RawString(const char *input) : string(Q_NULLPTR){setString(input);}
+    ~RawString()
+    {
+        free(string);
+    }
+
+    void setString(const char *data, int size = -1)
+    {
+        if (size == -1)
+            m_size = strlen(data);
+        else
+            m_size = size;
+        realloc(m_size);
+        memcpy(string, data, m_size);
+    }
+private:
+    void realloc(size_t size)
+    {
+        if (bufferSize < size) {
+            string = static_cast<char*>(std::realloc(string, size));
+            bufferSize = size;
+            m_size = bufferSize;
+        }
+    }
+    inline friend QDataStream &operator >>(QDataStream &stream, RawString &value);
+public:
+    char *string;
+    size_t m_size;
+    size_t bufferSize;
+};
+
+inline QDataStream &operator >>(QDataStream &stream, RawString &value)
+{
+    quint32 len;
+    stream >> len;
+    if (len == 0xffffffff)
+        return stream;
+    if (value.bufferSize < len)
+        value.realloc(len);
+
+    const int read = stream.readRawData(value.string, len);
+    value.m_size = read;
+    Q_ASSERT(value.m_size == len);
+
+    return stream;
+}
+
 class QPropertyChangePacket : public QRemoteObjectPacket
 {
 public:
@@ -238,7 +289,7 @@ public:
     virtual void serialize(DataStreamPacket*) const Q_DECL_OVERRIDE;
     virtual bool deserialize(QDataStream&) Q_DECL_OVERRIDE;
     QString name;
-    QByteArray propertyName;
+    RawString propertyName;
     QVariant value;
 };
 

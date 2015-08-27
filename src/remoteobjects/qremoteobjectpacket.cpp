@@ -541,7 +541,7 @@ void serializePropertyChangePacket(DataStreamPacket *packet, const QString &name
     DataStreamPacket &ds = *packet;
     ds.setId(QRemoteObjectPacket::PropertyChangePacket);
     ds << name;
-    ds.writeBytes(propertyName, strlen(propertyName));
+    ds.writeBytes(propertyName, strlen(propertyName) + 1);
     ds << value;
     ds.finishPacket();
 }
@@ -551,7 +551,7 @@ void QPropertyChangePacket::serialize(DataStreamPacket *packet) const
     DataStreamPacket &ds = *packet;
     ds.setId(PropertyChangePacket);
     ds << name;
-    ds << propertyName;
+    //ds << propertyName;
     ds << value;
     ds.finishPacket();
 }
