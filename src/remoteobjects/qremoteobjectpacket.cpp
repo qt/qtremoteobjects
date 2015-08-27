@@ -496,6 +496,18 @@ bool QRemoveObjectPacket::deserialize(QDataStream& in)
     return true;
 }
 
+void serializeInvokePacket(DataStreamPacket* packet, const QString &name, int call, int index, const QVariantList *args, int serialId)
+{
+    DataStreamPacket &ds = *packet;
+    ds.setId(QRemoteObjectPacket::InvokePacket);
+    ds << name;
+    ds << call;
+    ds << index;
+    ds << *args;
+    ds << serialId;
+    ds.finishPacket();
+}
+
 void QInvokePacket::serialize(DataStreamPacket *packet) const
 {
     DataStreamPacket &ds = *packet;

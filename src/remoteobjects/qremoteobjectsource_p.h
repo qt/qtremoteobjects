@@ -68,9 +68,10 @@ public:
     const SourceApiMap * const m_api;
     QRemoteObjectSourceIo *m_sourceIo;
     QRemoteObjectPackets::DataStreamPacket m_packet;
+    QVariantList m_marshalledArgs;
     bool hasAdapter() const { return m_adapter; }
 
-    QVariantList marshalArgs(int index, void **a);
+    QVariantList* marshalArgs(int index, void **a);
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);

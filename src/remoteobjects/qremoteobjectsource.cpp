@@ -110,19 +110,30 @@ QRemoteObjectSource::~QRemoteObjectSource()
     delete m_api;
 }
 
-QVariantList QRemoteObjectSource::marshalArgs(int index, void **a)
+QVariantList* QRemoteObjectSource::marshalArgs(int index, void **a)
 {
-    QVariantList list;
+    QVariantList &list = m_marshalledArgs;
     const int N = m_api->signalParameterCount(index);
-    list.reserve(N);
-    for (int i = 0; i < N; ++i) {
+    if (list.size() < N)
+        list.reserve(N);
+    const int minFill = std::min(list.size(), N);
+    for (int i = 0; i < minFill; ++i) {
+        const int type = m_api->signalParameterType(index, i);
+        if (type == QMetaType::QVariant)
+            list[i] = *reinterpret_cast<QVariant *>(a[i + 1]);
+        else
+            list[i] = QVariant(type, a[i + 1]);
+    }
+    for (int i = list.size(); i < N; ++i) {
         const int type = m_api->signalParameterType(index, i);
         if (type == QMetaType::QVariant)
             list << *reinterpret_cast<QVariant *>(a[i + 1]);
         else
             list << QVariant(type, a[i + 1]);
     }
-    return list;
+    for (int i = N; i < list.size(); ++i)
+        list.removeLast();
+    return &m_marshalledArgs;
 }
 
 bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
@@ -184,9 +195,8 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
-    QInvokePacket p(m_api->name(), call, index, marshalArgs(index, a));
 
-    p.serialize(&m_packet);
+    serializeInvokePacket(&m_packet, m_api->name(), call, index, marshalArgs(index, a));
     m_packet.baseAddress = 0;
 
     Q_FOREACH (ServerIoDevice *io, listeners)

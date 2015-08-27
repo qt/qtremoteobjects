@@ -193,6 +193,8 @@ public:
     QString name;
 };
 
+void serializeInvokePacket(DataStreamPacket*, const QString &name, int call, int index, const QVariantList *args, int serialId = -1);
+
 class QInvokePacket : public QRemoteObjectPacket
 {
 public:
