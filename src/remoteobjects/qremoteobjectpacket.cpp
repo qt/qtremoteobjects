@@ -546,14 +546,8 @@ void serializePropertyChangePacket(DataStreamPacket *packet, const QString &name
     ds.finishPacket();
 }
 
-void QPropertyChangePacket::serialize(DataStreamPacket *packet) const
+void QPropertyChangePacket::serialize(DataStreamPacket*) const
 {
-    DataStreamPacket &ds = *packet;
-    ds.setId(PropertyChangePacket);
-    ds << name;
-    //ds << propertyName;
-    ds << value;
-    ds.finishPacket();
 }
 
 bool QPropertyChangePacket::deserialize(QDataStream& in)
