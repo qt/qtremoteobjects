@@ -508,12 +508,45 @@ void QInvokePacket::serialize(DataStreamPacket *packet) const
     ds.finishPacket();
 }
 
+
+bool deSerializeQVariantList(QDataStream& s, QList<QVariant>& l)
+{
+    quint32 c;
+    s >> c;
+    const int initialListSize = l.size();
+    if (static_cast<quint32>(l.size()) < c)
+        l.reserve(c);
+    else if (static_cast<quint32>(l.size()) > c)
+        for (int i = c; i < initialListSize; ++i)
+            l.removeLast();
+
+    for (int i = 0; i < l.size(); ++i)
+    {
+        QVariant t;
+        s >> t;
+        l[i] = t;
+        if (s.atEnd())
+            return false;
+    }
+    for (quint32 i = l.size(); i < c; ++i)
+    {
+        QVariant t;
+        s >> t;
+        l.append(t);
+        if (s.atEnd())
+            return false;
+    }
+    return true;
+}
+
 bool QInvokePacket::deserialize(QDataStream& in)
 {
     in >> name;
     in >> call;
     in >> index;
-    in >> args;
+    const bool success = deSerializeQVariantList(in, args);
+    Q_ASSERT(success);
+    Q_UNUSED(success);
     in >> serialId;
     return true;
 }
