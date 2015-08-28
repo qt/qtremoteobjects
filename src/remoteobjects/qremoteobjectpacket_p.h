@@ -235,7 +235,13 @@ void serializePropertyChangePacket(DataStreamPacket *stream, const QString &name
 
 struct RawString {
     RawString() : string(Q_NULLPTR), m_size(0u), bufferSize(0u){}
-    RawString(const char *input) : string(Q_NULLPTR){setString(input);}
+    RawString(const char *input)
+        : string(Q_NULLPTR)
+        , m_size(0u)
+        , bufferSize(0u)
+    {
+        setString(input);
+    }
     ~RawString()
     {
         free(string);
