@@ -118,8 +118,8 @@ public:
     void initialize(const QByteArray &);
     void configurePrivate(QRemoteObjectReplica *) Q_DECL_OVERRIDE;
     void requestRemoteObjectSource();
-    bool sendCommand(const QRemoteObjectPackets::QRemoteObjectPacket *packet);
-    QRemoteObjectPendingCall sendCommandWithReply(QRemoteObjectPackets::QInvokePacket* packet);
+    bool sendCommand();
+    QRemoteObjectPendingCall sendCommandWithReply(int serialId);
     bool waitForFinished(const QRemoteObjectPendingCall &call, int timeout);
     void notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket* replyPacket);
     void setConnection(ClientIoDevice *conn);

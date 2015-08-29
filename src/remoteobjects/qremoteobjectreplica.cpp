@@ -84,8 +84,8 @@ QConnectedReplicaPrivate::~QConnectedReplicaPrivate()
 {
     if (!connectionToSource.isNull()) {
         qCDebug(QT_REMOTEOBJECT) << "Replica deleted: sending RemoveObject to RemoteObjectSource" << m_objectName;
-        QRemoveObjectPacket packet(m_objectName);
-        sendCommand(&packet);
+        serializeRemoveObjectPacket(m_packet, m_objectName);
+        sendCommand();
     }
 }
 
@@ -94,7 +94,7 @@ bool QRemoteObjectReplicaPrivate::needsDynamicInitialization() const
     return m_metaObject == Q_NULLPTR;
 }
 
-bool QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
+bool QConnectedReplicaPrivate::sendCommand()
 {
     if (connectionToSource.isNull() || !connectionToSource->isOpen()) {
         if (connectionToSource.isNull())
@@ -102,7 +102,6 @@ bool QConnectedReplicaPrivate::sendCommand(const QRemoteObjectPacket *packet)
         return false;
     }
 
-    packet->serialize(&m_packet);
     connectionToSource->write(m_packet.array, m_packet.size);
     return true;
 }
@@ -278,16 +277,16 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
         if (index < m_methodOffset) //index - m_methodOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid method invocation.  Index not found:" << index << "( offset =" << m_methodOffset << ") object:" << m_objectName << this->m_metaObject->method(index).name();
         else {
-            QInvokePacket package(m_objectName, call, index - m_methodOffset, args);
-            sendCommand(&package);
+            serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, &args);
+            sendCommand();
         }
     } else {
         qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->property(index).name() << index << args << connectionToSource;
         if (index < m_propertyOffset) //index - m_propertyOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid property invocation.  Index not found:" << index << "( offset =" << m_propertyOffset << ") object:" << m_objectName << this->m_metaObject->property(index).name();
         else {
-            QInvokePacket package(m_objectName, call, index - m_propertyOffset, args);
-            sendCommand(&package);
+            serializeInvokePacket(m_packet, m_objectName, call, index - m_propertyOffset, &args);
+            sendCommand();
         }
     }
 }
@@ -297,24 +296,22 @@ QRemoteObjectPendingCall QConnectedReplicaPrivate::_q_sendWithReply(QMetaObject:
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
     qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
-    QInvokePacket package = QInvokePacket(m_objectName, call, index - m_methodOffset, args);
-    return sendCommandWithReply(&package);
+    int serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 0 : m_curSerialId++);
+    serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, &args, serialId);
+    return sendCommandWithReply(serialId);
 }
 
-QRemoteObjectPendingCall QConnectedReplicaPrivate::sendCommandWithReply(QRemoteObjectPackets::QInvokePacket* packet)
+QRemoteObjectPendingCall QConnectedReplicaPrivate::sendCommandWithReply(int serialId)
 {
-    Q_ASSERT(packet);
-    packet->serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 0 : m_curSerialId++);
-
-    bool success = sendCommand(packet);
+    bool success = sendCommand();
     if (!success) {
         return QRemoteObjectPendingCall(); // invalid
     }
 
-    qCDebug(QT_REMOTEOBJECT) << "Sent InvokePacket with serial id:" << packet->serialId;
-    QRemoteObjectPendingCall pendingCall(new QRemoteObjectPendingCallData(packet->serialId, this));
-    Q_ASSERT(!m_pendingCalls.contains(packet->serialId));
-    m_pendingCalls[packet->serialId] = pendingCall;
+    qCDebug(QT_REMOTEOBJECT) << "Sent InvokePacket with serial id:" << serialId;
+    QRemoteObjectPendingCall pendingCall(new QRemoteObjectPendingCallData(serialId, this));
+    Q_ASSERT(!m_pendingCalls.contains(serialId));
+    m_pendingCalls[serialId] = pendingCall;
     return pendingCall;
 }
 
@@ -388,8 +385,8 @@ void QConnectedReplicaPrivate::setDisconnected()
 
 void QConnectedReplicaPrivate::requestRemoteObjectSource()
 {
-    QAddObjectPacket packet(m_objectName, needsDynamicInitialization());
-    sendCommand(&packet);
+    serializeAddObjectPacket(m_packet, m_objectName, needsDynamicInitialization());
+    sendCommand();
 }
 
 void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)

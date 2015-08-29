@@ -90,8 +90,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
     }
 
     new QRemoteObjectSource(object, api, adapter, this);
-    QRemoteObjectPackets::QObjectListPacket p(QStringList(api->name()));
-    p.serialize(&m_packet);
+    serializeObjectListPacket(m_packet, QStringList(api->name()));
     foreach (ServerIoDevice *conn, m_connections)
         conn->write(m_packet.array, m_packet.size);
     if (const int count = m_connections.size())
@@ -216,8 +215,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->isAdapterMethod(p->index), resolvedIndex, p->args, &returnValue);
                     // send reply if wanted
                     if (p->serialId >= 0) {
-                        QRemoteObjectPackets::QInvokeReplyPacket replyPacket(name, p->serialId, returnValue);
-                        replyPacket.serialize(&m_packet);
+                        serializeInvokeReplyPacket(m_packet, name, p->serialId, returnValue);
                         connection->write(m_packet.array, m_packet.size);
                     }
                 } else {
@@ -253,8 +251,7 @@ void QRemoteObjectSourceIo::handleConnection()
     connect(conn, SIGNAL(readyRead()), &m_serverRead, SLOT(map()));
     m_serverRead.setMapping(conn, conn);
 
-    QRemoteObjectPackets::QObjectListPacket p(QStringList(m_remoteObjects.keys()));
-    p.serialize(&m_packet);
+    serializeObjectListPacket(m_packet, QStringList(m_remoteObjects.keys()));
     conn->write(m_packet.array, m_packet.size);
     qRODebug(this) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
 }

@@ -145,7 +145,7 @@ QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in, QVecto
     return packet;
 }
 
-void QInitPacketEncoder::serialize(DataStreamPacket *packet) const
+void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
     const QMetaObject *meta = object->m_object->metaObject();
     const QMetaObject *adapterMeta = Q_NULLPTR;
@@ -153,7 +153,6 @@ void QInitPacketEncoder::serialize(DataStreamPacket *packet) const
         adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
-    DataStreamPacket &ds = *packet;
     ds.setId(InitPacket);
     QIODevice * dev = ds.device();
     ds << api->name();
@@ -188,18 +187,6 @@ void QInitPacketEncoder::serialize(DataStreamPacket *packet) const
     ds << quint32(size - sizeof(quint32) - postNamePosition);
     dev->seek(size);
     ds.finishPacket();
-}
-
-bool QInitPacketEncoder::deserialize(QDataStream &)
-{
-    Q_ASSERT(false); //Use QInitPacket::deserialize()
-    return false;
-}
-
-void QInitPacket::serialize(DataStreamPacket*) const
-{
-    Q_ASSERT(false); //Use QInitPacketEncoder::serialize()
-    return;
 }
 
 bool QInitPacket::deserialize(QDataStream& in)
@@ -247,7 +234,7 @@ bool QInitPacket::deserialize(QDataStream& in)
     return true;
 }
 
-void QInitDynamicPacketEncoder::serialize(DataStreamPacket *packet) const
+void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
     const QMetaObject *meta = object->m_object->metaObject();
     const QMetaObject *adapterMeta = Q_NULLPTR;
@@ -255,7 +242,6 @@ void QInitDynamicPacketEncoder::serialize(DataStreamPacket *packet) const
         adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
-    DataStreamPacket &ds = *packet;
     ds.setId(InitDynamicPacket);
     QIODevice *dev = ds.device();
     ds << api->name();
@@ -326,18 +312,6 @@ void QInitDynamicPacketEncoder::serialize(DataStreamPacket *packet) const
     ds << quint32(size - sizeof(quint32) - postNamePosition);
     dev->seek(size);
     ds.finishPacket();
-}
-
-bool QInitDynamicPacketEncoder::deserialize(QDataStream &)
-{
-    Q_ASSERT(false); //Use QInitDynamicPacket::deserialize()
-    return false;
-}
-
-void QInitDynamicPacket::serialize(DataStreamPacket*) const
-{
-    Q_ASSERT(false); //Use QInitDynamicPacketEncoder::serialize()
-    return;
 }
 
 bool QInitDynamicPacket::deserialize(QDataStream& in)
@@ -465,10 +439,8 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
     return builder.toMetaObject();
 }
 
-
-void QAddObjectPacket::serialize(DataStreamPacket *packet) const
+void serializeAddObjectPacket(DataStreamPacket &ds, const QString &name, bool isDynamic)
 {
-    DataStreamPacket &ds = *packet;
     ds.setId(AddObject);
     ds << name;
     ds << isDynamic;
@@ -482,9 +454,8 @@ bool QAddObjectPacket::deserialize(QDataStream& in)
     return true;
 }
 
-void QRemoveObjectPacket::serialize(DataStreamPacket *packet) const
+void serializeRemoveObjectPacket(DataStreamPacket &ds, const QString &name)
 {
-    DataStreamPacket &ds = *packet;
     ds.setId(RemoveObject);
     ds << name;
     ds.finishPacket();
@@ -496,9 +467,8 @@ bool QRemoveObjectPacket::deserialize(QDataStream& in)
     return true;
 }
 
-void serializeInvokePacket(DataStreamPacket* packet, const QString &name, int call, int index, const QVariantList *args, int serialId)
+void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, int index, const QVariantList *args, int serialId)
 {
-    DataStreamPacket &ds = *packet;
     ds.setId(InvokePacket);
     ds << name;
     ds << call;
@@ -507,19 +477,6 @@ void serializeInvokePacket(DataStreamPacket* packet, const QString &name, int ca
     ds << serialId;
     ds.finishPacket();
 }
-
-void QInvokePacket::serialize(DataStreamPacket *packet) const
-{
-    DataStreamPacket &ds = *packet;
-    ds.setId(InvokePacket);
-    ds << name;
-    ds << call;
-    ds << index;
-    ds << args;
-    ds << serialId;
-    ds.finishPacket();
-}
-
 
 bool deSerializeQVariantList(QDataStream& s, QList<QVariant>& l)
 {
@@ -563,9 +520,8 @@ bool QInvokePacket::deserialize(QDataStream& in)
     return true;
 }
 
-void QInvokeReplyPacket::serialize(DataStreamPacket *packet) const
+void serializeInvokeReplyPacket(DataStreamPacket &ds, const QString &name, int ackedSerialId, const QVariant &value)
 {
-    DataStreamPacket &ds = *packet;
     ds.setId(InvokeReplyPacket);
     ds << name;
     ds << ackedSerialId;
@@ -581,18 +537,13 @@ bool QInvokeReplyPacket::deserialize(QDataStream& in)
     return true;
 }
 
-void serializePropertyChangePacket(DataStreamPacket *packet, const QString &name, const char *propertyName, const QVariant &value)
+void serializePropertyChangePacket(DataStreamPacket &ds, const QString &name, const char *propertyName, const QVariant &value)
 {
-    DataStreamPacket &ds = *packet;
     ds.setId(PropertyChangePacket);
     ds << name;
     ds.writeBytes(propertyName, strlen(propertyName) + 1);
     ds << value;
     ds.finishPacket();
-}
-
-void QPropertyChangePacket::serialize(DataStreamPacket*) const
-{
 }
 
 bool QPropertyChangePacket::deserialize(QDataStream& in)
@@ -603,9 +554,8 @@ bool QPropertyChangePacket::deserialize(QDataStream& in)
     return true;
 }
 
-void QObjectListPacket::serialize(DataStreamPacket *packet) const
+void serializeObjectListPacket(DataStreamPacket &ds, const QStringList &objects)
 {
-    DataStreamPacket &ds = *packet;
     ds.setId(ObjectList);
     ds << objects;
     ds.finishPacket();
