@@ -159,7 +159,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
 
         const QRemoteObjectPacket* packet = connection->packet();
         switch (packet->id) {
-        case QRemoteObjectPacket::AddObject:
+        case AddObject:
         {
             const QAddObjectPacket *p = static_cast<const QAddObjectPacket *>(packet);
             const QString name = p->name;
@@ -172,7 +172,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             }
             break;
         }
-        case QRemoteObjectPacket::RemoveObject:
+        case RemoveObject:
         {
             const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
             const QString name = p->name;
@@ -188,7 +188,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             qRODebug(this) << "RemoveObject finished" << name;
             break;
         }
-        case QRemoteObjectPacket::InvokePacket:
+        case InvokePacket:
         {
             const QInvokePacket *p = static_cast<const QInvokePacket *>(packet);
             const QString name = p->name;

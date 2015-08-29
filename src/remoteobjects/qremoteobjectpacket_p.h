@@ -66,21 +66,22 @@ const int dataStreamVersion = QDataStream::Qt_5_0;
 
 class DataStreamPacket;
 
+enum QRemoteObjectPacketTypeEnum
+{
+    Invalid = 0,
+    InitPacket,
+    InitDynamicPacket,
+    AddObject,
+    RemoveObject,
+    InvokePacket,
+    InvokeReplyPacket,
+    PropertyChangePacket,
+    ObjectList
+};
+
 class QRemoteObjectPacket
 {
 public:
-    enum QRemoteObjectPacketTypeEnum
-    {
-        Invalid = 0,
-        InitPacket,
-        InitDynamicPacket,
-        AddObject,
-        RemoveObject,
-        InvokePacket,
-        InvokeReplyPacket,
-        PropertyChangePacket,
-        ObjectList
-    };
 
     QRemoteObjectPacket(quint64 _id = Invalid) : id(_id) {}
     virtual ~QRemoteObjectPacket();
@@ -94,7 +95,7 @@ public:
 class DataStreamPacket : public QDataStream
 {
 public:
-    DataStreamPacket(quint16 id = QRemoteObjectPacket::InvokePacket)
+    DataStreamPacket(quint16 id = InvokePacket)
         : QDataStream(&array, QIODevice::WriteOnly)
         , baseAddress(0)
     {

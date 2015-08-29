@@ -52,7 +52,7 @@ QT_BEGIN_NAMESPACE
 
 ClientIoDevice::ClientIoDevice(QObject *parent)
     : QObject(parent), m_isClosing(false), m_curReadSize(0), m_packet(Q_NULLPTR)
-    , m_packetStorage(QRemoteObjectPackets::QRemoteObjectPacket::ObjectList + 1, Q_NULLPTR)
+    , m_packetStorage(QRemoteObjectPackets::ObjectList + 1, Q_NULLPTR)
 {
     m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
 }
@@ -86,7 +86,7 @@ QRemoteObjectPackets::QRemoteObjectPacket* ClientIoDevice::read()
 
     m_curReadSize = 0;
     m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(m_dataStream, &m_packetStorage);
-    return m_packet->id != QRemoteObjectPackets::QRemoteObjectPacket::Invalid ? m_packet : Q_NULLPTR;
+    return m_packet->id != QRemoteObjectPackets::Invalid ? m_packet : Q_NULLPTR;
 }
 
 void ClientIoDevice::write(const QByteArray &data)

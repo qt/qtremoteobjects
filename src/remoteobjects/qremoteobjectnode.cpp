@@ -321,7 +321,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 
         const QRemoteObjectPacket* packet = connection->packet();
         switch (packet->id) {
-        case QRemoteObjectPacket::ObjectList:
+        case ObjectList:
         {
             const QObjectListPacket *p = static_cast<const QObjectListPacket *>(packet);
             const QSet<QString> newObjects = p->objects.toSet();
@@ -350,7 +350,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case QRemoteObjectPacket::InitPacket:
+        case InitPacket:
         {
             const QInitPacket *p = static_cast<const QInitPacket *>(packet);
             const QString object = p->name;
@@ -365,7 +365,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case QRemoteObjectPacket::InitDynamicPacket:
+        case InitDynamicPacket:
         {
             const QInitDynamicPacket *p = static_cast<const QInitDynamicPacket *>(packet);
             const QString object = p->name;
@@ -381,7 +381,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case QRemoteObjectPacket::RemoveObject:
+        case RemoveObject:
         {
             const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
             qRODebug(this) << "RemoveObject-->" << p->name << this;
@@ -402,7 +402,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case QRemoteObjectPacket::PropertyChangePacket:
+        case PropertyChangePacket:
         {
             const QPropertyChangePacket *p = static_cast<const QPropertyChangePacket *>(packet);
             const QString object = p->name;
@@ -418,7 +418,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case QRemoteObjectPacket::InvokePacket:
+        case InvokePacket:
         {
             const QInvokePacket *p = static_cast<const QInvokePacket *>(packet);
             QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
@@ -439,7 +439,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case QRemoteObjectPacket::InvokeReplyPacket:
+        case InvokeReplyPacket:
         {
             const QInvokeReplyPacket *p = static_cast<const QInvokeReplyPacket *>(packet);
             QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();

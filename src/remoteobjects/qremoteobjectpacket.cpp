@@ -499,7 +499,7 @@ bool QRemoveObjectPacket::deserialize(QDataStream& in)
 void serializeInvokePacket(DataStreamPacket* packet, const QString &name, int call, int index, const QVariantList *args, int serialId)
 {
     DataStreamPacket &ds = *packet;
-    ds.setId(QRemoteObjectPacket::InvokePacket);
+    ds.setId(InvokePacket);
     ds << name;
     ds << call;
     ds << index;
@@ -584,7 +584,7 @@ bool QInvokeReplyPacket::deserialize(QDataStream& in)
 void serializePropertyChangePacket(DataStreamPacket *packet, const QString &name, const char *propertyName, const QVariant &value)
 {
     DataStreamPacket &ds = *packet;
-    ds.setId(QRemoteObjectPacket::PropertyChangePacket);
+    ds.setId(PropertyChangePacket);
     ds << name;
     ds.writeBytes(propertyName, strlen(propertyName) + 1);
     ds << value;
