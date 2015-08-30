@@ -422,7 +422,7 @@ class FetchData : public QObject
 {
     Q_OBJECT
 public:
-    FetchData(const QAbstractItemReplica *replica) : QObject(), m_replica(replica) {
+    FetchData(const QAbstractItemReplica *replica) : QObject(), m_replica(replica), isFinished(false) {
         if (!m_replica->isInitialized()) {
             QEventLoop l;
             connect(m_replica, SIGNAL(initialized()), &l, SLOT(quit()));
@@ -468,7 +468,8 @@ public:
 
     void fetch()
     {
-        if (m_pending.isEmpty() && m_waitForInsertion.isEmpty()) {
+        isFinished = m_pending.isEmpty() && m_waitForInsertion.isEmpty();
+        if (isFinished) {
             emitFetched();
             return;
         }
@@ -483,12 +484,14 @@ public:
         }
     }
 
-    void fetchAndWait()
+    bool fetchAndWait(int timeout = 3000)
     {
         QEventLoop l;
-        connect(this, SIGNAL(fetched()), &l, SLOT(quit()));
+        QTimer::singleShot(timeout, &l, &QEventLoop::quit);
+        connect(this, &FetchData::fetched, &l, &QEventLoop::quit);
         fetch();
         l.exec();
+        return isFinished;
     }
 
 signals:
@@ -498,6 +501,7 @@ private:
     const QAbstractItemReplica *m_replica;
     QHash<QPersistentModelIndex, QVector<int> > m_pending;
     QSet<QPersistentModelIndex> m_waitForInsertion;
+    bool isFinished;
 
     void emitFetched()
     {
@@ -581,7 +585,8 @@ private:
             }
         }
 
-        if (m_pending.isEmpty() && m_waitForInsertion.isEmpty()) {
+        isFinished = m_pending.isEmpty() && m_waitForInsertion.isEmpty();
+        if (isFinished) {
             emitFetched();
         }
     }
@@ -688,7 +693,7 @@ void TestModelView::testEmptyModel()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     compareData(&emptyModel, model.data());
 }
@@ -699,7 +704,7 @@ void TestModelView::testInitialData()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     compareData(&m_sourceModel, model.data());
 }
@@ -710,7 +715,7 @@ void TestModelView::testInitialDataTree()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     compareTreeData(&m_sourceModel, model.data());
 }
@@ -721,7 +726,7 @@ void TestModelView::testHeaderData()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     // ask for all Data members first, so we don't have to wait for update signals
     QSignalSpy spyHeader(model.data(), SIGNAL(headerDataChanged(Qt::Orientation,int,int)));
@@ -743,7 +748,7 @@ void TestModelView::testDataChangedTree()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     compareTreeData(&m_sourceModel, model.data());
     QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
@@ -783,7 +788,7 @@ void TestModelView::testFlags()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
     for (int i = 10; i < 20; ++i) {
@@ -808,7 +813,7 @@ void TestModelView::testDataChanged()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
     for (int i = 10; i < 20; ++i)
@@ -830,7 +835,7 @@ void TestModelView::testDataInsertion()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     QVector<QModelIndex> pending;
 
@@ -893,7 +898,7 @@ void TestModelView::testDataInsertionTree()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     const QVector<int> roles = model->availableRoles();
 
@@ -980,7 +985,7 @@ void TestModelView::testDataRemoval()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     QVector<InsertedRow> removedRows;
     QSignalSpy rowSpy(model.data(), SIGNAL(rowsRemoved(QModelIndex,int,int)));
@@ -1016,10 +1021,9 @@ void TestModelView::testDataRemoval()
 void TestModelView::testRoleNames()
 {
     QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("testRoleNames")));
-
     FetchData f(repModel.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     // test custom role names
     QCOMPARE(repModel.data()->roleNames(), m_listModel.roleNames());
@@ -1041,7 +1045,7 @@ void TestModelView::testModelTest()
 
     FetchData f(repModel.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
     Q_UNUSED(test);
 }
 
@@ -1051,7 +1055,7 @@ void TestModelView::testSortFilterModel()
 
     FetchData f(repModel.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
 
     QSortFilterProxyModel clientSort;
     clientSort.setSourceModel(repModel.data());
@@ -1069,7 +1073,7 @@ void TestModelView::testSetData()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
@@ -1099,7 +1103,7 @@ void TestModelView::testSetDataTree()
 
     FetchData f(model.data());
     f.addAll();
-    f.fetchAndWait();
+    QVERIFY(f.fetchAndWait());
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
