@@ -110,6 +110,11 @@ public:
     int retryInterval;
     QBasicTimer reconnectTimer;
     QRemoteObjectNode::ErrorCode m_lastError;
+    QString m_rxName;
+    QStringList m_rxObjects;
+    QVariantList m_rxArgs;
+    QRemoteObjectPackets::RawString m_rxPropertyName;
+    QVariant m_rxValue;
 };
 
 QT_END_NAMESPACE

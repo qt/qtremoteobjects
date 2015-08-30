@@ -47,18 +47,16 @@
 QT_BEGIN_NAMESPACE
 
 ServerIoDevice::ServerIoDevice(QObject *parent)
-    : QObject(parent), m_isClosing(false), m_curReadSize(0), m_packet(Q_NULLPTR)
-    , m_packetStorage(QRemoteObjectPackets::ObjectList + 1, Q_NULLPTR)
+    : QObject(parent), m_isClosing(false), m_curReadSize(0)
 {
     m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
 }
 
 ServerIoDevice::~ServerIoDevice()
 {
-    qDeleteAll(m_packetStorage);
 }
 
-bool ServerIoDevice::read()
+bool ServerIoDevice::read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &type, QString &name)
 {
     qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()" << m_curReadSize << bytesAvailable();
 
@@ -75,8 +73,7 @@ bool ServerIoDevice::read()
         return false;
 
     m_curReadSize = 0;
-    m_packet = QRemoteObjectPackets::QRemoteObjectPacket::fromDataStream(m_dataStream, &m_packetStorage);
-    return  m_packet && m_packet->id != QRemoteObjectPackets::Invalid;
+    return fromDataStream(m_dataStream, type, name);
 }
 
 void ServerIoDevice::close()
@@ -100,11 +97,6 @@ void ServerIoDevice::write(const QByteArray &data, qint64 size)
 qint64 ServerIoDevice::bytesAvailable()
 {
     return connection()->bytesAvailable();
-}
-
-QRemoteObjectPackets::QRemoteObjectPacket *ServerIoDevice::packet() const
-{
-    return m_packet;
 }
 
 void ServerIoDevice::initializeDataStream()

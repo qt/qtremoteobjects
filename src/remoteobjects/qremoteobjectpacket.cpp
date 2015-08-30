@@ -51,100 +51,6 @@ QT_BEGIN_NAMESPACE
 
 namespace QRemoteObjectPackets {
 
-QRemoteObjectPacket::~QRemoteObjectPacket(){}
-
-QRemoteObjectPacket *QRemoteObjectPacket::fromDataStream(QDataStream &in, QVector<QRemoteObjectPacket*> *buffer)
-{
-    QRemoteObjectPacket *packet = Q_NULLPTR;
-    quint16 type;
-    in >> type;
-    switch (type) {
-    case InitPacket:
-        if (!buffer->at(InitPacket)) {
-            packet = new QInitPacket;
-            (*buffer)[InitPacket] = packet;
-        } else {
-            packet = buffer->at(InitPacket);
-        }
-        if (packet->deserialize(in))
-            packet->id = InitPacket;
-        break;
-    case InitDynamicPacket:
-        if (!buffer->at(InitDynamicPacket)) {
-            packet = new QInitDynamicPacket;
-            (*buffer)[InitDynamicPacket] = packet;
-        } else {
-            packet = buffer->at(InitDynamicPacket);
-        }
-        if (packet->deserialize(in))
-            packet->id = InitDynamicPacket;
-        break;
-    case AddObject:
-        if (!buffer->at(AddObject)) {
-            packet = new QAddObjectPacket;
-            (*buffer)[AddObject] = packet;
-        } else {
-            packet = buffer->at(AddObject);
-        }
-        if (packet->deserialize(in))
-            packet->id = AddObject;
-        break;
-    case RemoveObject:
-        if (!buffer->at(RemoveObject)) {
-            packet = new QRemoveObjectPacket;
-            (*buffer)[RemoveObject] = packet;
-        } else {
-            packet = buffer->at(RemoveObject);
-        }
-        if (packet->deserialize(in))
-            packet->id = RemoveObject;
-        break;
-    case InvokePacket:
-        if (!buffer->at(InvokePacket)) {
-            packet = new QInvokePacket;
-            (*buffer)[InvokePacket] = packet;
-        } else {
-            packet = buffer->at(InvokePacket);
-        }
-        if (packet->deserialize(in))
-            packet->id = InvokePacket;
-        break;
-    case InvokeReplyPacket:
-        if (!buffer->at(InvokeReplyPacket)) {
-            packet = new QInvokeReplyPacket;
-            (*buffer)[InvokeReplyPacket] = packet;
-        } else {
-            packet = buffer->at(InvokeReplyPacket);
-        }
-        if (packet->deserialize(in))
-            packet->id = InvokeReplyPacket;
-        break;
-    case PropertyChangePacket:
-        if (!buffer->at(PropertyChangePacket)) {
-            packet = new QPropertyChangePacket;
-            (*buffer)[PropertyChangePacket] = packet;
-        } else {
-            packet = buffer->at(PropertyChangePacket);
-        }
-        if (packet->deserialize(in))
-            packet->id = PropertyChangePacket;
-        break;
-    case ObjectList:
-        if (!buffer->at(ObjectList)) {
-            packet = new QObjectListPacket;
-            (*buffer)[ObjectList] = packet;
-        } else {
-            packet = buffer->at(ObjectList);
-        }
-        if (packet->deserialize(in))
-            packet->id = ObjectList;
-        break;
-    default:
-        qWarning() << "Invalid packet received" << type;
-    }
-    return packet;
-}
-
 void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
     const QMetaObject *meta = object->m_object->metaObject();
@@ -154,10 +60,7 @@ void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object
     const SourceApiMap *api = object->m_api;
 
     ds.setId(InitPacket);
-    QIODevice * dev = ds.device();
     ds << api->name();
-    const qint64 postNamePosition = dev->pos();
-    ds << quint32(0);
 
     //Now copy the property data
     const int numProperties = api->propertyCount();
@@ -172,66 +75,50 @@ void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object
         }
         if (api->isAdapterProperty(i)) {
             const QMetaProperty mp = adapterMeta->property(index);
-            ds << mp.name();
             ds << mp.read(object->m_adapter);
         } else {
             const QMetaProperty mp = meta->property(index);
-            ds << mp.name();
             ds << mp.read(object->m_object);
         }
     }
-
-    //Now go back and set the size of the rest of the data so we can treat is as a QByteArray
-    const int size = dev->pos();
-    dev->seek(postNamePosition);
-    ds << quint32(size - sizeof(quint32) - postNamePosition);
-    dev->seek(size);
     ds.finishPacket();
 }
 
-bool QInitPacket::deserialize(QDataStream& in)
+bool deSerializeQVariantList(QDataStream& s, QList<QVariant>& l)
 {
-    if (in.atEnd())
-        return false;
-    in >> name;
-    if (name.isEmpty() || name.isNull() || in.atEnd())
-        return false;
-    in >> packetData;
-    if (packetData.isEmpty() || packetData.isNull())
-        return false;
+    quint32 c;
+    s >> c;
+    const int initialListSize = l.size();
+    if (static_cast<quint32>(l.size()) < c)
+        l.reserve(c);
+    else if (static_cast<quint32>(l.size()) > c)
+        for (int i = c; i < initialListSize; ++i)
+            l.removeLast();
 
-    //Make sure the bytearray holds valid properties
-    QDataStream validate(packetData);
-    validate.setVersion(dataStreamVersion);
-    const int packetLen = packetData.size();
-    quint32 nParam, len;
-    quint8 c;
-    QVariant tmp;
-    validate >> nParam;
-    for (quint32 i = 0; i < nParam; ++i)
+    for (int i = 0; i < l.size(); ++i)
     {
-        const qint64 pos = validate.device()->pos();
-        qint64 bytesLeft = packetLen - pos;
-        if (bytesLeft < 4)
+        if (s.atEnd())
             return false;
-        validate >> len;
-        bytesLeft -= 4;
-        if (bytesLeft < len)
+        QVariant t;
+        s >> t;
+        l[i] = t;
+    }
+    for (quint32 i = l.size(); i < c; ++i)
+    {
+        if (s.atEnd())
             return false;
-        validate.skipRawData(len-1);
-        validate >> c;
-        if (c != 0)
-            return false;
-        if (qstrlen(packetData.constData()+pos+4) != len - 1)
-            return false;
-        bytesLeft -= len;
-        if (bytesLeft <= 0)
-            return false;
-        validate >> tmp;
-        if (!tmp.isValid())
-            return false;
+        QVariant t;
+        s >> t;
+        l.append(t);
     }
     return true;
+}
+
+void deserializeInitPacket(QDataStream &in, QVariantList &values)
+{
+    const bool success = deSerializeQVariantList(in, values);
+    Q_ASSERT(success);
+    Q_UNUSED(success);
 }
 
 void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
@@ -243,10 +130,7 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
     const SourceApiMap *api = object->m_api;
 
     ds.setId(InitDynamicPacket);
-    QIODevice *dev = ds.device();
     ds << api->name();
-    const qint64 postNamePosition = dev->pos();
-    ds << quint32(0);
 
     //Now copy the property data
     const int numSignals = api->signalCount();
@@ -305,101 +189,23 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
             ds << mp.read(object->m_object);
         }
     }
-
-    //Now go back and set the size of the rest of the data so we can treat is as a QByteArray
-    const int size = dev->pos();
-    dev->seek(postNamePosition);
-    ds << quint32(size - sizeof(quint32) - postNamePosition);
-    dev->seek(size);
     ds.finishPacket();
 }
 
-bool QInitDynamicPacket::deserialize(QDataStream& in)
-{
-    if (in.atEnd())
-        return false;
-    in >> name;
-    if (name.isEmpty() || name.isNull() || in.atEnd())
-        return false;
-    in >> packetData;
-    if (packetData.isEmpty() || packetData.isNull())
-        return false;
-
-    //Make sure the bytearray holds valid properties // TODO maybe really evaluate
-    return true;
-    QDataStream validate(packetData);
-    validate.setVersion(dataStreamVersion);
-    int packetLen = packetData.size();
-    quint32 nParam, len, propLen;
-    quint8 c;
-    QVariant tmp;
-    validate >> nParam;
-    for (quint32 i = 0; i < nParam; ++i)
-    {
-        qint64 pos = validate.device()->pos();
-        qint64 bytesLeft = packetLen - pos;
-        if (bytesLeft < 4)
-            return false;
-
-        //Read property name
-        validate >> len;
-        bytesLeft -= 4;
-        if (bytesLeft < len)
-            return false;
-        validate.skipRawData(len-1);
-        validate >> c;
-        if (c != 0)
-            return false;
-        if (qstrlen(packetData.constData()+pos+4) != len - 1)
-            return false;
-        bytesLeft -= len;
-        if (bytesLeft <= 0)
-            return false;
-
-        //Read notify name
-        propLen = len;
-        validate >> len;
-        bytesLeft -= 4;
-        if (bytesLeft < len)
-            return false;
-        if (len) { //notify isn't empty
-            validate.skipRawData(len-1);
-            validate >> c;
-            if (c != 0)
-                return false;
-            if (qstrlen(packetData.constData()+pos+4+propLen+4) != len - 1)
-                return false;
-            bytesLeft -= len;
-        }
-        if (bytesLeft <= 0)
-            return false;
-
-        //Read QVariant value
-        validate >> tmp;
-        if (!tmp.isValid())
-            return false;
-    }
-    return true;
-}
-
-QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
-                                                  QVector<QPair<QByteArray, QVariant> > *propertyValues) const
+void deserializeInitDynamicPacket(QDataStream &in, QMetaObjectBuilder &builder, QVariantList &values)
 {
     quint32 numSignals = 0;
     quint32 numMethods = 0;
     quint32 numProperties = 0;
 
-    QDataStream ds(packetData);
-    ds.setVersion(dataStreamVersion);
-    ds >> numSignals;
-    ds >> numMethods;
+    in >> numSignals;
+    in >> numMethods;
 
     int curIndex = 0;
 
     for (quint32 i = 0; i < numSignals; ++i) {
         QByteArray signature;
-
-        ds >> signature;
+        in >> signature;
         ++curIndex;
         builder.addSignal(signature);
     }
@@ -407,8 +213,8 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
     for (quint32 i = 0; i < numMethods; ++i) {
         QByteArray signature, returnType;
 
-        ds >> signature;
-        ds >> returnType;
+        in >> signature;
+        in >> returnType;
         ++curIndex;
         const bool isVoid = returnType.isEmpty() || returnType == QByteArrayLiteral("void");
         if (isVoid)
@@ -417,26 +223,32 @@ QMetaObject *QInitDynamicPacket::createMetaObject(QMetaObjectBuilder &builder,
             builder.addMethod(signature, QByteArrayLiteral("QRemoteObjectPendingCall"));
     }
 
-    ds >> numProperties;
+    in >> numProperties;
+    const quint32 initialListSize = values.size();
+    if (static_cast<quint32>(values.size()) < numProperties)
+        values.reserve(numProperties);
+    else if (static_cast<quint32>(values.size()) > numProperties)
+        for (quint32 i = numProperties; i < initialListSize; ++i)
+            values.removeLast();
 
-    QVector<QPair<QByteArray, QVariant> > &propVal = *propertyValues;
     for (quint32 i = 0; i < numProperties; ++i) {
         QByteArray name;
         QByteArray typeName;
         QByteArray signalName;
-        ds >> name;
-        ds >> typeName;
-        ds >> signalName;
+        in >> name;
+        in >> typeName;
+        in >> signalName;
         if (signalName.isEmpty())
             builder.addProperty(name, typeName);
         else
             builder.addProperty(name, typeName, builder.indexOfSignal(signalName));
         QVariant value;
-        ds >> value;
-        propVal.append(qMakePair(name, value));
+        in >> value;
+        if (i < initialListSize)
+            values[i] = value;
+        else
+            values.append(value);
     }
-
-    return builder.toMetaObject();
 }
 
 void serializeAddObjectPacket(DataStreamPacket &ds, const QString &name, bool isDynamic)
@@ -447,11 +259,9 @@ void serializeAddObjectPacket(DataStreamPacket &ds, const QString &name, bool is
     ds.finishPacket();
 }
 
-bool QAddObjectPacket::deserialize(QDataStream& in)
+void deserializeAddObjectPacket(QDataStream &ds, bool &isDynamic)
 {
-    in >> name;
-    in >> isDynamic;
-    return true;
+    ds >> isDynamic;
 }
 
 void serializeRemoveObjectPacket(DataStreamPacket &ds, const QString &name)
@@ -460,12 +270,7 @@ void serializeRemoveObjectPacket(DataStreamPacket &ds, const QString &name)
     ds << name;
     ds.finishPacket();
 }
-
-bool QRemoveObjectPacket::deserialize(QDataStream& in)
-{
-    in >> name;
-    return true;
-}
+//There is no deserializeRemoveObjectPacket - no parameters other than id and name
 
 void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, int index, const QVariantList *args, int serialId)
 {
@@ -478,46 +283,14 @@ void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, 
     ds.finishPacket();
 }
 
-bool deSerializeQVariantList(QDataStream& s, QList<QVariant>& l)
+void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantList &args, int &serialId)
 {
-    quint32 c;
-    s >> c;
-    const int initialListSize = l.size();
-    if (static_cast<quint32>(l.size()) < c)
-        l.reserve(c);
-    else if (static_cast<quint32>(l.size()) > c)
-        for (int i = c; i < initialListSize; ++i)
-            l.removeLast();
-
-    for (int i = 0; i < l.size(); ++i)
-    {
-        QVariant t;
-        s >> t;
-        l[i] = t;
-        if (s.atEnd())
-            return false;
-    }
-    for (quint32 i = l.size(); i < c; ++i)
-    {
-        QVariant t;
-        s >> t;
-        l.append(t);
-        if (s.atEnd())
-            return false;
-    }
-    return true;
-}
-
-bool QInvokePacket::deserialize(QDataStream& in)
-{
-    in >> name;
     in >> call;
     in >> index;
     const bool success = deSerializeQVariantList(in, args);
     Q_ASSERT(success);
     Q_UNUSED(success);
     in >> serialId;
-    return true;
 }
 
 void serializeInvokeReplyPacket(DataStreamPacket &ds, const QString &name, int ackedSerialId, const QVariant &value)
@@ -529,12 +302,9 @@ void serializeInvokeReplyPacket(DataStreamPacket &ds, const QString &name, int a
     ds.finishPacket();
 }
 
-bool QInvokeReplyPacket::deserialize(QDataStream& in)
-{
-    in >> name;
+void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant &value){
     in >> ackedSerialId;
     in >> value;
-    return true;
 }
 
 void serializePropertyChangePacket(DataStreamPacket &ds, const QString &name, const char *propertyName, const QVariant &value)
@@ -546,12 +316,10 @@ void serializePropertyChangePacket(DataStreamPacket &ds, const QString &name, co
     ds.finishPacket();
 }
 
-bool QPropertyChangePacket::deserialize(QDataStream& in)
+void deserializePropertyChangePacket(QDataStream& in, RawString &propertyName, QVariant &value)
 {
-    in >> name;
     in >> propertyName;
     in >> value;
-    return true;
 }
 
 void serializeObjectListPacket(DataStreamPacket &ds, const QStringList &objects)
@@ -561,10 +329,9 @@ void serializeObjectListPacket(DataStreamPacket &ds, const QStringList &objects)
     ds.finishPacket();
 }
 
-bool QObjectListPacket::deserialize(QDataStream& in)
+void deserializeObjectListPacket(QDataStream &in, QStringList &objects)
 {
     in >> objects;
-    return true;
 }
 
 } // namespace QRemoteObjectPackets

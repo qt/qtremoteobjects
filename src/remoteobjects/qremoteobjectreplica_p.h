@@ -82,7 +82,7 @@ public:
     virtual bool isReplicaValid() const { return true; }
     virtual bool waitForSource(int) { return true; }
     virtual bool waitForFinished(const QRemoteObjectPendingCall &, int) { return true; }
-    virtual void notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket *) {}
+    virtual void notifyAboutReply(int, const QVariant &) {}
     virtual void configurePrivate(QRemoteObjectReplica *);
     void emitValidChanged();
     void emitInitialized();
@@ -91,7 +91,7 @@ public:
     virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
 
     //Dynamic replica functions
-    virtual void initializeMetaObject(const QRemoteObjectPackets::QInitDynamicPacket *packet);
+    virtual void initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values);
 
     QString m_objectName;
     const QMetaObject *m_metaObject;
@@ -115,20 +115,20 @@ public:
     bool isInitialized() const Q_DECL_OVERRIDE;
     bool isReplicaValid() const Q_DECL_OVERRIDE;
     bool waitForSource(int timeout) Q_DECL_OVERRIDE;
-    void initialize(const QByteArray &);
+    void initialize(const QVariantList &values);
     void configurePrivate(QRemoteObjectReplica *) Q_DECL_OVERRIDE;
     void requestRemoteObjectSource();
     bool sendCommand();
     QRemoteObjectPendingCall sendCommandWithReply(int serialId);
     bool waitForFinished(const QRemoteObjectPendingCall &call, int timeout);
-    void notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket* replyPacket);
+    void notifyAboutReply(int ackedSerialId, const QVariant &value);
     void setConnection(ClientIoDevice *conn);
     void setDisconnected();
 
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) Q_DECL_OVERRIDE;
 
-    void initializeMetaObject(const QRemoteObjectPackets::QInitDynamicPacket *packet) Q_DECL_OVERRIDE;
+    void initializeMetaObject(const QMetaObjectBuilder&, const QVariantList&) Q_DECL_OVERRIDE;
     QAtomicInt isSet;
     QVector<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;

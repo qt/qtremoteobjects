@@ -43,6 +43,7 @@
 #define QCONNECTIONCLIENTFACTORY_P_H
 
 #include "qconnectionabstractfactory_p.h"
+#include "qremoteobjectpacket_p.h"
 #include "qtremoteobjectglobal.h"
 
 #include <QLocalSocket>
@@ -53,10 +54,6 @@
 
 QT_BEGIN_NAMESPACE
 
-namespace QRemoteObjectPackets {
-class QRemoteObjectPacket;
-}
-
 class ClientIoDevice : public QObject
 {
     Q_OBJECT
@@ -66,14 +63,14 @@ public:
     explicit ClientIoDevice(QObject *parent = Q_NULLPTR);
     virtual ~ClientIoDevice();
 
-    QRemoteObjectPackets::QRemoteObjectPacket* read();
+    bool read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &, QString &);
+
     virtual void write(const QByteArray &data);
     virtual void write(const QByteArray &data, qint64);
     void close();
     virtual void connectToServer() = 0;
     virtual qint64 bytesAvailable();
 
-    QRemoteObjectPackets::QRemoteObjectPacket *packet() const;
     QUrl url() const;
     void addSource(const QString &);
     void removeSource(const QString &);
@@ -81,6 +78,7 @@ public:
 
     virtual bool isOpen() = 0;
     virtual QIODevice *connection() = 0;
+    inline QDataStream& stream() { return m_dataStream; }
 
 Q_SIGNALS:
     void disconnected();
@@ -99,9 +97,7 @@ private:
     friend class QConnectionClientFactory;
 
     quint32 m_curReadSize;
-    QRemoteObjectPackets::QRemoteObjectPacket* m_packet;
     QSet<QString> m_remoteObjects;
-    QVector<QRemoteObjectPackets::QRemoteObjectPacket*> m_packetStorage;
 };
 
 bool ClientIoDevice::isClosing()

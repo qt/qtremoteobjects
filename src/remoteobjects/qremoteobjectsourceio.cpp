@@ -148,94 +148,92 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
 {
     // Assert the invariant here conn is of type QIODevice
     ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
+    QRemoteObjectPackets::QRemoteObjectPacketTypeEnum packetType;
 
     do {
 
-        if (!connection->read())
+        if (!connection->read(packetType, m_rxName))
             return;
 
         using namespace QRemoteObjectPackets;
 
-        const QRemoteObjectPacket* packet = connection->packet();
-        switch (packet->id) {
+        switch (packetType) {
         case AddObject:
         {
-            const QAddObjectPacket *p = static_cast<const QAddObjectPacket *>(packet);
-            const QString name = p->name;
-            qRODebug(this) << "AddObject" << name << p->isDynamic;
-            if (m_remoteObjects.contains(name)) {
-                QRemoteObjectSource *pp = m_remoteObjects[name];
-                pp->addListener(connection, p->isDynamic);
+            bool isDynamic;
+            deserializeAddObjectPacket(connection->stream(), isDynamic);
+            qRODebug(this) << "AddObject" << m_rxName << isDynamic;
+            if (m_remoteObjects.contains(m_rxName)) {
+                QRemoteObjectSource *pp = m_remoteObjects[m_rxName];
+                pp->addListener(connection, isDynamic);
             } else {
-                qROWarning(this) << "Request to attach to non-existent RemoteObjectSource:" << name;
+                qROWarning(this) << "Request to attach to non-existent RemoteObjectSource:" << m_rxName;
             }
             break;
         }
         case RemoveObject:
         {
-            const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
-            const QString name = p->name;
-            qRODebug(this) << "RemoveObject" << name;
-            if (m_remoteObjects.contains(name)) {
-                QRemoteObjectSource *pp = m_remoteObjects[name];
+            qRODebug(this) << "RemoveObject" << m_rxName;
+            if (m_remoteObjects.contains(m_rxName)) {
+                QRemoteObjectSource *pp = m_remoteObjects[m_rxName];
                 const int count = pp->removeListener(connection);
                 Q_UNUSED(count);
                 //TODO - possible to have a timer that closes connections if not reopened within a timeout?
             } else {
-                qROWarning(this) << "Request to detach from non-existent RemoteObjectSource:" << name;
+                qROWarning(this) << "Request to detach from non-existent RemoteObjectSource:" << m_rxName;
             }
-            qRODebug(this) << "RemoveObject finished" << name;
+            qRODebug(this) << "RemoveObject finished" << m_rxName;
             break;
         }
         case InvokePacket:
         {
-            const QInvokePacket *p = static_cast<const QInvokePacket *>(packet);
-            const QString name = p->name;
-            if (name == QStringLiteral("Registry") && !m_registryMapping.contains(connection)) {
-                const QRemoteObjectSourceLocation loc = p->args.first().value<QRemoteObjectSourceLocation>();
+            int call, index, serialId;
+            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId);
+            if (m_rxName == QStringLiteral("Registry") && !m_registryMapping.contains(connection)) {
+                const QRemoteObjectSourceLocation loc = m_rxArgs.first().value<QRemoteObjectSourceLocation>();
                 m_registryMapping[connection] = loc.second;
             }
-            if (m_remoteObjects.contains(name)) {
-                QRemoteObjectSource *pp = m_remoteObjects[name];
-                if (p->call == QMetaObject::InvokeMetaMethod) {
-                    const int resolvedIndex = pp->m_api->sourceMethodIndex(p->index);
+            if (m_remoteObjects.contains(m_rxName)) {
+                QRemoteObjectSource *pp = m_remoteObjects[m_rxName];
+                if (call == QMetaObject::InvokeMetaMethod) {
+                    const int resolvedIndex = pp->m_api->sourceMethodIndex(index);
                     if (resolvedIndex < 0) { //Invalid index
-                        qROWarning(this) << "Invalid method invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
+                        qROWarning(this) << "Invalid method invoke packet received.  Index =" << index <<"which is out of bounds for type"<<m_rxName;
                         //TODO - consider moving this to packet validation?
                         break;
                     }
-                    if (pp->m_api->isAdapterMethod(p->index))
-                        qRODebug(this) << "Adapter (method) Invoke-->" << name << pp->m_adapter->metaObject()->method(resolvedIndex).name();
+                    if (pp->m_api->isAdapterMethod(index))
+                        qRODebug(this) << "Adapter (method) Invoke-->" << m_rxName << pp->m_adapter->metaObject()->method(resolvedIndex).name();
                     else
-                        qRODebug(this) << "Source (method) Invoke-->" << name << pp->m_object->metaObject()->method(resolvedIndex).name();
-                    int typeId = QMetaType::type(pp->m_api->typeName(p->index).constData());
+                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << pp->m_object->metaObject()->method(resolvedIndex).name();
+                    int typeId = QMetaType::type(pp->m_api->typeName(index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
                     QVariant returnValue(typeId, Q_NULLPTR);
-                    pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->isAdapterMethod(p->index), resolvedIndex, p->args, &returnValue);
+                    pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->isAdapterMethod(index), resolvedIndex, m_rxArgs, &returnValue);
                     // send reply if wanted
-                    if (p->serialId >= 0) {
-                        serializeInvokeReplyPacket(m_packet, name, p->serialId, returnValue);
+                    if (serialId >= 0) {
+                        serializeInvokeReplyPacket(m_packet, m_rxName, serialId, returnValue);
                         connection->write(m_packet.array, m_packet.size);
                     }
                 } else {
-                    const int resolvedIndex = pp->m_api->sourcePropertyIndex(p->index);
+                    const int resolvedIndex = pp->m_api->sourcePropertyIndex(index);
                     if (resolvedIndex < 0) {
-                        qROWarning(this) << "Invalid property invoke packet received.  Index =" << p->index <<"which is out of bounds for type"<<name;
+                        qROWarning(this) << "Invalid property invoke packet received.  Index =" << index <<"which is out of bounds for type"<<m_rxName;
                         //TODO - consider moving this to packet validation?
                         break;
                     }
-                    if (pp->m_api->isAdapterProperty(p->index))
-                        qRODebug(this) << "Adapter (write property) Invoke-->" << name << pp->m_adapter->metaObject()->property(resolvedIndex).name();
+                    if (pp->m_api->isAdapterProperty(index))
+                        qRODebug(this) << "Adapter (write property) Invoke-->" << m_rxName << pp->m_adapter->metaObject()->property(resolvedIndex).name();
                     else
-                        qRODebug(this) << "Source (write property) Invoke-->" << name << pp->m_object->metaObject()->property(resolvedIndex).name();
-                    pp->invoke(QMetaObject::WriteProperty, pp->m_api->isAdapterProperty(p->index), resolvedIndex, p->args);
+                        qRODebug(this) << "Source (write property) Invoke-->" << m_rxName << pp->m_object->metaObject()->property(resolvedIndex).name();
+                    pp->invoke(QMetaObject::WriteProperty, pp->m_api->isAdapterProperty(index), resolvedIndex, m_rxArgs);
                 }
             }
             break;
         }
         default:
-            qRODebug(this) << "OnReadReady invalid type" << packet->id;
+            qRODebug(this) << "OnReadReady invalid type" << packetType;
         }
     } while (connection->bytesAvailable()); // have bytes left over, so do another iteration
 }

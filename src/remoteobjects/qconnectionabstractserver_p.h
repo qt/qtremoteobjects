@@ -47,12 +47,9 @@
 #include <QObject>
 #include <QDataStream>
 #include "qtremoteobjectglobal.h"
+#include "qremoteobjectpacket_p.h"
 
 QT_BEGIN_NAMESPACE
-
-namespace QRemoteObjectPackets {
-class QRemoteObjectPacket;
-}
 
 //The Qt servers create QIODevice derived classes from handleConnection.
 //The problem is that they behave differently, so this class adds some
@@ -66,15 +63,15 @@ public:
     explicit ServerIoDevice(QObject *parent = Q_NULLPTR);
     virtual ~ServerIoDevice();
 
-    bool read();
+    bool read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &, QString &);
 
     virtual void write(const QByteArray &data);
     virtual void write(const QByteArray &data, qint64);
     void close();
     virtual qint64 bytesAvailable();
-    QRemoteObjectPackets::QRemoteObjectPacket *packet() const;
     virtual QIODevice *connection() const = 0;
     void initializeDataStream();
+    QDataStream& stream() { return m_dataStream; }
 
 Q_SIGNALS:
     void disconnected();
@@ -86,9 +83,7 @@ protected:
 private:
     bool m_isClosing;
     quint32 m_curReadSize;
-    QRemoteObjectPackets::QRemoteObjectPacket *m_packet;
     QDataStream m_dataStream;
-    QVector<QRemoteObjectPackets::QRemoteObjectPacket*> m_packetStorage;
 };
 
 

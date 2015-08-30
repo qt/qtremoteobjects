@@ -95,6 +95,8 @@ private:
     QHash<ServerIoDevice*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
     QRemoteObjectPackets::DataStreamPacket m_packet;
+    QString m_rxName;
+    QVariantList m_rxArgs;
 };
 
 QT_END_NAMESPACE

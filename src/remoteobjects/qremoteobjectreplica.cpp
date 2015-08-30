@@ -120,32 +120,20 @@ inline SignalPair make_pair(int first, void *second)
 { SignalPair p = { qMove(first), qMove(second) }; return p; }
 #endif
 
-void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
+void QConnectedReplicaPrivate::initialize(const QVariantList &values)
 {
     qCDebug(QT_REMOTEOBJECT) << "initialize()" << m_propertyStorage.size();
-    quint32 nParam, len = 0u;
-    //TODO Make this part of packet deserialize?
-    QDataStream in(packetData);
-    in.setVersion(QRemoteObjectPackets::dataStreamVersion);
-    in >> nParam;
-    QVector<SignalPair> signalList;
-    signalList.reserve(nParam);
-    QVariant value;
+    const int nParam = values.size();
+    QVarLengthArray<int> changedProperties(nParam);
     const int offset = m_metaObject->propertyOffset();
-    for (quint32 i = 0; i < nParam; ++i) {
-        in >> len;
-        qint64 pos = in.device()->pos();
-        const int index = m_metaObject->indexOfProperty(packetData.constData()+pos) - offset;
-        in.skipRawData(len); //Skip property name char *, since we used it in-place ^^
-        in >> value;
-        qCDebug(QT_REMOTEOBJECT) << "  in loop" << index << m_propertyStorage.size();
-        if (index >= 0 && m_propertyStorage[index] != value) {
-            m_propertyStorage[index] = value;
-            int notifyIndex = m_metaObject->property(index+offset).notifySignalIndex();
-            if (notifyIndex >= 0)
-                signalList.append(make_pair(notifyIndex, m_propertyStorage[index].data()));
+    for (int i = 0; i < nParam; ++i) {
+        qCDebug(QT_REMOTEOBJECT) << "  in loop" << i << m_propertyStorage.size();
+        changedProperties[i] = -1;
+        if (m_propertyStorage[i] != values.at(i)) {
+            m_propertyStorage[i] = values.at(i);
+            changedProperties[i] = i;
         }
-        qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << index << m_metaObject->property(index+offset).name() << value.typeName() << value.toString();
+        qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name() << values.at(i).typeName() << values.at(i).toString();
     }
 
     //initialized and validChanged need to be sent manually, since they are not in the derived classes
@@ -161,10 +149,15 @@ void QConnectedReplicaPrivate::initialize(const QByteArray &packetData)
     }
 
     void *args[] = {Q_NULLPTR, Q_NULLPTR};
-    foreach (const SignalPair &row, signalList) {
-        qCDebug(QT_REMOTEOBJECT) << " Before activate" << row.first << m_metaObject->property(row.first).name();
-        args[1] = row.second;
-        QMetaObject::activate(this, metaObject(), row.first, args);
+    for (int i = 0; i < nParam; ++i) {
+        if (changedProperties[i] < 0)
+            continue;
+        const int notifyIndex = m_metaObject->property(changedProperties[i]+offset).notifySignalIndex();
+        if (notifyIndex < 0)
+            continue;
+        qCDebug(QT_REMOTEOBJECT) << " Before activate" << notifyIndex << m_metaObject->property(notifyIndex).name();
+        args[1] = m_propertyStorage[i].data();
+        QMetaObject::activate(this, metaObject(), notifyIndex, args);
     }
 
     qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
@@ -186,28 +179,18 @@ void QRemoteObjectReplicaPrivate::emitInitialized()
     QMetaObject::activate(this, metaObject(), initializedIndex, noArgs);
 }
 
-void QRemoteObjectReplicaPrivate::initializeMetaObject(const QInitDynamicPacket *packet)
+void QRemoteObjectReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
 {
     Q_ASSERT(!m_metaObject);
 
-    QMetaObjectBuilder builder;
-    builder.setClassName("QRemoteObjectDynamicReplica");
-    builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
-    builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
-
-    QVector<QPair<QByteArray, QVariant> > propertyValues;
-    m_metaObject = packet->createMetaObject(builder, &propertyValues);
+    m_metaObject = builder.toMetaObject();
     //rely on order of properties;
-    QVariantList list;
-    typedef QPair<QByteArray, QVariant> PropertyPair;
-    foreach (const PropertyPair &pair, propertyValues)
-        list << pair.second;
-    setProperties(list);
+    setProperties(values);
 }
 
-void QConnectedReplicaPrivate::initializeMetaObject(const QInitDynamicPacket *packet)
+void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
 {
-    QRemoteObjectReplicaPrivate::initializeMetaObject(packet);
+    QRemoteObjectReplicaPrivate::initializeMetaObject(builder, values);
     foreach (QRemoteObjectReplica *obj, m_parentsNeedingConnect)
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();
@@ -315,15 +298,15 @@ QRemoteObjectPendingCall QConnectedReplicaPrivate::sendCommandWithReply(int seri
     return pendingCall;
 }
 
-void QConnectedReplicaPrivate::notifyAboutReply(const QRemoteObjectPackets::QInvokeReplyPacket* replyPacket)
+void QConnectedReplicaPrivate::notifyAboutReply(int ackedSerialId, const QVariant &value)
 {
-    QRemoteObjectPendingCall call = m_pendingCalls.take(replyPacket->ackedSerialId);
+    QRemoteObjectPendingCall call = m_pendingCalls.take(ackedSerialId);
 
     QMutexLocker mutex(&call.d->mutex);
 
     // clear error flag
     call.d->error = QRemoteObjectPendingCall::NoError;
-    call.d->returnValue = replyPacket->value;
+    call.d->returnValue = value;
 
     // notify watchers if needed
     if (call.d->watcherHelper)
