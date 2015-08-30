@@ -312,147 +312,147 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     ClientIoDevice *connection = qobject_cast<ClientIoDevice*>(obj);
     Q_ASSERT(connection);
 
-    if (!connection->read())
-        return;
+    do {
 
-    using namespace QRemoteObjectPackets;
+        if (!connection->read())
+            return;
 
-    const QRemoteObjectPacket* packet = connection->packet();
-    switch (packet->id) {
-    case QRemoteObjectPacket::ObjectList:
-    {
-        const QObjectListPacket *p = static_cast<const QObjectListPacket *>(packet);
-        const QSet<QString> newObjects = p->objects.toSet();
-        qRODebug(this) << "newObjects:" << newObjects;
-        Q_FOREACH (const QString &remoteObject, newObjects) {
-            qRODebug(this) << "  connectedSources.contains("<<remoteObject<<")"<<connectedSources.contains(remoteObject)<<replicas.contains(remoteObject);
-            if (!connectedSources.contains(remoteObject)) {
-                connectedSources[remoteObject] = connection;
-                connection->addSource(remoteObject);
-                if (replicas.contains(remoteObject)) //We have a replica waiting on this remoteObject
-                {
-                    QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(remoteObject).toStrongRef();
-                    QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
-                    if (rep && cRep->connectionToSource.isNull())
+        using namespace QRemoteObjectPackets;
+
+        const QRemoteObjectPacket* packet = connection->packet();
+        switch (packet->id) {
+        case QRemoteObjectPacket::ObjectList:
+        {
+            const QObjectListPacket *p = static_cast<const QObjectListPacket *>(packet);
+            const QSet<QString> newObjects = p->objects.toSet();
+            qRODebug(this) << "newObjects:" << newObjects;
+            Q_FOREACH (const QString &remoteObject, newObjects) {
+                qRODebug(this) << "  connectedSources.contains("<<remoteObject<<")"<<connectedSources.contains(remoteObject)<<replicas.contains(remoteObject);
+                if (!connectedSources.contains(remoteObject)) {
+                    connectedSources[remoteObject] = connection;
+                    connection->addSource(remoteObject);
+                    if (replicas.contains(remoteObject)) //We have a replica waiting on this remoteObject
                     {
-                        qRODebug(this) << "Test" << remoteObject<<replicas.keys();
-                        qRODebug(this) << cRep;
-                        cRep->setConnection(connection);
-                    } else if (!rep) { //replica has been deleted, remove from list
-                        replicas.remove(remoteObject);
-                    }
+                        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(remoteObject).toStrongRef();
+                        QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
+                        if (rep && cRep->connectionToSource.isNull())
+                        {
+                            qRODebug(this) << "Test" << remoteObject<<replicas.keys();
+                            qRODebug(this) << cRep;
+                            cRep->setConnection(connection);
+                        } else if (!rep) { //replica has been deleted, remove from list
+                            replicas.remove(remoteObject);
+                        }
 
-                    continue;
+                        continue;
+                    }
                 }
             }
+            break;
         }
-        break;
-    }
-    case QRemoteObjectPacket::InitPacket:
-    {
-        const QInitPacket *p = static_cast<const QInitPacket *>(packet);
-        const QString object = p->name;
-        qRODebug(this) << "InitObject-->" <<object << this;
-        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
-        if (rep)
+        case QRemoteObjectPacket::InitPacket:
         {
-            QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
-            cRep->initialize(p->packetData);
-        } else { //replica has been deleted, remove from list
-            replicas.remove(object);
+            const QInitPacket *p = static_cast<const QInitPacket *>(packet);
+            const QString object = p->name;
+            qRODebug(this) << "InitObject-->" <<object << this;
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
+            if (rep)
+            {
+                QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
+                cRep->initialize(p->packetData);
+            } else { //replica has been deleted, remove from list
+                replicas.remove(object);
+            }
+            break;
         }
-        break;
-    }
-    case QRemoteObjectPacket::InitDynamicPacket:
-    {
-        const QInitDynamicPacket *p = static_cast<const QInitDynamicPacket *>(packet);
-        const QString object = p->name;
-        qRODebug(this) << "InitObject-->" <<object << this;
-        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
-        if (rep)
+        case QRemoteObjectPacket::InitDynamicPacket:
         {
-            QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
-            cRep->initializeMetaObject(p);
+            const QInitDynamicPacket *p = static_cast<const QInitDynamicPacket *>(packet);
+            const QString object = p->name;
+            qRODebug(this) << "InitObject-->" <<object << this;
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
+            if (rep)
+            {
+                QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
+                cRep->initializeMetaObject(p);
 
-        } else { //replica has been deleted, remove from list
-            replicas.remove(object);
+            } else { //replica has been deleted, remove from list
+                replicas.remove(object);
+            }
+            break;
         }
-        break;
-    }
-    case QRemoteObjectPacket::RemoveObject:
-    {
-        const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
-        qRODebug(this) << "RemoveObject-->" << p->name << this;
-        connectedSources.remove(p->name);
-        connection->removeSource(p->name);
-        if (replicas.contains(p->name)) { //We have a replica waiting on this remoteObject
-            QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
-            QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
-            if (rep && !cRep->connectionToSource.isNull()) {
-                cRep->connectionToSource.clear();
-                if (cRep->isReplicaValid()) {
-                    //Changed from receiving to not receiving
-                    cRep->emitValidChanged();
+        case QRemoteObjectPacket::RemoveObject:
+        {
+            const QRemoveObjectPacket *p = static_cast<const QRemoveObjectPacket *>(packet);
+            qRODebug(this) << "RemoveObject-->" << p->name << this;
+            connectedSources.remove(p->name);
+            connection->removeSource(p->name);
+            if (replicas.contains(p->name)) { //We have a replica waiting on this remoteObject
+                QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
+                QConnectedReplicaPrivate *cRep = static_cast<QConnectedReplicaPrivate*>(rep.data());
+                if (rep && !cRep->connectionToSource.isNull()) {
+                    cRep->connectionToSource.clear();
+                    if (cRep->isReplicaValid()) {
+                        //Changed from receiving to not receiving
+                        cRep->emitValidChanged();
+                    }
+                } else if (!rep) {
+                    replicas.remove(p->name);
                 }
-            } else if (!rep) {
+            }
+            break;
+        }
+        case QRemoteObjectPacket::PropertyChangePacket:
+        {
+            const QPropertyChangePacket *p = static_cast<const QPropertyChangePacket *>(packet);
+            const QString object = p->name;
+            qRODebug(this) << "PropertyChange-->" << p->name << QString::fromLatin1(p->propertyName.string);
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
+            if (rep)
+            {
+                const int offset = rep->m_metaObject->propertyOffset();
+                const int index = rep->m_metaObject->indexOfProperty(p->propertyName.string)-offset;
+                rep->setProperty(index, p->value);
+            } else { //replica has been deleted, remove from list
                 replicas.remove(p->name);
             }
+            break;
         }
-        break;
-    }
-    case QRemoteObjectPacket::PropertyChangePacket:
-    {
-        const QPropertyChangePacket *p = static_cast<const QPropertyChangePacket *>(packet);
-        const QString object = p->name;
-        qRODebug(this) << "PropertyChange-->" << p->name << QString::fromLatin1(p->propertyName.string);
-        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(object).toStrongRef();
-        if (rep)
+        case QRemoteObjectPacket::InvokePacket:
         {
-            const int offset = rep->m_metaObject->propertyOffset();
-            const int index = rep->m_metaObject->indexOfProperty(p->propertyName.string)-offset;
-            rep->setProperty(index, p->value);
-        } else { //replica has been deleted, remove from list
-            replicas.remove(p->name);
-        }
-        break;
-    }
-    case QRemoteObjectPacket::InvokePacket:
-    {
-        const QInvokePacket *p = static_cast<const QInvokePacket *>(packet);
-        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
-        if (rep)
-        {
-            static QVariant null(QMetaType::QObjectStar, (void*)0);
+            const QInvokePacket *p = static_cast<const QInvokePacket *>(packet);
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
+            if (rep)
+            {
+                static QVariant null(QMetaType::QObjectStar, (void*)0);
 
-            // Qt usually supports 9 arguments, so ten should be usually safe
-            QVarLengthArray<void*, 10> param(p->args.size() + 1);
-            param[0] = null.data(); //Never a return value
-            for (int i = 0; i < p->args.size(); i++) {
-                param[i + 1] = const_cast<void *>(p->args[i].data());
+                // Qt usually supports 9 arguments, so ten should be usually safe
+                QVarLengthArray<void*, 10> param(p->args.size() + 1);
+                param[0] = null.data(); //Never a return value
+                for (int i = 0; i < p->args.size(); i++) {
+                    param[i + 1] = const_cast<void *>(p->args[i].data());
+                }
+                qRODebug(this) << "Replica Invoke-->" << p->name << rep->m_metaObject->method(p->index+rep->m_signalOffset).name() << p->index << rep->m_signalOffset;
+                QMetaObject::activate(rep.data(), rep->metaObject(), p->index+rep->m_signalOffset, param.data());
+            } else { //replica has been deleted, remove from list
+                replicas.remove(p->name);
             }
-            qRODebug(this) << "Replica Invoke-->" << p->name << rep->m_metaObject->method(p->index+rep->m_signalOffset).name() << p->index << rep->m_signalOffset;
-            QMetaObject::activate(rep.data(), rep->metaObject(), p->index+rep->m_signalOffset, param.data());
-        } else { //replica has been deleted, remove from list
-            replicas.remove(p->name);
+            break;
         }
-        break;
-    }
-    case QRemoteObjectPacket::InvokeReplyPacket:
-    {
-        const QInvokeReplyPacket *p = static_cast<const QInvokeReplyPacket *>(packet);
-        QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
-        if (rep) {
-            qRODebug(this) << "Received InvokeReplyPacket ack'ing serial id:" << p->ackedSerialId;
-            rep->notifyAboutReply(p);
-        } else { //replica has been deleted, remove from list
-            replicas.remove(p->name);
+        case QRemoteObjectPacket::InvokeReplyPacket:
+        {
+            const QInvokeReplyPacket *p = static_cast<const QInvokeReplyPacket *>(packet);
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = replicas.value(p->name).toStrongRef();
+            if (rep) {
+                qRODebug(this) << "Received InvokeReplyPacket ack'ing serial id:" << p->ackedSerialId;
+                rep->notifyAboutReply(p);
+            } else { //replica has been deleted, remove from list
+                replicas.remove(p->name);
+            }
+            break;
         }
-        break;
-    }
-    }
-
-    if (connection->bytesAvailable()) //have bytes left over, so recurse
-        onClientRead(connection);
+        }
+    } while (connection->bytesAvailable()); // have bytes left over, so do another iteration
 }
 
 /*!
