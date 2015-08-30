@@ -350,7 +350,7 @@ private slots:
 
         const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         QEventLoop loop;
-        QTimer::singleShot(100, &loop, "quit");
+        QTimer::singleShot(100, &loop, &QEventLoop::quit);
         connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
         if (!engine_r->isInitialized())
             loop.exec();
@@ -371,7 +371,7 @@ private slots:
 
         const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
         QEventLoop loop;
-        QTimer::singleShot(100, &loop, "quit");
+        QTimer::singleShot(100, &loop, &QEventLoop::quit);
         connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
         if (!engine_r->isInitialized())
             loop.exec();
@@ -396,7 +396,7 @@ private slots:
         const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire(QStringLiteral("Engine")));
         Q_ASSERT(engine_r);
         QEventLoop loop;
-        QTimer::singleShot(100, &loop, "quit");
+        QTimer::singleShot(100, &loop, &QEventLoop::quit);
         connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
         if (!engine_r->isInitialized())
             loop.exec();
