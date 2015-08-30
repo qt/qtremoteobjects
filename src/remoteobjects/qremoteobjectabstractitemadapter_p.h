@@ -174,6 +174,14 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return -1;
     }
+    int propertyRawIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    {
+        switch (index) {
+        case 0: return 0;
+        case 1: return 1;
+        }
+        return -1;
+    }
     const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE
     {
         switch (index) {

@@ -181,14 +181,15 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
 
     const int propertyIndex = m_api->propertyIndexFromSignal(index);
     if (propertyIndex >= 0) {
+        const int rawIndex = m_api->propertyRawIndexFromSignal(index);
         if (m_api->isAdapterProperty(index)) {
             const QMetaProperty mp = m_adapter->metaObject()->property(propertyIndex);
-            qCDebug(QT_REMOTEOBJECT) << "Invoke Property (adapter)" << propertyIndex << mp.name() << mp.read(m_adapter);
-            serializePropertyChangePacket(m_packet, m_api->name(), mp.name(), mp.read(m_adapter));
+            qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property (adapter)" << rawIndex << propertyIndex << mp.name() << mp.read(m_adapter);
+            serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, mp.read(m_adapter));
         } else {
             const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
-            qCDebug(QT_REMOTEOBJECT) << "Invoke Property" << propertyIndex << mp.name() << mp.read(m_object);
-            serializePropertyChangePacket(m_packet, m_api->name(), mp.name(), mp.read(m_object));
+            qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << rawIndex << propertyIndex << mp.name() << mp.read(m_object);
+            serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, mp.read(m_object));
         }
         m_packet.baseAddress = m_packet.size;
     }
@@ -253,7 +254,7 @@ DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name)
         const int notifyIndex = metaObject->property(i).notifySignalIndex();
         if (notifyIndex != -1) {
             m_signals << notifyIndex;
-            m_propertyAssociatedWithSignal.append(i);
+            m_propertyAssociatedWithSignal.append(i-propOffset);
             //The starting values of _signals will be the notify signals
             //So if we are processing _signal with index i, api->sourcePropertyIndex(_propertyAssociatedWithSignal.at(i))
             //will be the property that changed.  This is only valid if i < _propertyAssociatedWithSignal.size().

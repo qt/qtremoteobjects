@@ -118,6 +118,12 @@ public:
     int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE
     {
         if (index >= 0 && index < m_propertyAssociatedWithSignal.size())
+            return m_properties.at(m_propertyAssociatedWithSignal.at(index));
+        return -1;
+    }
+    int propertyRawIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    {
+        if (index >= 0 && index < m_propertyAssociatedWithSignal.size())
             return m_propertyAssociatedWithSignal.at(index);
         return -1;
     }

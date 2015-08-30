@@ -143,61 +143,6 @@ private:
 void serializeInitPacket(DataStreamPacket&, const QRemoteObjectSource*);
 void deserializeInitPacket(QDataStream&, QVariantList&);
 
-struct RawString {
-    RawString() : string(Q_NULLPTR), m_size(0u), bufferSize(0u){}
-    RawString(const char *input)
-        : string(Q_NULLPTR)
-        , m_size(0u)
-        , bufferSize(0u)
-    {
-        setString(input);
-    }
-    ~RawString()
-    {
-        free(string);
-    }
-
-    void setString(const char *data, int size = -1)
-    {
-        if (size == -1)
-            m_size = strlen(data);
-        else
-            m_size = size;
-        realloc(m_size);
-        memcpy(string, data, m_size);
-    }
-private:
-    void realloc(size_t size)
-    {
-        if (bufferSize < size) {
-            string = static_cast<char*>(std::realloc(string, size));
-            bufferSize = size;
-            m_size = bufferSize;
-        }
-    }
-    inline friend QDataStream &operator >>(QDataStream &stream, RawString &value);
-public:
-    char *string;
-    size_t m_size;
-    size_t bufferSize;
-};
-
-inline QDataStream &operator >>(QDataStream &stream, RawString &value)
-{
-    quint32 len;
-    stream >> len;
-    if (len == 0xffffffff)
-        return stream;
-    if (value.bufferSize < len)
-        value.realloc(len);
-
-    const int read = stream.readRawData(value.string, len);
-    value.m_size = read;
-    Q_ASSERT(value.m_size == len);
-
-    return stream;
-}
-
 void serializeInitDynamicPacket(DataStreamPacket&, const QRemoteObjectSource*);
 void deserializeInitDynamicPacket(QDataStream&, QMetaObjectBuilder&, QVariantList&);
 
@@ -214,8 +159,8 @@ void serializeInvokeReplyPacket(DataStreamPacket&, const QString &name, int acke
 void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant &value);
 
 //TODO do we need the object name or could we go with an id in backend code, this could be a costly allocation
-void serializePropertyChangePacket(DataStreamPacket&, const QString &name, const char *propertyName, const QVariant &value);
-void deserializePropertyChangePacket(QDataStream& in, RawString &propertyName, QVariant &value);
+void serializePropertyChangePacket(DataStreamPacket&, const QString &name, int index, const QVariant &value);
+void deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &value);
 
 } // namespace QRemoteObjectPackets
 

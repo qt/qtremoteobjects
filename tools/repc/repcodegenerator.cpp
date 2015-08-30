@@ -615,6 +615,18 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
         out << QStringLiteral("        Q_UNUSED(index);");
     out << QStringLiteral("        return -1;");
     out << QStringLiteral("    }");
+    //propertyRawIndexFromSignal method
+    out << QStringLiteral("    int propertyRawIndexFromSignal(int index) const Q_DECL_OVERRIDE");
+    out << QStringLiteral("    {");
+    if (!propertyChangeIndex.isEmpty()) {
+        out << QStringLiteral("        switch (index) {");
+        for (int i = 0; i < propertyChangeIndex.size(); ++i)
+            out << QString::fromLatin1("        case %1: return %2;").arg(i).arg(propertyChangeIndex.at(i));
+        out << QStringLiteral("        }");
+    } else
+        out << QStringLiteral("        Q_UNUSED(index);");
+    out << QStringLiteral("        return -1;");
+    out << QStringLiteral("    }");
 
     //signalSignature method
     out << QStringLiteral("    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE");

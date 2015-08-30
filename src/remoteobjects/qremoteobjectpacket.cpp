@@ -307,18 +307,18 @@ void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant 
     in >> value;
 }
 
-void serializePropertyChangePacket(DataStreamPacket &ds, const QString &name, const char *propertyName, const QVariant &value)
+void serializePropertyChangePacket(DataStreamPacket &ds, const QString &name, int index, const QVariant &value)
 {
     ds.setId(PropertyChangePacket);
     ds << name;
-    ds.writeBytes(propertyName, strlen(propertyName) + 1);
+    ds << index;
     ds << value;
     ds.finishPacket();
 }
 
-void deserializePropertyChangePacket(QDataStream& in, RawString &propertyName, QVariant &value)
+void deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &value)
 {
-    in >> propertyName;
+    in >> index;
     in >> value;
 }
 

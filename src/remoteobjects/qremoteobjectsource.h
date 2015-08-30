@@ -145,6 +145,7 @@ public:
     virtual QMetaMethod::MethodType methodType(int index) const = 0;
     virtual const QByteArray typeName(int index) const = 0;
     virtual int propertyIndexFromSignal(int index) const = 0;
+    virtual int propertyRawIndexFromSignal(int index) const = 0;
     virtual bool isDynamic() const { return false; }
     virtual bool isAdapterSignal(int) const { return false; }
     virtual bool isAdapterMethod(int) const { return false; }
