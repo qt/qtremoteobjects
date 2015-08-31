@@ -54,6 +54,7 @@ namespace QtRemoteObjects {
 
 void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
     if (!src) {
         qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a null source";
         return;
@@ -67,10 +68,16 @@ void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst)
         const QMetaProperty mp = mo->property(i);
         mp.writeOnGadget(dst, mp.readOnGadget(src));
     }
+#else
+    Q_UNUSED(mo);
+    Q_UNUSED(src);
+    Q_UNUSED(dst);
+#endif
 }
 
 void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &dst)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
     if (!src) {
         qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy from a null source";
         return;
@@ -80,10 +87,16 @@ void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &d
         const QMetaProperty mp = mo->property(i);
         dst << mp.readOnGadget(src);
     }
+#else
+    Q_UNUSED(mo);
+    Q_UNUSED(src);
+    Q_UNUSED(dst);
+#endif
 }
 
 void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
     if (!dst) {
         qCWarning(QT_REMOTEOBJECT) << Q_FUNC_INFO << ": trying to copy to a null destination";
         return;
@@ -95,6 +108,11 @@ void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst)
         src >> v;
         mp.writeOnGadget(dst, v);
     }
+#else
+    Q_UNUSED(mo);
+    Q_UNUSED(src);
+    Q_UNUSED(dst);
+#endif
 }
 
 } // namespace QtRemoteObjects
