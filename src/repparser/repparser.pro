@@ -4,5 +4,9 @@ QT = core-private
 
 load(qt_module)
 
-HEADERS = repparser.h
-SOURCES = repparser.cpp
+CONFIG += qlalr
+QLALRSOURCES += $$top_srcdir/src/repparser/parser.g
+
+OTHER_FILES += parser.g
+
+HEADERS += qregexparser.h

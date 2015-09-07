@@ -102,6 +102,10 @@ int main(int argc, char **argv)
     includePathOption.setValueName(QStringLiteral("dir"));
     parser.addOption(includePathOption);
 
+    QCommandLineOption debugOption(QStringLiteral("d"));
+    debugOption.setDescription(QStringLiteral("Print out parsing debug information (for troubleshooting)."));
+    parser.addOption(debugOption);
+
     parser.addPositionalArgument(QStringLiteral("[header-file/rep-file]"),
             QStringLiteral("Input header/rep file to read from, otherwise stdin."));
 
@@ -240,16 +244,18 @@ int main(int argc, char **argv)
         output.close();
     } else {
         Q_ASSERT(!(mode & OutRep));
-        RepParser parser(input);
-        if (!parser.parse()) {
+        RepParser repparser(input);
+        if (parser.isSet(debugOption))
+            repparser.setDebug();
+        if (!repparser.parse()) {
             fprintf(stderr, PROGRAM_NAME ": Can't parse input file.\n");
             fprintf(stderr, "%s", PROGRAM_NAME ": ");
-            fprintf(stderr, "%s\n", qPrintable(parser.errorString()));
+            fprintf(stderr, "%s\n", qPrintable(repparser.errorString()));
             return 1;
         }
         input.close();
         RepCodeGenerator generator(&output);
-        generator.generate(parser.ast(), (mode & OutSource) ? RepCodeGenerator::SOURCE
+        generator.generate(repparser.ast(), (mode & OutSource) ? RepCodeGenerator::SOURCE
                                                             : RepCodeGenerator::REPLICA, outputFile);
         output.close();
     }
