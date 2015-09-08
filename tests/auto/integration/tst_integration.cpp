@@ -49,6 +49,7 @@
 #include "speedometer.h"
 #include "rep_engine_replica.h"
 #include "rep_speedometer_merged.h"
+#include "rep_enum_merged.h"
 #include "rep_localdatacenter_source.h"
 #include "rep_tcpdatacenter_source.h"
 #include "rep_localdatacenter_replica.h"
@@ -178,6 +179,15 @@ private slots:
     {
         // wait for delivery of RemoveObject events to the source
         QTest::qWait(20);
+    }
+
+    void enumTest() {
+        TestClassSimpleSource tc;
+        tc.setTest(TestEnum::FALSE);
+        m_basicServer.enableRemoting(&tc);
+        const QScopedPointer<TestClassReplica> tc_rep(m_client.acquire<TestClassReplica>());
+        tc_rep->waitForSource();
+        QCOMPARE(tc.test(), tc_rep->test());
     }
 
     void namedObjectTest() {

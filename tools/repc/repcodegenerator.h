@@ -49,6 +49,7 @@
 struct AST;
 struct ASTClass;
 struct POD;
+struct ASTEnum;
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
@@ -78,6 +79,7 @@ private:
     void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
 
     void generatePOD(QTextStream &out, const POD &pod);
+    void generateENUM(QTextStream &out, const ASTEnum &en);
     QString formatQPropertyDeclarations(const POD &pod);
     QString formatConstructors(const POD &pod);
     QString formatPropertyGettersAndSetters(const POD &pod);

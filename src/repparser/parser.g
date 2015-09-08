@@ -45,12 +45,15 @@
 %token semicolon "[semicolon];"
 %token class "[class]class[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token pod "[pod]POD[ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*\\((?<types>[^\\)]*)\\);?[ \\t]*"
+%token enum "[enum]ENUM[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
+%token enum_param "[enum_param][ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*(=[ \\t]*(?<value>-\\d+|0[xX][0-9A-Fa-f]+|\\d+))?[ \\t]*"
 %token prop "[prop][ \\t]*PROP[ \\t]*\\((?<args>[^\\)]+)\\);?[ \\t]*"
 %token use_enum "[use_enum]USE_ENUM[ \\t]*\\((?<name>[^\\)]*)\\);?[ \\t]*"
 %token signal "[signal][ \\t]*SIGNAL[ \\t]*\\([ \\t]*(?<name>\\S+)[ \\t]*\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token slot "[slot][ \\t]*SLOT[ \\t]*\\((?<type>[^\\(]*)\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token start "[start]\\{[ \\t]*"
 %token stop "[stop]\\};?[ \\t]*"
+%token comma "[comma],"
 %token comment "[comment](?<comment>[ \\t]*//[^\\n]*\\n)"
 %token include "[include](?<include>#[ \\t]*include [^\\n]*\\n)"
 %token newline "[newline](\\r)?\\n"
@@ -132,6 +135,32 @@ struct ASTFunction
 };
 Q_DECLARE_TYPEINFO(ASTFunction, Q_MOVABLE_TYPE);
 
+struct ASTEnumParam
+{
+    ASTEnumParam(const QString &paramName = QString(), int paramValue = 0)
+        : name(paramName),
+          value(paramValue)
+    {
+    }
+
+    QString asString() const;
+
+    QString name;
+    int value;
+};
+Q_DECLARE_TYPEINFO(ASTEnumParam, Q_MOVABLE_TYPE);
+
+struct ASTEnum
+{
+    explicit ASTEnum(const QString &name = QString());
+
+    QString name;
+    QVector<ASTEnumParam> params;
+    bool isSigned;
+    int max;
+};
+Q_DECLARE_TYPEINFO(ASTEnum, Q_MOVABLE_TYPE);
+
 /// A Class declaration
 struct ASTClass
 {
@@ -171,6 +200,7 @@ struct AST
 {
     QVector<ASTClass> classes;
     QVector<POD> pods;
+    QVector<ASTEnum> enums;
     QVector<QString> enumUses;
     QStringList includes;
 };
@@ -208,6 +238,8 @@ private:
     AST m_ast;
 
     ASTClass m_astClass;
+    ASTEnum m_astEnum;
+    int m_astEnumValue;
 };
 #endif
 :/
@@ -309,6 +341,11 @@ QStringList ASTFunction::paramNames() const
     return names;
 }
 
+ASTEnum::ASTEnum(const QString &name)
+    : name(name), isSigned(false), max(0)
+{
+}
+
 ASTClass::ASTClass(const QString &name)
     : name(name)
 {
@@ -330,6 +367,7 @@ void RepParser::reset()
 {
     m_ast = AST();
     m_astClass = ASTClass();
+    m_astEnum = ASTEnum();
     //setDebug();
 }
 
@@ -529,6 +567,9 @@ Type: Include | Include Newlines;
 Type: Pod | Pod Newlines;
 Type: Class;
 Type: UseEnum | UseEnum Newlines;
+Type: Enum;
+
+Comma: comma | comma Newlines;
 
 Include: include;
 /.
@@ -583,9 +624,62 @@ ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot;
 DecoratedSlot: Slot | Comments Slot | Slot Newlines | Comments Slot Newlines;
 DecoratedSignal: Signal | Comments Signal | Signal Newlines | Comments Signal Newlines;
 DecoratedProp: Prop | Comments Prop | Prop Newlines | Comments Prop Newlines;
+DecoratedEnumParam: EnumParam | Comments EnumParam | EnumParam Newlines | Comments EnumParam Newlines;
 
 Start: start | Comments start | start Newlines | Comments start Newlines;
 Stop: stop | stop Newlines;
+
+Enum: EnumStart Start EnumParams Comments Stop;
+/.
+    case $rule_number:
+./
+Enum: EnumStart Start EnumParams Stop;
+/.
+    case $rule_number:
+    {
+        m_ast.enums.append(m_astEnum);
+    }
+    break;
+./
+
+EnumStart: enum;
+/.
+    case $rule_number:
+    {
+        const QString name = captured().value(QLatin1String("name"));
+
+        // new Class declaration
+        m_astEnum = ASTEnum(name);
+        m_astEnumValue = -1;
+    }
+    break;
+./
+
+EnumParams: DecoratedEnumParam | DecoratedEnumParam Comma EnumParams;
+
+EnumParam: enum_param;
+/.
+    case $rule_number:
+    {
+        ASTEnumParam param;
+        param.name = captured().value(QStringLiteral("name")).trimmed();
+        const QString value = captured().value(QStringLiteral("value")).trimmed();
+        if (value.isEmpty())
+            param.value = ++m_astEnumValue;
+        else if (value.toLower().startsWith(QStringLiteral("0x")))
+            param.value = m_astEnumValue = value.toInt(0,16);
+        else
+            param.value = m_astEnumValue = value.toInt();
+        if (param.value < 0) {
+            m_astEnum.isSigned = true;
+            if (m_astEnum.max < -param.value)
+                m_astEnum.max = -param.value;
+        } else if (m_astEnum.max < param.value)
+            m_astEnum.max = param.value;
+        m_astEnum.params << param;
+    }
+    break;
+./
 
 Prop: prop;
 /.

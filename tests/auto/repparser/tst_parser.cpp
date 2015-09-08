@@ -61,6 +61,8 @@ private Q_SLOTS:
     void testSignals();
     void testPods_data();
     void testPods();
+    void testEnums_data();
+    void testEnums();
     void testInvalid_data();
     void testInvalid();
 };
@@ -74,6 +76,7 @@ void tst_Parser::testBasic_data()
     QTest::newRow("include") << "#include \"foo\"";
     QTest::newRow("include_spaces") << "#  include \"foo\"";
     //QTest::newRow("comment") << "//This is a comment";
+    QTest::newRow("enum") << "ENUM MyEnum {test}";
 }
 
 void tst_Parser::testBasic()
@@ -285,6 +288,61 @@ void tst_Parser::testPods()
         QCOMPARE(podsList.at(i).name, variableList.at(i));
         QCOMPARE(podsList.at(i).type, typeList.at(i));
     }
+}
+
+void tst_Parser::testEnums_data()
+{
+    QTest::addColumn<QString>("enumdeclaration");
+    QTest::addColumn<QString>("expectednames");
+    QTest::addColumn<QList<int> >("expectedvalues");
+    QTest::addColumn<int>("expectedmax");
+    QTest::addColumn<bool>("expectedsigned");
+
+    //Separate by ";"
+    QTest::newRow("one enum val") << "ENUM preset {presetNumber}" << "presetNumber" << (QList<int>() << 0) << 0 << false;
+    QTest::newRow("two enum val") << "ENUM preset {presetNumber, foo}" << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false;
+    QTest::newRow("two enum val -1 2nd") << "ENUM preset {presetNumber, foo = -1}" << "presetNumber;foo" << (QList<int>() << 0 << -1) << 1 << true;
+    QTest::newRow("two enum val -1 1st") << "ENUM preset {presetNumber=-1, foo}" << "presetNumber;foo" << (QList<int>() << -1 << 0) << 1 << true;
+    QTest::newRow("two enum val hex") << "ENUM preset {presetNumber=0xf, foo}" << "presetNumber;foo" << (QList<int>() << 15 << 16) << 16 << false;
+    QTest::newRow("two enum val hex") << "ENUM preset {presetNumber=0xff, foo}" << "presetNumber;foo" << (QList<int>() << 255 << 256) << 256 << false;
+    QTest::newRow("two enum val with space") << "ENUM preset { presetNumber ,  foo } " << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false;
+}
+
+void tst_Parser::testEnums()
+{
+    QFETCH(QString, enumdeclaration);
+    QFETCH(QString, expectednames);
+    QFETCH(QList<int>, expectedvalues);
+    QFETCH(int, expectedmax);
+    QFETCH(bool, expectedsigned);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << enumdeclaration << endl;
+    stream << "class TestClass" << endl;
+    stream << "{" << endl;
+    stream << "};" << endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    QCOMPARE(ast.enums.count(), 1);
+    const ASTEnum enums = ast.enums.first();
+    const QVector<ASTEnumParam> paramList = enums.params;
+    const QStringList nameList = expectednames.split(QLatin1Char(';'));
+    QVERIFY(nameList.count() == expectedvalues.count());
+    QVERIFY(paramList.count() == expectedvalues.count());
+    for (int i=0; i < paramList.count(); ++i) {
+        QCOMPARE(paramList.at(i).name, nameList.at(i));
+        QCOMPARE(paramList.at(i).value, expectedvalues.at(i));
+    }
+    QCOMPARE(enums.max, expectedmax);
+    QCOMPARE(enums.isSigned, expectedsigned);
 }
 
 void tst_Parser::testInvalid_data()

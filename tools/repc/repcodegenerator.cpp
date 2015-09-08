@@ -107,6 +107,8 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
     QStringList out;
 
     generateHeader(mode, stream, ast);
+    foreach (const ASTEnum &en, ast.enums)
+        generateENUM(stream, en);
     foreach (const POD &pod, ast.pods)
         generatePOD(stream, pod);
 
@@ -279,6 +281,78 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
         << "\n"
            "\n"
            ;
+}
+
+QString getEnumType(const ASTEnum &en)
+{
+    if (en.isSigned) {
+        if (en.max < 0x7F)
+            return QStringLiteral("qint8");
+        if (en.max < 0x7FFF)
+            return QStringLiteral("qint16");
+        return QStringLiteral("qint32");
+    } else {
+        if (en.max < 0xFF)
+            return QStringLiteral("quint8");
+        if (en.max < 0xFFFF)
+            return QStringLiteral("quint16");
+        return QStringLiteral("quint32");
+    }
+}
+
+void RepCodeGenerator::generateENUM(QTextStream &out, const ASTEnum &en)
+{
+    const QString type = getEnumType(en);
+    out << "class " << en.name << "Enum\n"
+           "{\n"
+           "    Q_GADGET\n"
+           "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n"
+           "    Q_ENUMS(" << en.name << ")\n"
+           "#endif\n"
+           "public:\n"
+           "    enum " << en.name << "{";
+        foreach (const ASTEnumParam &p, en.params)
+            out << p.name << " = " << p.value << ",";
+
+    out << "};\n"
+           "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))\n"
+           "    Q_ENUM(" << en.name << ")\n"
+           "#endif\n\n"
+           "    static inline " << en.name << " fromInt(" << type << " i, bool *ok = 0)\n"
+           "    {\n"
+           "        if (ok)\n"
+           "            *ok = true;\n"
+           "        switch (i) {\n";
+        foreach (const ASTEnumParam &p, en.params)
+            out << "        case " << p.value << ": return " << p.name << ";\n";
+    out << "        default:\n"
+           "            if (ok)\n"
+           "                *ok = false;\n"
+           "            return " << en.params.at(0).name << ";\n"
+           "        }\n"
+           "    }\n"
+           "};\n"
+           "\n"
+           ;
+
+    out <<  "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n"
+            "  Q_DECLARE_METATYPE(" << en.name <<"Enum::" << en.name << ")\n"
+            "#endif\n\n";
+
+    out <<  "inline QDataStream &operator<<(QDataStream &ds, const " << en.name << "Enum::" << en.name << " &obj) {\n"
+            "    " << type << " val = obj;\n"
+            "    ds << val;\n"
+            "    return ds;\n"
+            "}\n\n"
+
+            "inline QDataStream &operator>>(QDataStream &ds, " << en.name << "Enum::" << en.name << " &obj) {\n"
+            "    bool ok;\n"
+            "    " << type << " val;\n"
+            "    ds >> val;\n"
+            "    obj = " << en.name << "Enum::fromInt(val, &ok);\n"
+            "    if (!ok)\n        qWarning() << \"QtRO received an invalid enum value for type" << en.name << ", value =\" << val;\n"
+            "    return ds;\n"
+            "}\n\n";
 }
 
 QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &metaTypes)

@@ -1,0 +1,6 @@
+ENUM Test {TRUE, FALSE}
+
+class TestClass
+{
+    PROP(TestEnum::Test test)
+}
