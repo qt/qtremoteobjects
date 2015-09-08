@@ -8,12 +8,12 @@ QT -= gui
 INCLUDEPATH += $$PWD
 
 OTHER_FILES = engine.rep \
-              speedometer.rep \
               ../repfiles/localdatacenter.rep \
               ../repfiles/tcpdatacenter.rep
 
 REPC_SOURCE += $$OTHER_FILES
 REPC_REPLICA += $$OTHER_FILES
+REPC_MERGED += speedometer.rep
 
 HEADERS += $$PWD/engine.h \
            $$PWD/speedometer.h \

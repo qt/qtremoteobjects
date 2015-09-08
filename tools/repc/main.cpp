@@ -61,13 +61,15 @@ enum Mode {
     InSrc = 2,
     OutRep = 4,
     OutSource = 8,
-    OutReplica = 16
+    OutReplica = 16,
+    OutMerged = OutSource | OutReplica
 };
 
 static const QLatin1String REP("rep");
 static const QLatin1String SRC("src");
 static const QLatin1String REPLICA("replica");
 static const QLatin1String SOURCE("source");
+static const QLatin1String MERGED("merged");
 
 int main(int argc, char **argv)
 {
@@ -93,8 +95,9 @@ int main(int argc, char **argv)
     outputTypeOption.setDescription(QLatin1String("Output file type:\n"
                                                    "source: generates source header. Is incompatible with \"-i src\" option.\n"
                                                    "replica: generates replica header.\n"
+                                                   "merged: generates combined replica/source header.\n"
                                                    "rep: generates replicant template file from C++ QOject classes. Is not compatible with \"-i rep\" option."));
-    outputTypeOption.setValueName(QStringLiteral("source|replica|rep"));
+    outputTypeOption.setValueName(QStringLiteral("source|replica|merged|rep"));
     parser.addOption(outputTypeOption);
 
     QCommandLineOption includePathOption(QStringLiteral("I"));
@@ -141,6 +144,8 @@ int main(int argc, char **argv)
             mode |= OutReplica;
         else if (outputType == SOURCE)
             mode |= OutSource;
+        else if (outputType == MERGED)
+            mode |= OutMerged;
         else {
             fprintf(stderr, PROGRAM_NAME ": Unknown output type\"%s\".\n", qPrintable(outputType));
             parser.showHelp(1);
@@ -255,8 +260,17 @@ int main(int argc, char **argv)
         }
         input.close();
         RepCodeGenerator generator(&output);
-        generator.generate(repparser.ast(), (mode & OutSource) ? RepCodeGenerator::SOURCE
-                                                            : RepCodeGenerator::REPLICA, outputFile);
+        if ((mode & OutMerged) == OutMerged)
+            generator.generate(repparser.ast(), RepCodeGenerator::MERGED, outputFile);
+        else if (mode & OutReplica)
+            generator.generate(repparser.ast(), RepCodeGenerator::REPLICA, outputFile);
+        else if (mode & OutSource)
+            generator.generate(repparser.ast(), RepCodeGenerator::SOURCE, outputFile);
+        else {
+            fprintf(stderr, PROGRAM_NAME ": Unknown mode.\n");
+            return 1;
+        }
+
         output.close();
     }
     return 0;

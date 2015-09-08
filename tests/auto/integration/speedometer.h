@@ -42,7 +42,7 @@
 #ifndef TESTS_SPEEDOMETER_H
 #define TESTS_SPEEDOMETER_H
 
-#include "rep_speedometer_source.h"
+#include "rep_speedometer_merged.h"
 
 class Speedometer : public SpeedometerSimpleSource
 {

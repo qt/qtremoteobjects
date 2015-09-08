@@ -1,5 +1,6 @@
 include(repcclient.pri)
 include(repcserver.pri)
+include(repcmerged.pri)
 
 !isEmpty(QOBJECT_REP) {
     qtPrepareTool(QMAKE_REPC, repc)

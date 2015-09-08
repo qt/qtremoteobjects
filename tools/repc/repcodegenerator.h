@@ -63,7 +63,8 @@ public:
     {
         REPLICA,
         SOURCE,
-        SIMPLE_SOURCE
+        SIMPLE_SOURCE,
+        MERGED
     };
 
     explicit RepCodeGenerator(QIODevice *outputDevice);

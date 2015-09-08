@@ -128,10 +128,17 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
                                            + generateMetaTypeRegistrationForEnums(ast.enumUses);
 
     foreach (const ASTClass &astClass, ast.classes) {
-        generateClass(mode, out, astClass, metaTypeRegistrationCode);
-        if (mode == SOURCE) {
+        if (mode == MERGED) {
+            generateClass(REPLICA, out, astClass, metaTypeRegistrationCode);
+            generateClass(SOURCE, out, astClass, metaTypeRegistrationCode);
             generateClass(SIMPLE_SOURCE, out, astClass, metaTypeRegistrationCode);
             generateSourceAPI(out, astClass);
+        } else {
+            generateClass(mode, out, astClass, metaTypeRegistrationCode);
+            if (mode == SOURCE) {
+                generateClass(SIMPLE_SOURCE, out, astClass, metaTypeRegistrationCode);
+                generateSourceAPI(out, astClass);
+            }
         }
     }
 
@@ -156,7 +163,11 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
            "\n"
            "#include <QtRemoteObjects/qremoteobjectnode.h>\n"
            ;
-    if (mode == REPLICA) {
+    if (mode == MERGED) {
+        out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
+        out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
+        out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
+    } else if (mode == REPLICA) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
     } else
@@ -583,7 +594,7 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
     } else {
         out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE { Q_UNUSED(index); return -1; }");
         out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE");
-        out << QStringLiteral("    { Q_UNUSED(sigIndex); Q_UNUSED(paramIndex); return -1 }");
+        out << QStringLiteral("    { Q_UNUSED(sigIndex); Q_UNUSED(paramIndex); return -1; }");
     }
     if (slotCount) {
         out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE");

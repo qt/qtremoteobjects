@@ -48,7 +48,7 @@
 #include "engine.h"
 #include "speedometer.h"
 #include "rep_engine_replica.h"
-#include "rep_speedometer_replica.h"
+#include "rep_speedometer_merged.h"
 #include "rep_localdatacenter_source.h"
 #include "rep_tcpdatacenter_source.h"
 #include "rep_localdatacenter_replica.h"
