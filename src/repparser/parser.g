@@ -558,11 +558,15 @@ bool RepParser::consumeRule(int ruleno)
     switch (ruleno) {
 ./
 
-TopLevel: Types | Newlines Types;
+TopLevel: Types | Newlines Types | FileComments Types | Newlines FileComments Types;
+
+FileComments: Comments;
+
 Types: Type | Type Types;
 
 Newlines: newline | newline Newlines;
-Comments: comment | comment Newlines;
+Comments: Comment | Comment Comments;
+Comment: comment | comment Newlines;
 Type: Include | Include Newlines;
 Type: Pod | Pod Newlines;
 Type: Class;
