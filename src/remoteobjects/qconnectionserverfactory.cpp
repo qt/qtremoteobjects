@@ -185,14 +185,16 @@ QUrl TcpServerImpl::address() const
 bool TcpServerImpl::listen(const QUrl &address)
 {
     QHostAddress host(address.host());
-    if (host.isNull()) {
-        const QList<QHostAddress> addresses = QHostInfo::fromName(address.host()).addresses();;
-        Q_ASSERT(addresses.size() >= 1);
-        host = addresses.first();
-        m_originalUrl = address;
-    }
+    if (host.isNull())
+        host = QHostAddress::Any;
 
-    return m_server.listen(host, address.port());
+    bool ret = m_server.listen(host, address.port());
+    if (ret) {
+        m_originalUrl.setScheme(QLatin1String("tcp"));
+        m_originalUrl.setHost(m_server.serverAddress().toString());
+        m_originalUrl.setPort(m_server.serverPort());
+    }
+    return ret;
 }
 
 QAbstractSocket::SocketError TcpServerImpl::serverError() const
