@@ -431,9 +431,9 @@ void QAbstractItemReplicaPrivate::requestedData(QRemoteObjectPendingCallWatcher 
     if (rowCount < 1 || columnCount < 1)
         return;
 
-    const int startRow = watcher->start.last().row;
+    const int startRow =  std::min(watcher->start.last().row, rowCount - 1);
     const int endRow = std::min(watcher->end.last().row, rowCount - 1);
-    const int startColumn = watcher->start.last().column;
+    const int startColumn = std::min(watcher->start.last().column, columnCount - 1);
     const int endColumn = std::min(watcher->end.last().column, columnCount - 1);
     Q_ASSERT_X(startRow >= 0 && startRow < parentItem->children.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(startRow).arg(parentItem->children.size())));
     Q_ASSERT_X(endRow >= 0 && endRow < parentItem->children.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(endRow).arg(parentItem->children.size())));
