@@ -53,12 +53,13 @@ QT_BEGIN_NAMESPACE
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
     : m_server(m_factory.createServer(address, this))
 {
-    if (m_server->listen(address)) {
+    if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;
     } else {
         qRODebug(this) << "Listen failed";
         qRODebug(this) << address;
-        qRODebug(this) << m_server->serverError();
+        if (m_server)
+            qRODebug(this) << m_server->serverError();
     }
 
     connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
