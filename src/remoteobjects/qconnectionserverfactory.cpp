@@ -186,13 +186,25 @@ bool TcpServerImpl::listen(const QUrl &address)
 {
     QHostAddress host(address.host());
     if (host.isNull()) {
-        const QList<QHostAddress> addresses = QHostInfo::fromName(address.host()).addresses();;
-        Q_ASSERT(addresses.size() >= 1);
-        host = addresses.first();
-        m_originalUrl = address;
+        if (address.host().isEmpty()) {
+            host = QHostAddress::Any;
+        } else {
+            qCWarning(QT_REMOTEOBJECT) << address.host() << " is not an IP address, trying to resolve it";
+            QHostInfo info = QHostInfo::fromName(address.host());
+            if (info.addresses().isEmpty())
+                host = QHostAddress::Any;
+            else
+                host = info.addresses().takeFirst();
+        }
     }
 
-    return m_server.listen(host, address.port());
+    bool ret = m_server.listen(host, address.port());
+    if (ret) {
+        m_originalUrl.setScheme(QLatin1String("tcp"));
+        m_originalUrl.setHost(m_server.serverAddress().toString());
+        m_originalUrl.setPort(m_server.serverPort());
+    }
+    return ret;
 }
 
 QAbstractSocket::SocketError TcpServerImpl::serverError() const

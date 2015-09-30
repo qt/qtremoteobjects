@@ -137,7 +137,7 @@ private slots:
         const bool res = m_registryClient.waitForRegistry(3000);
         QVERIFY(res);
 
-        m_basicServer = QRemoteObjectNode::createHostNode(QUrl(QStringLiteral("tcp://localhost:9999")));
+        m_basicServer = QRemoteObjectNode::createHostNode(QUrl(QStringLiteral("tcp://127.0.0.1:0")));
         SET_NODE_NAME(m_basicServer);
 
         engine.reset(new Engine);
@@ -145,12 +145,13 @@ private slots:
         m_basicServer.enableRemoting(engine.data());
         m_basicServer.enableRemoting(speedometer.data());
 
-        m_client.connect(QUrl(QStringLiteral("tcp://localhost:9999")));
+        m_client.connect(m_basicServer.hostUrl());
 
         //setup servers
         qRegisterMetaType<QVector<int> >();
         QMetaType::registerComparators<QVector<int> >();
         qRegisterMetaTypeStreamOperators<QVector<int> >();
+
         m_localCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("local:local")));
         SET_NODE_NAME(m_localCentreServer);
         dataCenterLocal.reset(new LocalDataCenterSimpleSource);
@@ -160,7 +161,7 @@ private slots:
         dataCenterLocal->setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
         m_localCentreServer.enableRemoting(dataCenterLocal.data());
 
-        m_tcpCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("tcp://localhost:19999")));
+        m_tcpCentreServer = QRemoteObjectNode::createHostNodeConnectedToRegistry(QUrl(QStringLiteral("tcp://127.0.0.1:0")));
         SET_NODE_NAME(m_tcpCentreServer);
         dataCenterTcp.reset(new TcpDataCenterSimpleSource);
         dataCenterTcp->setData1(5);
@@ -246,13 +247,13 @@ private slots:
     void registryTest() {
         const QScopedPointer<TcpDataCenterReplica> tcpCentre(m_registryClient.acquire<TcpDataCenterReplica>());
         const QScopedPointer<LocalDataCenterReplica> localCentre(m_registryClient.acquire<LocalDataCenterReplica>());
-        tcpCentre->waitForSource(3000);
-        localCentre->waitForSource(3000);
+        QTRY_VERIFY(tcpCentre->waitForSource(100));
+        QTRY_VERIFY(localCentre->waitForSource(100));
         //TODO this still fails intermittantly.  Fix that in another patch, though.
         //qDebug() << m_registryClient.registry()->sourceLocations() << m_registryServer.registry()->sourceLocations();
         //QCOMPARE(m_registryClient.registry()->sourceLocations(), m_registryServer.registry()->sourceLocations());
-        QVERIFY(localCentre->isInitialized());
-        QVERIFY(tcpCentre->isInitialized());
+        QTRY_VERIFY(localCentre->isInitialized());
+        QTRY_VERIFY(tcpCentre->isInitialized());
 
         QCOMPARE(tcpCentre->data1(), 5 );
         QCOMPARE(tcpCentre->data2(), 5.0);
