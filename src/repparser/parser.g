@@ -65,7 +65,7 @@
 #define REPPARSER_H
 
 #include <rep_grammar_p.h>
-#include <qregexparser.h>
+#include <qrepregexparser.h>
 #include <QStringList>
 #include <QVector>
 
@@ -206,13 +206,13 @@ struct AST
 };
 Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);
 
-class RepParser: public QRegexParser<RepParser, $table>
+class RepParser: public QRepRegexParser<RepParser, $table>
 {
 public:
     explicit RepParser(QIODevice &outputDevice);
     virtual ~RepParser() {}
 
-    bool parse() { return QRegexParser<RepParser, $table>::parse(); }
+    bool parse() { return QRepRegexParser<RepParser, $table>::parse(); }
 
     void reset() Q_DECL_OVERRIDE;
     int nextToken();
@@ -357,7 +357,7 @@ bool ASTClass::isValid() const
 }
 
 RepParser::RepParser(QIODevice &outputDevice)
-    : QRegexParser()
+    : QRepRegexParser()
 {
     setParserName(QStringLiteral("REPC"));
     setBufferFromDevice(&outputDevice);

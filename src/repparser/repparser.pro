@@ -1,12 +1,5 @@
-TARGET = QtRepParser
-CONFIG += staticlib
-QT = core-private
+TEMPLATE = subdirs
 
-load(qt_module)
-
-CONFIG += qlalr
-QLALRSOURCES += $$top_srcdir/src/repparser/parser.g
-
-OTHER_FILES += parser.g
-
-HEADERS += qregexparser.h
+repparser.path = $$[QT_INSTALL_HEADERS]/QtRepParser/
+repparser.files += parser.g qrepregexparser.h
+INSTALLS += repparser

@@ -1,0 +1,4 @@
+CONFIG += qlalr
+INCLUDEPATH *= $$[QT_INSTALL_HEADERS]/QtRepParser
+QLALRSOURCES += $$[QT_INSTALL_HEADERS]/QtRepParser/parser.g
+

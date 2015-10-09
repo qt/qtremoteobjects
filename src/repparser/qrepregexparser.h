@@ -69,11 +69,11 @@ struct MatchCandidate {
 QT_BEGIN_NAMESPACE
 
 template <typename _Parser, typename _Table>
-class QRegexParser: protected _Table
+class QRepRegexParser: protected _Table
 {
 public:
-    QRegexParser(int maxMatchLen=4096);
-    virtual ~QRegexParser();
+    QRepRegexParser(int maxMatchLen=4096);
+    virtual ~QRepRegexParser();
 
     virtual bool parse();
 
@@ -168,18 +168,18 @@ private:
 };
 
 template <typename _Parser, typename _Table>
-inline QVariant &QRegexParser<_Parser, _Table>::sym(int n)
+inline QVariant &QRepRegexParser<_Parser, _Table>::sym(int n)
 {
     return d->parseStack [d->tos + n - 1];
 }
 
 template <typename _Parser, typename _Table>
-QRegexParser<_Parser, _Table>::~QRegexParser()
+QRepRegexParser<_Parser, _Table>::~QRepRegexParser()
 {
 }
 
 template <typename _Parser, typename _Table>
-bool QRegexParser<_Parser, _Table>::parse()
+bool QRepRegexParser<_Parser, _Table>::parse()
 {
     m_errorString.clear();
     reset();
@@ -225,7 +225,7 @@ bool QRegexParser<_Parser, _Table>::parse()
 }
 
 template <typename _Parser, typename _Table>
-QRegexParser<_Parser, _Table>::QRegexParser(int maxMatchLen) : d(new Data()), m_loc(0), m_lastNewlinePosition(0), m_lineno(1), m_debug(0), m_maxMatchLen(maxMatchLen)
+QRepRegexParser<_Parser, _Table>::QRepRegexParser(int maxMatchLen) : d(new Data()), m_loc(0), m_lastNewlinePosition(0), m_lineno(1), m_debug(0), m_maxMatchLen(maxMatchLen)
 {
     m_parserName = QLatin1String("QRegexParser");
     REGEX re(QStringLiteral("\\[([_a-zA-Z][_0-9a-zA-Z]*)(,\\s*M)?\\](.+)$"));
@@ -310,20 +310,20 @@ QRegexParser<_Parser, _Table>::QRegexParser(int maxMatchLen) : d(new Data()), m_
 }
 
 template <typename _Parser, typename _Table>
-void QRegexParser<_Parser, _Table>::setBuffer(const QString &buffer)
+void QRepRegexParser<_Parser, _Table>::setBuffer(const QString &buffer)
 {
     m_buffer = buffer;
 }
 
 template <typename _Parser, typename _Table>
-void QRegexParser<_Parser, _Table>::setBufferFromDevice(QIODevice *device)
+void QRepRegexParser<_Parser, _Table>::setBufferFromDevice(QIODevice *device)
 {
     QTextStream in(device);
     m_buffer = in.readAll();
 }
 
 template <typename _Parser, typename _Table>
-void QRegexParser<_Parser, _Table>::setDebug()
+void QRepRegexParser<_Parser, _Table>::setDebug()
 {
     m_debug = true;
     for (int r = 0; r < _Table::RULE_COUNT; ++r)
@@ -347,7 +347,7 @@ void QRegexParser<_Parser, _Table>::setDebug()
 }
 
 template <typename _Parser, typename _Table>
-int QRegexParser<_Parser, _Table>::nextToken()
+int QRepRegexParser<_Parser, _Table>::nextToken()
 {
     static const REGEX newline(QLatin1String("(\\n)"));
     int token = -1;
