@@ -50,6 +50,7 @@
 #include "rep_engine_replica.h"
 #include "rep_speedometer_merged.h"
 #include "rep_enum_merged.h"
+#include "rep_pod_merged.h"
 #include "rep_localdatacenter_source.h"
 #include "rep_tcpdatacenter_source.h"
 #include "rep_localdatacenter_replica.h"
@@ -720,6 +721,20 @@ private slots:
         const QList<QVariant> &arguments = spy.first();
         QVERIFY(arguments.at(0).toByteArray() == data);
         m_basicServer.disableRemoting(&t);
+    }
+
+    void PODTest()
+    {
+        MyPOD shouldPass(1, 2.0, QStringLiteral("pass"));
+        MyPOD shouldFail(1, 2.0, QStringLiteral("fail"));
+        MyClassSimpleSource m;
+        m.setMyPOD(shouldPass);
+        m_basicServer.enableRemoting(&m);
+        const QScopedPointer<MyClassReplica> myclass_r(m_client.acquire<MyClassReplica>());
+        myclass_r->waitForSource();
+
+        QVERIFY(myclass_r->myPOD() == m.myPOD());
+        QVERIFY(myclass_r->myPOD() != shouldFail);
     }
 
 //TODO check Mac support

@@ -13,7 +13,7 @@ OTHER_FILES = engine.rep \
 
 REPC_SOURCE += $$OTHER_FILES
 REPC_REPLICA += $$OTHER_FILES
-REPC_MERGED += speedometer.rep enum.rep
+REPC_MERGED += speedometer.rep enum.rep pod.rep
 
 HEADERS += $$PWD/engine.h \
            $$PWD/speedometer.h \

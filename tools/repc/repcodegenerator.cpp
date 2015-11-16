@@ -266,6 +266,10 @@ QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
 
 void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
 {
+    QStringList equalityCheck;
+    foreach (const PODAttribute &attr, pod.attributes) {
+        equalityCheck << QStringLiteral("_%1 == other._%1").arg(attr.name);
+    }
     out << "class " << pod.name << "\n"
            "{\n"
            "    Q_GADGET\n"
@@ -273,6 +277,12 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
         << "public:\n"
         <<      formatConstructors(pod)
         <<      formatPropertyGettersAndSetters(pod)
+        << "    bool operator==(const " << pod.name << " &other) const {\n"
+        << "        return " << equalityCheck.join(QStringLiteral(" && ")) << ";\n"
+        << "    }\n"
+        << "    bool operator!=(const " << pod.name << " &other) const {\n"
+        << "        return !(*this == other);\n"
+        << "    }\n"
         << "private:\n"
         <<      formatDataMembers(pod)
         << "};\n"
