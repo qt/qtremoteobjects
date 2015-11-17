@@ -43,9 +43,9 @@
 
 #include "qremoteobjectpendingcall.h"
 #include "qremoteobjectsource.h"
+#include "qremoteobjectsource_p.h"
 
 #include "private/qmetaobjectbuilder_p.h"
-#include "private/qremoteobjectsource_p.h"
 
 QT_BEGIN_NAMESPACE
 
