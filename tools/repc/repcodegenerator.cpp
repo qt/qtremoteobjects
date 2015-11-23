@@ -439,7 +439,7 @@ void RepCodeGenerator::generateClass(Mode mode, QStringList &out, const ASTClass
         out << QStringLiteral("    %1() : QRemoteObjectReplica() {}").arg(className);
         out << QStringLiteral("    void initialize()");
     } else {
-        out << QStringLiteral("    %1(QObject *parent = Q_NULLPTR) : QObject(parent)").arg(className);
+        out << QStringLiteral("    explicit %1(QObject *parent = Q_NULLPTR) : QObject(parent)").arg(className);
 
         if (mode == SIMPLE_SOURCE) {
             foreach (const ASTProperty &property, astClass.properties) {
