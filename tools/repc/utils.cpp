@@ -66,7 +66,7 @@ static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties
         QByteArray prop = property.type + " " + property.name;
         if (property.constant)
             prop += " CONSTANT";
-        if (property.final)
+        if (property.write.isEmpty() && !property.read.isEmpty())
             prop += " READONLY";
         ret << prop;
     }
