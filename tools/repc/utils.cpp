@@ -80,7 +80,7 @@ static QByteArray generateFunctions(const QByteArray &type, const QList<Function
         if (func.access != FunctionDef::Public)
             continue;
 
-        ret += type + "(" + func.name + "(";
+        ret += type + "(" + func.type.name + " " + func.name + "(";
         const int sz = func.arguments.size();
         if (sz) {
             for (int i = 0; i < sz - 1 ; i++) {
