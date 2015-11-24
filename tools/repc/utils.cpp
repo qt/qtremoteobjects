@@ -66,7 +66,7 @@ static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties
         QByteArray prop = property.type + " " + property.name;
         if (property.constant)
             prop += " CONSTANT";
-        if (property.final)
+        if (property.write.isEmpty() && !property.read.isEmpty())
             prop += " READONLY";
         ret << prop;
     }
@@ -80,7 +80,7 @@ static QByteArray generateFunctions(const QByteArray &type, const QList<Function
         if (func.access != FunctionDef::Public)
             continue;
 
-        ret += type + "(" + func.name + "(";
+        ret += type + "(" + func.type.name + " " + func.name + "(";
         const int sz = func.arguments.size();
         if (sz) {
             for (int i = 0; i < sz - 1 ; i++) {
