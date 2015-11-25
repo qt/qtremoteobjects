@@ -16,6 +16,10 @@ QMAKE_EXTRA_COMPILERS += copy_files
 EXTRA_HEADERS += \
     $$PWD/parser.g
 
+extra_headers.files = $$EXTRA_HEADERS
+extra_headers.path = $$[QT_INSTALL_HEADERS]/$$MODULE_INCNAME
+INSTALLS += extra_headers
+
 PUBLIC_HEADERS += \
     $$PWD/qrepregexparser.h
 
