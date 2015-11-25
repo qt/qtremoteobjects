@@ -66,7 +66,7 @@ static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties
         QByteArray prop = property.type + " " + property.name;
         if (property.constant)
             prop += " CONSTANT";
-        if (property.final)
+        if (property.write.isEmpty() && !property.read.isEmpty())
             prop += " READONLY";
         ret << prop;
     }
@@ -149,9 +149,11 @@ QVector<ASTProperty> propertyList2AstProperties(const QList<PropertyDef> &list)
         ASTProperty prop;
         prop.name = _(property.name);
         prop.type = _(property.type);
-        prop.modifier = property.constant ? ASTProperty::Constant :
-                                            property.final ? ASTProperty::ReadOnly :
-                                                             ASTProperty::ReadWrite;
+        prop.modifier = property.constant
+                        ? ASTProperty::Constant
+                        : property.write.isEmpty() && !property.read.isEmpty()
+                          ? ASTProperty::ReadOnly
+                          : ASTProperty::ReadWrite;
         ret.push_back(prop);
     }
     return ret;
