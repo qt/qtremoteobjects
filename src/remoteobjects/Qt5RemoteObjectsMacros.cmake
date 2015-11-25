@@ -54,12 +54,8 @@
 #         Example usage: qt5_generate_repc(LIB_SRCS interface.rep SOURCE)
 #           for generating interface_source.h and adding it to LIB_SRCS
 
-get_target_property(_moc_executable Qt5::moc LOCATION)
-set(_search_dirs "${_moc_executable}/..")
-
-find_program(Qt5RemoteObjects_REPC_EXECUTABLE repc PATHS ${_search_dirs})
 if(NOT Qt5RemoteObjects_REPC_EXECUTABLE)
-    message(FATAL_ERROR "repc executable not found in dirs: ${_search_dirs} -- Check installation.")
+    message(FATAL_ERROR "repc executable not found -- Check installation.")
 endif()
 
 macro(qt5_generate_repc outfiles infile outputtype)
