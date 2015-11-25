@@ -1,4 +1,8 @@
 CONFIG += qlalr
-INCLUDEPATH *= $$[QT_INSTALL_HEADERS]/QtRepParser
-QLALRSOURCES += $$[QT_INSTALL_HEADERS]/QtRepParser/parser.g
+INCLUDEPATH *= $$QT.repparser.includes
 
+for (include, INCLUDEPATH) {
+    exists($${include}/parser.g) {
+        QLALRSOURCES += $${include}/parser.g
+    }
+}
