@@ -6,6 +6,9 @@ CONFIG += header_module
 
 load(qt_module)
 
+# Fixup DLLDESTDIR from qt_module.pri
+win32:!wince: DLLDESTDIR = $$MODULE_BASE_OUTDIR/bin
+
 # Copy non-C++ headers to out dir as well (syncqt does not take care of it)
 copy_files.name = copy_files
 copy_files.input = EXTRA_HEADERS
