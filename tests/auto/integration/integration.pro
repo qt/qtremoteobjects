@@ -1,4 +1,4 @@
-CONFIG += testcase parallel_test
+CONFIG += testcase
 TARGET = tst_integration
 QT += testlib remoteobjects
 QT -= gui
