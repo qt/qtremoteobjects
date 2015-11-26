@@ -9,5 +9,7 @@ sub_integration.target = sub-integration
 sub_integration.depends = sub-localsockettestserver
 
 SUBDIRS += repc sub_integration modelview cmake pods repparser \
-           sub_localsockettestserver benchmarks
+           sub_localsockettestserver
 
+# TODO: benchmarks test flaky & very slow under Windows
+!win32: SUBDIRS += benchmarks
