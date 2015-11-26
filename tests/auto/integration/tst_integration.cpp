@@ -179,7 +179,7 @@ private slots:
     void cleanup()
     {
         // wait for delivery of RemoveObject events to the source
-        QTest::qWait(20);
+        QTest::qWait(200);
     }
 
     void enumTest() {
