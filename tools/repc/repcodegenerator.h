@@ -87,7 +87,7 @@ private:
     QString formatDataMembers(const POD &pod);
     QString formatMarshallingOperators(const POD &pod);
 
-    void generateClass(Mode mode, QStringList &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
+    void generateClass(Mode mode, QTextStream &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
     void generateSourceAPI(QStringList &out, const ASTClass &astClass);
 
 private:
