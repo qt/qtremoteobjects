@@ -194,22 +194,27 @@ void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
 {
     qRODebug(this) << Q_FUNC_INFO << name << this;
     if (remoteObjectAddresses().contains(name)) {
-        initConnection(remoteObjectAddresses()[name]);
-        qRODebug(this) << "openedConnection" << remoteObjectAddresses()[name];
+        if (initConnection(remoteObjectAddresses()[name]))
+            qRODebug(this) << "openedConnection" << remoteObjectAddresses()[name];
+        else
+            qROWarning(this) << "failed to open connection to" << name;
     }
 }
 
-void QRemoteObjectNodePrivate::initConnection(const QUrl &address)
+bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
 {
     if (requestedUrls.contains(address)) {
         qROWarning(this) << "Connection already initialized for " << address.toString();
-        return;
+        return false;
     }
 
     requestedUrls.insert(address);
 
     ClientIoDevice *connection = m_factory.createDevice(address, this);
-    Q_ASSERT_X(connection, Q_FUNC_INFO, "Could not create IODevice for client");
+    if (!connection) {
+        qROWarning(this) << "Could not create ClientIoDevice for client. Invalid url/scheme provided?" << address;
+        return false;
+    }
 
     knownNodes.insert(connection);
     qRODebug(this) << "Replica Connection isValid" << connection->isOpen();
@@ -217,6 +222,7 @@ void QRemoteObjectNodePrivate::initConnection(const QUrl &address)
     connection->connectToServer();
     connect(connection, SIGNAL(readyRead()), &clientRead, SLOT(map()));
     clientRead.setMapping(connection, connection);
+    return true;
 }
 
 bool QRemoteObjectNodePrivate::hasInstance(const QString &name)
@@ -527,7 +533,8 @@ QRemoteObjectNode::QRemoteObjectNode(const QUrl &hostAddress, const QUrl &regist
 {
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     if (!hostAddress.isEmpty()) {
-        setHostUrl(hostAddress);
+        if (!setHostUrl(hostAddress))
+            return;
         if (hostAddress == registryAddress) {
             hostRegistry();
             return;
@@ -592,6 +599,12 @@ bool QRemoteObjectNode::setHostUrl(const QUrl &hostAddress)
     }
 
     d_ptr->remoteObjectIo.reset(new QRemoteObjectSourceIo(hostAddress));
+    if (d_ptr->remoteObjectIo->m_server.isNull()) { //Invalid url/scheme
+        d_ptr->m_lastError = HostUrlInvalid;
+        d_ptr->remoteObjectIo.reset();
+        return false;
+    }
+
     //If we've given a name to the node, set it on the sourceIo as well
     if (!d_ptr->objectName().isEmpty())
         d_ptr->remoteObjectIo->setObjectName(d_ptr->objectName());
@@ -639,7 +652,11 @@ bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
         return false;
     }
 
-    connect(registryAddress);
+    if (!connect(registryAddress)) {
+        d_ptr->m_lastError = RegistryNotAcquired;
+        return false;
+    }
+
     d_ptr->registryAddress = registryAddress;
     d_ptr->setRegistry(acquire<QRemoteObjectRegistry>());
     //Connect remoteObject[Added/Removed] to the registry Slot
@@ -747,10 +764,13 @@ QRemoteObjectNode QRemoteObjectNode::createHostNodeConnectedToRegistry(const QUr
 
     Once a client is connected to a host, valid Replicas can then be acquired
     if the corresponding Source is being remoted.
+
+    Return \a true on success, \a false otherwise (usually an unrecognized url,
+    or connecting to already connected address).
 */
-void QRemoteObjectNode::connect(const QUrl &address)
+bool QRemoteObjectNode::connect(const QUrl &address)
 {
-    d_ptr->initConnection(address);
+    return d_ptr->initConnection(address);
 }
 
 /*!

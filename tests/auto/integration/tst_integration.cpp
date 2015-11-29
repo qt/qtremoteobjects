@@ -737,6 +737,16 @@ private slots:
         QVERIFY(myclass_r->myPOD() != shouldFail);
     }
 
+    void SchemeTest()
+    {
+        QRemoteObjectNode valid = QRemoteObjectNode::createHostNode(QUrl(QLatin1String("local:valid")));
+        QVERIFY(valid.lastError() == QRemoteObjectNode::NoError);
+        QRemoteObjectNode invalid = QRemoteObjectNode::createHostNode(QUrl(QLatin1String("invalid:invalid")));
+        QVERIFY(invalid.lastError() == QRemoteObjectNode::HostUrlInvalid);
+        QRemoteObjectNode invalidRegistry = QRemoteObjectNode::createNodeConnectedToRegistry(QUrl(QLatin1String("invalid:invalid")));
+        QVERIFY(invalidRegistry.lastError() == QRemoteObjectNode::RegistryNotAcquired);
+    }
+
 //TODO check Mac support
 #ifdef Q_OS_LINUX
     void localServerConnectionTest()

@@ -78,7 +78,7 @@ public:
     void connectReplica(QObject *object, QRemoteObjectReplica *instance);
     void openConnectionIfNeeded(const QString &name);
 
-    void initConnection(const QUrl &address);
+    bool initConnection(const QUrl &address);
     bool hasInstance(const QString &name);
     void setRegistry(QRemoteObjectRegistry *);
 

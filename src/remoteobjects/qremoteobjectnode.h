@@ -69,7 +69,8 @@ public:
         UnintendedRegistryHosting,
         OperationNotValidOnClientNode,
         SourceNotRegistered,
-        MissingObjectName
+        MissingObjectName,
+        HostUrlInvalid
     };
 
     QRemoteObjectNode();
@@ -87,7 +88,7 @@ public:
     bool setRegistryUrl(const QUrl &registryAddress);
     bool hostRegistry();
     bool waitForRegistry(int timeout = 30000);
-    void connect(const QUrl &address=QUrl(QString::fromLatin1("local:replica")));
+    bool connect(const QUrl &address=QUrl(QString::fromLatin1("local:replica")));
     const QRemoteObjectRegistry *registry() const;
     void setName(const QString &name);
     template < class ObjectType >

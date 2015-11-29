@@ -79,6 +79,7 @@ Q_SIGNALS:
     void serverRemoved(const QUrl& url);
 
 private:
+    friend class QRemoteObjectNode;
     friend class QRemoteObjectNodePrivate;
     friend class QRemoteObjectSource;
 

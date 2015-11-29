@@ -56,10 +56,12 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
     if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;
     } else {
-        qRODebug(this) << "Listen failed";
-        qRODebug(this) << address;
+        qROWarning(this) << "Listen failed for URL:" << address;
         if (m_server)
-            qRODebug(this) << m_server->serverError();
+            qROWarning(this) << m_server->serverError();
+        else
+            qROWarning(this) << "Most likely an unrecognized scheme was used.";
+        return;
     }
 
     connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
