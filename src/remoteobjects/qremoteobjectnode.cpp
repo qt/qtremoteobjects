@@ -453,6 +453,9 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
+        case AddObject:
+        case Invalid:
+            qROWarning(this) << "Unexpected packet received";
         }
     } while (connection->bytesAvailable()); // have bytes left over, so do another iteration
 }
