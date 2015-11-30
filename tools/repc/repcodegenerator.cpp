@@ -74,6 +74,26 @@ static QString cap(QString name)
     return name;
 }
 
+static bool isClassEnum(const ASTClass &classContext, const QString &typeName)
+{
+    foreach (const ASTEnum &astEnum, classContext.enums) {
+        if (astEnum.name == typeName) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static QString fullyQualifiedTypeName(const ASTClass& classContext, const QString &className, const QString &typeName)
+{
+    if (isClassEnum(classContext, typeName)) {
+        // type was defined in this class' context, prefix typeName with class name
+        return className + QStringLiteral("::") + typeName;
+    }
+    return typeName;
+}
+
 /*
   Returns \c true if the type is a built-in type.
 */
@@ -129,6 +149,8 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 
     foreach (const ASTClass &astClass, ast.classes) {
         QStringList out;
+        if (!astClass.enums.isEmpty())
+            generateENUMs(stream, astClass.enums, QString::fromLatin1("%1Enums").arg(astClass.name));
         if (mode == MERGED) {
             generateClass(REPLICA, stream, astClass, metaTypeRegistrationCode);
             generateClass(SOURCE, stream, astClass, metaTypeRegistrationCode);
@@ -309,59 +331,90 @@ QString getEnumType(const ASTEnum &en)
     }
 }
 
-void RepCodeGenerator::generateENUM(QTextStream &out, const ASTEnum &en)
+void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums)
 {
-    const QString type = getEnumType(en);
-    out << "class " << en.name << "Enum\n"
-           "{\n"
-           "    Q_GADGET\n"
-           "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n"
-           "    Q_ENUMS(" << en.name << ")\n"
-           "#endif\n"
-           "public:\n"
-           "    enum " << en.name << "{";
+    foreach (const ASTEnum &en, enums) {
+        out << "    enum " << en.name << "{";
         foreach (const ASTEnumParam &p, en.params)
             out << p.name << " = " << p.value << ",";
 
-    out << "};\n"
-           "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))\n"
-           "    Q_ENUM(" << en.name << ")\n"
-           "#endif\n\n"
-           "    static inline " << en.name << " fromInt(" << type << " i, bool *ok = 0)\n"
-           "    {\n"
-           "        if (ok)\n"
-           "            *ok = true;\n"
-           "        switch (i) {\n";
-        foreach (const ASTEnumParam &p, en.params)
-            out << "        case " << p.value << ": return " << p.name << ";\n";
-    out << "        default:\n"
-           "            if (ok)\n"
-           "                *ok = false;\n"
-           "            return " << en.params.at(0).name << ";\n"
-           "        }\n"
-           "    }\n"
-           "};\n"
-           "\n"
-           ;
+        out << "};\n";
 
-    out <<  "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n"
-            "  Q_DECLARE_METATYPE(" << en.name <<"Enum::" << en.name << ")\n"
-            "#endif\n\n";
+        out << "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))\n";
+        out << "    Q_ENUM(" << en.name << ")\n";
+        out << "#else\n";
+        out << "    Q_ENUMS(" << en.name << ")\n";
+        out << "#endif\n";
+    }
+}
 
-    out <<  "inline QDataStream &operator<<(QDataStream &ds, const " << en.name << "Enum::" << en.name << " &obj) {\n"
-            "    " << type << " val = obj;\n"
-            "    ds << val;\n"
-            "    return ds;\n"
-            "}\n\n"
+void RepCodeGenerator::generateENUMs(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className)
+{
+    out << "class " << className << "\n"
+           "{\n"
+           "    Q_GADGET\n"
+           "    " << className << "();\n"
+           "public:\n";
 
-            "inline QDataStream &operator>>(QDataStream &ds, " << en.name << "Enum::" << en.name << " &obj) {\n"
-            "    bool ok;\n"
-            "    " << type << " val;\n"
-            "    ds >> val;\n"
-            "    obj = " << en.name << "Enum::fromInt(val, &ok);\n"
-            "    if (!ok)\n        qWarning() << \"QtRO received an invalid enum value for type" << en.name << ", value =\" << val;\n"
-            "    return ds;\n"
-            "}\n\n";
+    generateDeclarationsForEnums(out, enums);
+    generateConversionFunctionsForEnums(out, enums);
+
+    out << "};\n\n";
+
+    out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n";
+    foreach (const ASTEnum &en, enums)
+        out << "    Q_DECLARE_METATYPE(" << className <<"::" << en.name << ")\n";
+    out <<  "#endif\n\n";
+
+    generateStreamOperatorsForEnums(out, enums, className);
+}
+
+void RepCodeGenerator::generateConversionFunctionsForEnums(QTextStream &out, const QVector<ASTEnum> &enums)
+{
+    foreach (const ASTEnum &en, enums)
+    {
+        const QString type = getEnumType(en);
+        out << "    static inline " << en.name << " to" << en.name << "(" << type << " i, bool *ok = 0)\n"
+               "    {\n"
+               "        if (ok)\n"
+               "            *ok = true;\n"
+               "        switch (i) {\n";
+            foreach (const ASTEnumParam &p, en.params)
+                out << "        case " << p.value << ": return " << p.name << ";\n";
+        out << "        default:\n"
+               "            if (ok)\n"
+               "                *ok = false;\n"
+               "            return " << en.params.at(0).name << ";\n"
+               "        }\n"
+               "    }\n";
+    }
+}
+
+void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className)
+{
+    foreach (const ASTEnum &en, enums)
+    {
+        const QString type = getEnumType(en);
+        out <<  "inline QDataStream &operator<<(QDataStream &ds, const " << className << "::" << en.name << " &obj) {\n"
+                "    " << type << " val = obj;\n"
+                "    ds << val;\n"
+                "    return ds;\n"
+                "}\n\n"
+
+                "inline QDataStream &operator>>(QDataStream &ds, " << className << "::" << en.name << " &obj) {\n"
+                "    bool ok;\n"
+                "    " << type << " val;\n"
+                "    ds >> val;\n"
+                "    obj = " << className << "::to" << en.name << "(val, &ok);\n"
+                "    if (!ok)\n        qWarning() << \"QtRO received an invalid enum value for type" << en.name << ", value =\" << val;\n"
+                "    return ds;\n"
+                "}\n\n";
+    }
+}
+
+void RepCodeGenerator::generateENUM(QTextStream &out, const ASTEnum &en)
+{
+    generateENUMs(out, (QVector<ASTEnum>() << en), QStringLiteral("%1Enum").arg(en.name));
 }
 
 QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &metaTypes)
@@ -478,13 +531,20 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     }
     out << "" << endl;
 
+    generateDeclarationsForEnums(out, astClass.enums);
+    generateConversionFunctionsForEnums(out, astClass.enums);
+
     //Next output getter/setter
     if (mode == REPLICA) {
         int i = 0;
         foreach (const ASTProperty &property, astClass.properties) {
             out << "    " << property.type << " " << property.name << "() const" << endl;
             out << "    {" << endl;
-            out << "        return propAsVariant(" << i << ").value<" << property.type << " >();" << endl;
+            out << "        const QVariant variant = propAsVariant(" << i << ");" << endl;
+            out << "        if (!variant.canConvert<" << property.type << ">()) {" << endl;
+            out << "            qWarning() << \"QtRO cannot convert the property " << property.name << " to type " << property.type << "\";" << endl;
+            out << "        }" << endl;
+            out << "        return variant.value<" << property.type << " >();" << endl;
             out << "    }" << endl;
             i++;
             if (property.modifier == ASTProperty::ReadWrite) {
@@ -529,7 +589,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "Q_SIGNALS:" << endl;
         foreach (const ASTProperty &property, astClass.properties) {
             if (property.modifier != ASTProperty::Constant)
-                out << "    void " << property.name << "Changed(" << property.type << ");" << endl;
+                out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, property.type) << ");" << endl;
         }
 
         foreach (const ASTFunction &signal, astClass.signalsList)
@@ -580,6 +640,14 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     }
 
     out << "};" << endl;
+
+    out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n";
+    foreach (const ASTEnum &en, astClass.enums)
+        out << "    Q_DECLARE_METATYPE(" << className << "::" << en.name << ")\n";
+    out <<  "#endif\n\n";
+
+    generateStreamOperatorsForEnums(out, astClass.enums, className);
+
     out << "" << endl;
 }
 
@@ -597,12 +665,13 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
     QList<int> propertyChangeIndex;
     for (int i = 0; i < propCount; ++i) {
         const ASTProperty &prop = astClass.properties.at(i);
+        const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
         out << QString::fromLatin1("        _properties[%1] = qtro_prop_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<%3 (QObject::*)()>(0),\"%2\");")
-                             .arg(i+1).arg(prop.name).arg(prop.type);
+                             .arg(i+1).arg(prop.name).arg(propTypeName);
         if (prop.modifier == prop.ReadWrite) //Make sure we have a setter function
             out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::set%1, static_cast<void (QObject::*)(%2)>(0));")
-                                 .arg(cap(prop.name)).arg(prop.type);
+                                 .arg(cap(prop.name)).arg(propTypeName);
         if (prop.modifier != prop.Constant) { //Make sure we have an onChange signal
             out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(0));")
                                  .arg(prop.name);

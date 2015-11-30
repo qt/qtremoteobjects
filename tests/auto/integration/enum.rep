@@ -2,5 +2,7 @@ ENUM Test {TRUE, FALSE}
 
 class TestClass
 {
-    PROP(TestEnum::Test test)
+    ENUM ClassEnum {Null, One, Two}
+    PROP(TestEnum::Test testEnum)
+    PROP(ClassEnum classEnum)
 }

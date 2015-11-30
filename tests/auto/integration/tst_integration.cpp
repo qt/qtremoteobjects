@@ -184,11 +184,59 @@ private slots:
 
     void enumTest() {
         TestClassSimpleSource tc;
-        tc.setTest(TestEnum::FALSE);
+        tc.setTestEnum(TestEnum::FALSE);
+        tc.setClassEnum(TestClassSimpleSource::One);
         m_basicServer.enableRemoting(&tc);
         const QScopedPointer<TestClassReplica> tc_rep(m_client.acquire<TestClassReplica>());
         tc_rep->waitForSource();
-        QCOMPARE(tc.test(), tc_rep->test());
+        QCOMPARE(tc.testEnum(), tc_rep->testEnum());
+        QCOMPARE((qint32)tc.classEnum(), (qint32)TestClassSimpleSource::One);
+
+        // set property on the replica (test property change packet)
+        {
+            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumChanged(TestClassReplica::ClassEnum)));
+            tc_rep->setClassEnum(TestClassReplica::Two);
+            QVERIFY(spy.wait());
+
+            QCOMPARE((qint32)tc.classEnum(), (qint32)tc_rep->classEnum());
+        }
+
+        // set property on the source (test property change packet)
+        {
+            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumChanged(TestClassReplica::ClassEnum)));
+            tc.setClassEnum(TestClassSimpleSource::One);
+            QVERIFY(spy.wait());
+
+            QCOMPARE((qint32)tc.classEnum(), (qint32)tc_rep->classEnum());
+        }
+
+        QScopedPointer<QRemoteObjectDynamicReplica> tc_repDynamic(m_client.acquire(QStringLiteral("TestClass")));
+
+        tc_repDynamic->waitForSource(1000);
+        QVERIFY(tc_repDynamic->isInitialized());
+
+        const QMetaObject *metaObject = tc_repDynamic->metaObject();
+
+        const int propertyIndex = metaObject->indexOfProperty("classEnum");
+        QVERIFY(propertyIndex >= 0);
+
+        const QMetaProperty property = metaObject->property(propertyIndex);
+        QVERIFY(property.isValid());
+        QCOMPARE(property.typeName(), "ClassEnum");
+
+        // read enum on the dynamic replica
+        {
+            QCOMPARE(property.read(tc_repDynamic.data()).value<TestClassReplica::ClassEnum>(), TestClassReplica::One);
+        }
+
+        // write enum on the dynamic replica
+        {
+            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumChanged(TestClassReplica::ClassEnum)));
+            property.write(tc_repDynamic.data(), TestClassReplica::Two);
+            QVERIFY(spy.wait());
+
+            QCOMPARE(tc_rep->classEnum(), TestClassReplica::Two);
+        }
     }
 
     void namedObjectTest() {

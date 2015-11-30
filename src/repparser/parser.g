@@ -45,7 +45,7 @@
 %token semicolon "[semicolon];"
 %token class "[class]class[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token pod "[pod]POD[ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*\\((?<types>[^\\)]*)\\);?[ \\t]*"
-%token enum "[enum]ENUM[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
+%token enum "[enum][ \\t]*ENUM[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token enum_param "[enum_param][ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*(=[ \\t]*(?<value>-\\d+|0[xX][0-9A-Fa-f]+|\\d+))?[ \\t]*"
 %token prop "[prop][ \\t]*PROP[ \\t]*\\((?<args>[^\\)]+)\\);?[ \\t]*"
 %token use_enum "[use_enum]USE_ENUM[ \\t]*\\((?<name>[^\\)]*)\\);?[ \\t]*"
@@ -172,6 +172,7 @@ struct ASTClass
     QVector<ASTProperty> properties;
     QVector<ASTFunction> signalsList;
     QVector<ASTFunction> slotsList;
+    QVector<ASTEnum> enums;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -572,6 +573,13 @@ Type: Pod | Pod Newlines;
 Type: Class;
 Type: UseEnum | UseEnum Newlines;
 Type: Enum;
+/.
+    case $rule_number:
+    {
+        m_ast.enums.append(m_astEnum);
+    }
+    break;
+./
 
 Comma: comma | comma Newlines;
 
@@ -624,6 +632,14 @@ Class: ClassStart Start Stop;
 
 ClassTypes: ClassType | ClassType ClassTypes;
 ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot;
+ClassType: Enum;
+/.
+    case $rule_number:
+    {
+        m_astClass.enums.append(m_astEnum);
+    }
+    break;
+./
 
 DecoratedSlot: Slot | Comments Slot | Slot Newlines | Comments Slot Newlines;
 DecoratedSignal: Signal | Comments Signal | Signal Newlines | Comments Signal Newlines;
@@ -634,17 +650,7 @@ Start: start | Comments start | start Newlines | Comments start Newlines;
 Stop: stop | stop Newlines;
 
 Enum: EnumStart Start EnumParams Comments Stop;
-/.
-    case $rule_number:
-./
 Enum: EnumStart Start EnumParams Stop;
-/.
-    case $rule_number:
-    {
-        m_ast.enums.append(m_astEnum);
-    }
-    break;
-./
 
 EnumStart: enum;
 /.

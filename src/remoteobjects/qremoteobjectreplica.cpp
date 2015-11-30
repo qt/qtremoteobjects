@@ -130,7 +130,8 @@ void QConnectedReplicaPrivate::initialize(const QVariantList &values)
         qCDebug(QT_REMOTEOBJECT) << "  in loop" << i << m_propertyStorage.size();
         changedProperties[i] = -1;
         if (m_propertyStorage[i] != values.at(i)) {
-            m_propertyStorage[i] = values.at(i);
+            const QMetaProperty property = m_metaObject->property(i+offset);
+            m_propertyStorage[i] = QRemoteObjectPackets::deserializedProperty(values.at(i), property);
             changedProperties[i] = i;
         }
         qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name() << values.at(i).typeName() << values.at(i).toString();

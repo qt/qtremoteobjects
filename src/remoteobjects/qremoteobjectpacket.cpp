@@ -51,6 +51,26 @@ QT_BEGIN_NAMESPACE
 
 namespace QRemoteObjectPackets {
 
+QVariant serializedProperty(const QMetaProperty &property, const QObject *object)
+{
+    const QVariant value = property.read(object);
+    if (property.isEnumType()) {
+        return QVariant::fromValue<qint32>(value.toInt());
+    } else {
+        return value; // return original
+    }
+}
+
+QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property)
+{
+    if (property.isEnumType()) {
+        const qint32 enumValue = in.toInt();
+        return QVariant(property.userType(), &enumValue);
+    } else {
+        return in; // return original
+    }
+}
+
 void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
     const QMetaObject *meta = object->m_object->metaObject();
@@ -75,10 +95,10 @@ void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object
         }
         if (api->isAdapterProperty(i)) {
             const QMetaProperty mp = adapterMeta->property(index);
-            ds << mp.read(object->m_adapter);
+            ds << serializedProperty(mp, object->m_adapter);
         } else {
             const QMetaProperty mp = meta->property(index);
-            ds << mp.read(object->m_object);
+            ds << serializedProperty(mp, object->m_object);
         }
     }
     ds.finishPacket();
