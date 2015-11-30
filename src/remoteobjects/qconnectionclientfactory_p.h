@@ -42,7 +42,6 @@
 #ifndef QCONNECTIONCLIENTFACTORY_P_H
 #define QCONNECTIONCLIENTFACTORY_P_H
 
-#include "qconnectionabstractfactory_p.h"
 #include "qremoteobjectpacket_p.h"
 #include "qtremoteobjectglobal.h"
 
@@ -94,7 +93,7 @@ private:
     QUrl m_url;
 
 private:
-    friend class QConnectionClientFactory;
+    friend struct QtROClientFactory;
 
     quint32 m_curReadSize;
     QSet<QString> m_remoteObjects;
@@ -151,15 +150,27 @@ private:
     QTcpSocket m_socket;
 };
 
-class QConnectionClientFactory : public QConnectionAbstractFactory<ClientIoDevice>
-{
-    Q_DISABLE_COPY(QConnectionClientFactory)
+struct QtROClientFactory {
+    static ClientIoDevice *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
+        Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
+        ClientIoDevice *res = iter == static_creators().constEnd() ? 0 : (*iter)(parent); // if found, execute the creator function pointer
+        if (res)
+            res->m_url = url;
+        return res;
+    }
 
-public:
-    QConnectionClientFactory();
-
-    ClientIoDevice *createDevice(const QUrl &url, QObject *parent = Q_NULLPTR);
+private:
+    typedef ClientIoDevice *Creator_t(QObject *); // function pointer to create ClientIoDevice
+    typedef QHash<QString, Creator_t*> Creators_t; // map from id to creator
+    static Creators_t& static_creators() { static Creators_t s_creators; return s_creators; } // static instance of map
+    template<class T = int> struct Register {
+        static ClientIoDevice *create(QObject *parent) { return new T(parent); }
+        static Creator_t *init_creator(const QString &id) { return static_creators()[id] = create; }
+        static Creator_t *creator;
+    };
 };
+
+#define REGISTER_QTRO_CLIENT(T, STR) template<> QtROClientFactory::Creator_t* QtROClientFactory::Register<T>::creator = QtROClientFactory::Register<T>::init_creator(QLatin1String(STR))
 
 QT_END_NAMESPACE
 

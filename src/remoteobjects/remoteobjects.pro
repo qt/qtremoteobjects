@@ -33,7 +33,6 @@ PUBLIC_HEADERS += \
 
 
 PRIVATE_HEADERS += \
-    $$PWD/qconnectionabstractfactory_p.h \
     $$PWD/qconnectionabstractserver_p.h \
     $$PWD/qconnectionclientfactory_p.h \
     $$PWD/qconnectionserverfactory_p.h \

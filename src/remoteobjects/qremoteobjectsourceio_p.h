@@ -87,7 +87,6 @@ private:
     void unregisterSource(QRemoteObjectSource *pp);
 
     QHash<QIODevice*, quint32> m_readSize;
-    QConnectionServerFactory m_factory;
     QSet<ServerIoDevice*> m_connections;
     QHash<QObject *, QRemoteObjectSource*> m_objectToSourceMap;
     QMap<QString, QRemoteObjectSource*> m_remoteObjects;

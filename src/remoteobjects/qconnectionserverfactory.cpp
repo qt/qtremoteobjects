@@ -217,20 +217,7 @@ void TcpServerImpl::close()
     m_server.close();
 }
 
-QConnectionServerFactory::QConnectionServerFactory()
-{
-    registerProduct<LocalServerImpl>(QRemoteObjectStringLiterals::local());
-    registerProduct<TcpServerImpl>(QRemoteObjectStringLiterals::tcp());
-}
-
-QConnectionAbstractServer *QConnectionServerFactory::createServer(const QUrl &url, QObject *parent)
-{
-    return create(url, parent);
-}
-
-QConnectionAbstractServer *QConnectionServerFactory::create(const QUrl &url, QObject *parent)
-{
-    return QConnectionAbstractFactory<QConnectionAbstractServer>::create(url.scheme(), parent);
-}
+REGISTER_QTRO_SERVER(LocalServerImpl, "local");
+REGISTER_QTRO_SERVER(TcpServerImpl, "tcp");
 
 QT_END_NAMESPACE

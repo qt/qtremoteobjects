@@ -51,7 +51,7 @@
 QT_BEGIN_NAMESPACE
 
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
-    : m_server(m_factory.createServer(address, this))
+    : m_server(QtROServerFactory::create(address, this))
 {
     if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;

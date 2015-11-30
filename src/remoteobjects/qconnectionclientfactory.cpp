@@ -270,19 +270,7 @@ void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
     }
 }
 
-
-QConnectionClientFactory::QConnectionClientFactory()
-{
-    registerProduct<LocalClientIo>(QRemoteObjectStringLiterals::local());
-    registerProduct<TcpClientIo>(QRemoteObjectStringLiterals::tcp());
-}
-
-ClientIoDevice *QConnectionClientFactory::createDevice(const QUrl &url, QObject *parent)
-{
-    ClientIoDevice *res = QConnectionAbstractFactory<ClientIoDevice>::create(url.scheme(), parent);
-    if (res)
-        res->m_url = url;
-    return res;
-}
+REGISTER_QTRO_CLIENT(LocalClientIo, "local");
+REGISTER_QTRO_CLIENT(TcpClientIo, "tcp");
 
 QT_END_NAMESPACE

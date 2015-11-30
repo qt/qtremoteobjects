@@ -42,7 +42,6 @@
 #ifndef QCONNECTIONSERVERFACTORY_P_H
 #define QCONNECTIONSERVERFACTORY_P_H
 
-#include "qconnectionabstractfactory_p.h"
 #include "qconnectionabstractserver_p.h"
 
 #include <QLocalServer>
@@ -121,19 +120,24 @@ private:
     QUrl m_originalUrl; // necessary because of a QHostAddress bug
 };
 
-
-class QConnectionServerFactory : public QConnectionAbstractFactory<QConnectionAbstractServer>
-{
-    Q_DISABLE_COPY(QConnectionServerFactory)
-
-public:
-    QConnectionServerFactory();
-    QConnectionAbstractServer *createServer(const QUrl &url, QObject *parent = Q_NULLPTR);
-    static void registerScheme(const QString &scheme);
+struct QtROServerFactory {
+    static QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
+        Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
+        return iter == static_creators().constEnd() ? 0 : (*iter)(parent); // if found, execute the creator function pointer
+    }
 
 private:
-    QConnectionAbstractServer *create(const QUrl &url, QObject *parent);
+    typedef QConnectionAbstractServer *Creator_t(QObject *); // function pointer to create QConnectionAbstractServer
+    typedef QHash<QString, Creator_t*> Creators_t; // map from id to creator
+    static Creators_t& static_creators() { static Creators_t s_creators; return s_creators; } // static instance of map
+    template<class T = int> struct Register {
+        static QConnectionAbstractServer *create(QObject *parent) { return new T(parent); }
+        static Creator_t *init_creator(const QString &id) { return static_creators()[id] = create; }
+        static Creator_t *creator;
+    };
 };
+
+#define REGISTER_QTRO_SERVER(T, STR) template<> QtROServerFactory::Creator_t* QtROServerFactory::Register<T>::creator = QtROServerFactory::Register<T>::init_creator(QLatin1String(STR))
 
 QT_END_NAMESPACE
 

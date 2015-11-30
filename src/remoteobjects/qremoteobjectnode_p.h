@@ -99,7 +99,6 @@ public:
     QMutex mutex;
     QUrl registryAddress;
     QHash<QString, QWeakPointer<QRemoteObjectReplicaPrivate> > replicas;
-    QConnectionClientFactory m_factory;
     QMap<QString, ClientIoDevice*> connectedSources;
     QSet<ClientIoDevice*> knownNodes;
     QSet<ClientIoDevice*> pendingReconnect;
