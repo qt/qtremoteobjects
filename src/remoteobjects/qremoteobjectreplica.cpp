@@ -260,7 +260,7 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
         if (index < m_methodOffset) //index - m_methodOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid method invocation.  Index not found:" << index << "( offset =" << m_methodOffset << ") object:" << m_objectName << this->m_metaObject->method(index).name();
         else {
-            serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, &args);
+            serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, args);
             sendCommand();
         }
     } else {
@@ -268,7 +268,7 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
         if (index < m_propertyOffset) //index - m_propertyOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid property invocation.  Index not found:" << index << "( offset =" << m_propertyOffset << ") object:" << m_objectName << this->m_metaObject->property(index).name();
         else {
-            serializeInvokePacket(m_packet, m_objectName, call, index - m_propertyOffset, &args);
+            serializeInvokePacket(m_packet, m_objectName, call, index - m_propertyOffset, args);
             sendCommand();
         }
     }
@@ -280,7 +280,7 @@ QRemoteObjectPendingCall QConnectedReplicaPrivate::_q_sendWithReply(QMetaObject:
 
     qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
     int serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 0 : m_curSerialId++);
-    serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, &args, serialId);
+    serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, args, serialId);
     return sendCommandWithReply(serialId);
 }
 

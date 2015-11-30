@@ -272,13 +272,13 @@ void serializeRemoveObjectPacket(DataStreamPacket &ds, const QString &name)
 }
 //There is no deserializeRemoveObjectPacket - no parameters other than id and name
 
-void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, int index, const QVariantList *args, int serialId)
+void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, int index, const QVariantList &args, int serialId)
 {
     ds.setId(InvokePacket);
     ds << name;
     ds << call;
     ds << index;
-    ds << *args;
+    ds << args;
     ds << serialId;
     ds.finishPacket();
 }

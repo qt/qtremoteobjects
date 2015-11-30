@@ -197,7 +197,7 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
 
-    serializeInvokePacket(m_packet, m_api->name(), call, index, marshalArgs(index, a));
+    serializeInvokePacket(m_packet, m_api->name(), call, index, *marshalArgs(index, a));
     m_packet.baseAddress = 0;
 
     Q_FOREACH (ServerIoDevice *io, listeners)
