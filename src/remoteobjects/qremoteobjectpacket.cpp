@@ -84,7 +84,7 @@ void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object
     ds.finishPacket();
 }
 
-bool deSerializeQVariantList(QDataStream& s, QList<QVariant>& l)
+bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
 {
     quint32 c;
     s >> c;
@@ -116,7 +116,7 @@ bool deSerializeQVariantList(QDataStream& s, QList<QVariant>& l)
 
 void deserializeInitPacket(QDataStream &in, QVariantList &values)
 {
-    const bool success = deSerializeQVariantList(in, values);
+    const bool success = deserializeQVariantList(in, values);
     Q_ASSERT(success);
     Q_UNUSED(success);
 }
@@ -287,7 +287,7 @@ void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantLis
 {
     in >> call;
     in >> index;
-    const bool success = deSerializeQVariantList(in, args);
+    const bool success = deserializeQVariantList(in, args);
     Q_ASSERT(success);
     Q_UNUSED(success);
     in >> serialId;
