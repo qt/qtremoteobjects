@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 
     QFile input;
     if (inputFile.isEmpty()) {
-        inputFile = QStringLiteral("standard input");
+        inputFile = QStringLiteral("<stdin>");
         input.open(stdin, QIODevice::ReadOnly);
     } else {
         input.setFileName(inputFile);
@@ -253,9 +253,7 @@ int main(int argc, char **argv)
         if (parser.isSet(debugOption))
             repparser.setDebug();
         if (!repparser.parse()) {
-            fprintf(stderr, PROGRAM_NAME ": Can't parse input file.\n");
-            fprintf(stderr, "%s", PROGRAM_NAME ": ");
-            fprintf(stderr, "%s\n", qPrintable(repparser.errorString()));
+            fprintf(stderr, PROGRAM_NAME ": %s:%d: error: %s\n", qPrintable(inputFile), repparser.lineNumber(), qPrintable(repparser.errorString()));
             return 1;
         }
         input.close();

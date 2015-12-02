@@ -94,7 +94,7 @@ public:
 
     void setErrorString(const QString &error)
     {
-        m_errorString = QStringLiteral("%1 error at line %2: %3").arg(m_parserName).arg(QString::number(m_lineno)).arg(error);
+        m_errorString = error;
         qWarning() << m_errorString;
     }
 
@@ -221,6 +221,7 @@ bool QRepRegexParser<_Parser, _Table>::parse()
         else break;
     }
 
+    setErrorString(QStringLiteral("Unknown token encountered"));
     return false;
 }
 
