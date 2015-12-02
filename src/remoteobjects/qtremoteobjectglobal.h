@@ -108,6 +108,19 @@ void copyStoredProperties(QDataStream &src, T *dst)
     copyStoredProperties(&T::staticMetaObject, src, dst);
 }
 
+enum QRemoteObjectPacketTypeEnum
+{
+    Invalid = 0,
+    InitPacket,
+    InitDynamicPacket,
+    AddObject,
+    RemoveObject,
+    InvokePacket,
+    InvokeReplyPacket,
+    PropertyChangePacket,
+    ObjectList
+};
+
 }
 
 QT_END_NAMESPACE

@@ -21,6 +21,7 @@ DEFINES += QT_NO_CAST_TO_ASCII QT_NO_CAST_FROM_ASCII QT_NO_CAST_FROM_BYTEARRAY Q
 INCLUDEPATH *= .
 
 PUBLIC_HEADERS += \
+    $$PWD/qconnectionfactories.h \
     $$PWD/qremoteobjectdynamicreplica.h \
     $$PWD/qremoteobjectsource.h \
     $$PWD/qremoteobjectreplica.h \
@@ -33,9 +34,9 @@ PUBLIC_HEADERS += \
 
 
 PRIVATE_HEADERS += \
-    $$PWD/qconnectionabstractserver_p.h \
-    $$PWD/qconnectionclientfactory_p.h \
-    $$PWD/qconnectionserverfactory_p.h \
+    $$PWD/qconnectionfactories_p.h \
+    $$PWD/qconnection_local_backend_p.h \
+    $$PWD/qconnection_tcpip_backend_p.h \
     $$PWD/qremoteobjectsourceio_p.h \
     $$PWD/qremoteobjectsource_p.h \
     $$PWD/qremoteobjectregistrysource_p.h \
@@ -49,9 +50,9 @@ PRIVATE_HEADERS += \
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
 
 SOURCES += \
-    $$PWD/qconnectionabstractserver.cpp \
-    $$PWD/qconnectionclientfactory.cpp \
-    $$PWD/qconnectionserverfactory.cpp \
+    $$PWD/qconnection_local_backend.cpp \
+    $$PWD/qconnection_tcpip_backend.cpp \
+    $$PWD/qconnectionfactories.cpp \
     $$PWD/qremoteobjectdynamicreplica.cpp \
     $$PWD/qremoteobjectsource.cpp \
     $$PWD/qremoteobjectsourceio.cpp \
@@ -64,7 +65,6 @@ SOURCES += \
     $$PWD/qtremoteobjectglobal.cpp \
     $$PWD/qremoteobjectabstractitemreplica.cpp \
     $$PWD/qremoteobjectabstractitemadapter.cpp
-
 
 DEFINES += QT_BUILD_REMOTEOBJECTS_LIB
 

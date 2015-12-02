@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2014-2015 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,19 +39,71 @@
 **
 ****************************************************************************/
 
-#ifndef QCONNECTIONCLIENTFACTORY_P_H
-#define QCONNECTIONCLIENTFACTORY_P_H
+#ifndef QCONNECTIONFACTORIES_H
+#define QCONNECTIONFACTORIES_H
 
-#include "qremoteobjectpacket_p.h"
+#include <QAbstractSocket>
 #include "qtremoteobjectglobal.h"
 
-#include <QLocalSocket>
-#include <QObject>
-#include <QTcpSocket>
-#include <QUrl>
-#include <QDataStream>
-
 QT_BEGIN_NAMESPACE
+
+//The Qt servers create QIODevice derived classes from handleConnection.
+//The problem is that they behave differently, so this class adds some
+//consistency.
+class ServerIoDevice : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY(ServerIoDevice)
+
+public:
+    explicit ServerIoDevice(QObject *parent = Q_NULLPTR);
+    virtual ~ServerIoDevice();
+
+    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
+
+    virtual void write(const QByteArray &data);
+    virtual void write(const QByteArray &data, qint64);
+    void close();
+    virtual qint64 bytesAvailable();
+    virtual QIODevice *connection() const = 0;
+    void initializeDataStream();
+    QDataStream& stream() { return m_dataStream; }
+
+Q_SIGNALS:
+    void disconnected();
+    void readyRead();
+
+protected:
+    virtual void doClose() = 0;
+
+private:
+    bool m_isClosing;
+    quint32 m_curReadSize;
+    QDataStream m_dataStream;
+};
+
+class QConnectionAbstractServer : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY(QConnectionAbstractServer)
+
+public:
+    explicit QConnectionAbstractServer(QObject *parent = Q_NULLPTR);
+    virtual ~QConnectionAbstractServer();
+
+    virtual bool hasPendingConnections() const = 0;
+    ServerIoDevice* nextPendingConnection();
+    virtual QUrl address() const = 0;
+    virtual bool listen(const QUrl &address) = 0;
+    virtual QAbstractSocket::SocketError serverError() const = 0;
+    virtual void close() = 0;
+
+protected:
+    virtual ServerIoDevice* _nextPendingConnection() = 0;
+
+Q_SIGNALS:
+    void newConnection();
+};
 
 class ClientIoDevice : public QObject
 {
@@ -62,7 +114,7 @@ public:
     explicit ClientIoDevice(QObject *parent = Q_NULLPTR);
     virtual ~ClientIoDevice();
 
-    bool read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &, QString &);
+    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
 
     virtual void write(const QByteArray &data);
     virtual void write(const QByteArray &data, qint64);
@@ -85,7 +137,7 @@ Q_SIGNALS:
     void shouldReconnect(ClientIoDevice*);
 protected:
     virtual void doClose() = 0;
-    inline bool isClosing();
+    inline bool isClosing() { return m_isClosing; }
     QDataStream m_dataStream;
 
 private:
@@ -99,55 +151,21 @@ private:
     QSet<QString> m_remoteObjects;
 };
 
-bool ClientIoDevice::isClosing()
-{
-    return m_isClosing;
-}
-
-class LocalClientIo : public ClientIoDevice
-{
-    Q_OBJECT
-
-public:
-    explicit LocalClientIo(QObject *parent = Q_NULLPTR);
-    ~LocalClientIo();
-
-    QIODevice *connection() Q_DECL_OVERRIDE;
-    void connectToServer() Q_DECL_OVERRIDE;
-    bool isOpen() Q_DECL_OVERRIDE;
-
-public Q_SLOTS:
-    void onError(QLocalSocket::LocalSocketError error);
-    void onStateChanged(QLocalSocket::LocalSocketState state);
-
-protected:
-    void doClose() Q_DECL_OVERRIDE;
-private:
-    QLocalSocket m_socket;
-};
-
-
-class TcpClientIo : public ClientIoDevice
-{
-    Q_OBJECT
-
-public:
-    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
-    ~TcpClientIo();
-
-    QIODevice *connection() Q_DECL_OVERRIDE;
-    void connectToServer() Q_DECL_OVERRIDE;
-    bool isOpen() Q_DECL_OVERRIDE;
-
-public Q_SLOTS:
-    void onError(QAbstractSocket::SocketError error);
-    void onStateChanged(QAbstractSocket::SocketState state);
-
-protected:
-    void doClose() Q_DECL_OVERRIDE;
+struct QtROServerFactory {
+    static QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
+        Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
+        return iter == static_creators().constEnd() ? 0 : (*iter)(parent); // if found, execute the creator function pointer
+    }
 
 private:
-    QTcpSocket m_socket;
+    typedef QConnectionAbstractServer *Creator_t(QObject *); // function pointer to create QConnectionAbstractServer
+    typedef QHash<QString, Creator_t*> Creators_t; // map from id to creator
+    static Creators_t& static_creators() { static Creators_t s_creators; return s_creators; } // static instance of map
+    template<class T = int> struct Register {
+        static QConnectionAbstractServer *create(QObject *parent) { return new T(parent); }
+        static Creator_t *init_creator(const QString &id) { return static_creators()[id] = create; }
+        static Creator_t *creator;
+    };
 };
 
 struct QtROClientFactory {
@@ -171,7 +189,9 @@ private:
 };
 
 #define REGISTER_QTRO_CLIENT(T, STR) template<> QtROClientFactory::Creator_t* QtROClientFactory::Register<T>::creator = QtROClientFactory::Register<T>::init_creator(QLatin1String(STR))
+#define REGISTER_QTRO_SERVER(T, STR) template<> QtROServerFactory::Creator_t* QtROServerFactory::Register<T>::creator = QtROServerFactory::Register<T>::init_creator(QLatin1String(STR))
 
 QT_END_NAMESPACE
 
-#endif
+#endif // QCONNECTIONFACTORIES_H
+

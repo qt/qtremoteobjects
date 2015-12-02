@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2014-2015 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,76 +39,18 @@
 **
 ****************************************************************************/
 
-#ifndef QCONNECTIONABSTRACTSERVER_P_H
-#define QCONNECTIONABSTRACTSERVER_P_H
+#ifndef QCONNECTIONFACTORIES_P_H
+#define QCONNECTIONFACTORIES_P_H
 
-#include <QAbstractSocket>
-#include <QIODevice>
-#include <QObject>
 #include <QDataStream>
-#include "qtremoteobjectglobal.h"
-#include "qremoteobjectpacket_p.h"
 
 QT_BEGIN_NAMESPACE
 
-//The Qt servers create QIODevice derived classes from handleConnection.
-//The problem is that they behave differently, so this class adds some
-//consistency.
-class ServerIoDevice : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(ServerIoDevice)
+namespace QtRemoteObjects {
 
-public:
-    explicit ServerIoDevice(QObject *parent = Q_NULLPTR);
-    virtual ~ServerIoDevice();
+const int dataStreamVersion = QDataStream::Qt_5_0;
 
-    bool read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &, QString &);
-
-    virtual void write(const QByteArray &data);
-    virtual void write(const QByteArray &data, qint64);
-    void close();
-    virtual qint64 bytesAvailable();
-    virtual QIODevice *connection() const = 0;
-    void initializeDataStream();
-    QDataStream& stream() { return m_dataStream; }
-
-Q_SIGNALS:
-    void disconnected();
-    void readyRead();
-
-protected:
-    virtual void doClose() = 0;
-
-private:
-    bool m_isClosing;
-    quint32 m_curReadSize;
-    QDataStream m_dataStream;
-};
-
-
-class QConnectionAbstractServer : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(QConnectionAbstractServer)
-
-public:
-    explicit QConnectionAbstractServer(QObject *parent = Q_NULLPTR);
-    virtual ~QConnectionAbstractServer();
-
-    virtual bool hasPendingConnections() const = 0;
-    ServerIoDevice* nextPendingConnection();
-    virtual QUrl address() const = 0;
-    virtual bool listen(const QUrl &address) = 0;
-    virtual QAbstractSocket::SocketError serverError() const = 0;
-    virtual void close() = 0;
-
-protected:
-    virtual ServerIoDevice* _nextPendingConnection() = 0;
-
-Q_SIGNALS:
-    void newConnection();
-};
+}
 
 QT_END_NAMESPACE
 

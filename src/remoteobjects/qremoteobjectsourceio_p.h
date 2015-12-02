@@ -42,7 +42,7 @@
 #ifndef QREMOTEOBJECTSOURCEIO_P_H
 #define QREMOTEOBJECTSOURCEIO_P_H
 
-#include "qconnectionserverfactory_p.h"
+#include "qconnectionfactories.h"
 #include "qtremoteobjectglobal.h"
 #include "qremoteobjectpacket_p.h"
 

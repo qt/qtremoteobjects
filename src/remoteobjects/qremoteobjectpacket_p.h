@@ -44,8 +44,8 @@
 
 #include "qtremoteobjectglobal.h"
 #include "qremoteobjectsource.h"
+#include "qconnectionfactories_p.h"
 
-#include <QtCore/QDataStream>
 #include <QtCore/QHash>
 #include <QtCore/QMap>
 #include <QtCore/QPair>
@@ -62,47 +62,7 @@ class QRemoteObjectSource;
 
 namespace QRemoteObjectPackets {
 
-const int dataStreamVersion = QDataStream::Qt_5_0;
-
 class DataStreamPacket;
-
-enum QRemoteObjectPacketTypeEnum
-{
-    Invalid = 0,
-    InitPacket,
-    InitDynamicPacket,
-    AddObject,
-    RemoveObject,
-    InvokePacket,
-    InvokeReplyPacket,
-    PropertyChangePacket,
-    ObjectList
-};
-
-inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, QString &name)
-{
-    quint16 _type;
-    in >> _type;
-    type = Invalid;
-    switch (_type) {
-    case InitPacket: type = InitPacket; break;
-    case InitDynamicPacket: type = InitDynamicPacket; break;
-    case AddObject: type = AddObject; break;
-    case RemoveObject: type = RemoveObject; break;
-    case InvokePacket: type = InvokePacket; break;
-    case InvokeReplyPacket: type = InvokeReplyPacket; break;
-    case PropertyChangePacket: type = PropertyChangePacket; break;
-    case ObjectList: type = ObjectList; break;
-    default:
-        qWarning() << "Invalid packet received" << type;
-    }
-    if (type == Invalid)
-        return false;
-    if (type == ObjectList)
-        return true;
-    in >> name;
-    return true;
-}
 
 void serializeObjectListPacket(DataStreamPacket&, const QStringList&);
 void deserializeObjectListPacket(QDataStream&, QStringList&);
@@ -111,11 +71,11 @@ void deserializeObjectListPacket(QDataStream&, QStringList&);
 class DataStreamPacket : public QDataStream
 {
 public:
-    DataStreamPacket(quint16 id = InvokePacket)
+    DataStreamPacket(quint16 id = QtRemoteObjects::InvokePacket)
         : QDataStream(&array, QIODevice::WriteOnly)
         , baseAddress(0)
     {
-        this->setVersion(dataStreamVersion);
+        this->setVersion(QtRemoteObjects::dataStreamVersion);
         *this << quint32(0);
         *this << id;
     }

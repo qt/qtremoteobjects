@@ -39,40 +39,84 @@
 **
 ****************************************************************************/
 
-#include "qconnectionserverfactory_p.h"
-
-#include <qcompilerdetection.h>
-#include <QHostInfo>
-#include <QIODevice>
-#include <QLocalServer>
-#include <QTcpServer>
-#include <QtGlobal>
-#include <QLocalSocket>
-#include <QTcpSocket>
-
-#ifdef Q_OS_LINUX
-#include <QFile>
-#include <QDir>
-#endif
+#include "qconnection_tcpip_backend_p.h"
 
 QT_BEGIN_NAMESPACE
 
-LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
-    : ServerIoDevice(parent), m_connection(conn)
+TcpClientIo::TcpClientIo(QObject *parent)
+    : ClientIoDevice(parent)
 {
-    m_connection->setParent(this);
-    connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
-    connect(conn, &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
+    connect(&m_socket, &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(&m_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
+    connect(&m_socket, &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
 }
 
-QIODevice *LocalServerIo::connection() const
+TcpClientIo::~TcpClientIo()
 {
-    return m_connection;
+    close();
 }
 
-void LocalServerIo::doClose()
+QIODevice *TcpClientIo::connection()
 {
-    m_connection->disconnectFromServer();
+    return &m_socket;
+}
+
+void TcpClientIo::doClose()
+{
+    if (m_socket.isOpen()) {
+        connect(&m_socket, &QTcpSocket::disconnected, this, &QObject::deleteLater);
+        m_socket.disconnectFromHost();
+    } else {
+        this->deleteLater();
+    }
+}
+
+void TcpClientIo::connectToServer()
+{
+    if (isOpen())
+        return;
+    QHostAddress address(url().host());
+    if (address.isNull()) {
+        const QList<QHostAddress> addresses = QHostInfo::fromName(url().host()).addresses();
+        Q_ASSERT_X(addresses.size() >= 1, Q_FUNC_INFO, url().toString().toLatin1().data());
+        address = addresses.first();
+    }
+
+    m_socket.connectToHost(address, url().port());
+}
+
+bool TcpClientIo::isOpen()
+{
+    return (!isClosing() && m_socket.isOpen());
+}
+
+void TcpClientIo::onError(QAbstractSocket::SocketError error)
+{
+    qCDebug(QT_REMOTEOBJECT) << "onError" << error;
+
+    switch (error) {
+    case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
+        emit shouldReconnect(this);
+        break;
+    case QAbstractSocket::AddressInUseError:
+    case QAbstractSocket::ConnectionRefusedError:
+        //... TODO error reporting
+        break;
+    default:
+        break;
+    }
+}
+
+void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
+{
+    if (state == QAbstractSocket::ClosingState && !isClosing()) {
+        m_socket.abort();
+        emit shouldReconnect(this);
+    }
+    if (state == QAbstractSocket::ConnectedState) {
+        m_dataStream.setDevice(connection());
+        m_dataStream.resetStatus();
+    }
 }
 
 
@@ -94,63 +138,6 @@ void TcpServerIo::doClose()
     m_connection->disconnectFromHost();
 }
 
-
-LocalServerImpl::LocalServerImpl(QObject *parent)
-    : QConnectionAbstractServer(parent)
-{
-    connect(&m_server, &QLocalServer::newConnection, this, &QConnectionAbstractServer::newConnection);
-}
-
-LocalServerImpl::~LocalServerImpl()
-{
-    m_server.close();
-}
-
-ServerIoDevice *LocalServerImpl::_nextPendingConnection()
-{
-    if (!m_server.isListening())
-        return Q_NULLPTR;
-
-    return new LocalServerIo(m_server.nextPendingConnection(), this);
-}
-
-bool LocalServerImpl::hasPendingConnections() const
-{
-    return m_server.hasPendingConnections();
-}
-
-QUrl LocalServerImpl::address() const
-{
-    QUrl result;
-    result.setPath(m_server.serverName());
-    result.setScheme(QRemoteObjectStringLiterals::local());
-
-    return result;
-}
-
-bool LocalServerImpl::listen(const QUrl &address)
-{
-#ifdef Q_OS_UNIX
-    bool res = m_server.listen(address.path());
-    if (!res) {
-        QLocalServer::removeServer(address.path());
-        res = m_server.listen(address.path());
-    }
-    return res;
-#else
-    return m_server.listen(address.path());
-#endif
-}
-
-QAbstractSocket::SocketError LocalServerImpl::serverError() const
-{
-    return m_server.serverError();
-}
-
-void LocalServerImpl::close()
-{
-    close();
-}
 
 
 TcpServerImpl::TcpServerImpl(QObject *parent)
@@ -217,7 +204,7 @@ void TcpServerImpl::close()
     m_server.close();
 }
 
-REGISTER_QTRO_SERVER(LocalServerImpl, "local");
+REGISTER_QTRO_CLIENT(TcpClientIo, "tcp");
 REGISTER_QTRO_SERVER(TcpServerImpl, "tcp");
 
 QT_END_NAMESPACE

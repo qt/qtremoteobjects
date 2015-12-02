@@ -49,6 +49,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace QtRemoteObjects;
+
 namespace QRemoteObjectPackets {
 
 QVariant serializedProperty(const QMetaProperty &property, const QObject *object)

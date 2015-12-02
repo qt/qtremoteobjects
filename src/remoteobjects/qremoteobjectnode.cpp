@@ -56,6 +56,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace QtRemoteObjects;
+
 static QString name(const QMetaObject * const mobj)
 {
     const int ind = mobj->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);

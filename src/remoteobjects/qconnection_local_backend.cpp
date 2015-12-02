@@ -39,88 +39,7 @@
 **
 ****************************************************************************/
 
-#include "qconnectionclientfactory_p.h"
-
-#include "qremoteobjectpacket_p.h"
-#include "qtremoteobjectglobal.h"
-
-#include <QDataStream>
-#include <QHostAddress>
-#include <QHostInfo>
-
-QT_BEGIN_NAMESPACE
-
-ClientIoDevice::ClientIoDevice(QObject *parent)
-    : QObject(parent), m_isClosing(false), m_curReadSize(0)
-{
-    m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
-}
-
-ClientIoDevice::~ClientIoDevice()
-{
-}
-
-void ClientIoDevice::close()
-{
-    m_isClosing = true;
-    doClose();
-}
-
-bool ClientIoDevice::read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &type, QString &name)
-{
-    qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()" << m_curReadSize << bytesAvailable();
-
-    if (m_curReadSize == 0) {
-        if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
-            return false;
-
-        m_dataStream >> m_curReadSize;
-    }
-
-    qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
-
-    if (bytesAvailable() < m_curReadSize)
-        return false;
-
-    m_curReadSize = 0;
-    return fromDataStream(m_dataStream, type, name);
-}
-
-void ClientIoDevice::write(const QByteArray &data)
-{
-    connection()->write(data);
-}
-
-void ClientIoDevice::write(const QByteArray &data, qint64 size)
-{
-    connection()->write(data.data(), size);
-}
-
-qint64 ClientIoDevice::bytesAvailable()
-{
-    return connection()->bytesAvailable();
-}
-
-QUrl ClientIoDevice::url() const
-{
-    return m_url;
-}
-
-void ClientIoDevice::addSource(const QString &name)
-{
-    m_remoteObjects.insert(name);
-}
-
-void ClientIoDevice::removeSource(const QString &name)
-{
-    m_remoteObjects.remove(name);
-}
-
-QSet<QString> ClientIoDevice::remoteObjects() const
-{
-    return m_remoteObjects;
-}
-
+#include "qconnection_local_backend_p.h"
 
 LocalClientIo::LocalClientIo(QObject *parent)
     : ClientIoDevice(parent)
@@ -193,84 +112,82 @@ void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
     }
 }
 
-
-TcpClientIo::TcpClientIo(QObject *parent)
-    : ClientIoDevice(parent)
+LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
+    : ServerIoDevice(parent), m_connection(conn)
 {
-    connect(&m_socket, &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
-    connect(&m_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
-    connect(&m_socket, &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
+    m_connection->setParent(this);
+    connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
+    connect(conn, &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
 }
 
-TcpClientIo::~TcpClientIo()
+QIODevice *LocalServerIo::connection() const
+{
+    return m_connection;
+}
+
+void LocalServerIo::doClose()
+{
+    m_connection->disconnectFromServer();
+}
+
+LocalServerImpl::LocalServerImpl(QObject *parent)
+    : QConnectionAbstractServer(parent)
+{
+    connect(&m_server, &QLocalServer::newConnection, this, &QConnectionAbstractServer::newConnection);
+}
+
+LocalServerImpl::~LocalServerImpl()
+{
+    m_server.close();
+}
+
+ServerIoDevice *LocalServerImpl::_nextPendingConnection()
+{
+    if (!m_server.isListening())
+        return Q_NULLPTR;
+
+    return new LocalServerIo(m_server.nextPendingConnection(), this);
+}
+
+bool LocalServerImpl::hasPendingConnections() const
+{
+    return m_server.hasPendingConnections();
+}
+
+QUrl LocalServerImpl::address() const
+{
+    QUrl result;
+    result.setPath(m_server.serverName());
+    result.setScheme(QRemoteObjectStringLiterals::local());
+
+    return result;
+}
+
+bool LocalServerImpl::listen(const QUrl &address)
+{
+#ifdef Q_OS_UNIX
+    bool res = m_server.listen(address.path());
+    if (!res) {
+        QLocalServer::removeServer(address.path());
+        res = m_server.listen(address.path());
+    }
+    return res;
+#else
+    return m_server.listen(address.path());
+#endif
+}
+
+QAbstractSocket::SocketError LocalServerImpl::serverError() const
+{
+    return m_server.serverError();
+}
+
+void LocalServerImpl::close()
 {
     close();
 }
 
-QIODevice *TcpClientIo::connection()
-{
-    return &m_socket;
-}
-
-void TcpClientIo::doClose()
-{
-    if (m_socket.isOpen()) {
-        connect(&m_socket, &QTcpSocket::disconnected, this, &QObject::deleteLater);
-        m_socket.disconnectFromHost();
-    } else {
-        this->deleteLater();
-    }
-}
-
-void TcpClientIo::connectToServer()
-{
-    if (isOpen())
-        return;
-    QHostAddress address(url().host());
-    if (address.isNull()) {
-        const QList<QHostAddress> addresses = QHostInfo::fromName(url().host()).addresses();
-        Q_ASSERT_X(addresses.size() >= 1, Q_FUNC_INFO, url().toString().toLatin1().data());
-        address = addresses.first();
-    }
-
-    m_socket.connectToHost(address, url().port());
-}
-
-bool TcpClientIo::isOpen()
-{
-    return (!isClosing() && m_socket.isOpen());
-}
-
-void TcpClientIo::onError(QAbstractSocket::SocketError error)
-{
-    qCDebug(QT_REMOTEOBJECT) << "onError" << error;
-
-    switch (error) {
-    case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
-        emit shouldReconnect(this);
-        break;
-    case QAbstractSocket::AddressInUseError:
-    case QAbstractSocket::ConnectionRefusedError:
-        //... TODO error reporting
-        break;
-    default:
-        break;
-    }
-}
-
-void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
-{
-    if (state == QAbstractSocket::ClosingState && !isClosing()) {
-        m_socket.abort();
-        emit shouldReconnect(this);
-    }
-    if (state == QAbstractSocket::ConnectedState) {
-        m_dataStream.setDevice(connection());
-        m_dataStream.resetStatus();
-    }
-}
-
+REGISTER_QTRO_SERVER(LocalServerImpl, "local");
 REGISTER_QTRO_CLIENT(LocalClientIo, "local");
-REGISTER_QTRO_CLIENT(TcpClientIo, "tcp");
 
 QT_END_NAMESPACE

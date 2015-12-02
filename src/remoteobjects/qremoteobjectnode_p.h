@@ -42,7 +42,6 @@
 #ifndef QREMOTEOBJECTNODE_P_H
 #define QREMOTEOBJECTNODE_P_H
 
-#include "qconnectionclientfactory_p.h"
 #include "qremoteobjectsourceio_p.h"
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectnode.h"

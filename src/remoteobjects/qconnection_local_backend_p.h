@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2014-2015 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,86 +39,70 @@
 **
 ****************************************************************************/
 
-#include "qconnectionabstractserver_p.h"
+#ifndef QCONNECTIONCLIENTFACTORY_P_H
+#define QCONNECTIONCLIENTFACTORY_P_H
 
-#include "qremoteobjectpacket_p.h"
-#include "qtremoteobjectglobal.h"
+#include "qconnectionfactories.h"
+
+#include <QLocalSocket>
 
 QT_BEGIN_NAMESPACE
 
-ServerIoDevice::ServerIoDevice(QObject *parent)
-    : QObject(parent), m_isClosing(false), m_curReadSize(0)
+class LocalClientIo : public ClientIoDevice
 {
-    m_dataStream.setVersion(QRemoteObjectPackets::dataStreamVersion);
-}
+    Q_OBJECT
 
-ServerIoDevice::~ServerIoDevice()
+public:
+    explicit LocalClientIo(QObject *parent = Q_NULLPTR);
+    ~LocalClientIo();
+
+    QIODevice *connection() Q_DECL_OVERRIDE;
+    void connectToServer() Q_DECL_OVERRIDE;
+    bool isOpen() Q_DECL_OVERRIDE;
+
+public Q_SLOTS:
+    void onError(QLocalSocket::LocalSocketError error);
+    void onStateChanged(QLocalSocket::LocalSocketState state);
+
+protected:
+    void doClose() Q_DECL_OVERRIDE;
+private:
+    QLocalSocket m_socket;
+};
+
+class LocalServerIo : public ServerIoDevice
 {
-}
+public:
+    explicit LocalServerIo(QLocalSocket *conn, QObject *parent = Q_NULLPTR);
 
-bool ServerIoDevice::read(QRemoteObjectPackets::QRemoteObjectPacketTypeEnum &type, QString &name)
+    QIODevice *connection() const Q_DECL_OVERRIDE;
+protected:
+    void doClose() Q_DECL_OVERRIDE;
+
+private:
+    QLocalSocket *m_connection;
+};
+
+class LocalServerImpl : public QConnectionAbstractServer
 {
-    qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()" << m_curReadSize << bytesAvailable();
+    Q_OBJECT
+    Q_DISABLE_COPY(LocalServerImpl)
 
-    if (m_curReadSize == 0) {
-        if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
-            return false;
+public:
+    explicit LocalServerImpl(QObject *parent);
+    ~LocalServerImpl();
 
-        m_dataStream >> m_curReadSize;
-    }
+    bool hasPendingConnections() const Q_DECL_OVERRIDE;
+    ServerIoDevice *_nextPendingConnection() Q_DECL_OVERRIDE;
+    QUrl address() const Q_DECL_OVERRIDE;
+    bool listen(const QUrl &address) Q_DECL_OVERRIDE;
+    QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
+    void close() Q_DECL_OVERRIDE;
 
-    qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
-
-    if (bytesAvailable() < m_curReadSize)
-        return false;
-
-    m_curReadSize = 0;
-    return fromDataStream(m_dataStream, type, name);
-}
-
-void ServerIoDevice::close()
-{
-    m_isClosing = true;
-    doClose();
-}
-
-void ServerIoDevice::write(const QByteArray &data)
-{
-    if (connection()->isOpen() && !m_isClosing)
-        connection()->write(data);
-}
-
-void ServerIoDevice::write(const QByteArray &data, qint64 size)
-{
-    if (connection()->isOpen() && !m_isClosing)
-        connection()->write(data.data(), size);
-}
-
-qint64 ServerIoDevice::bytesAvailable()
-{
-    return connection()->bytesAvailable();
-}
-
-void ServerIoDevice::initializeDataStream()
-{
-    m_dataStream.setDevice(connection());
-    m_dataStream.resetStatus();
-}
-
-QConnectionAbstractServer::QConnectionAbstractServer(QObject *parent)
-    : QObject(parent)
-{
-}
-
-QConnectionAbstractServer::~QConnectionAbstractServer()
-{
-}
-
-ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
-{
-    ServerIoDevice *iodevice = _nextPendingConnection();
-    iodevice->initializeDataStream();
-    return iodevice;
-}
+private:
+    QLocalServer m_server;
+};
 
 QT_END_NAMESPACE
+
+#endif

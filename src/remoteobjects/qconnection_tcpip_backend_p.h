@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2014-2015 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,30 +39,37 @@
 **
 ****************************************************************************/
 
-#ifndef QCONNECTIONSERVERFACTORY_P_H
-#define QCONNECTIONSERVERFACTORY_P_H
+#ifndef QCONNECTIONTCPIPBACKEND_P_H
+#define QCONNECTIONTCPIPBACKEND_P_H
 
-#include "qconnectionabstractserver_p.h"
+#include "qconnectionfactories.h"
 
-#include <QLocalServer>
-#include <QTcpServer>
-#include <QUrl>
+#include <QTcpSocket>
 
 QT_BEGIN_NAMESPACE
 
-class LocalServerIo : public ServerIoDevice
+class TcpClientIo : public ClientIoDevice
 {
-public:
-    explicit LocalServerIo(QLocalSocket *conn, QObject *parent = Q_NULLPTR);
+    Q_OBJECT
 
-    QIODevice *connection() const Q_DECL_OVERRIDE;
+public:
+    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
+    ~TcpClientIo();
+
+    QIODevice *connection() Q_DECL_OVERRIDE;
+    void connectToServer() Q_DECL_OVERRIDE;
+    bool isOpen() Q_DECL_OVERRIDE;
+
+public Q_SLOTS:
+    void onError(QAbstractSocket::SocketError error);
+    void onStateChanged(QAbstractSocket::SocketState state);
+
 protected:
     void doClose() Q_DECL_OVERRIDE;
 
 private:
-    QLocalSocket *m_connection;
+    QTcpSocket m_socket;
 };
-
 
 class TcpServerIo : public ServerIoDevice
 {
@@ -76,28 +83,6 @@ protected:
 private:
     QTcpSocket *m_connection;
 };
-
-
-class LocalServerImpl : public QConnectionAbstractServer
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(LocalServerImpl)
-
-public:
-    explicit LocalServerImpl(QObject *parent);
-    ~LocalServerImpl();
-
-    bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *_nextPendingConnection() Q_DECL_OVERRIDE;
-    QUrl address() const Q_DECL_OVERRIDE;
-    bool listen(const QUrl &address) Q_DECL_OVERRIDE;
-    QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
-
-private:
-    QLocalServer m_server;
-};
-
 
 class TcpServerImpl : public QConnectionAbstractServer
 {
@@ -120,25 +105,6 @@ private:
     QUrl m_originalUrl; // necessary because of a QHostAddress bug
 };
 
-struct QtROServerFactory {
-    static QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
-        Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
-        return iter == static_creators().constEnd() ? 0 : (*iter)(parent); // if found, execute the creator function pointer
-    }
-
-private:
-    typedef QConnectionAbstractServer *Creator_t(QObject *); // function pointer to create QConnectionAbstractServer
-    typedef QHash<QString, Creator_t*> Creators_t; // map from id to creator
-    static Creators_t& static_creators() { static Creators_t s_creators; return s_creators; } // static instance of map
-    template<class T = int> struct Register {
-        static QConnectionAbstractServer *create(QObject *parent) { return new T(parent); }
-        static Creator_t *init_creator(const QString &id) { return static_creators()[id] = create; }
-        static Creator_t *creator;
-    };
-};
-
-#define REGISTER_QTRO_SERVER(T, STR) template<> QtROServerFactory::Creator_t* QtROServerFactory::Register<T>::creator = QtROServerFactory::Register<T>::init_creator(QLatin1String(STR))
-
 QT_END_NAMESPACE
+#endif // QCONNECTIONTCPIPBACKEND_P_H
 
-#endif

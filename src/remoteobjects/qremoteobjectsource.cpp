@@ -42,9 +42,7 @@
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 
-#include "qconnectionabstractserver_p.h"
-#include "qremoteobjectpacket_p.h"
-#include "qtremoteobjectglobal.h"
+#include "qconnectionfactories.h"
 #include "qremoteobjectsourceio_p.h"
 
 #include <QMetaProperty>

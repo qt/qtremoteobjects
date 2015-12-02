@@ -50,6 +50,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace QtRemoteObjects;
+
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
     : m_server(QtROServerFactory::create(address, this))
 {
@@ -151,7 +153,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
 {
     // Assert the invariant here conn is of type QIODevice
     ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
-    QRemoteObjectPackets::QRemoteObjectPacketTypeEnum packetType;
+    QRemoteObjectPacketTypeEnum packetType;
 
     do {
 
