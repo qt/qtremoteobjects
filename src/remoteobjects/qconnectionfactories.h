@@ -43,6 +43,7 @@
 #define QCONNECTIONFACTORIES_H
 
 #include <QAbstractSocket>
+#include <QDataStream>
 #include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE
@@ -194,4 +195,3 @@ private:
 QT_END_NAMESPACE
 
 #endif // QCONNECTIONFACTORIES_H
-

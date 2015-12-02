@@ -44,6 +44,7 @@
 
 #include "qconnectionfactories.h"
 
+#include <QLocalServer>
 #include <QLocalSocket>
 
 QT_BEGIN_NAMESPACE

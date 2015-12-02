@@ -44,6 +44,7 @@
 
 #include "qconnectionfactories.h"
 
+#include <QTcpServer>
 #include <QTcpSocket>
 
 QT_BEGIN_NAMESPACE
@@ -107,4 +108,3 @@ private:
 
 QT_END_NAMESPACE
 #endif // QCONNECTIONTCPIPBACKEND_P_H
-

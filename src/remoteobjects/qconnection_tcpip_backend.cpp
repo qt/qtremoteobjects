@@ -41,6 +41,8 @@
 
 #include "qconnection_tcpip_backend_p.h"
 
+#include <QHostInfo>
+
 QT_BEGIN_NAMESPACE
 
 TcpClientIo::TcpClientIo(QObject *parent)
