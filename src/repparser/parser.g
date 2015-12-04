@@ -360,7 +360,6 @@ bool ASTClass::isValid() const
 RepParser::RepParser(QIODevice &outputDevice)
     : QRepRegexParser()
 {
-    setParserName(QStringLiteral("REPC"));
     setBufferFromDevice(&outputDevice);
 }
 

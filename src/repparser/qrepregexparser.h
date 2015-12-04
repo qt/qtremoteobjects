@@ -98,11 +98,6 @@ public:
         qWarning() << m_errorString;
     }
 
-    void setParserName(const QString &name)
-    {
-        m_parserName = name;
-    }
-
     inline const QMap<QString, QString>& captured() const
     {
         return m_captured;
@@ -163,7 +158,7 @@ private:
     QStringList m_tokenNames;
     QMap<QString, QString> m_captured;
     int m_maxMatchLen;
-    QString m_parserName, m_errorString;
+    QString m_errorString;
     QVector<QMap<int, QString> > m_names; //storage for match names
 };
 
@@ -228,7 +223,6 @@ bool QRepRegexParser<_Parser, _Table>::parse()
 template <typename _Parser, typename _Table>
 QRepRegexParser<_Parser, _Table>::QRepRegexParser(int maxMatchLen) : d(new Data()), m_loc(0), m_lastNewlinePosition(0), m_lineno(1), m_debug(0), m_maxMatchLen(maxMatchLen)
 {
-    m_parserName = QLatin1String("QRegexParser");
     REGEX re(QStringLiteral("\\[([_a-zA-Z][_0-9a-zA-Z]*)(,\\s*M)?\\](.+)$"));
 #ifdef QT_BOOTSTRAPPED
     REGEX nameMatch(QStringLiteral("\\((\\?<(.*)>).+\\)"));
