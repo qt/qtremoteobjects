@@ -149,11 +149,6 @@ struct InsertedRow
     int m_end;
 };
 
-inline QDebug operator <<(QDebug dbg, const InsertedRow &row)
-{
-    return dbg.nospace() << "Index(" << row.m_index << ", " << row.m_start << ", " << row.m_end << ")";
-}
-
 struct WaitForDataChanged
 {
     struct IndexPair
@@ -230,6 +225,13 @@ struct WaitForDataChanged
 
 QTextStream cout(stdout, QIODevice::WriteOnly);
 
+//Keep in case we need detailed debugging in the future...
+#if 0
+inline QDebug operator <<(QDebug dbg, const InsertedRow &row)
+{
+    return dbg.nospace() << "Index(" << row.m_index << ", " << row.m_start << ", " << row.m_end << ")";
+}
+
 inline void dumpModel(const QAbstractItemModel *model, const QModelIndex &parent = QModelIndex())
 {
     int level = 0;
@@ -263,6 +265,7 @@ inline void dumpModel(const QAbstractItemModel *model, const QModelIndex &parent
         }
     }
 }
+#endif
 
 void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
 {
