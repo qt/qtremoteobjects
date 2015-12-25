@@ -377,8 +377,8 @@ void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 {
     qCDebug(QT_REMOTEOBJECT) << "configurePrivate starting for" << this->m_objectName;
     //We need to connect the Replicant only signals too
-    const QMetaObject *m =  qobject_cast<QRemoteObjectDynamicReplica *>(rep) ?
-                &QRemoteObjectReplica::staticMetaObject : &QRemoteObjectDynamicReplica::staticMetaObject;
+    const QMetaObject *m =  rep->inherits("QRemoteObjectDynamicReplica") ?
+                &QRemoteObjectDynamicReplica::staticMetaObject : &QRemoteObjectReplica::staticMetaObject;
     for (int i = m->methodOffset(); i < m->methodCount(); ++i)
     {
         const QMetaMethod mm = m->method(i);
