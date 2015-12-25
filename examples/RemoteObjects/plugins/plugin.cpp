@@ -117,7 +117,7 @@ public:
         Q_UNUSED(uri);
         Q_ASSERT(uri == QLatin1String("TimeExample"));
         engine->addImportPath(QStringLiteral("qrc:/qml"));
-        m_client = QRemoteObjectNode::createNodeConnectedToRegistry();
+        m_client.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
     }
     void registerTypes(const char *uri)
     {

@@ -85,8 +85,8 @@ int main(int argc, char *argv[])
     #elif defined(Q_OS_WIN32)
         SetConsoleCtrlHandler((PHANDLER_ROUTINE)WinHandler, TRUE);
     #endif
-    QRemoteObjectNode node = QRemoteObjectNode::createRegistryHostNode();
-    QRemoteObjectNode node2 = QRemoteObjectNode::createHostNodeConnectedToRegistry();
+    QRemoteObjectHost node(QUrl(QStringLiteral("local:replica")),QUrl(QStringLiteral("local:registry")));
+    QRemoteObjectRegistryHost node2(QUrl(QStringLiteral("local:registry")));
     MinuteTimer timer;
     node2.enableRemoting(&timer);
 

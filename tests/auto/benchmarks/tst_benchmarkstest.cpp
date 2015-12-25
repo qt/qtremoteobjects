@@ -55,7 +55,7 @@ class BenchmarksTest : public QObject
 public:
     BenchmarksTest();
 private:
-    QRemoteObjectNode m_basicServer;
+    QRemoteObjectHost m_basicServer;
     QRemoteObjectNode m_basicClient;
     QScopedPointer<LocalDataCenterSimpleSource> dataCenterLocal;
 private Q_SLOTS:
@@ -71,14 +71,14 @@ BenchmarksTest::BenchmarksTest()
 }
 
 void BenchmarksTest::initTestCase() {
-    m_basicServer = QRemoteObjectNode::createHostNode();
+    m_basicServer.setHostUrl(QUrl(QStringLiteral("local:replica")));
     dataCenterLocal.reset(new LocalDataCenterSimpleSource);
     dataCenterLocal->setData1(5);
     const bool remoted = m_basicServer.enableRemoting(dataCenterLocal.data());
     Q_ASSERT(remoted);
     Q_UNUSED(remoted);
 
-    m_basicClient.connect();
+    m_basicClient.connectToNode(QUrl(QStringLiteral("local:replica")));
     Q_ASSERT(m_basicClient.lastError() == QRemoteObjectNode::NoError);
 }
 

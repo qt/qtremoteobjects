@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
     QObject remotedObject;
     remotedObject.setObjectName(QStringLiteral("connectme"));
-    QRemoteObjectNode node = QRemoteObjectNode::createHostNode(QUrl(QStringLiteral("local:crashMe")));
+    QRemoteObjectHost node(QUrl(QStringLiteral("local:crashMe")));
     node.enableRemoting(&remotedObject);
 
     return a.exec();

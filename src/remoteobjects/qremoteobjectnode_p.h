@@ -42,13 +42,13 @@
 #ifndef QREMOTEOBJECTNODE_P_H
 #define QREMOTEOBJECTNODE_P_H
 
+#include <QtCore/private/qobject_p.h>
 #include "qremoteobjectsourceio_p.h"
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectnode.h"
 
 #include <QBasicTimer>
 #include <QMutex>
-#include <QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
@@ -56,21 +56,21 @@ QT_BEGIN_NAMESPACE
 #define qROWarning(x) qCWarning(QT_REMOTEOBJECT) << qPrintable(QtPrivate::deref_for_methodcall(x).objectName())
 #define qROCritical(x) qCCritical(QT_REMOTEOBJECT) << qPrintable(QtPrivate::deref_for_methodcall(x).objectName())
 #define qROFatal(x) qCFatal(QT_REMOTEOBJECT) << qPrintable(QtPrivate::deref_for_methodcall(x).objectName())
+#define qROPrivDebug() qCDebug(QT_REMOTEOBJECT) << qPrintable(q_ptr->objectName())
+#define qROPrivWarning() qCWarning(QT_REMOTEOBJECT) << qPrintable(q_ptr->objectName())
+#define qROPrivCritical() qCCritical(QT_REMOTEOBJECT) << qPrintable(q_ptr->objectName())
+#define qROPrivFatal() qCFatal(QT_REMOTEOBJECT) << qPrintable(q_ptr->objectName())
 
 class QRemoteObjectRegistry;
 class QRegistrySource;
 
-class QRemoteObjectNodePrivate : public QObject
+class QRemoteObjectNodePrivate : public QObjectPrivate
 {
-    Q_OBJECT
-
 public:
     QRemoteObjectNodePrivate();
     virtual ~QRemoteObjectNodePrivate();
 
-    QRemoteObjectSourceLocations remoteObjectAddresses() const;
-
-    void timerEvent(QTimerEvent*);
+    virtual QRemoteObjectSourceLocations remoteObjectAddresses() const;
 
     QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &);
 
@@ -81,20 +81,17 @@ public:
     bool hasInstance(const QString &name);
     void setRegistry(QRemoteObjectRegistry *);
 
-Q_SIGNALS:
-    void remoteObjectAdded(const QRemoteObjectSourceLocation &);
-    void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
-
-public Q_SLOTS:
     void onClientRead(QObject *obj);
     void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry);
     void onRemoteObjectSourceRemoved(const QRemoteObjectSourceLocation &entry);
     void onRegistryInitialized();
     void onShouldReconnect(ClientIoDevice *ioDevice);
 
+    virtual void handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
+    void initialize();
+
 public:
     QAtomicInt isInitialized;
-    QScopedPointer<QRemoteObjectSourceIo> remoteObjectIo;
     QMutex mutex;
     QUrl registryAddress;
     QHash<QString, QWeakPointer<QRemoteObjectReplicaPrivate> > replicas;
@@ -102,8 +99,7 @@ public:
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
     QSignalMapper clientRead;
-    QScopedPointer<QRemoteObjectRegistry> registry;
-    QScopedPointer<QRegistrySource> registrySource;
+    QRemoteObjectRegistry *registry;
     int retryInterval;
     QBasicTimer reconnectTimer;
     QRemoteObjectNode::ErrorCode m_lastError;
@@ -111,6 +107,37 @@ public:
     QStringList m_rxObjects;
     QVariantList m_rxArgs;
     QVariant m_rxValue;
+    Q_DECLARE_PUBLIC(QRemoteObjectNode);
+};
+
+class QRemoteObjectHostBasePrivate : public QRemoteObjectNodePrivate
+{
+public:
+    QRemoteObjectHostBasePrivate();
+    virtual ~QRemoteObjectHostBasePrivate() {}
+    void handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) Q_DECL_OVERRIDE;
+
+public:
+    QRemoteObjectSourceIo *remoteObjectIo;
+    Q_DECLARE_PUBLIC(QRemoteObjectHostBase);
+};
+
+class QRemoteObjectHostPrivate : public QRemoteObjectHostBasePrivate
+{
+public:
+    QRemoteObjectHostPrivate();
+    virtual ~QRemoteObjectHostPrivate() {}
+    Q_DECLARE_PUBLIC(QRemoteObjectHost);
+};
+
+class QRemoteObjectRegistryHostPrivate : public QRemoteObjectHostBasePrivate
+{
+public:
+    QRemoteObjectRegistryHostPrivate();
+    virtual ~QRemoteObjectRegistryHostPrivate() {}
+    QRemoteObjectSourceLocations remoteObjectAddresses() const Q_DECL_OVERRIDE;
+    QRegistrySource *registrySource;
+    Q_DECLARE_PUBLIC(QRemoteObjectRegistryHost);
 };
 
 QT_END_NAMESPACE

@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
 
 
-    QRemoteObjectNode node = QRemoteObjectNode::createNodeConnectedToRegistry();
+    QRemoteObjectNode node(QUrl(QStringLiteral("local:registry")));
     QTreeView view;
     view.setWindowTitle(QStringLiteral("RemoteView"));
     view.resize(640,480);

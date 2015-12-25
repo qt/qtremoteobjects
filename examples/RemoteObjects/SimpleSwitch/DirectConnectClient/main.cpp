@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
 
     QSharedPointer<SimpleSwitchReplica> ptr;
 
-    QRemoteObjectNode repNode = QRemoteObjectNode(); // create remote object node
-    repNode.connect(); // connect with remote host node
+    QRemoteObjectNode repNode; // create remote object node
+    repNode.connectToNode(QUrl(QStringLiteral("local:replica"))); // connect with remote host node
 
     ptr.reset(repNode.acquire<SimpleSwitchReplica>()); // acquire replica of source from host node
 

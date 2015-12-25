@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
     SimpleSwitch srcSwitch; // create simple switch
 
-    QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNode(); // create host node without Regsitry
+    QRemoteObjectHost srcNode(QUrl(QStringLiteral("local:replica"))); // create host node without Regsitry
     srcNode.enableRemoting(&srcSwitch); // enable remoting/Sharing
 
     return a.exec();

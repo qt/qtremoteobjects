@@ -50,14 +50,19 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectReplica;
-class QRemoteObjectNodePrivate;
 class SourceApiMap;
 class QAbstractItemModel;
 class QAbstractItemReplica;
 class QItemSelectionModel;
+class QRemoteObjectNodePrivate;
+class QRemoteObjectHostBasePrivate;
+class QRemoteObjectHostPrivate;
+class QRemoteObjectRegistryHostPrivate;
+class ClientIoDevice;
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode : public QObject
 {
+    Q_OBJECT
 public:
 
     enum ErrorCode{
@@ -73,24 +78,12 @@ public:
         HostUrlInvalid
     };
 
-    QRemoteObjectNode();
-    ~QRemoteObjectNode();
+    QRemoteObjectNode(QObject *parent = 0);
+    QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = 0);
+    virtual ~QRemoteObjectNode();
 
-    //TODO maybe set defaults from a #define to allow override?
-    static QRemoteObjectNode createHostNode(const QUrl &hostAddress = QUrl(QString::fromLatin1("local:replica")));
-    static QRemoteObjectNode createRegistryHostNode(const QUrl &hostAddress = QUrl(QString::fromLatin1("local:registry")));
-    static QRemoteObjectNode createNodeConnectedToRegistry(const QUrl &registryAddress = QUrl(QString::fromLatin1("local:registry")));
-    static QRemoteObjectNode createHostNodeConnectedToRegistry(const QUrl &hostAddress = QUrl(QString::fromLatin1("local:replica")),
-                                                         const QUrl &registryAddress = QUrl(QString::fromLatin1("local:registry")));
-    QUrl hostUrl() const;
-    bool setHostUrl(const QUrl &hostAddress);
-    QUrl registryUrl() const;
-    bool setRegistryUrl(const QUrl &registryAddress);
-    bool hostRegistry();
-    bool waitForRegistry(int timeout = 30000);
-    bool connect(const QUrl &address=QUrl(QString::fromLatin1("local:replica")));
-    const QRemoteObjectRegistry *registry() const;
-    void setName(const QString &name);
+    bool connectToNode(const QUrl &address);
+    virtual void setName(const QString &name);
     template < class ObjectType >
     ObjectType *acquire(const QString &name = QString())
     {
@@ -99,6 +92,40 @@ public:
     }
     QRemoteObjectDynamicReplica *acquire(const QString &name);
     QAbstractItemReplica *acquireModel(const QString &name);
+    QUrl registryUrl() const;
+    bool setRegistryUrl(const QUrl &registryAddress);
+    bool waitForRegistry(int timeout = 30000);
+    const QRemoteObjectRegistry *registry() const;
+
+    ErrorCode lastError() const;
+
+    void timerEvent(QTimerEvent*);
+
+Q_SIGNALS:
+    void remoteObjectAdded(const QRemoteObjectSourceLocation &);
+    void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
+
+
+protected:
+    QRemoteObjectNode(QRemoteObjectNodePrivate &, QObject *parent);
+
+private:
+    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &name = QString());
+    Q_DECLARE_PRIVATE(QRemoteObjectNode)
+    Q_PRIVATE_SLOT(d_func(), void onClientRead(QObject *obj))
+    Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry))
+    Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceRemoved(const QRemoteObjectSourceLocation &entry))
+    Q_PRIVATE_SLOT(d_func(), void onRegistryInitialized())
+    Q_PRIVATE_SLOT(d_func(), void onShouldReconnect(ClientIoDevice *ioDevice))
+};
+
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode
+{
+    Q_OBJECT
+public:
+    void setName(const QString &name) Q_DECL_OVERRIDE;
+    QUrl hostUrl() const;
+    virtual bool setHostUrl(const QUrl &hostAddress);
 
     template <template <typename> class ApiDefinition, typename ObjectType>
     bool enableRemoting(ObjectType *object)
@@ -110,14 +137,44 @@ public:
     bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = 0);
     bool disableRemoting(QObject *remoteObject);
 
-    ErrorCode lastError() const;
+protected:
+    QRemoteObjectHostBase(QRemoteObjectHostBasePrivate &, QObject *);
 
 private:
-    QRemoteObjectNode(const QUrl &hostAddress, const QUrl &registryAddress);
-    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &name = QString::fromLatin1(""));
-    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=Q_NULLPTR);
+    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=0);
+    Q_DECLARE_PRIVATE(QRemoteObjectHostBase)
+};
 
-    QSharedPointer<QRemoteObjectNodePrivate> d_ptr;
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHost : public QRemoteObjectHostBase
+{
+    Q_OBJECT
+public:
+    QRemoteObjectHost(QObject *parent = Q_NULLPTR);
+    QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = Q_NULLPTR);
+    QRemoteObjectHost(const QUrl &address, QObject *parent);
+    virtual ~QRemoteObjectHost();
+
+protected:
+    QRemoteObjectHost(QRemoteObjectHostPrivate &, QObject *);
+
+private:
+    Q_DECLARE_PRIVATE(QRemoteObjectHost)
+};
+
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistryHost : public QRemoteObjectHostBase
+{
+    Q_OBJECT
+public:
+    QRemoteObjectRegistryHost(const QUrl &registryAddress = QUrl(), QObject *parent = Q_NULLPTR);
+    virtual ~QRemoteObjectRegistryHost();
+    bool setHostUrl(const QUrl &hostAddress) Q_DECL_OVERRIDE;
+
+protected:
+    QRemoteObjectRegistryHost(QRemoteObjectRegistryHostPrivate &, QObject *);
+
+private:
+    bool hostRegistry();
+    Q_DECLARE_PRIVATE(QRemoteObjectRegistryHost)
 };
 
 QT_END_NAMESPACE

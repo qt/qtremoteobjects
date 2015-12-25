@@ -130,9 +130,9 @@ int main(int argc, char *argv[])
     roles << Qt::DisplayRole << Qt::BackgroundRole;
 
     qDebug() << "Creating registry host";
-    QRemoteObjectNode node = QRemoteObjectNode::createRegistryHostNode();
+    QRemoteObjectRegistryHost node(QUrl(QStringLiteral("local:registry")));
 
-    QRemoteObjectNode node2 = QRemoteObjectNode::createHostNodeConnectedToRegistry();
+    QRemoteObjectHost node2(QUrl(QStringLiteral("local:replica")), QUrl(QStringLiteral("local:registry")));
     node2.enableRemoting(&sourceModel, QStringLiteral("RemoteModel"), roles);
 
     QTreeView view;

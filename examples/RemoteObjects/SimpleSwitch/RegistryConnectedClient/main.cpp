@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
     QSharedPointer<QRemoteObjectDynamicReplica> ptr; // shared pointer to hold replica
 
-    QRemoteObjectNode repNode = QRemoteObjectNode::createNodeConnectedToRegistry();
+    QRemoteObjectNode repNode(QUrl(QStringLiteral("local:registry")));
 
     ptr.reset(repNode.acquire("SimpleSwitch")); // acquire replica of source from host node
 

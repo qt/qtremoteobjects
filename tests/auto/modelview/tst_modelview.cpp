@@ -601,9 +601,9 @@ class TestModelView: public QObject
 {
     Q_OBJECT
 
-    QRemoteObjectNode m_basicServer;
+    QRemoteObjectHost m_basicServer;
     QRemoteObjectNode m_client;
-    QRemoteObjectNode m_registryServer;
+    QRemoteObjectRegistryHost m_registryServer;
     QStandardItemModel m_sourceModel;
     RolenamesListModel m_listModel;
 
@@ -639,9 +639,10 @@ void TestModelView::initTestCase()
                                      "qt.remoteobjects.warning=false");
     //Setup registry
     //Registry needs to be created first until we get the retry mechanism implemented
-    m_registryServer = QRemoteObjectNode::createRegistryHostNode();
+    m_registryServer.setHostUrl(QUrl(QStringLiteral("local:registry")));
 
-    m_basicServer = QRemoteObjectNode::createHostNodeConnectedToRegistry();
+    m_basicServer.setHostUrl(QUrl(QStringLiteral("local:replica")));
+    m_basicServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
 
     static const int modelSize = 20;
 
@@ -683,7 +684,7 @@ void TestModelView::initTestCase()
     roles << Qt::UserRole << Qt::UserRole+1;
     m_basicServer.enableRemoting(&m_listModel, "testRoleNames", roles);
 
-    m_client = QRemoteObjectNode::createNodeConnectedToRegistry();
+    m_client.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
 }
 
 void TestModelView::testEmptyModel()
