@@ -639,7 +639,7 @@ void TestModelView::initTestCase()
                                      "qt.remoteobjects.warning=false");
     //Setup registry
     //Registry needs to be created first until we get the retry mechanism implemented
-    m_registryServer.setHostUrl(QUrl(QStringLiteral("local:registry")));
+    m_registryServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
 
     m_basicServer.setHostUrl(QUrl(QStringLiteral("local:replica")));
     m_basicServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));

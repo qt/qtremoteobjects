@@ -129,7 +129,7 @@ private slots:
 
         //Setup registry
         //Registry needs to be created first until we get the retry mechanism implemented
-        m_registryServer.setHostUrl(QUrl(QStringLiteral("local:registry")));
+        m_registryServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
         SET_NODE_NAME(m_registryServer);
 
         SET_NODE_NAME(m_client);

@@ -645,7 +645,7 @@ QRemoteObjectRegistryHost::QRemoteObjectRegistryHost(const QUrl &registryAddress
     if (registryAddress.isEmpty())
         return;
 
-    setHostUrl(registryAddress);
+    setRegistryUrl(registryAddress);
 }
 
 QRemoteObjectRegistryHost::QRemoteObjectRegistryHost(QRemoteObjectRegistryHostPrivate &d, QObject *parent)
@@ -679,10 +679,8 @@ void QRemoteObjectHostBase::setName(const QString &name)
 }
 
 /*!
-    Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
-    is not a Host node, it return an empty QUrl.
-
-    \sa setHostUrl()
+    \internal The HostBase version of this method is protected so the method
+    isn't exposed on RegistryHost nodes.
 */
 QUrl QRemoteObjectHostBase::hostUrl() const
 {
@@ -691,9 +689,8 @@ QUrl QRemoteObjectHostBase::hostUrl() const
 }
 
 /*!
-    Sets the \a hostAddress for a host QRemoteObjectNode.
-
-    Returns \c true if the Host address is set, otherwise \c false.
+    \internal The HostBase version of this method is protected so the method
+    isn't exposed on RegistryHost nodes.
 */
 bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
 {
@@ -727,12 +724,50 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
     return true;
 }
 
+/*!
+    Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
+    is not a Host node, it return an empty QUrl.
 
-bool QRemoteObjectRegistryHost::setHostUrl(const QUrl &hostAddress)
+    \sa setHostUrl()
+*/
+QUrl QRemoteObjectHost::hostUrl() const
 {
-    if (QRemoteObjectHostBase::setHostUrl(hostAddress))
-    {
-        return hostRegistry();
+    return QRemoteObjectHostBase::hostUrl();
+}
+
+/*!
+    Sets the \a hostAddress for a host QRemoteObjectNode.
+
+    Returns \c true if the Host address is set, otherwise \c false.
+*/
+bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress)
+{
+    return QRemoteObjectHostBase::setHostUrl(hostAddress);
+}
+
+bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
+{
+    Q_D(QRemoteObjectRegistryHost);
+    if (setHostUrl(registryUrl)) {
+        if (!d->remoteObjectIo) {
+            d->m_lastError = ServerAlreadyCreated;
+            return false;
+        } else if (d->isInitialized.loadAcquire() || d->registry) {
+            d->m_lastError = RegistryAlreadyHosted;
+            return false;
+        }
+
+        QRegistrySource *remoteObject = new QRegistrySource(this);
+        enableRemoting(remoteObject);
+        d->registryAddress = d->remoteObjectIo->serverAddress();
+        d->registrySource = remoteObject;
+        //Connect RemoteObjectSourceIo->remoteObject[Added/Removde] to the registry Slot
+        QObject::connect(this, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), d->registrySource, SLOT(addSource(QRemoteObjectSourceLocation)));
+        QObject::connect(this, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), d->registrySource, SLOT(removeSource(QRemoteObjectSourceLocation)));
+        QObject::connect(d->remoteObjectIo, SIGNAL(serverRemoved(QUrl)),d->registrySource, SLOT(removeServer(QUrl)));
+        //onAdd/Remove update the known remoteObjects list in the RegistrySource, so no need to connect to the RegistrySource remoteObjectAdded/Removed signals
+        d->setRegistry(acquire<QRemoteObjectRegistry>());
+        return true;
     }
     return false;
 }
@@ -758,9 +793,7 @@ QUrl QRemoteObjectNode::registryUrl() const
 }
 
 /*!
-    Sets the \a registryAddress of the registry for a QRemoteObjectNode. It is
-    recommended that the static constructors for a Node be used to establish a
-    Host Node during Node construction.
+    Sets the \a registryAddress of the registry for a QRemoteObjectNode.
 
     Returns \c true if the Registry is set and initialized, otherwise it
     returns \c false. This call blocks waiting for the Registry to initialize.
@@ -798,36 +831,6 @@ void QRemoteObjectNodePrivate::setRegistry(QRemoteObjectRegistry *reg)
     //Make sure we handle new RemoteObjectSources on Registry...
     QObject::connect(reg, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), q, SLOT(onRemoteObjectSourceAdded(QRemoteObjectSourceLocation)));
     QObject::connect(reg, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), q, SLOT(onRemoteObjectSourceRemoved(QRemoteObjectSourceLocation)));
-}
-
-/*!
-    \internal Sets the Node to be the registry host. Returns \c
-    false if the registry is already being hosted or if the node has not been
-    initialized, and returns \c true if the registry is successfully set.
-*/
-bool QRemoteObjectRegistryHost::hostRegistry()
-{
-    Q_D(QRemoteObjectRegistryHost);
-    if (!d->remoteObjectIo) {
-        d->m_lastError = ServerAlreadyCreated;
-        return false;
-    }
-    else if (d->isInitialized.loadAcquire() || d->registry) {
-        d->m_lastError = RegistryAlreadyHosted;
-        return false;
-    }
-
-    QRegistrySource *remoteObject = new QRegistrySource(this);
-    enableRemoting(remoteObject);
-    d->registryAddress = d->remoteObjectIo->serverAddress();
-    d->registrySource = remoteObject;
-    //Connect RemoteObjectSourceIo->remoteObject[Added/Removde] to the registry Slot
-    QObject::connect(this, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), d->registrySource, SLOT(addSource(QRemoteObjectSourceLocation)));
-    QObject::connect(this, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), d->registrySource, SLOT(removeSource(QRemoteObjectSourceLocation)));
-    QObject::connect(d->remoteObjectIo, SIGNAL(serverRemoved(QUrl)),d->registrySource, SLOT(removeServer(QUrl)));
-    //onAdd/Remove update the known remoteObjects list in the RegistrySource, so no need to connect to the RegistrySource remoteObjectAdded/Removed signals
-    d->setRegistry(acquire<QRemoteObjectRegistry>());
-    return true;
 }
 
 /*!
