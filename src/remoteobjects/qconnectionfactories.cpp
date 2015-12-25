@@ -79,6 +79,8 @@ ClientIoDevice::ClientIoDevice(QObject *parent)
 
 ClientIoDevice::~ClientIoDevice()
 {
+    if (!m_isClosing)
+        close();
 }
 
 void ClientIoDevice::close()

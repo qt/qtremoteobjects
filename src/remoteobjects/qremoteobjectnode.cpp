@@ -84,10 +84,6 @@ QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
 
 QRemoteObjectNodePrivate::~QRemoteObjectNodePrivate()
 {
-    Q_FOREACH (ClientIoDevice *conn, knownNodes) {
-        conn->close();
-        conn->deleteLater();
-    }
 }
 
 QRemoteObjectSourceLocations QRemoteObjectNodePrivate::remoteObjectAddresses() const
@@ -218,7 +214,6 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
         return false;
     }
 
-    knownNodes.insert(connection);
     qRODebug(this) << "Replica Connection isValid" << connection->isOpen();
     connect(connection, SIGNAL(shouldReconnect(ClientIoDevice*)), this, SLOT(onShouldReconnect(ClientIoDevice*)));
     connection->connectToServer();

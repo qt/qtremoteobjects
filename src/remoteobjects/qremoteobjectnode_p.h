@@ -99,7 +99,6 @@ public:
     QUrl registryAddress;
     QHash<QString, QWeakPointer<QRemoteObjectReplicaPrivate> > replicas;
     QMap<QString, ClientIoDevice*> connectedSources;
-    QSet<ClientIoDevice*> knownNodes;
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
     QSignalMapper clientRead;
