@@ -52,8 +52,9 @@ QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
 
-QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address)
-    : m_server(QtROServerFactory::create(address, this))
+QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
+    : QObject(parent)
+    , m_server(QtROServerFactory::create(address, this))
 {
     if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;

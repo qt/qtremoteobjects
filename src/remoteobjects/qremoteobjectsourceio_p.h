@@ -59,7 +59,7 @@ class QRemoteObjectSourceIo : public QObject
 {
     Q_OBJECT
 public:
-    explicit QRemoteObjectSourceIo(const QUrl &address);
+    explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = Q_NULLPTR);
     ~QRemoteObjectSourceIo();
 
     bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name);
@@ -78,11 +78,7 @@ Q_SIGNALS:
     void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
     void serverRemoved(const QUrl& url);
 
-private:
-    friend class QRemoteObjectNode;
-    friend class QRemoteObjectNodePrivate;
-    friend class QRemoteObjectSource;
-
+public:
     void registerSource(QRemoteObjectSource *pp);
     void unregisterSource(QRemoteObjectSource *pp);
 
