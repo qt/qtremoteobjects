@@ -114,14 +114,32 @@ void QRemoteObjectNode::timerEvent(QTimerEvent*)
     qRODebug(this) << "timerEvent" << d->pendingReconnect.size();
 }
 
-QRemoteObjectReplica *QRemoteObjectNodePrivate::acquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
+/*!
+    \internal In order to create a Replica from QML, it is necessary for the
+    Replica to have a default constructor.  In order for it to be properly
+    constructed, there needs to be a way to associate the Replica with a
+    Node and start the Replica initialization.  Thus we need a public
+    method on Node to facilitate that.  That's initializeReplica.
+*/
+void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const QString &name)
 {
-    qROPrivDebug() << "Starting acquire for" << name;
+    Q_D(QRemoteObjectNode);
+    if (instance->inherits("QRemoteObjectDynamicReplica")) {
+        d->getReplicaPrivate(Q_NULLPTR, instance, name);
+    } else {
+        const QMetaObject *meta = instance->metaObject();
+        d->getReplicaPrivate(meta, instance, name.isEmpty() ? ::name(meta) : name);
+    }
+}
+
+QRemoteObjectReplica *QRemoteObjectNodePrivate::getReplicaPrivate(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
+{
+    qROPrivDebug() << "Starting getReplicaPrivate for" << name;
     isInitialized.storeRelease(1);
     openConnectionIfNeeded(name);
     QMutexLocker locker(&mutex);
     if (hasInstance(name)) {
-        qCDebug(QT_REMOTEOBJECT)<<"Acquire - using existing instance";
+        qCDebug(QT_REMOTEOBJECT)<<"getReplicaPrivate - using existing instance";
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(name).toStrongRef());
         Q_ASSERT(rep);
         instance->d_ptr = rep;
@@ -130,7 +148,7 @@ QRemoteObjectReplica *QRemoteObjectNodePrivate::acquire(const QMetaObject *meta,
         handleNewAcquire(meta, instance, name);
         instance->initialize();
         replicas.insert(name, instance->d_ptr.toWeakRef());
-        qROPrivDebug() << "Acquire - Created new instance" << name<<remoteObjectAddresses();
+        qROPrivDebug() << "getReplicaPrivate - Created new instance" << name<<remoteObjectAddresses();
     }
     return instance;
 }
@@ -863,9 +881,7 @@ bool QRemoteObjectNode::connectToNode(const QUrl &address)
 */
 QRemoteObjectDynamicReplica *QRemoteObjectNode::acquire(const QString &name)
 {
-    Q_D(QRemoteObjectNode);
-    QRemoteObjectDynamicReplica *instance = new QRemoteObjectDynamicReplica;
-    return static_cast<QRemoteObjectDynamicReplica*>(d->acquire(Q_NULLPTR, instance, name));
+    return new QRemoteObjectDynamicReplica(this, name);
 }
 
 /*!
@@ -1015,16 +1031,6 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
     }
 
     return true;
-}
-
-/*!
-    \internal
-    Returns a Replica of the Source sharing information in the meta-object \a replicaMeta and class \a instance.
-*/
-QRemoteObjectReplica *QRemoteObjectNode::acquire(const QMetaObject *replicaMeta, QRemoteObjectReplica *instance, const QString &name)
-{
-    Q_D(QRemoteObjectNode);
-    return d->acquire(replicaMeta, instance, name.isEmpty() ? ::name(replicaMeta) : name);
 }
 
 /*!

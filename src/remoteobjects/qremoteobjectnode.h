@@ -88,8 +88,7 @@ public:
     template < class ObjectType >
     ObjectType *acquire(const QString &name = QString())
     {
-        ObjectType* replica = new ObjectType;
-        return qobject_cast< ObjectType* >(acquire(&ObjectType::staticMetaObject, replica, name));
+        return new ObjectType(this, name);
     }
     QRemoteObjectDynamicReplica *acquire(const QString &name);
     QAbstractItemReplica *acquireModel(const QString &name);
@@ -110,13 +109,14 @@ protected:
     QRemoteObjectNode(QRemoteObjectNodePrivate &, QObject *parent);
 
 private:
-    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &name = QString());
+    void initializeReplica(QRemoteObjectReplica *instance, const QString &name = QString());
     Q_DECLARE_PRIVATE(QRemoteObjectNode)
     Q_PRIVATE_SLOT(d_func(), void onClientRead(QObject *obj))
     Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry))
     Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceRemoved(const QRemoteObjectSourceLocation &entry))
     Q_PRIVATE_SLOT(d_func(), void onRegistryInitialized())
     Q_PRIVATE_SLOT(d_func(), void onShouldReconnect(ClientIoDevice *ioDevice))
+    friend class QRemoteObjectReplica;
 };
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode

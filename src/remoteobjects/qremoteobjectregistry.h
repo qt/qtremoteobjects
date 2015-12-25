@@ -71,8 +71,10 @@ protected Q_SLOTS:
 
 private:
     void initialize() Q_DECL_OVERRIDE;
-    explicit QRemoteObjectRegistry(QObject *parent = Q_NULLPTR);
+    explicit QRemoteObjectRegistry();
+    explicit QRemoteObjectRegistry(QRemoteObjectNode *node, const QString &name);
     QRemoteObjectSourceLocations hostedSources;
+    friend class QRemoteObjectNodePrivate;
 };
 
 QT_END_NAMESPACE

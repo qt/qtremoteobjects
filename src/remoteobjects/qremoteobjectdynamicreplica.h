@@ -56,7 +56,8 @@ public:
     int qt_metacall(QMetaObject::Call call, int id, void **argv) Q_DECL_OVERRIDE;
 
 private:
-    explicit QRemoteObjectDynamicReplica(QObject *parent = Q_NULLPTR);
+    explicit QRemoteObjectDynamicReplica();
+    explicit QRemoteObjectDynamicReplica(QRemoteObjectNode *node, const QString &name);
     friend class QRemoteObjectNodePrivate;
     friend class QRemoteObjectNode;
 };

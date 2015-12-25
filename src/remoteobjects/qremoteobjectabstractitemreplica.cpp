@@ -61,15 +61,17 @@ QAbstractItemReplicaPrivate::QAbstractItemReplicaPrivate()
     , m_lastRequested(-1)
 {
     registerTypes();
+    initializeModelConnections();
+}
 
-    connect(this, &QAbstractItemReplicaPrivate::dataChanged, this, &QAbstractItemReplicaPrivate::onDataChanged);
-    connect(this, &QAbstractItemReplicaPrivate::rowsInserted, this, &QAbstractItemReplicaPrivate::onRowsInserted);
-    connect(this, &QAbstractItemReplicaPrivate::columnsInserted, this, &QAbstractItemReplicaPrivate::onColumnsInserted);
-    connect(this, &QAbstractItemReplicaPrivate::rowsRemoved, this, &QAbstractItemReplicaPrivate::onRowsRemoved);
-    connect(this, &QAbstractItemReplicaPrivate::rowsMoved, this, &QAbstractItemReplicaPrivate::onRowsMoved);
-    connect(this, &QAbstractItemReplicaPrivate::currentChanged, this, &QAbstractItemReplicaPrivate::onCurrentChanged);
-    connect(this, &QAbstractItemReplicaPrivate::modelReset, this, &QAbstractItemReplicaPrivate::onModelReset);
-    connect(this, &QAbstractItemReplicaPrivate::headerDataChanged, this, &QAbstractItemReplicaPrivate::onHeaderDataChanged);
+QAbstractItemReplicaPrivate::QAbstractItemReplicaPrivate(QRemoteObjectNode *node, const QString &name)
+    : QRemoteObjectReplica(ConstructWithNode)
+    , m_selectionModel(0)
+    , m_lastRequested(-1)
+{
+    registerTypes();
+    initializeModelConnections();
+    initializeNode(node, name);
 }
 
 QAbstractItemReplicaPrivate::~QAbstractItemReplicaPrivate()
@@ -102,6 +104,18 @@ void QAbstractItemReplicaPrivate::registerTypes()
         qRegisterMetaType<QIntHash>();
         qRegisterMetaTypeStreamOperators<QIntHash>();
     }
+}
+
+void QAbstractItemReplicaPrivate::initializeModelConnections()
+{
+    connect(this, &QAbstractItemReplicaPrivate::dataChanged, this, &QAbstractItemReplicaPrivate::onDataChanged);
+    connect(this, &QAbstractItemReplicaPrivate::rowsInserted, this, &QAbstractItemReplicaPrivate::onRowsInserted);
+    connect(this, &QAbstractItemReplicaPrivate::columnsInserted, this, &QAbstractItemReplicaPrivate::onColumnsInserted);
+    connect(this, &QAbstractItemReplicaPrivate::rowsRemoved, this, &QAbstractItemReplicaPrivate::onRowsRemoved);
+    connect(this, &QAbstractItemReplicaPrivate::rowsMoved, this, &QAbstractItemReplicaPrivate::onRowsMoved);
+    connect(this, &QAbstractItemReplicaPrivate::currentChanged, this, &QAbstractItemReplicaPrivate::onCurrentChanged);
+    connect(this, &QAbstractItemReplicaPrivate::modelReset, this, &QAbstractItemReplicaPrivate::onModelReset);
+    connect(this, &QAbstractItemReplicaPrivate::headerDataChanged, this, &QAbstractItemReplicaPrivate::onHeaderDataChanged);
 }
 
 inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &roles, CachedRowEntry *entry)

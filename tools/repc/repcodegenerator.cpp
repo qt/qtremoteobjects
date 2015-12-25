@@ -481,13 +481,13 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "    Q_OBJECT" << endl;
     out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << endl;
     out << "    friend class QRemoteObjectNode;" << endl;
-    if (mode == REPLICA)
-        out << "private:" << endl;
-    else
-        out << "public:" << endl;
+    out << "public:" << endl;
 
     if (mode == REPLICA) {
-        out << "    " << className << "() : QRemoteObjectReplica() {}" << endl;
+        out << "    " << className << "() : QRemoteObjectReplica() { initialize(); }" << endl;
+        out << "    " << className << "(QRemoteObjectNode *node, const QString &name = QString())" << endl;
+        out << "        : QRemoteObjectReplica(ConstructWithNode)" << endl;
+        out << "        { initializeNode(node, name); }" << endl;
         out << "    void initialize()" << endl;
     } else {
         out << "    explicit " << className << "(QObject *parent = Q_NULLPTR) : QObject(parent)" << endl;

@@ -58,9 +58,15 @@ QT_BEGIN_NAMESPACE
     This class does not have a public constructor, it can only be instantiated by using the dynamic QRemoteObjectNode::acquire method.
 */
 
-QRemoteObjectDynamicReplica::QRemoteObjectDynamicReplica(QObject *parent)
-    : QRemoteObjectReplica(parent)
+QRemoteObjectDynamicReplica::QRemoteObjectDynamicReplica()
+    : QRemoteObjectReplica()
 {
+}
+
+QRemoteObjectDynamicReplica::QRemoteObjectDynamicReplica(QRemoteObjectNode *node, const QString &name)
+    : QRemoteObjectReplica(ConstructWithNode)
+{
+    initializeNode(node, name);
 }
 
 /*!

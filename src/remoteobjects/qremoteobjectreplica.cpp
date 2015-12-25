@@ -42,6 +42,7 @@
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectreplica_p.h"
 
+#include "qremoteobjectnode.h"
 #include "qremoteobjectdynamicreplica.h"
 #include "qremoteobjectpacket_p.h"
 #include "qremoteobjectpendingcall_p.h"
@@ -472,9 +473,12 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 */
 
 /*!
-    \internal
+    This (protected) constructor for QRemoteObjectReplica can be used to create
+    Replica objects from QML.
 */
-QRemoteObjectReplica::QRemoteObjectReplica(QObject *parent) : QObject(parent)
+QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
+    : QObject(Q_NULLPTR)
+    , d_ptr(t == DefaultConstructor ? new QStubReplicaPrivate : 0)
 {
 }
 
@@ -509,6 +513,11 @@ QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call c
 const QVariant QRemoteObjectReplica::propAsVariant(int i) const
 {
     return d_ptr->getProperty(i);
+}
+
+void QRemoteObjectReplica::initializeNode(QRemoteObjectNode *node, const QString &name)
+{
+    node->initializeReplica(this, name);
 }
 
 /*!

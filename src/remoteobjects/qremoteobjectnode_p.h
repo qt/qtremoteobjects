@@ -72,7 +72,7 @@ public:
 
     virtual QRemoteObjectSourceLocations remoteObjectAddresses() const;
 
-    QRemoteObjectReplica *acquire(const QMetaObject *, QRemoteObjectReplica *, const QString &);
+    QRemoteObjectReplica *getReplicaPrivate(const QMetaObject *, QRemoteObjectReplica *, const QString &);
 
     void connectReplica(QObject *object, QRemoteObjectReplica *instance);
     void openConnectionIfNeeded(const QString &name);

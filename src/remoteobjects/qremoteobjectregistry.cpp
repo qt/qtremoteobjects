@@ -58,9 +58,16 @@ QT_BEGIN_NAMESPACE
     available on the network, and simplifies the process of connecting to other
     \l {QRemoteObjectNode} {Node}s.
 */
-QRemoteObjectRegistry::QRemoteObjectRegistry(QObject *parent) : QRemoteObjectReplica(parent)
+QRemoteObjectRegistry::QRemoteObjectRegistry() : QRemoteObjectReplica()
 {
     connect(this, &QRemoteObjectRegistry::isReplicaValidChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
+}
+
+QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QString &name)
+    : QRemoteObjectReplica(ConstructWithNode)
+{
+    connect(this, &QRemoteObjectRegistry::isReplicaValidChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
+    initializeNode(node, name);
 }
 
 /*!

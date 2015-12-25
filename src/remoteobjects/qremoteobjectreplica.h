@@ -51,6 +51,7 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectPendingCall;
 class QRemoteObjectReplicaPrivate;
 class QReplicaPrivateInterface;
+class QRemoteObjectNode;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
 {
@@ -59,6 +60,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
 
 public:
     virtual ~QRemoteObjectReplica();
+    enum ConstructorType {DefaultConstructor, ConstructWithNode};
 
     bool isReplicaValid() const;
     bool waitForSource(int timeout = 30000);
@@ -69,7 +71,7 @@ Q_SIGNALS:
     void initialized();
 
 protected:
-    explicit QRemoteObjectReplica(QObject *parent = Q_NULLPTR);
+    explicit QRemoteObjectReplica(ConstructorType t = DefaultConstructor);
 
     virtual void initialize();
     void send(QMetaObject::Call call, int index, const QVariantList &args);
@@ -79,6 +81,7 @@ protected:
     void setProperty(int i, const QVariant &);
     void setProperties(const QVariantList &);
     const QVariant propAsVariant(int i) const;
+    void initializeNode(QRemoteObjectNode *node, const QString &name = QString());
     QSharedPointer<QReplicaPrivateInterface> d_ptr;
 private:
     friend class QRemoteObjectNodePrivate;

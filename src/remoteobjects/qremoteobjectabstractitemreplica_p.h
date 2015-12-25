@@ -163,6 +163,7 @@ class QAbstractItemReplicaPrivate : public QRemoteObjectReplica
     Q_PROPERTY(QIntHash roleNames READ roleNames)
 public:
     QAbstractItemReplicaPrivate();
+    QAbstractItemReplicaPrivate(QRemoteObjectNode *node, const QString &name);
     ~QAbstractItemReplicaPrivate();
     void initialize();
     void registerTypes();
@@ -271,6 +272,7 @@ public:
     }
 
     SizeWatcher* doModelReset();
+    void initializeModelConnections();
 
     int m_lastRequested;
     QVector<RequestedData> m_requestedData;
