@@ -542,6 +542,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 void QRemoteObjectNodePrivate::initialize()
 {
     Q_Q(QRemoteObjectNode);
+    qRegisterMetaType<QRemoteObjectNode *>();
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     QObject::connect(&clientRead, SIGNAL(mapped(QObject*)), q, SLOT(onClientRead(QObject*)));
 }

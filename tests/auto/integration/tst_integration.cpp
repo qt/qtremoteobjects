@@ -657,7 +657,7 @@ private slots:
         for (int i = 0; i < metaTcpRep1->propertyCount(); ++i)
         {
             const QMetaProperty propLhs =  metaTcpRep1->property(i);
-            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0) //Ignore properties only on the Replica side
+            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0 || qstrcmp(propLhs.name(), "node") == 0) //Ignore properties only on the Replica side
                 continue;
             const QMetaProperty propRhs =  metaTcpSource->property(metaTcpSource->indexOfProperty(propLhs.name()));
             if (propLhs.notifySignalIndex() == -1)
@@ -671,7 +671,7 @@ private slots:
         for (int i = 0; i < metaLocalRep1->propertyCount(); ++i )
         {
             const QMetaProperty propLhs =  metaLocalRep1->property(i);
-            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0) //Ignore properties only on the Replica side
+            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0 || qstrcmp(propLhs.name(), "node") == 0) //Ignore properties only on the Replica side
                 continue;
             const QMetaProperty propRhs =  metaLocalSource->property(metaTcpSource->indexOfProperty(propLhs.name()));
             if (propLhs.notifySignalIndex() == -1)

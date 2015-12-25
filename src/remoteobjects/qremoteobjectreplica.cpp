@@ -544,7 +544,22 @@ void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
 bool QRemoteObjectReplica::isInitialized() const
 {
     return d_ptr->isInitialized();
+}
 
+QRemoteObjectNode *QRemoteObjectReplica::node() const
+{
+    return d_ptr->node();
+}
+
+void QRemoteObjectReplica::setNode(QRemoteObjectNode *_node)
+{
+    const QRemoteObjectNode *curNode = node();
+    if (curNode) {
+        qCWarning(QT_REMOTEOBJECT) << "Ignoring call to setNode as the Node has already been set";
+        return;
+    }
+    d_ptr.clear();
+    _node->initializeReplica(this);
 }
 
 /*!

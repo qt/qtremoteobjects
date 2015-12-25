@@ -57,6 +57,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool isReplicaValid READ isReplicaValid NOTIFY isReplicaValidChanged)
+    Q_PROPERTY(QRemoteObjectNode *node READ node WRITE setNode)
 
 public:
     virtual ~QRemoteObjectReplica();
@@ -65,6 +66,8 @@ public:
     bool isReplicaValid() const;
     bool waitForSource(int timeout = 30000);
     bool isInitialized() const;
+    QRemoteObjectNode *node() const;
+    void setNode(QRemoteObjectNode *node);
 
 Q_SIGNALS:
     void isReplicaValidChanged();

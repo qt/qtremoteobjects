@@ -76,6 +76,7 @@ public:
     virtual bool isInitialized() const = 0;
     virtual bool isReplicaValid() const = 0;
     virtual bool waitForSource(int) = 0;
+    virtual QRemoteObjectNode *node() const = 0;
 
     virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) = 0;
     virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
@@ -93,6 +94,7 @@ public:
     bool isInitialized() const Q_DECL_OVERRIDE { return false; }
     bool isReplicaValid() const Q_DECL_OVERRIDE { return false; }
     bool waitForSource(int) Q_DECL_OVERRIDE { return false; }
+    QRemoteObjectNode *node() const Q_DECL_OVERRIDE { return Q_NULLPTR; }
 
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
@@ -119,6 +121,7 @@ public:
     virtual void configurePrivate(QRemoteObjectReplica *);
     void emitValidChanged();
     void emitInitialized();
+    QRemoteObjectNode *node() const Q_DECL_OVERRIDE { return m_node; }
 
     virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE = 0;
     virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE = 0;
@@ -134,6 +137,7 @@ public:
     int m_methodOffset;
     int m_signalOffset;
     int m_propertyOffset;
+    QRemoteObjectNode *m_node;
 };
 
 class QConnectedReplicaPrivate : public QRemoteObjectReplicaPrivate
