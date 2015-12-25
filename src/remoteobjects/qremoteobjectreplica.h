@@ -88,7 +88,6 @@ protected:
     QSharedPointer<QReplicaPrivateInterface> d_ptr;
 private:
     friend class QRemoteObjectNodePrivate;
-    friend class QRemoteObjectHostBasePrivate;
 };
 
 QT_END_NAMESPACE

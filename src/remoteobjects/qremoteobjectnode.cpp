@@ -125,32 +125,31 @@ void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const 
 {
     Q_D(QRemoteObjectNode);
     if (instance->inherits("QRemoteObjectDynamicReplica")) {
-        d->getReplicaPrivate(Q_NULLPTR, instance, name);
+        d->setReplicaPrivate(Q_NULLPTR, instance, name);
     } else {
         const QMetaObject *meta = instance->metaObject();
-        d->getReplicaPrivate(meta, instance, name.isEmpty() ? ::name(meta) : name);
+        d->setReplicaPrivate(meta, instance, name.isEmpty() ? ::name(meta) : name);
     }
 }
 
-QRemoteObjectReplica *QRemoteObjectNodePrivate::getReplicaPrivate(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
+void QRemoteObjectNodePrivate::setReplicaPrivate(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
-    qROPrivDebug() << "Starting getReplicaPrivate for" << name;
+    qROPrivDebug() << "Starting setReplicaPrivate for" << name;
     isInitialized.storeRelease(1);
     openConnectionIfNeeded(name);
     QMutexLocker locker(&mutex);
     if (hasInstance(name)) {
-        qCDebug(QT_REMOTEOBJECT)<<"getReplicaPrivate - using existing instance";
+        qCDebug(QT_REMOTEOBJECT)<<"setReplicaPrivate - using existing instance";
         QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(name).toStrongRef());
         Q_ASSERT(rep);
         instance->d_ptr = rep;
         rep->configurePrivate(instance);
     } else {
-        handleNewAcquire(meta, instance, name);
+        instance->d_ptr.reset(handleNewAcquire(meta, instance, name));
         instance->initialize();
         replicas.insert(name, instance->d_ptr.toWeakRef());
-        qROPrivDebug() << "getReplicaPrivate - Created new instance" << name<<remoteObjectAddresses();
+        qROPrivDebug() << "setReplicaPrivate - Created new instance" << name<<remoteObjectAddresses();
     }
-    return instance;
 }
 
 /*!
@@ -321,10 +320,11 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
 
 //This version of handleNewAcquire creates a QConnectedReplica. If this is a
 //Host Node, the QRemoteObjectHostBasePrivate overload is called instead.
-void QRemoteObjectNodePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
+QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
+    Q_Q(QRemoteObjectNode);
     QConnectedReplicaPrivate *rp = new QConnectedReplicaPrivate(name, meta);
-    instance->d_ptr.reset(rp);
+    rp->m_node = q;
     rp->configurePrivate(instance);
     if (connectedSources.contains(name)) { //Either we have a peer connections, or existing connection via registry
         rp->setConnection(connectedSources[name]);
@@ -332,21 +332,24 @@ void QRemoteObjectNodePrivate::handleNewAcquire(const QMetaObject *meta, QRemote
         initConnection(remoteObjectAddresses()[name]); //This will try the connection, and if successful, the remoteObjects will be sent
                                               //The link to the replica will be handled then
     }
+    return rp;
 }
 
 //Host Nodes can use the more efficient InProcess Replica if we (this Node) hold the Source for the
 //requested Replica.  If not, fall back to the Connected Replica case.
-void QRemoteObjectHostBasePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
+QReplicaPrivateInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
     if (map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
+        Q_Q(QRemoteObjectHostBase);
         QInProcessReplicaPrivate *rp = new QInProcessReplicaPrivate(name, meta);
-        instance->d_ptr.reset(rp);
+        rp->m_node = q;
         rp->configurePrivate(instance);
         connectReplica(mapIt.value()->m_object, instance);
         rp->connectionToSource = mapIt.value();
-    } else
-        QRemoteObjectNodePrivate::handleNewAcquire(meta, instance, name);
+        return rp;
+    }
+    return QRemoteObjectNodePrivate::handleNewAcquire(meta, instance, name);
 }
 
 void QRemoteObjectNodePrivate::onClientRead(QObject *obj)

@@ -72,7 +72,7 @@ public:
 
     virtual QRemoteObjectSourceLocations remoteObjectAddresses() const;
 
-    QRemoteObjectReplica *getReplicaPrivate(const QMetaObject *, QRemoteObjectReplica *, const QString &);
+    void setReplicaPrivate(const QMetaObject *, QRemoteObjectReplica *, const QString &);
 
     void connectReplica(QObject *object, QRemoteObjectReplica *instance);
     void openConnectionIfNeeded(const QString &name);
@@ -87,7 +87,7 @@ public:
     void onRegistryInitialized();
     void onShouldReconnect(ClientIoDevice *ioDevice);
 
-    virtual void handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
+    virtual QReplicaPrivateInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
     void initialize();
 
 public:
@@ -115,7 +115,7 @@ class QRemoteObjectHostBasePrivate : public QRemoteObjectNodePrivate
 public:
     QRemoteObjectHostBasePrivate();
     virtual ~QRemoteObjectHostBasePrivate() {}
-    void handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) Q_DECL_OVERRIDE;
+    QReplicaPrivateInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) Q_DECL_OVERRIDE;
 
 public:
     QRemoteObjectSourceIo *remoteObjectIo;
