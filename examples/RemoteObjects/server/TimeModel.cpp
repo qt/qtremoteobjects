@@ -57,7 +57,7 @@ void MinuteTimer::timerEvent(QTimerEvent *)
     QTime now = QTime::currentTime();
     if (now.second() == 59 && now.minute() == time.minute() && now.hour() == time.hour()) {
         // just missed time tick over, force it, wait extra 0.5 seconds
-        time.addSecs(60);
+        time = time.addSecs(60);
         timer.start(60500, this);
     } else {
         time = now;
