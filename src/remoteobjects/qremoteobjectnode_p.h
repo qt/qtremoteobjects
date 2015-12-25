@@ -94,7 +94,7 @@ public:
     QAtomicInt isInitialized;
     QMutex mutex;
     QUrl registryAddress;
-    QHash<QString, QWeakPointer<QRemoteObjectReplicaPrivate> > replicas;
+    QHash<QString, QWeakPointer<QReplicaPrivateInterface> > replicas;
     QMap<QString, ClientIoDevice*> connectedSources;
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;

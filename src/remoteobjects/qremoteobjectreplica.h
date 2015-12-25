@@ -50,6 +50,7 @@ QT_BEGIN_NAMESPACE
 
 class QRemoteObjectPendingCall;
 class QRemoteObjectReplicaPrivate;
+class QReplicaPrivateInterface;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
 {
@@ -78,8 +79,7 @@ protected:
     void setProperty(int i, const QVariant &);
     void setProperties(const QVariantList &);
     const QVariant propAsVariant(int i) const;
-    Q_DECLARE_PRIVATE(QRemoteObjectReplica)
-    QSharedPointer<QRemoteObjectReplicaPrivate> d_ptr;
+    QSharedPointer<QReplicaPrivateInterface> d_ptr;
 private:
     friend class QRemoteObjectNodePrivate;
     friend class QRemoteObjectHostBasePrivate;

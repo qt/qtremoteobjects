@@ -80,7 +80,7 @@ QRemoteObjectDynamicReplica::~QRemoteObjectDynamicReplica()
 */
 const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 {
-    Q_D(const QRemoteObjectReplica);
+    QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
 
     return d->m_metaObject ? d->m_metaObject : QRemoteObjectReplica::metaObject();
 }
@@ -93,7 +93,7 @@ const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 */
 void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
 {
-    Q_D(QRemoteObjectReplica);
+    QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
 
     if (!name)
         return 0;
@@ -116,7 +116,7 @@ void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
 */
 int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, void **argv)
 {
-    Q_D(QRemoteObjectReplica);
+    QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
 
     int saved_id = id;
     id = QRemoteObjectReplica::qt_metacall(call, id, argv);

@@ -490,11 +490,9 @@ QRemoteObjectReplica::~QRemoteObjectReplica()
 */
 void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVariantList &args)
 {
-    Q_D(QRemoteObjectReplica);
-
     Q_ASSERT(index != -1);
 
-    d->_q_send(call, index, args);
+    d_ptr->_q_send(call, index, args);
 }
 
 /*!
@@ -502,9 +500,7 @@ void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVarian
 */
 QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
-    Q_D(QRemoteObjectReplica);
-
-    return d->_q_sendWithReply(call, index, args);
+    return d_ptr->_q_sendWithReply(call, index, args);
 }
 
 /*!
@@ -512,8 +508,7 @@ QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call c
 */
 const QVariant QRemoteObjectReplica::propAsVariant(int i) const
 {
-    Q_D(const QRemoteObjectReplica);
-    return d->getProperty(i);
+    return d_ptr->getProperty(i);
 }
 
 /*!
@@ -521,8 +516,7 @@ const QVariant QRemoteObjectReplica::propAsVariant(int i) const
 */
 void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 {
-    Q_D(QRemoteObjectReplica);
-    d->setProperties(properties);
+    d_ptr->setProperties(properties);
 }
 
 /*!
@@ -530,8 +524,7 @@ void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 */
 void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
 {
-    Q_D(QRemoteObjectReplica);
-    d->setProperty(i, prop);
+    d_ptr->setProperty(i, prop);
 }
 
 /*!
@@ -541,9 +534,8 @@ void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
 */
 bool QRemoteObjectReplica::isInitialized() const
 {
-    Q_D(const QRemoteObjectReplica);
+    return d_ptr->isInitialized();
 
-    return d->isInitialized();
 }
 
 /*!
@@ -560,9 +552,7 @@ void QRemoteObjectReplica::initialize()
 */
 bool QRemoteObjectReplica::isReplicaValid() const
 {
-    Q_D(const QRemoteObjectReplica);
-
-    return d->isReplicaValid();
+    return d_ptr->isReplicaValid();
 }
 
 /*!
@@ -572,9 +562,7 @@ bool QRemoteObjectReplica::isReplicaValid() const
 */
 bool QRemoteObjectReplica::waitForSource(int timeout)
 {
-    Q_D(QRemoteObjectReplica);
-
-    return d->waitForSource(timeout);
+    return d_ptr->waitForSource(timeout);
 }
 
 QInProcessReplicaPrivate::QInProcessReplicaPrivate(const QString &name, const QMetaObject *meta) : QRemoteObjectReplicaPrivate(name, meta)
@@ -646,6 +634,45 @@ QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject:
 
     connectionToSource->invoke(call, connectionToSource->m_api->isAdapterMethod(ReplicaIndex), resolvedIndex, args, &returnValue);
     return QRemoteObjectPendingCall::fromCompletedCall(returnValue);
+}
+
+QStubReplicaPrivate::QStubReplicaPrivate() {}
+
+QStubReplicaPrivate::~QStubReplicaPrivate() {}
+
+const QVariant QStubReplicaPrivate::getProperty(int i) const
+{
+    Q_ASSERT_X(i >= 0 && i < m_propertyStorage.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(i).arg(m_propertyStorage.size())));
+    return m_propertyStorage[i];
+}
+
+void QStubReplicaPrivate::setProperties(const QVariantList &properties)
+{
+    Q_ASSERT(m_propertyStorage.isEmpty());
+    m_propertyStorage.reserve(properties.length());
+    m_propertyStorage = properties;
+}
+
+void QStubReplicaPrivate::setProperty(int i, const QVariant &prop)
+{
+    m_propertyStorage[i] = prop;
+}
+
+void QStubReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
+{
+    Q_UNUSED(call);
+    Q_UNUSED(index);
+    Q_UNUSED(args);
+    qWarning("Tried calling a Slot or setting a property on a Replica that hasn't been initialized with a Node");
+}
+
+QRemoteObjectPendingCall QStubReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+{
+    Q_UNUSED(call);
+    Q_UNUSED(index);
+    Q_UNUSED(args);
+    qWarning("Tried calling a Slot or setting a property on a Replica that hasn't been initialized with a Node");
+    return QRemoteObjectPendingCall(); //Invalid
 }
 
 QT_END_NAMESPACE

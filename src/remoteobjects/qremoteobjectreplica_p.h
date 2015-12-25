@@ -66,7 +66,40 @@ class QInvokeReplyPacket;
 class QRemoteObjectPacket;
 }
 
-class QRemoteObjectReplicaPrivate : public QObject
+class QReplicaPrivateInterface
+{
+public:
+    virtual ~QReplicaPrivateInterface() {}
+    virtual const QVariant getProperty(int i) const = 0;
+    virtual void setProperties(const QVariantList &) = 0;
+    virtual void setProperty(int i, const QVariant &) = 0;
+    virtual bool isInitialized() const = 0;
+    virtual bool isReplicaValid() const = 0;
+    virtual bool waitForSource(int) = 0;
+
+    virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) = 0;
+    virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
+};
+
+class QStubReplicaPrivate : public QReplicaPrivateInterface
+{
+public:
+    explicit QStubReplicaPrivate();
+    virtual ~QStubReplicaPrivate();
+
+    const QVariant getProperty(int i) const Q_DECL_OVERRIDE;
+    void setProperties(const QVariantList &) Q_DECL_OVERRIDE;
+    void setProperty(int i, const QVariant &) Q_DECL_OVERRIDE;
+    bool isInitialized() const Q_DECL_OVERRIDE { return false; }
+    bool isReplicaValid() const Q_DECL_OVERRIDE { return false; }
+    bool waitForSource(int) Q_DECL_OVERRIDE { return false; }
+
+    void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
+    QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
+    QVariantList m_propertyStorage;
+};
+
+class QRemoteObjectReplicaPrivate : public QObject, public QReplicaPrivateInterface
 {
 public:
     explicit QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *);
@@ -74,21 +107,21 @@ public:
 
     bool needsDynamicInitialization() const;
 
-    virtual const QVariant getProperty(int i) const = 0;
-    virtual void setProperties(const QVariantList &) = 0;
-    virtual void setProperty(int i, const QVariant &) = 0;
+    virtual const QVariant getProperty(int i) const Q_DECL_OVERRIDE = 0;
+    virtual void setProperties(const QVariantList &) Q_DECL_OVERRIDE = 0;
+    virtual void setProperty(int i, const QVariant &) Q_DECL_OVERRIDE = 0;
     virtual bool isShortCircuit() const = 0;
-    virtual bool isInitialized() const { return true; }
-    virtual bool isReplicaValid() const { return true; }
-    virtual bool waitForSource(int) { return true; }
+    virtual bool isInitialized() const Q_DECL_OVERRIDE { return true; }
+    virtual bool isReplicaValid() const Q_DECL_OVERRIDE { return true; }
+    virtual bool waitForSource(int) Q_DECL_OVERRIDE { return true; }
     virtual bool waitForFinished(const QRemoteObjectPendingCall &, int) { return true; }
     virtual void notifyAboutReply(int, const QVariant &) {}
     virtual void configurePrivate(QRemoteObjectReplica *);
     void emitValidChanged();
     void emitInitialized();
 
-    virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) = 0;
-    virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
+    virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE = 0;
+    virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE = 0;
 
     //Dynamic replica functions
     virtual void initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values);
