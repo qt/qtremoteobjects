@@ -149,8 +149,6 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 
     foreach (const ASTClass &astClass, ast.classes) {
         QStringList out;
-        if (!astClass.enums.isEmpty())
-            generateENUMs(stream, astClass.enums, QString::fromLatin1("%1Enums").arg(astClass.name));
         if (mode == MERGED) {
             generateClass(REPLICA, stream, astClass, metaTypeRegistrationCode);
             generateClass(SOURCE, stream, astClass, metaTypeRegistrationCode);
