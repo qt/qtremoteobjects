@@ -104,7 +104,7 @@ public:
 class QRemoteObjectReplicaPrivate : public QObject, public QReplicaPrivateInterface
 {
 public:
-    explicit QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *);
+    explicit QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
     virtual ~QRemoteObjectReplicaPrivate();
 
     bool needsDynamicInitialization() const;
@@ -143,7 +143,7 @@ public:
 class QConnectedReplicaPrivate : public QRemoteObjectReplicaPrivate
 {
 public:
-    explicit QConnectedReplicaPrivate(const QString &name, const QMetaObject *);
+    explicit QConnectedReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
     virtual ~QConnectedReplicaPrivate();
     const QVariant getProperty(int i) const Q_DECL_OVERRIDE;
     void setProperties(const QVariantList &) Q_DECL_OVERRIDE;
@@ -180,7 +180,7 @@ public:
 class QInProcessReplicaPrivate : public QRemoteObjectReplicaPrivate
 {
 public:
-    explicit QInProcessReplicaPrivate(const QString &name, const QMetaObject *);
+    explicit QInProcessReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
     virtual ~QInProcessReplicaPrivate();
 
     const QVariant getProperty(int i) const Q_DECL_OVERRIDE;

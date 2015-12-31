@@ -63,10 +63,11 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
-QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta)
-    : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0),
-      m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount()),
-      m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
+QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *_node)
+    : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0)
+    , m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount())
+    , m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
+    , m_node(_node)
 {
 }
 
@@ -76,8 +77,8 @@ QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
         free(const_cast<QMetaObject*>(m_metaObject));
 }
 
-QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta)
-    : QRemoteObjectReplicaPrivate(name, meta), isSet(0), connectionToSource(Q_NULLPTR), m_curSerialId(0)
+QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
+    : QRemoteObjectReplicaPrivate(name, meta, node), isSet(0), connectionToSource(Q_NULLPTR), m_curSerialId(0)
 {
 }
 
@@ -589,7 +590,8 @@ bool QRemoteObjectReplica::waitForSource(int timeout)
     return d_ptr->waitForSource(timeout);
 }
 
-QInProcessReplicaPrivate::QInProcessReplicaPrivate(const QString &name, const QMetaObject *meta) : QRemoteObjectReplicaPrivate(name, meta)
+QInProcessReplicaPrivate::QInProcessReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode * node)
+    : QRemoteObjectReplicaPrivate(name, meta, node)
 {
 }
 

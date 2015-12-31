@@ -323,8 +323,7 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
 QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     Q_Q(QRemoteObjectNode);
-    QConnectedReplicaPrivate *rp = new QConnectedReplicaPrivate(name, meta);
-    rp->m_node = q;
+    QConnectedReplicaPrivate *rp = new QConnectedReplicaPrivate(name, meta, q);
     rp->configurePrivate(instance);
     if (connectedSources.contains(name)) { //Either we have a peer connections, or existing connection via registry
         rp->setConnection(connectedSources[name]);
@@ -342,8 +341,7 @@ QReplicaPrivateInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(const Q
     QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
     if (map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
         Q_Q(QRemoteObjectHostBase);
-        QInProcessReplicaPrivate *rp = new QInProcessReplicaPrivate(name, meta);
-        rp->m_node = q;
+        QInProcessReplicaPrivate *rp = new QInProcessReplicaPrivate(name, meta, q);
         rp->configurePrivate(instance);
         connectReplica(mapIt.value()->m_object, instance);
         rp->connectionToSource = mapIt.value();
