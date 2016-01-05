@@ -348,7 +348,7 @@ int QRepRegexParser<_Parser, _Table>::nextToken()
     int token = -1;
     while (token < 0)
     {
-        if (m_loc == (size_t)(m_buffer.size()))
+        if (m_loc == static_cast<size_t>(m_buffer.size()))
             return _Table::EOF_SYMBOL;
 
         //Check m_lastMatchText for newlines and update m_lineno
