@@ -49,10 +49,10 @@ CppCodeGenerator::CppCodeGenerator(QIODevice *outputDevice)
     Q_ASSERT(m_outputDevice);
 }
 
-void CppCodeGenerator::generate(const QList<ClassDef> &classList)
+void CppCodeGenerator::generate(const QList<ClassDef> &classList, bool alwaysGenerateClass /* = false */)
 {
     foreach (const ClassDef &cdef, classList)
-        m_outputDevice->write(generateClass(cdef));
+        m_outputDevice->write(generateClass(cdef, alwaysGenerateClass));
 
     m_outputDevice->write("\n");
 }

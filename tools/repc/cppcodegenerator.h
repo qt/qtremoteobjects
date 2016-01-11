@@ -53,7 +53,7 @@ class CppCodeGenerator
 {
 public:
     CppCodeGenerator(QIODevice *outputDevice);
-    void generate(const QList<ClassDef> &classList);
+    void generate(const QList<ClassDef> &classList, bool alwaysGenerateClass = false);
 
 private:
     QIODevice *m_outputDevice;

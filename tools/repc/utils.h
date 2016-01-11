@@ -49,6 +49,6 @@ QT_BEGIN_NAMESPACE
 struct ClassDef;
 QT_END_NAMESPACE
 
-QByteArray generateClass(const ClassDef &cdef);
+QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass = false);
 AST classList2AST(const QList<ClassDef> &classList);
 #endif // UTILS_H

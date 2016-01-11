@@ -116,10 +116,10 @@ static QList<FunctionDef> cleanedSignalList(const ClassDef &cdef)
     return ret;
 }
 
-QByteArray generateClass(const ClassDef &cdef)
+QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass /* = false */)
 {
     QList<FunctionDef> signalList = cleanedSignalList(cdef);
-    if (signalList.isEmpty() && cdef.slotList.isEmpty())
+    if (signalList.isEmpty() && cdef.slotList.isEmpty() && !alwaysGenerateClass)
         return "POD " + cdef.classname + "(" + join(generateProperties(cdef.propertyList, true), ", ") + ")\n";
 
     QByteArray ret("class " + cdef.classname + "\n{\n");

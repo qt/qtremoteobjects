@@ -105,6 +105,10 @@ int main(int argc, char **argv)
     includePathOption.setValueName(QStringLiteral("dir"));
     parser.addOption(includePathOption);
 
+    QCommandLineOption alwaysClassOption(QStringLiteral("c"));
+    alwaysClassOption.setDescription(QStringLiteral("Always output `class` type for .rep files and never `POD`."));
+    parser.addOption(alwaysClassOption);
+
     QCommandLineOption debugOption(QStringLiteral("d"));
     debugOption.setDescription(QStringLiteral("Print out parsing debug information (for troubleshooting)."));
     parser.addOption(debugOption);
@@ -240,7 +244,7 @@ int main(int argc, char **argv)
         input.close();
         if (mode & OutRep) {
             CppCodeGenerator generator(&output);
-            generator.generate(moc.classList);
+            generator.generate(moc.classList, parser.isSet(alwaysClassOption));
         } else {
             Q_ASSERT(mode & OutReplica);
             RepCodeGenerator generator(&output);
