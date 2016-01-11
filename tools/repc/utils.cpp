@@ -123,7 +123,8 @@ QByteArray generateClass(const ClassDef &cdef)
         return "POD " + cdef.classname + "(" + join(generateProperties(cdef.propertyList, true), ", ") + ")\n";
 
     QByteArray ret("class " + cdef.classname + "\n{\n");
-    ret += "    PROP(" + join(generateProperties(cdef.propertyList), ");\n    PROP(") + ");\n";
+    if (!cdef.propertyList.isEmpty())
+        ret += "    PROP(" + join(generateProperties(cdef.propertyList), ");\n    PROP(") + ");\n";
     ret += generateFunctions("    SLOT", cdef.slotList);
     ret += generateFunctions("    SIGNAL", signalList);
     ret += "}\n";
