@@ -68,8 +68,8 @@ public:
 public Q_SLOTS:
     void setpurchasedPart(bool value);
 
-    QString myTestString() { return _myTestString; }
-    void setMyTestString(QString value) { _myTestString = value; }
+    QString myTestString() Q_DECL_OVERRIDE { return _myTestString; }
+    void setMyTestString(QString value) Q_DECL_OVERRIDE { _myTestString = value; }
 
 private:
     bool _purchasedPart;
