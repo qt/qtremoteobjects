@@ -60,6 +60,9 @@ public:
 
     Temperature temperature() Q_DECL_OVERRIDE;
     void setTemperature(const Temperature &value);
+
+    void setSharedTemperature(const Temperature::Ptr &) Q_DECL_OVERRIDE {}
+
     bool purchasedPart() {return _purchasedPart;}
 
 public Q_SLOTS:

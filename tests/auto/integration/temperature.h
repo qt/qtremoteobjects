@@ -42,11 +42,14 @@
 #ifndef TEMPERATURE_H
 #define TEMPERATURE_H
 
+#include <QSharedPointer>
 #include <QString>
 
 class Temperature
 {
 public:
+    typedef QSharedPointer<Temperature> Ptr;
+
     Temperature() : _value(0) {}
     Temperature(double value, const QString &unit) : _value(value), _unit(unit) {}
 
@@ -91,6 +94,21 @@ inline QDataStream &operator>>(QDataStream &in, Temperature &temperature)
     return in;
 }
 
+inline QDataStream &operator>>(QDataStream &out, const Temperature::Ptr& temperaturePtr)
+{
+    out << *temperaturePtr;
+    return out;
+}
+
+inline QDataStream &operator>>(QDataStream &in, Temperature::Ptr& temperaturePtr)
+{
+    Temperature *temperature = new Temperature;
+    in >> *temperature;
+    temperaturePtr.reset(temperature);
+    return in;
+}
+
 Q_DECLARE_METATYPE(Temperature);
+Q_DECLARE_METATYPE(Temperature::Ptr);
 
 #endif

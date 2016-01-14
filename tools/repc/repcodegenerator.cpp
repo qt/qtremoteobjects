@@ -613,8 +613,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 if (!slot.paramNames().isEmpty()) {
                     out << "        __repc_args" << endl;
                     foreach (const QString &name, slot.paramNames())
-                        out << "            << " << name << endl;
-                    out << ";" << endl;
+                        out << "            << " << "QVariant::fromValue(" << name << ")" << endl;
+                    out << "        ;" << endl;
                 }
                 if (isVoid)
                     out << "        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);" << endl;
