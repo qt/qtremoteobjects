@@ -58,6 +58,13 @@
 
 #define SET_NODE_NAME(obj) (obj).setName(QLatin1String(#obj))
 
+#if !defined(BACKEND) || !defined(HOST_URL) || !defined(REGISTRY_URL)
+  #error "Integration test needs BACKEND, HOST_URL and REGISTRY_URL defined."
+#else
+  const QUrl hostUrl = QUrl(QLatin1String(HOST_URL));
+  const QUrl registryUrl = QUrl(QLatin1String(REGISTRY_URL));
+#endif
+
 //DUMMY impl for variant comparison
 bool operator<(const QVector<int> &lhs, const QVector<int> &rhs)
 {
@@ -75,49 +82,9 @@ Q_SIGNALS:
 class tst_Integration: public QObject
 {
     Q_OBJECT
-    QRemoteObjectNode m_client;
-    QRemoteObjectNode m_registryClient;
-    QRemoteObjectHost m_basicServer;
-    QRemoteObjectHost m_localCentreServer;
-    QRemoteObjectHost m_tcpCentreServer;
-    QRemoteObjectRegistryHost m_registryServer;
-    QRemoteObjectHost m_qobjectServer;
-    QRemoteObjectNode m_qobjectClient;
-    QScopedPointer<EngineReplica> m_regBase;
-    QScopedPointer<EngineReplica> m_regNamed;
-    QScopedPointer<QRemoteObjectDynamicReplica> m_regDynamic;
-    QScopedPointer<QRemoteObjectDynamicReplica> m_regDynamicNamed;
-    int m_regAdded;
 
 signals:
     void forwardResult(int);
-
-public slots:
-    void onAdded(QRemoteObjectSourceLocation entry)
-    {
-        if (entry.first == QLatin1String("Engine")) {
-            ++m_regAdded;
-            //Add regular replica first, then dynamic one
-            m_regBase.reset(m_registryClient.acquire<EngineReplica>());
-            m_regDynamic.reset(m_registryClient.acquire(QStringLiteral("Engine")));
-        }
-        if (entry.first == QLatin1String("MyTestEngine")) {
-            m_regAdded += 2;
-            //Now add dynamic replica first, then regular one
-            m_regDynamicNamed.reset(m_registryClient.acquire(QStringLiteral("MyTestEngine")));
-            m_regNamed.reset(m_registryClient.acquire<EngineReplica>(QStringLiteral("MyTestEngine")));
-        }
-    }
-
-    void onInitialized() {
-        QObject *obj = sender();
-        QVERIFY(obj);
-        const QMetaObject *metaObject = obj->metaObject();
-        const int propIndex = metaObject->indexOfProperty("rpm");
-        QVERIFY(propIndex >= 0);
-        const QMetaProperty mp =  metaObject->property(propIndex);
-        QVERIFY(connect(obj, QByteArray(QByteArrayLiteral("2")+mp.notifySignal().methodSignature().constData()), this, SIGNAL(forwardResult(int))));
-    }
 
 private slots:
 
@@ -127,51 +94,7 @@ private slots:
                                          "qt.remoteobjects.debug=false\n"
                                          "qt.remoteobjects.warning=false"));
 
-        //Setup registry
-        //Registry needs to be created first until we get the retry mechanism implemented
-        m_registryServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
-        SET_NODE_NAME(m_registryServer);
-
-        SET_NODE_NAME(m_client);
-        m_registryClient.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
-        SET_NODE_NAME(m_registryClient);
-        const bool res = m_registryClient.waitForRegistry(3000);
-        QVERIFY(res);
-
-        m_basicServer.setHostUrl(QUrl(QStringLiteral("tcp://127.0.0.1:0")));
-        SET_NODE_NAME(m_basicServer);
-
-        engine.reset(new Engine);
-        speedometer.reset(new Speedometer);
-        m_basicServer.enableRemoting(engine.data());
-        m_basicServer.enableRemoting(speedometer.data());
-
-        m_client.connectToNode(m_basicServer.hostUrl());
-
-        //setup servers
-        QMetaType::registerComparators<QVector<int> >();
-        m_localCentreServer.setHostUrl(QUrl(QStringLiteral("local:local")));
-        m_localCentreServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
-        SET_NODE_NAME(m_localCentreServer);
-        dataCenterLocal.reset(new LocalDataCenterSimpleSource);
-        dataCenterLocal->setData1(5);
-        dataCenterLocal->setData2(5.0);
-        dataCenterLocal->setData3(QStringLiteral("local"));
-        dataCenterLocal->setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
-        m_localCentreServer.enableRemoting(dataCenterLocal.data());
-
-        m_tcpCentreServer.setHostUrl(QUrl(QStringLiteral("tcp://127.0.0.1:0")));
-        m_tcpCentreServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
-        SET_NODE_NAME(m_tcpCentreServer);
-        dataCenterTcp.reset(new TcpDataCenterSimpleSource);
-        dataCenterTcp->setData1(5);
-        dataCenterTcp->setData2(5.0);
-        dataCenterTcp->setData3(QStringLiteral("tcp"));
-        dataCenterTcp->setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
-        m_tcpCentreServer.enableRemoting(dataCenterTcp.data());
-
-        //Setup the client
-        //QVERIFY(m_registryClient.connectToNode( QStringLiteral("local:replica")));
+        qDebug() << "Running tst_Integration for backend:" << BACKEND;
     }
 
     void cleanup()
@@ -181,11 +104,18 @@ private slots:
     }
 
     void enumTest() {
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
+
         TestClassSimpleSource tc;
         tc.setTestEnum(TestEnum::FALSE);
         tc.setClassEnum(TestClassSimpleSource::One);
-        m_basicServer.enableRemoting(&tc);
-        const QScopedPointer<TestClassReplica> tc_rep(m_client.acquire<TestClassReplica>());
+        host.enableRemoting(&tc);
+        const QScopedPointer<TestClassReplica> tc_rep(client.acquire<TestClassReplica>());
         tc_rep->waitForSource();
         QCOMPARE(tc.testEnum(), tc_rep->testEnum());
         QCOMPARE((qint32)tc.classEnum(), (qint32)TestClassSimpleSource::One);
@@ -208,7 +138,7 @@ private slots:
             QCOMPARE((qint32)tc.classEnum(), (qint32)tc_rep->classEnum());
         }
 
-        QScopedPointer<QRemoteObjectDynamicReplica> tc_repDynamic(m_client.acquire(QStringLiteral("TestClass")));
+        QScopedPointer<QRemoteObjectDynamicReplica> tc_repDynamic(client.acquire(QStringLiteral("TestClass")));
 
         tc_repDynamic->waitForSource(1000);
         QVERIFY(tc_repDynamic->isInitialized());
@@ -238,77 +168,135 @@ private slots:
     }
 
     void namedObjectTest() {
-        engine->setRpm(3333);
-        Engine *e = new Engine();
-        QScopedPointer<Engine> engineSave;
-        engineSave.reset(e);
-        e->setRpm(4444);
-        m_basicServer.enableRemoting(e, QStringLiteral("MyTestEngine"));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
-        const QScopedPointer<EngineReplica> namedEngine_r(m_client.acquire<EngineReplica>(QStringLiteral("MyTestEngine")));
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
+
+        e.setRpm(3333);
+        Engine *e2 = new Engine();
+        QScopedPointer<Engine> engineSave;
+        engineSave.reset(e2);
+        e2->setRpm(4444);
+        host.enableRemoting(&e);
+        host.enableRemoting(e2, QStringLiteral("MyTestEngine"));
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> namedEngine_r(client.acquire<EngineReplica>(QStringLiteral("MyTestEngine")));
         engine_r->waitForSource();
-        QCOMPARE(engine_r->cylinders(), 4);
+        QCOMPARE(engine_r->cylinders(), e.cylinders());
         QCOMPARE(engine_r->rpm(), 3333);
         namedEngine_r->waitForSource();
-        QCOMPARE(namedEngine_r->cylinders(), 4);
+        QCOMPARE(namedEngine_r->cylinders(), e2->cylinders());
         QCOMPARE(namedEngine_r->rpm(), 4444);
 
         engineSave.reset();
         //Deleting the object before disable remoting will cause disable remoting to
         //return false;
-        QVERIFY(!m_basicServer.disableRemoting(e));
+        QVERIFY(!host.disableRemoting(e2));
     }
 
     void registryAddedTest() {
-        m_regAdded = 0;
-        connect(m_registryClient.registry(), &QRemoteObjectRegistry::remoteObjectAdded, this, &tst_Integration::onAdded);
+        QRemoteObjectRegistryHost registry(registryUrl);
+        SET_NODE_NAME(registry);
 
-        QSignalSpy addedSpy(m_registryClient.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
+        QRemoteObjectHost host(hostUrl, registryUrl);
+        SET_NODE_NAME(host);
+
+        QRemoteObjectNode client(registryUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        QScopedPointer<EngineReplica> regBase, regNamed;
+        QScopedPointer<QRemoteObjectDynamicReplica> regDynamic, regDynamicNamed;
+
+        int regAdded = 0;
+        connect(client.registry(), &QRemoteObjectRegistry::remoteObjectAdded, [&](QRemoteObjectSourceLocation entry)
+            {
+                if (entry.first == QLatin1String("Engine")) {
+                    ++regAdded;
+                    //Add regular replica first, then dynamic one
+                    regBase.reset(client.acquire<EngineReplica>());
+                    regDynamic.reset(client.acquire(QStringLiteral("Engine")));
+                }
+                if (entry.first == QLatin1String("MyTestEngine")) {
+                    regAdded += 2;
+                    //Now add dynamic replica first, then regular one
+                    regDynamicNamed.reset(client.acquire(QStringLiteral("MyTestEngine")));
+                    regNamed.reset(client.acquire<EngineReplica>(QStringLiteral("MyTestEngine")));
+                }
+            });
+
+        QSignalSpy addedSpy(client.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
 
         Engine e;
         e.setRpm(1111);
-        m_localCentreServer.enableRemoting(&e);
+        host.enableRemoting(&e);
         Engine e2;
         e2.setRpm(2222);
-        m_localCentreServer.enableRemoting(&e2, QStringLiteral("MyTestEngine"));
-        while (m_regAdded < 3) {
-            QVERIFY(addedSpy.wait());
+        host.enableRemoting(&e2, QStringLiteral("MyTestEngine"));
+        while (regAdded < 3) {
+            addedSpy.wait(100);
         }
-        m_regBase->waitForSource(1000);
-        m_regNamed->waitForSource(1000);
-        m_regDynamic->waitForSource(1000);
-        m_regDynamicNamed->waitForSource(1000);
-        QVERIFY(m_regBase->isInitialized());
-        QCOMPARE(m_regBase->rpm(),1111);
-        QVERIFY(m_regNamed->isInitialized());
-        QCOMPARE(m_regNamed->rpm(),2222);
+        regBase->waitForSource(100);
+        regNamed->waitForSource(100);
+        regDynamic->waitForSource(100);
+        regDynamicNamed->waitForSource(100);
+        QVERIFY(regBase->isInitialized());
+        QCOMPARE(regBase->rpm(),e.rpm());
+        QVERIFY(regNamed->isInitialized());
+        QCOMPARE(regNamed->rpm(),e2.rpm());
 
-        QVERIFY(m_regDynamic->isInitialized());
-        const QMetaObject *metaObject = m_regDynamic->metaObject();
+        QVERIFY(regDynamic->isInitialized());
+        const QMetaObject *metaObject = regDynamic->metaObject();
 
         const int propertyIndex = metaObject->indexOfProperty("rpm");
         QVERIFY(propertyIndex >= 0);
         const QMetaProperty property = metaObject->property(propertyIndex);
         QVERIFY(property.isValid());
 
-        QCOMPARE(property.read(m_regDynamic.data()).toInt(),e.rpm());
+        QCOMPARE(property.read(regDynamic.data()).toInt(),e.rpm());
 
-        QVERIFY(m_regDynamicNamed->isInitialized());
-        QCOMPARE(property.read(m_regDynamicNamed.data()).toInt(),e2.rpm());
+        QVERIFY(regDynamicNamed->isInitialized());
+        QCOMPARE(property.read(regDynamicNamed.data()).toInt(),e2.rpm());
 
-        QVERIFY(m_localCentreServer.disableRemoting(&e));
-        QVERIFY(m_localCentreServer.disableRemoting(&e2));
+        QVERIFY(host.disableRemoting(&e));
+        QVERIFY(host.disableRemoting(&e2));
     }
 
     void registryTest() {
-        const QScopedPointer<TcpDataCenterReplica> tcpCentre(m_registryClient.acquire<TcpDataCenterReplica>());
-        const QScopedPointer<LocalDataCenterReplica> localCentre(m_registryClient.acquire<LocalDataCenterReplica>());
-        QTRY_VERIFY(tcpCentre->waitForSource(100));
+        QRemoteObjectRegistryHost registry(registryUrl);
+        SET_NODE_NAME(registry);
+        TcpDataCenterSimpleSource source1;
+        source1.setData1(5);
+        source1.setData2(5.0);
+        source1.setData3(QStringLiteral("tcp"));
+        source1.setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
+        registry.enableRemoting(&source1);
+
+        QRemoteObjectHost host(hostUrl, registryUrl);
+        SET_NODE_NAME(host);
+        LocalDataCenterSimpleSource source2;
+        source2.setData1(5);
+        source2.setData2(5.0);
+        source2.setData3(QStringLiteral("local"));
+        source2.setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
+        host.enableRemoting(&source2);
+        QVERIFY(host.waitForRegistry(1000));
+
+        QRemoteObjectNode client(registryUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<TcpDataCenterReplica> tcpCentre(client.acquire<TcpDataCenterReplica>());
+        const QScopedPointer<LocalDataCenterReplica> localCentre(client.acquire<LocalDataCenterReplica>());
         QTRY_VERIFY(localCentre->waitForSource(100));
-        //TODO this still fails intermittantly.  Fix that in another patch, though.
-        //qDebug() << m_registryClient.registry()->sourceLocations() << m_registryServer.registry()->sourceLocations();
-        //QCOMPARE(m_registryClient.registry()->sourceLocations(), m_registryServer.registry()->sourceLocations());
+        QTRY_VERIFY(tcpCentre->waitForSource(100));
+
+        QCOMPARE(client.registry()->sourceLocations(), host.registry()->sourceLocations());
+        QCOMPARE(client.registry()->sourceLocations(), registry.registry()->sourceLocations());
         QTRY_VERIFY(localCentre->isInitialized());
         QTRY_VERIFY(tcpCentre->isInitialized());
 
@@ -321,92 +309,140 @@ private slots:
         QCOMPARE(localCentre->data2(), 5.0);
         QCOMPARE(localCentre->data3(), QStringLiteral("local"));
         QCOMPARE(localCentre->data4(), QVector<int>() << 1 << 2 << 3 << 4 << 5);
-
     }
 
     void noRegistryTest() {
-        QRemoteObjectHost regReplica(QUrl(QStringLiteral("local:testHost")), QUrl(QStringLiteral("local:testRegistry")));
-        SET_NODE_NAME(regReplica);
-        const bool res = regReplica.waitForRegistry(3000);
+        QRemoteObjectHost host(hostUrl, registryUrl);
+        SET_NODE_NAME(host);
+        const bool res = host.waitForRegistry(3000);
         QVERIFY(!res);
-        QCOMPARE(regReplica.registry()->isInitialized(), false);
+        QCOMPARE(host.registry()->isInitialized(), false);
         const QScopedPointer<Engine> localEngine(new Engine);
-        regReplica.enableRemoting(localEngine.data());
-        QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
+        host.enableRemoting(localEngine.data());
+        QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), true);
     }
 
     void delayedRegistryTest() {
-        QRemoteObjectHost regReplica(QUrl(QStringLiteral("local:testHost")),QUrl(QStringLiteral("local:testRegistry")));
-        SET_NODE_NAME(regReplica);
-        const bool res = regReplica.waitForRegistry(3000);
+        QRemoteObjectHost host(hostUrl, registryUrl);
+        SET_NODE_NAME(host);
+        const bool res = host.waitForRegistry(3000);
         QVERIFY(!res);
-        QCOMPARE(regReplica.registry()->isInitialized(), false);
+        QCOMPARE(host.registry()->isInitialized(), false);
         const QScopedPointer<Engine> localEngine(new Engine);
-        regReplica.enableRemoting(localEngine.data());
-        QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), true);
-        QSignalSpy spy(regReplica.registry(), SIGNAL(initialized()));
-        QSignalSpy addedSpy(regReplica.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
-        QRemoteObjectRegistryHost regSource(QUrl(QStringLiteral("local:testRegistry")));
-        SET_NODE_NAME(regSource);
+        host.enableRemoting(localEngine.data());
+        QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), true);
+        QSignalSpy spy(host.registry(), SIGNAL(initialized()));
+        QSignalSpy addedSpy(host.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
+        QRemoteObjectRegistryHost registry(registryUrl);
+        SET_NODE_NAME(registry);
         bool added = addedSpy.wait();
         QVERIFY(spy.count() > 0);
         QCOMPARE(added, true);
-        QCOMPARE(regReplica.registry()->sourceLocations().keys().isEmpty(), false);
-        QCOMPARE(regReplica.registry()->sourceLocations().keys().at(0), QStringLiteral("Engine"));
-        QCOMPARE(regReplica.registry()->sourceLocations().value(QStringLiteral("Engine")), QUrl(QStringLiteral("local:testHost")));
+        QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), false);
+        QCOMPARE(host.registry()->sourceLocations().keys().at(0), QStringLiteral("Engine"));
+        QCOMPARE(host.registry()->sourceLocations().value(QStringLiteral("Engine")), hostUrl);
         //This should produce a warning...
-        regSource.enableRemoting(localEngine.data());
-        QVERIFY(regReplica.registry()->sourceLocations().value(QStringLiteral("Engine")) != QUrl(QStringLiteral("local:testRegistry")));
-
+        registry.enableRemoting(localEngine.data());
+        QVERIFY(host.registry()->sourceLocations().value(QStringLiteral("Engine")) != registryUrl);
     }
 
     void basicTest() {
-        engine->setRpm(1234);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        e.setRpm(1234);
+        host.enableRemoting(&e);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
-        QCOMPARE(engine_r->rpm(), 1234);
+        QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
     void defaultValueTest() {
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->cylinders(), 4);
     }
 
     void notifyTest() {
-        engine->setRpm(2345);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged(int)));
+        e.setRpm(2345);
+
         spy.wait();
         QCOMPARE(spy.count(), 1);
         const QList<QVariant> &arguments = spy.first();
         bool ok;
         int res = arguments.at(0).toInt(&ok);
         QVERIFY(ok);
-        QCOMPARE(res, engine->rpm());
-        QCOMPARE(engine_r->rpm(), engine->rpm());
+        QCOMPARE(res, e.rpm());
+        QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
     void dynamicNotifyTest() {
-        engine->setRpm(3456);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
         QSignalSpy spy(this, SIGNAL(forwardResult(int)));
-        QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(m_client.acquire(QStringLiteral("Engine")));
-        connect(engine_dr.data(), &QRemoteObjectDynamicReplica::initialized, this, &tst_Integration::onInitialized);
+        QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquire(QStringLiteral("Engine")));
+        connect(engine_dr.data(), &QRemoteObjectDynamicReplica::initialized, [&]()
+            {
+                const QMetaObject *metaObject = engine_dr->metaObject();
+                const int propIndex = metaObject->indexOfProperty("rpm");
+                QVERIFY(propIndex >= 0);
+                const QMetaProperty mp =  metaObject->property(propIndex);
+                QVERIFY(connect(engine_dr.data(), QByteArray(QByteArrayLiteral("2")+mp.notifySignal().methodSignature().constData()), this, SIGNAL(forwardResult(int))));
+             });
+        e.setRpm(3456);
         spy.wait();
         QCOMPARE(spy.count(), 1);
         const QList<QVariant> &arguments = spy.first();
         bool ok;
         int res = arguments.at(0).toInt(&ok);
         QVERIFY(ok);
-        QCOMPARE(res, engine->rpm());
+        QCOMPARE(res, e.rpm());
     }
 
     void slotTest() {
-        engine->setStarted(false);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+        e.setStarted(false);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         QEventLoop loop;
         QTimer::singleShot(100, &loop, &QEventLoop::quit);
         connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
@@ -425,9 +461,17 @@ private slots:
     }
 
     void slotTestWithWatcher() {
-        engine->setStarted(false);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+        e.setStarted(false);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         QEventLoop loop;
         QTimer::singleShot(100, &loop, &QEventLoop::quit);
         connect(engine_r.data(), &EngineReplica::initialized, &loop, &QEventLoop::quit);
@@ -449,9 +493,17 @@ private slots:
     }
 
     void slotTestDynamicReplica() {
-        engine->setStarted(false);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire(QStringLiteral("Engine")));
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+        e.setStarted(false);
+
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquire(QStringLiteral("Engine")));
         Q_ASSERT(engine_r);
         QEventLoop loop;
         QTimer::singleShot(100, &loop, &QEventLoop::quit);
@@ -481,7 +533,16 @@ private slots:
     }
 
     void slotTestDynamicReplicaWithArguments() {
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire(QStringLiteral("Engine")));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquire(QStringLiteral("Engine")));
         Q_ASSERT(engine_r);
         bool ok = engine_r->waitForSource();
         QVERIFY(ok);
@@ -518,20 +579,31 @@ private slots:
     }
 
     void expapiTestDynamicReplica(){
-        engine->setStarted(false);
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(m_client.acquire(QStringLiteral("Engine")));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquire(QStringLiteral("Engine")));
         const QMetaObject *metaObject = engine_r->metaObject();
         const int propIndex = metaObject->indexOfProperty("purchasedPart");
         QVERIFY(propIndex < 0);
         const int methodIndex = metaObject->indexOfMethod("setpurchasedPart(bool)");
         QVERIFY(methodIndex < 0);
-
     }
 
     void slotTestInProcess() {
-        engine->setStarted(false);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+        e.setStarted(false);
 
-        const QScopedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(host.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
 
@@ -546,7 +618,16 @@ private slots:
 
     void slotTestWithUnnormalizedSignature()
     {
-        const QScopedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
 
         engine_r->unnormalizedSignature(0, 0);
@@ -554,7 +635,16 @@ private slots:
 
     void setterTest()
     {
-        const QScopedPointer<EngineReplica> engine_r(m_basicServer.acquire<EngineReplica>());
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged(int)));
         engine_r->setRpm(42);
@@ -565,7 +655,16 @@ private slots:
 
     void dynamicSetterTest()
     {
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(m_client.acquire(QStringLiteral("Engine")));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquire(QStringLiteral("Engine")));
         engine_dr->waitForSource();
         const QMetaObject *metaObject = engine_dr->metaObject();
         const int propIndex = metaObject->indexOfProperty("rpm");
@@ -578,9 +677,17 @@ private slots:
     }
 
     void slotWithParameterTest() {
-        engine->setRpm(0);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+        e.setRpm(0);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->rpm(), 0);
 
@@ -592,9 +699,18 @@ private slots:
     }
 
     void slotWithUserReturnTypeTest() {
-        engine->setTemperature(Temperature(400, QStringLiteral("Kelvin")));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        e.setTemperature(Temperature(400, QStringLiteral("Kelvin")));
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
         QRemoteObjectPendingReply<Temperature> pendingReply = engine_r->temperature();
         pendingReply.waitForFinished();
@@ -603,53 +719,93 @@ private slots:
     }
 
     void sequentialReplicaTest() {
-        engine->setRpm(3456);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
 
-        QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
-        engine_r->waitForSource();
-        QCOMPARE(engine_r->rpm(), 3456);
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
 
-        engine_r.reset(m_client.acquire< EngineReplica >());
+        e.setRpm(3456);
+
+        QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
-        QCOMPARE(engine_r->rpm(), 3456);
+        QCOMPARE(engine_r->rpm(), e.rpm());
+
+        engine_r.reset(client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
     void doubleReplicaTest() {
-        const QScopedPointer<EngineReplica> engine_r1(m_client.acquire< EngineReplica >());
-        const QScopedPointer<EngineReplica> engine_r2(m_client.acquire< EngineReplica >());
-        engine->setRpm(3412);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+        e.setRpm(3412);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r1(client.acquire< EngineReplica >());
+        const QScopedPointer<EngineReplica> engine_r2(client.acquire< EngineReplica >());
 
         engine_r1->waitForSource();
         engine_r2->waitForSource();
 
-        QCOMPARE(engine_r1->rpm(), 3412);
-        QCOMPARE(engine_r2->rpm(), 3412);
+        QCOMPARE(engine_r1->rpm(), e.rpm());
+        QCOMPARE(engine_r2->rpm(), e.rpm());
     }
 
     void twoReplicaTest() {
-        engine->setRpm(1234);
-        speedometer->setMph(70);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        Speedometer s;
+        host.enableRemoting(&e);
+        host.enableRemoting(&s);
 
-        const QScopedPointer<EngineReplica> engine_r(m_client.acquire<EngineReplica>());
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        e.setRpm(1234);
+        s.setMph(70);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
-        const QScopedPointer<SpeedometerReplica> speedometer_r(m_client.acquire<SpeedometerReplica>());
+        const QScopedPointer<SpeedometerReplica> speedometer_r(client.acquire<SpeedometerReplica>());
         speedometer_r->waitForSource();
 
-        QCOMPARE(engine_r->rpm(), 1234);
-        QCOMPARE(speedometer_r->mph(), 70);
+        QCOMPARE(engine_r->rpm(), e.rpm());
+        QCOMPARE(speedometer_r->mph(), s.mph());
     }
 
     void dynamicReplicaTest() {
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep1(m_registryClient.acquire(QStringLiteral("TcpDataCenter")));
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep2(m_registryClient.acquire(QStringLiteral("TcpDataCenter")));
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep3(m_registryClient.acquire(QStringLiteral("LocalDataCenter")));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        TcpDataCenterSimpleSource t;
+        LocalDataCenterSimpleSource l;
+        host.enableRemoting(&t);
+        host.enableRemoting(&l);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep1(client.acquire(QStringLiteral("TcpDataCenter")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep2(client.acquire(QStringLiteral("TcpDataCenter")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep3(client.acquire(QStringLiteral("LocalDataCenter")));
         rep1->waitForSource();
         rep2->waitForSource();
         rep3->waitForSource();
         const QMetaObject *metaTcpRep1 = rep1->metaObject();
         const QMetaObject *metaLocalRep1 = rep3->metaObject();
-        const QMetaObject *metaTcpSource = dataCenterTcp->metaObject();
-        const QMetaObject *metaLocalSource = dataCenterLocal->metaObject();
+        const QMetaObject *metaTcpSource = t.metaObject();
+        const QMetaObject *metaLocalSource = l.metaObject();
         QVERIFY(rep1->isInitialized());
         QVERIFY(rep2->isInitialized());
         QVERIFY(rep3->isInitialized());
@@ -666,7 +822,7 @@ private slots:
                 QCOMPARE(propRhs.notifySignalIndex() != -1, true);
                 QCOMPARE(metaTcpRep1->method(propLhs.notifySignalIndex()).name(), metaTcpSource->method(propRhs.notifySignalIndex()).name());
             }
-            QCOMPARE(propLhs.read(rep1.data()),  propRhs.read(dataCenterTcp.data()));
+            QCOMPARE(propLhs.read(rep1.data()),  propRhs.read(&t));
         }
         for (int i = 0; i < metaLocalRep1->propertyCount(); ++i )
         {
@@ -680,57 +836,70 @@ private slots:
                 QCOMPARE(propRhs.notifySignalIndex() != -1, true);
                 QCOMPARE(metaTcpRep1->method(propLhs.notifySignalIndex()).name(), metaTcpSource->method(propRhs.notifySignalIndex()).name());
             }
-            QCOMPARE(propLhs.read(rep3.data()),  propRhs.read(dataCenterLocal.data()));
+            QCOMPARE(propLhs.read(rep3.data()),  propRhs.read(&l));
         }
 
     }
 
     void apiTest() {
-        m_qobjectServer.setHostUrl(QUrl(QStringLiteral("local:qobject")));
-        SET_NODE_NAME(m_qobjectServer);
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting<EngineSourceAPI>(&e);
+        e.setRpm(1234);
 
-        m_qobjectServer.enableRemoting<EngineSourceAPI>(engine.data());
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
 
-        engine->setRpm(1234);
-
-        m_qobjectClient.connectToNode(QUrl(QStringLiteral("local:qobject")));
-        const QScopedPointer<EngineReplica> engine_r(m_qobjectClient.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
 
-        QCOMPARE(engine_r->rpm(), 1234);
+        QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
     void apiInProcTest() {
-        const QScopedPointer<EngineReplica> engine_r_inProc(m_qobjectServer.acquire<EngineReplica>());
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting<EngineSourceAPI>(&e);
+        e.setRpm(1234);
+
+        const QScopedPointer<EngineReplica> engine_r_inProc(host.acquire<EngineReplica>());
         engine_r_inProc->waitForSource();
 
-        QCOMPARE(engine_r_inProc->rpm(), 1234);
+        QCOMPARE(engine_r_inProc->rpm(), e.rpm());
     }
 
     void clientBeforeServerTest() {
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
+        const QScopedPointer<EngineReplica> engine_d(client.acquire<EngineReplica>());
 
-        QRemoteObjectNode d_client;
-        d_client.connectToNode(QUrl(QStringLiteral("local:cBST")));
-        const QScopedPointer<EngineReplica> engine_d(d_client.acquire<EngineReplica>());
-
-        QRemoteObjectHost d_server(QUrl(QStringLiteral("local:cBST")));
-        SET_NODE_NAME(d_server);
-        d_server.enableRemoting<EngineSourceAPI>(engine.data());
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting<EngineSourceAPI>(&e);
         QSignalSpy spy(engine_d.data(), SIGNAL(rpmChanged(int)));
-        engine->setRpm(50);
+        e.setRpm(50);
 
         spy.wait();
         QCOMPARE(spy.count(), 1);
 
-        QCOMPARE(engine_d->rpm(), 50);
-
+        QCOMPARE(engine_d->rpm(), e.rpm());
     }
 
-    void largeDataLocalTest() {
+    void largeDataTest() {
         TestLargeData t;
-        m_localCentreServer.enableRemoting(&t, QStringLiteral("large"));
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        host.enableRemoting(&t, QStringLiteral("large"));
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep(m_registryClient.acquire(QStringLiteral("large")));
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep(client.acquire(QStringLiteral("large")));
         rep->waitForSource();
         QVERIFY(rep->isInitialized());
         const QMetaObject *metaObject = rep->metaObject();
@@ -744,38 +913,24 @@ private slots:
         QCOMPARE(spy.count(), 1);
         const QList<QVariant> &arguments = spy.first();
         QVERIFY(arguments.at(0).toByteArray() == data);
-        m_localCentreServer.disableRemoting(&t);
-    }
-
-    void largeDataTcpTest() {
-        TestLargeData t;
-        m_basicServer.enableRemoting(&t, QStringLiteral("large"));
-
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep(m_client.acquire(QStringLiteral("large")));
-        rep->waitForSource();
-        QVERIFY(rep->isInitialized());
-        const QMetaObject *metaObject = rep->metaObject();
-        const int sigIndex = metaObject->indexOfSignal("send(QByteArray)");
-        QVERIFY(sigIndex != -1);
-        const QMetaMethod mm =  metaObject->method(sigIndex);
-        QSignalSpy spy(rep.data(), QByteArray(QByteArrayLiteral("2")+mm.methodSignature().constData()));
-        const QByteArray data(16384,'y');
-        emit t.send(data);
-        spy.wait();
-        QCOMPARE(spy.count(), 1);
-        const QList<QVariant> &arguments = spy.first();
-        QVERIFY(arguments.at(0).toByteArray() == data);
-        m_basicServer.disableRemoting(&t);
+        QVERIFY(host.disableRemoting(&t));
     }
 
     void PODTest()
     {
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
+
         MyPOD shouldPass(1, 2.0, QStringLiteral("pass"));
         MyPOD shouldFail(1, 2.0, QStringLiteral("fail"));
         MyClassSimpleSource m;
         m.setMyPOD(shouldPass);
-        m_basicServer.enableRemoting(&m);
-        const QScopedPointer<MyClassReplica> myclass_r(m_client.acquire<MyClassReplica>());
+        host.enableRemoting(&m);
+        const QScopedPointer<MyClassReplica> myclass_r(client.acquire<MyClassReplica>());
         myclass_r->waitForSource();
 
         QVERIFY(myclass_r->myPOD() == m.myPOD());
@@ -784,7 +939,7 @@ private slots:
 
     void SchemeTest()
     {
-        QRemoteObjectHost valid(QUrl(QLatin1String("local:valid")));
+        QRemoteObjectHost valid(hostUrl);
         QVERIFY(valid.lastError() == QRemoteObjectNode::NoError);
         QRemoteObjectHost invalid(QUrl(QLatin1String("invalid:invalid")));
         QVERIFY(invalid.lastError() == QRemoteObjectNode::HostUrlInvalid);
@@ -852,12 +1007,6 @@ private slots:
         QVERIFY(testServer.waitForFinished());
     }
 #endif
-
-private:
-    QScopedPointer<Engine> engine;
-    QScopedPointer<Speedometer> speedometer;
-    QScopedPointer<TcpDataCenterSimpleSource> dataCenterTcp;
-    QScopedPointer<LocalDataCenterSimpleSource> dataCenterLocal;
 };
 
 QTEST_MAIN(tst_Integration)
