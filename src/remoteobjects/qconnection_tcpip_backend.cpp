@@ -89,7 +89,8 @@ void TcpClientIo::connectToServer()
 
 bool TcpClientIo::isOpen()
 {
-    return (!isClosing() && m_socket.isOpen());
+    return (!isClosing() && (m_socket.state() == QAbstractSocket::ConnectedState
+                             || m_socket.state() == QAbstractSocket::ConnectingState));
 }
 
 void TcpClientIo::onError(QAbstractSocket::SocketError error)
@@ -98,10 +99,10 @@ void TcpClientIo::onError(QAbstractSocket::SocketError error)
 
     switch (error) {
     case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
+    case QAbstractSocket::ConnectionRefusedError:
         emit shouldReconnect(this);
         break;
     case QAbstractSocket::AddressInUseError:
-    case QAbstractSocket::ConnectionRefusedError:
         //... TODO error reporting
         break;
     default:
