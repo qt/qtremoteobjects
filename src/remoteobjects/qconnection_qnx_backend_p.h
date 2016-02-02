@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014-2015 Ford Motor Company
+** Copyright (C) 2014-2016 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,23 +39,58 @@
 **
 ****************************************************************************/
 
-#ifndef QCONNECTIONTCPIPBACKEND_P_H
-#define QCONNECTIONTCPIPBACKEND_P_H
+#ifndef QCONNECTIONQNXBACKEND
+#define QCONNECTIONQNXBACKEND
 
-#include "qconnectionfactories.h"
-
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QtRemoteObjects/qconnectionfactories.h>
+#include "qconnection_qnx_qiodevices.h"
+#include "qconnection_qnx_server.h"
 
 QT_BEGIN_NAMESPACE
 
-class TcpClientIo : public ClientIoDevice
+/*!
+    QtRO provides ClientIoDevice, ServerIoDevice and QConnectionAbstractServer
+    as abstract interfaces to allow different backends to be used by QtRO. The
+    concept behind these classes is that there needs to be a Host node, which
+    has an address that can be connected to. Then there is a client object,
+    which can be publicly constructed, and can connect to the server. When the
+    server gets a connection request, it creates the server side of the
+    connection, which communicates directly with the client. There are thus
+    three abstractions, one for the server, one for the client-side of the
+    connection, and the third for the server-side of the connection. The later
+    two need to inherit from QIODevice.
+
+    Creating a backend for something that is already implemented in Qt is a
+    matter of creating the three needed abstractions. In the case of creating a
+    QNX backend using QNX's Native Messaging, the backend needs to create the
+    Server (which has an address for accepting connections), the client
+    QIODevice, and the server side QIODevice. Since Native Messaging is one
+    way, and recommends using pulses to support two-way communication, the
+    logic for the client-side and server-side QIODevice are very different.
+    Thus, three additional backend classes are needed as well.
+
+    QnxClientIo implements the QtRO ClientIoDevice wrapper around the QNX
+    specific QQnxNativeIo QIODevice (the client-side QIODevice).
+
+    QnxServerIo implements the QtRO ServerIoDevice wrapper around the QNX
+    specific QIOQnxSource QIODevice (the server-side QIODevice).
+
+    QnxServerImpl implements the QtRO QConnectionAbstractServer wrapper around
+    the QNX specific QQnxNativeServer, which is the server object listening for
+    connections.
+
+    Not sure if it is of interest to the Qt community, but it seems like
+    QQnxNativeIo, QIOQnxSource and QQnxNativeServer could used as an optimized
+    QLocalServer/QLocalSocket QPA for QNX.
+*/
+
+class QnxClientIo : public ClientIoDevice
 {
     Q_OBJECT
 
 public:
-    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
-    ~TcpClientIo();
+    explicit QnxClientIo(QObject *parent = Q_NULLPTR);
+    ~QnxClientIo();
 
     QIODevice *connection() Q_DECL_OVERRIDE;
     void connectToServer() Q_DECL_OVERRIDE;
@@ -67,32 +102,31 @@ public Q_SLOTS:
 
 protected:
     void doClose() Q_DECL_OVERRIDE;
-
 private:
-    QTcpSocket m_socket;
+    QQnxNativeIo m_socket;
 };
 
-class TcpServerIo : public ServerIoDevice
+class QnxServerIo : public ServerIoDevice
 {
 public:
-    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
+    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = Q_NULLPTR);
 
     QIODevice *connection() const Q_DECL_OVERRIDE;
 protected:
     void doClose() Q_DECL_OVERRIDE;
 
 private:
-    QTcpSocket *m_connection;
+    //TODO Source or Replica
+    QIOQnxSource *m_connection;
 };
 
-class TcpServerImpl : public QConnectionAbstractServer
+class QnxServerImpl : public QConnectionAbstractServer
 {
     Q_OBJECT
-    Q_DISABLE_COPY(TcpServerImpl)
 
 public:
-    explicit TcpServerImpl(QObject *parent);
-    ~TcpServerImpl();
+    explicit QnxServerImpl(QObject *parent);
+    ~QnxServerImpl();
 
     bool hasPendingConnections() const Q_DECL_OVERRIDE;
     ServerIoDevice *configureNewConnection() Q_DECL_OVERRIDE;
@@ -102,9 +136,10 @@ public:
     void close() Q_DECL_OVERRIDE;
 
 private:
-    QTcpServer m_server;
-    QUrl m_originalUrl; // necessary because of a QHostAddress bug
+    QQnxNativeServer m_server;
 };
 
 QT_END_NAMESPACE
-#endif // QCONNECTIONTCPIPBACKEND_P_H
+
+#endif // QCONNECTIONQNXBACKEND
+

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014-2015 Ford Motor Company
+** Copyright (C) 2014-2016 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,72 +39,58 @@
 **
 ****************************************************************************/
 
-#ifndef QCONNECTIONTCPIPBACKEND_P_H
-#define QCONNECTIONTCPIPBACKEND_P_H
+#ifndef QQNXNATIVEIO_P_H
+#define QQNXNATIVEIO_P_H
 
-#include "qconnectionfactories.h"
+#include "qconnection_qnx_qiodevices.h"
 
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QReadWriteLock>
+#include <QScopedPointer>
 
-QT_BEGIN_NAMESPACE
+#include "private/qiodevice_p.h"
+#include "private/qringbuffer_p.h"
 
-class TcpClientIo : public ClientIoDevice
+class QQnxNativeIoPrivate : public QIODevicePrivate
 {
-    Q_OBJECT
+    Q_DECLARE_PUBLIC(QQnxNativeIo)
+
+    mutable QReadWriteLock ibLock;
+    mutable QReadWriteLock obLock;
 
 public:
-    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
-    ~TcpClientIo();
-
-    QIODevice *connection() Q_DECL_OVERRIDE;
-    void connectToServer() Q_DECL_OVERRIDE;
-    bool isOpen() Q_DECL_OVERRIDE;
-
-public Q_SLOTS:
-    void onError(QAbstractSocket::SocketError error);
-    void onStateChanged(QAbstractSocket::SocketState state);
-
-protected:
-    void doClose() Q_DECL_OVERRIDE;
-
-private:
-    QTcpSocket m_socket;
+    QQnxNativeIoPrivate();
+    ~QQnxNativeIoPrivate();
+    void thread_func();
+    bool establishConnection();
+    void teardownConnection();
+    void stopThread();
+    QString serverName;
+    int serverId, channelId, connectionId;
+    QAbstractSocket::SocketState state;
+    QScopedPointer<QRingBuffer> obuffer;
+    MsgType msgType;
+    iov_t tx_iov[2], rx_iov[2];
+    Thread<QQnxNativeIoPrivate> thread;
 };
 
-class TcpServerIo : public ServerIoDevice
+class QIOQnxSourcePrivate : public QIODevicePrivate
 {
-public:
-    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
+    Q_DECLARE_PUBLIC(QIOQnxSource)
 
-    QIODevice *connection() const Q_DECL_OVERRIDE;
-protected:
-    void doClose() Q_DECL_OVERRIDE;
+    friend class QQnxNativeServerPrivate;
 
-private:
-    QTcpSocket *m_connection;
-};
-
-class TcpServerImpl : public QConnectionAbstractServer
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(TcpServerImpl)
+    mutable QReadWriteLock ibLock;
+    mutable QReadWriteLock obLock;
 
 public:
-    explicit TcpServerImpl(QObject *parent);
-    ~TcpServerImpl();
-
-    bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *configureNewConnection() Q_DECL_OVERRIDE;
-    QUrl address() const Q_DECL_OVERRIDE;
-    bool listen(const QUrl &address) Q_DECL_OVERRIDE;
-    QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
-
-private:
-    QTcpServer m_server;
-    QUrl m_originalUrl; // necessary because of a QHostAddress bug
+    QIOQnxSourcePrivate(int _rcvid);
+    int rcvid;
+    QAbstractSocket::SocketState state;
+    MsgType msgType;
+    sigevent m_event;
+    QRingBuffer obuffer;
+    QAtomicInt m_serverClosing;
 };
 
-QT_END_NAMESPACE
-#endif // QCONNECTIONTCPIPBACKEND_P_H
+#endif // QQNXNATIVEIO_P_H
+

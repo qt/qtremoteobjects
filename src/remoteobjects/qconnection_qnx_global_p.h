@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014-2015 Ford Motor Company
+** Copyright (C) 2014-2016 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,72 +39,62 @@
 **
 ****************************************************************************/
 
-#ifndef QCONNECTIONTCPIPBACKEND_P_H
-#define QCONNECTIONTCPIPBACKEND_P_H
+#ifndef QNXIPCPRIVATE_GLOBAL_H
+#define QNXIPCPRIVATE_GLOBAL_H
 
-#include "qconnectionfactories.h"
+#include <sys/neutrino.h>
+#include <sys/dispatch.h>
+#include <sys/siginfo.h>
+#include <unistd.h> // provides SETIOV
+#include <errno.h>
+#include <QThread>
 
-#include <QTcpServer>
-#include <QTcpSocket>
+#define WARNING(cmd) qCWarning(QT_REMOTEOBJECT) << "Warning " #cmd << strerror(errno) \
+                        << Q_FUNC_INFO << __FILE__ << __LINE__;
 
-QT_BEGIN_NAMESPACE
+#define WARN_ON_ERROR(cmd, ...) if (cmd(__VA_ARGS__) == -1) qCWarning(QT_REMOTEOBJECT) \
+                        << "Error " #cmd << strerror(errno) << Q_FUNC_INFO << __FILE__ << __LINE__;
 
-class TcpClientIo : public ClientIoDevice
+#define WARN_AND_RETURN_ON_ERROR(cmd, retval, ...) if (cmd(__VA_ARGS__) == -1) \
+                        { qCWarning(QT_REMOTEOBJECT) << "Error " #cmd << strerror(errno) \
+                        << Q_FUNC_INFO << __FILE__ << __LINE__; return (retval); }
+
+#define FATAL_ON_ERROR(cmd, ...) if (cmd(__VA_ARGS__) == -1) qFatal("Error %s: %s %s %s %d", \
+                        #cmd, strerror(errno), Q_FUNC_INFO, __FILE__, __LINE__);
+
+const int MAX_RETRIES = 3;
+
+enum MsgType : uint16_t { REPLICA_INIT = _IO_MAX+100,
+                          REPLICA_TX_RECV,
+                          SOURCE_TX_RESP,
+                          SOURCE_TX_RESP_REPEAT,
+                        };
+enum PulseType : uint8_t { SOURCE_TX_RQ = _PULSE_CODE_MINAVAIL+42,
+                           REPLICA_WRITE,
+                           TERMINATE
+                         };
+union recv_msgs
 {
-    Q_OBJECT
-
-public:
-    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
-    ~TcpClientIo();
-
-    QIODevice *connection() Q_DECL_OVERRIDE;
-    void connectToServer() Q_DECL_OVERRIDE;
-    bool isOpen() Q_DECL_OVERRIDE;
-
-public Q_SLOTS:
-    void onError(QAbstractSocket::SocketError error);
-    void onStateChanged(QAbstractSocket::SocketState state);
-
-protected:
-    void doClose() Q_DECL_OVERRIDE;
-
-private:
-    QTcpSocket m_socket;
+    struct _pulse pulse;
+    uint16_t type;
 };
 
-class TcpServerIo : public ServerIoDevice
+template <typename T>
+class Thread : public QThread
 {
 public:
-    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
-
-    QIODevice *connection() const Q_DECL_OVERRIDE;
-protected:
-    void doClose() Q_DECL_OVERRIDE;
-
+    Thread(T *obj, const QString &name = QString()) : QThread(), m_obj(obj)
+    {
+        if (!name.isEmpty())
+            setObjectName(name);
+    }
+    void run() Q_DECL_OVERRIDE
+    {
+        m_obj->thread_func();
+    }
 private:
-    QTcpSocket *m_connection;
+    T *m_obj;
 };
 
-class TcpServerImpl : public QConnectionAbstractServer
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(TcpServerImpl)
+#endif // QNXIPCPRIVATE_GLOBAL_H
 
-public:
-    explicit TcpServerImpl(QObject *parent);
-    ~TcpServerImpl();
-
-    bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *configureNewConnection() Q_DECL_OVERRIDE;
-    QUrl address() const Q_DECL_OVERRIDE;
-    bool listen(const QUrl &address) Q_DECL_OVERRIDE;
-    QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
-
-private:
-    QTcpServer m_server;
-    QUrl m_originalUrl; // necessary because of a QHostAddress bug
-};
-
-QT_END_NAMESPACE
-#endif // QCONNECTIONTCPIPBACKEND_P_H

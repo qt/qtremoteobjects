@@ -100,7 +100,7 @@ public:
     virtual void close() = 0;
 
 protected:
-    virtual ServerIoDevice* _nextPendingConnection() = 0;
+    virtual ServerIoDevice* configureNewConnection() = 0;
 
 Q_SIGNALS:
     void newConnection();

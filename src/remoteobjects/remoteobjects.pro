@@ -47,8 +47,6 @@ PRIVATE_HEADERS += \
     $$PWD/qremoteobjectabstractitemreplica_p.h \
     $$PWD/qremoteobjectabstractitemadapter_p.h
 
-HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
-
 SOURCES += \
     $$PWD/qconnection_local_backend.cpp \
     $$PWD/qconnection_tcpip_backend.cpp \
@@ -65,6 +63,25 @@ SOURCES += \
     $$PWD/qtremoteobjectglobal.cpp \
     $$PWD/qremoteobjectabstractitemreplica.cpp \
     $$PWD/qremoteobjectabstractitemadapter.cpp
+
+qnx {
+    SOURCES += \
+        qconnection_qnx_backend.cpp \
+        qconnection_qnx_qiodevices.cpp \
+        qconnection_qnx_server.cpp \
+
+    PUBLIC_HEADERS += \
+        qconnection_qnx_qiodevices.h \
+        qconnection_qnx_server.h \
+
+    PRIVATE_HEADERS +=\
+        qconnection_qnx_backend_p.h \
+        qconnection_qnx_qiodevices_p.h \
+        qconnection_qnx_server_p.h \
+        qconnection_qnx_global_p.h \
+}
+
+HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
 
 DEFINES += QT_BUILD_REMOTEOBJECTS_LIB
 

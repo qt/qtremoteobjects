@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2014-2016 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -39,157 +39,149 @@
 **
 ****************************************************************************/
 
-#include "qconnection_local_backend_p.h"
+#include "qconnection_qnx_backend_p.h"
 
-LocalClientIo::LocalClientIo(QObject *parent)
+QnxClientIo::QnxClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
-    connect(&m_socket, &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
-    connect(&m_socket, static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
-    connect(&m_socket, &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
+    connect(&m_socket, &QQnxNativeIo::readyRead, this, &ClientIoDevice::readyRead);
+    connect(&m_socket,
+            static_cast<void(QQnxNativeIo::*)(QAbstractSocket::SocketError)>(&QQnxNativeIo::error),
+            this,
+            &QnxClientIo::onError);
+    connect(&m_socket, &QQnxNativeIo::stateChanged, this, &QnxClientIo::onStateChanged);
 }
 
-LocalClientIo::~LocalClientIo()
+QnxClientIo::~QnxClientIo()
 {
     close();
 }
 
-QIODevice *LocalClientIo::connection()
+QIODevice *QnxClientIo::connection()
 {
     return &m_socket;
 }
 
-void LocalClientIo::doClose()
+void QnxClientIo::doClose()
 {
     if (m_socket.isOpen()) {
-        connect(&m_socket, &QLocalSocket::disconnected, this, &QObject::deleteLater);
+        connect(&m_socket, &QQnxNativeIo::disconnected, this, &QObject::deleteLater);
         m_socket.disconnectFromServer();
     } else {
-        this->deleteLater();
+        deleteLater();
     }
 }
 
-void LocalClientIo::connectToServer()
+void QnxClientIo::connectToServer()
 {
     if (!isOpen())
         m_socket.connectToServer(url().path());
 }
 
-bool LocalClientIo::isOpen()
+bool QnxClientIo::isOpen()
 {
     return !isClosing() && m_socket.isOpen();
 }
 
-void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
+void QnxClientIo::onError(QAbstractSocket::SocketError error)
 {
     qCDebug(QT_REMOTEOBJECT) << "onError" << error << m_socket.serverName();
 
     switch (error) {
-    case QLocalSocket::ServerNotFoundError:
-    case QLocalSocket::UnknownSocketError:
-        //Host not there, wait and try again
+    case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
         emit shouldReconnect(this);
         break;
-    case QLocalSocket::ConnectionError:
-    case QLocalSocket::ConnectionRefusedError:
+    case QAbstractSocket::AddressInUseError:
+    case QAbstractSocket::ConnectionRefusedError:
         //... TODO error reporting
-#ifdef Q_OS_UNIX
         emit shouldReconnect(this);
-#endif
         break;
     default:
         break;
     }
 }
 
-void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
+void QnxClientIo::onStateChanged(QAbstractSocket::SocketState state)
 {
-    if (state == QLocalSocket::ClosingState && !isClosing()) {
+    if (state == QAbstractSocket::ClosingState && !isClosing()) {
         m_socket.abort();
         emit shouldReconnect(this);
-    }
-    if (state == QLocalSocket::ConnectedState) {
+    } else if (state == QAbstractSocket::ConnectedState) {
         m_dataStream.setDevice(connection());
         m_dataStream.resetStatus();
     }
 }
 
-LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
+QnxServerIo::QnxServerIo(QIOQnxSource *conn, QObject *parent)
     : ServerIoDevice(parent), m_connection(conn)
 {
     m_connection->setParent(this);
     connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
-    connect(conn, &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
+    connect(conn, &QIOQnxSource::disconnected, this, &ServerIoDevice::disconnected);
 }
 
-QIODevice *LocalServerIo::connection() const
+QIODevice *QnxServerIo::connection() const
 {
     return m_connection;
 }
 
-void LocalServerIo::doClose()
+void QnxServerIo::doClose()
 {
-    m_connection->disconnectFromServer();
+    m_connection->close();
 }
 
-LocalServerImpl::LocalServerImpl(QObject *parent)
+QnxServerImpl::QnxServerImpl(QObject *parent)
     : QConnectionAbstractServer(parent)
 {
-    connect(&m_server, &QLocalServer::newConnection, this, &QConnectionAbstractServer::newConnection);
+    connect(&m_server,
+            &QQnxNativeServer::newConnection,
+            this,
+            &QConnectionAbstractServer::newConnection);
 }
 
-LocalServerImpl::~LocalServerImpl()
+QnxServerImpl::~QnxServerImpl()
 {
     m_server.close();
 }
 
-ServerIoDevice *LocalServerImpl::configureNewConnection()
+ServerIoDevice *QnxServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
         return Q_NULLPTR;
 
-    return new LocalServerIo(m_server.nextPendingConnection(), this);
+    return new QnxServerIo(m_server.nextPendingConnection(), this);
 }
 
-bool LocalServerImpl::hasPendingConnections() const
+bool QnxServerImpl::hasPendingConnections() const
 {
     return m_server.hasPendingConnections();
 }
 
-QUrl LocalServerImpl::address() const
+QUrl QnxServerImpl::address() const
 {
     QUrl result;
     result.setPath(m_server.serverName());
-    result.setScheme(QRemoteObjectStringLiterals::local());
+    result.setScheme(QStringLiteral("qnx"));
 
     return result;
 }
 
-bool LocalServerImpl::listen(const QUrl &address)
+bool QnxServerImpl::listen(const QUrl &address)
 {
-#ifdef Q_OS_UNIX
-    bool res = m_server.listen(address.path());
-    if (!res) {
-        QLocalServer::removeServer(address.path());
-        res = m_server.listen(address.path());
-    }
-    return res;
-#else
     return m_server.listen(address.path());
-#endif
 }
 
-QAbstractSocket::SocketError LocalServerImpl::serverError() const
+QAbstractSocket::SocketError QnxServerImpl::serverError() const
 {
-    return m_server.serverError();
+    //TODO implement on QQnxNativeServer and here
+    //return m_server.serverError();
+    return QAbstractSocket::AddressInUseError;
 }
 
-void LocalServerImpl::close()
+void QnxServerImpl::close()
 {
-    m_server.close();
+    close();
 }
 
-REGISTER_QTRO_SERVER(LocalServerImpl, "local");
-REGISTER_QTRO_CLIENT(LocalClientIo, "local");
-
-QT_END_NAMESPACE
+REGISTER_QTRO_CLIENT(QnxClientIo, "qnx");
+REGISTER_QTRO_SERVER(QnxServerImpl, "qnx");

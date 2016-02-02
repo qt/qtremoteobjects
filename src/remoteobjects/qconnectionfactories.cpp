@@ -214,7 +214,7 @@ QConnectionAbstractServer::~QConnectionAbstractServer()
 
 ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
 {
-    ServerIoDevice *iodevice = _nextPendingConnection();
+    ServerIoDevice *iodevice = configureNewConnection();
     iodevice->initializeDataStream();
     return iodevice;
 }

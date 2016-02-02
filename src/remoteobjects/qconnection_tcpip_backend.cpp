@@ -154,7 +154,7 @@ TcpServerImpl::~TcpServerImpl()
     close();
 }
 
-ServerIoDevice *TcpServerImpl::_nextPendingConnection()
+ServerIoDevice *TcpServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
         return Q_NULLPTR;
