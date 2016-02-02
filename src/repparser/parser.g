@@ -213,7 +213,7 @@ public:
     explicit RepParser(QIODevice &outputDevice);
     virtual ~RepParser() {}
 
-    bool parse() { return QRepRegexParser<RepParser, $table>::parse(); }
+    bool parse() Q_DECL_OVERRIDE { return QRepRegexParser<RepParser, $table>::parse(); }
 
     void reset() Q_DECL_OVERRIDE;
     int nextToken();

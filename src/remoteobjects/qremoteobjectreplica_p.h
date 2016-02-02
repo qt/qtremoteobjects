@@ -157,8 +157,8 @@ public:
     void requestRemoteObjectSource();
     bool sendCommand();
     QRemoteObjectPendingCall sendCommandWithReply(int serialId);
-    bool waitForFinished(const QRemoteObjectPendingCall &call, int timeout);
-    void notifyAboutReply(int ackedSerialId, const QVariant &value);
+    bool waitForFinished(const QRemoteObjectPendingCall &call, int timeout) Q_DECL_OVERRIDE;
+    void notifyAboutReply(int ackedSerialId, const QVariant &value) Q_DECL_OVERRIDE;
     void setConnection(ClientIoDevice *conn);
     void setDisconnected();
 
