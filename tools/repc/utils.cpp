@@ -40,6 +40,9 @@
 ****************************************************************************/
 
 #include "utils.h"
+
+#include "repparser.h"
+
 #include <moc.h>
 
 #define _(X) QString::fromLatin1(X)

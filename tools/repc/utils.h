@@ -43,12 +43,14 @@
 #define UTILS_H
 
 #include <QByteArray>
-#include "repparser.h"
 
 QT_BEGIN_NAMESPACE
 struct ClassDef;
 QT_END_NAMESPACE
 
+struct AST;
+
 QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass = false);
 AST classList2AST(const QList<ClassDef> &classList);
+
 #endif // UTILS_H
