@@ -196,12 +196,15 @@ void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectRepl
 void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
 {
     qROPrivDebug() << Q_FUNC_INFO << name << this;
-    if (remoteObjectAddresses().contains(name)) {
-        if (initConnection(remoteObjectAddresses()[name]))
-            qROPrivDebug() << "openedConnection" << remoteObjectAddresses()[name];
-        else
-            qROPrivWarning() << "failed to open connection to" << name;
+    if (!remoteObjectAddresses().contains(name)) {
+        qROPrivDebug() << name << "not available - available addresses:" << remoteObjectAddresses();
+        return;
     }
+
+    if (initConnection(remoteObjectAddresses()[name]))
+        qROPrivDebug() << "openedConnection" << remoteObjectAddresses()[name];
+    else
+        qROPrivWarning() << "failed to open connection to" << name;
 }
 
 bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
