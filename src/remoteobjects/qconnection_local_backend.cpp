@@ -184,7 +184,7 @@ QAbstractSocket::SocketError LocalServerImpl::serverError() const
 
 void LocalServerImpl::close()
 {
-    close();
+    m_server.close();
 }
 
 REGISTER_QTRO_SERVER(LocalServerImpl, "local");
