@@ -85,7 +85,9 @@ void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
     qCDebug(QT_REMOTEOBJECT) << "onError" << error << m_socket.serverName();
 
     switch (error) {
-    case QLocalSocket::ServerNotFoundError:     //Host not there, wait and try again
+    case QLocalSocket::ServerNotFoundError:
+    case QLocalSocket::UnknownSocketError:
+        //Host not there, wait and try again
         emit shouldReconnect(this);
         break;
     case QLocalSocket::ConnectionError:
