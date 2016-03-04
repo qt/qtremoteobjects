@@ -161,6 +161,11 @@ void BenchmarksTest::benchQLocalSocketInt()
         }
         loop.exec();
     }
+
+#ifdef Q_OS_WIN
+    // Work-around QTBUG-38185: immediately close socket
+    client.abort();
+#endif
 }
 
 void BenchmarksTest::benchQLocalSocketQDataStreamInt()
@@ -199,6 +204,11 @@ void BenchmarksTest::benchQLocalSocketQDataStreamInt()
         }
         loop.exec();
     }
+
+#ifdef Q_OS_WIN
+    // Work-around QTBUG-38185: immediately close socket
+    client.abort();
+#endif
 }
 
 QTEST_MAIN(BenchmarksTest)
