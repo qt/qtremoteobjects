@@ -122,6 +122,8 @@ void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
 */
 int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, void **argv)
 {
+    static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
+
     QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
 
     int saved_id = id;
@@ -168,7 +170,11 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 args.push_back(QVariant(QVariant::nameToType(types[i].constData()), argv[i + 1]));
             }
 
-            qCDebug(QT_REMOTEOBJECT) << "method" << mm.methodSignature() << "invoked. Arguments=" << args;
+            if (debugArgs) {
+                qCDebug(QT_REMOTEOBJECT) << "method" << mm.methodSignature() << "invoked - args:" << args;
+            } else {
+                qCDebug(QT_REMOTEOBJECT) << "method" << mm.methodSignature() << "invoked";
+            }
 
             if (mm.returnType() == QMetaType::Void)
                 QRemoteObjectReplica::send(QMetaObject::InvokeMetaMethod, saved_id, args);

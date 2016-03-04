@@ -256,10 +256,16 @@ bool QConnectedReplicaPrivate::waitForSource(int timeout)
 
 void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
 {
+    static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
+
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod || call == QMetaObject::WriteProperty);
 
     if (call == QMetaObject::InvokeMetaMethod) {
-        qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
+        if (debugArgs) {
+            qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
+        } else {
+            qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << connectionToSource;
+        }
         if (index < m_methodOffset) //index - m_methodOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid method invocation.  Index not found:" << index << "( offset =" << m_methodOffset << ") object:" << m_objectName << this->m_metaObject->method(index).name();
         else {
