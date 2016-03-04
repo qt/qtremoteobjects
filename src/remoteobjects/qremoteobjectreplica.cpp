@@ -52,9 +52,9 @@
 
 #include <QCoreApplication>
 #include <QDataStream>
+#include <QElapsedTimer>
 #include <QVariant>
 #include <QThread>
-#include <QTime>
 #include <QTimer>
 
 #include <limits>
@@ -238,7 +238,7 @@ bool QConnectedReplicaPrivate::isReplicaValid() const
 bool QConnectedReplicaPrivate::waitForSource(int timeout)
 {
     if (isSet.load() != 2) {
-        QTime t;
+        QElapsedTimer t;
         t.start();
 
         while (isSet.load() != 2) {
@@ -247,7 +247,7 @@ bool QConnectedReplicaPrivate::waitForSource(int timeout)
                 return false;
             }
 
-            qApp->processEvents(QEventLoop::ExcludeUserInputEvents, 10);
+            qApp->processEvents(QEventLoop::WaitForMoreEvents | QEventLoop::ExcludeUserInputEvents);
         }
     }
 
