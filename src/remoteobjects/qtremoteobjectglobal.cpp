@@ -49,6 +49,7 @@ QT_BEGIN_NAMESPACE
 
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT, "qt.remoteobjects")
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS, "qt.remoteobjects.models")
+Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_IO, "qt.remoteobjects.io")
 
 namespace QtRemoteObjects {
 

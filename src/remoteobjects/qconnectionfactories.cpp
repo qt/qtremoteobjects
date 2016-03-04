@@ -61,7 +61,7 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
     case PropertyChangePacket: type = PropertyChangePacket; break;
     case ObjectList: type = ObjectList; break;
     default:
-        qWarning() << "Invalid packet received" << type;
+        qCWarning(QT_REMOTEOBJECT_IO) << "Invalid packet received" << type;
     }
     if (type == Invalid)
         return false;
@@ -91,7 +91,7 @@ void ClientIoDevice::close()
 
 bool ClientIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
 {
-    qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()" << m_curReadSize << bytesAvailable();
+    qCDebug(QT_REMOTEOBJECT_IO) << "ClientIODevice::read()" << m_curReadSize << bytesAvailable();
 
     if (m_curReadSize == 0) {
         if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
@@ -100,7 +100,7 @@ bool ClientIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
         m_dataStream >> m_curReadSize;
     }
 
-    qCDebug(QT_REMOTEOBJECT) << "ClientIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
+    qCDebug(QT_REMOTEOBJECT_IO) << "ClientIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
 
     if (bytesAvailable() < m_curReadSize)
         return false;
@@ -156,7 +156,7 @@ ServerIoDevice::~ServerIoDevice()
 
 bool ServerIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
 {
-    qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()" << m_curReadSize << bytesAvailable();
+    qCDebug(QT_REMOTEOBJECT_IO) << "ServerIODevice::read()" << m_curReadSize << bytesAvailable();
 
     if (m_curReadSize == 0) {
         if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
@@ -165,7 +165,7 @@ bool ServerIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
         m_dataStream >> m_curReadSize;
     }
 
-    qCDebug(QT_REMOTEOBJECT) << "ServerIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
+    qCDebug(QT_REMOTEOBJECT_IO) << "ServerIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
 
     if (bytesAvailable() < m_curReadSize)
         return false;
