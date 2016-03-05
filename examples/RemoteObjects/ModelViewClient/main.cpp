@@ -48,9 +48,9 @@ int main(int argc, char **argv)
 {
 
     QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
-                                     "qt.remoteobjects.warning=false"
+                                     "qt.remoteobjects.warning=false\n"
                                      "qt.remoteobjects.models.debug=false\n"
-                                     "qt.remoteobjects.models.debug=false\n");
+                                     "qt.remoteobjects.models.debug=false");
 
     QApplication app(argc, argv);
 
