@@ -146,7 +146,7 @@ Repc creates three helper classes for use with QtRO. For this example, we will u
 \li stateChangeTimer is QTimer that is used to toggle the state of our SimpleSwitch
 \li timeout_slot() is connected to timeout() Signal of stateChangeTimer
 \li server_slot(..), which is called on the \l {Source} (automatically via QtRO) whenever any \l {Replica} calls their version of the Slot, outputs the received value
-\li currStateChanged() Signal defined in \l {repc} generated \c rep_SimpleSwitch_source.h, is emitted whenever currState toggles. We ignore the Signal (in this example) on the Source side, and handle it later on the Replica side
+\li currStateChanged(bool) Signal defined in \l {repc} generated \c rep_SimpleSwitch_source.h, is emitted whenever currState toggles. We ignore the Signal (in this example) on the Source side, and handle it later on the Replica side
 \endlist
 
 The definition of our \c SwitchState class as described is shown below

@@ -59,7 +59,7 @@ Q_SIGNALS:
     void echoSwitchState(bool switchState);// this signal is connected with server_slot(..) on the source object and echoes back switch state received from source
 
 public Q_SLOTS:
-    void recSwitchState_slot(); // slot to receive source state
+    void recSwitchState_slot(bool); // slot to receive source state
 private:
     bool clientSwitchState; // holds received server switch state
     QSharedPointer<SimpleSwitchReplica> reptr;// holds reference to replica
