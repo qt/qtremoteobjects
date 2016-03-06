@@ -634,8 +634,7 @@ private slots:
 
 void TestModelView::initTestCase()
 {
-    QLoggingCategory::setFilterRules("default.*=true\n"
-                                     "qt.remoteobjects.debug=false\n"
+    QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
                                      "qt.remoteobjects.warning=false");
     //Setup registry
     //Registry needs to be created first until we get the retry mechanism implemented
@@ -675,7 +674,7 @@ void TestModelView::initTestCase()
     m_basicServer.enableRemoting(&m_sourceModel, "test", roles);
 
     const int numElements = 1000;
-    for (quint32 i = 0; i < numElements; ++i) {
+    for (int i = 0; i < numElements; ++i) {
         QString name = QString("Data %1").arg(i);
         QString pid = QString("%1").arg(i);
         m_listModel.addPair(name, pid);

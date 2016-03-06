@@ -123,6 +123,7 @@ struct RequestedHeaderData
 
 class SizeWatcher : public QRemoteObjectPendingCallWatcher
 {
+    Q_OBJECT
 public:
     SizeWatcher(IndexList _parentList, const QRemoteObjectPendingReply<QSize> &reply)
         : QRemoteObjectPendingCallWatcher(reply),
@@ -132,6 +133,7 @@ public:
 
 class RowWatcher : public QRemoteObjectPendingCallWatcher
 {
+    Q_OBJECT
 public:
     RowWatcher(IndexList _start, IndexList _end, QVector<int> _roles, const QRemoteObjectPendingReply<DataEntries> &reply)
         : QRemoteObjectPendingCallWatcher(reply),
@@ -144,6 +146,7 @@ public:
 
 class HeaderWatcher : public QRemoteObjectPendingCallWatcher
 {
+    Q_OBJECT
 public:
     HeaderWatcher(QVector<Qt::Orientation> _orientations, QVector<int> _sections, QVector<int> _roles, const QRemoteObjectPendingReply<QVariantList> &reply)
         : QRemoteObjectPendingCallWatcher(reply),

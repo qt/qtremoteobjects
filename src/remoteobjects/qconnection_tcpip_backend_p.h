@@ -74,6 +74,7 @@ private:
 
 class TcpServerIo : public ServerIoDevice
 {
+    Q_OBJECT
 public:
     explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
 

@@ -73,6 +73,7 @@ private:
 
 class LocalServerIo : public ServerIoDevice
 {
+    Q_OBJECT
 public:
     explicit LocalServerIo(QLocalSocket *conn, QObject *parent = Q_NULLPTR);
 
