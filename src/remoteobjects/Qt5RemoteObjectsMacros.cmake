@@ -90,6 +90,6 @@ macro(qt5_generate_repc outfiles infile outputtype)
     endforeach()
 
     set(_moc_outfile "${CMAKE_CURRENT_BINARY_DIR}/moc_${_outfile_base}.cpp")
-    qt5_create_moc_command(${_outfile_header} ${_moc_outfile} "${_moc_flags}" "" "")
+    qt5_create_moc_command(${_outfile_header} ${_moc_outfile} "${_moc_flags}" "" "" "")
     list(APPEND ${outfiles} "${_outfile_header}" ${_moc_outfile})
 endmacro()
