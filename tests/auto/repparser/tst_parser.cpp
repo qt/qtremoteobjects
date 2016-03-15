@@ -73,8 +73,9 @@ void tst_Parser::testBasic_data()
 
     //Comment out "empty" tests that fail QLALR parser...
     //QTest::newRow("empty") << ""; // empty lines are fine...
-    QTest::newRow("include") << "#include \"foo\"";
-    QTest::newRow("include_spaces") << "#  include \"foo\"";
+    QTest::newRow("preprocessor_line_include") << "#include \"foo\"";
+    QTest::newRow("preprocessor_line_include_spaces") << "#  include \"foo\"";
+    QTest::newRow("preprocessor_line_ifgroup") << "#if 1\n#include \"foo\n#endif";
     //QTest::newRow("comment") << "//This is a comment";
     QTest::newRow("enum") << "ENUM MyEnum {test}";
 }
@@ -362,7 +363,7 @@ void tst_Parser::testInvalid_data()
     QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}";
     QTest::newRow("slot_outsideclass") << "SLOT(void foo())";
     QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}";
-
+    QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}";
 }
 
 void tst_Parser::testInvalid()

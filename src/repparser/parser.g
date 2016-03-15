@@ -55,7 +55,7 @@
 %token stop "[stop]\\};?[ \\t]*"
 %token comma "[comma],"
 %token comment "[comment](?<comment>[ \\t]*//[^\\n]*\\n)"
-%token include "[include](?<include>#[ \\t]*include [^\\n]*\\n)"
+%token preprocessor_directive "[preprocessor_directive](?<preprocessor_directive>#[ \\t]*[^\\n]*\\n)"
 %token newline "[newline](\\r)?\\n"
 
 %start TopLevel
@@ -203,7 +203,7 @@ struct AST
     QVector<POD> pods;
     QVector<ASTEnum> enums;
     QVector<QString> enumUses;
-    QStringList includes;
+    QStringList preprocessorDirectives;
 };
 Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);
 
@@ -567,7 +567,7 @@ Types: Type | Type Types;
 Newlines: newline | newline Newlines;
 Comments: Comment | Comment Comments;
 Comment: comment | comment Newlines;
-Type: Include | Include Newlines;
+Type: PreprocessorDirective | PreprocessorDirective Newlines;
 Type: Pod | Pod Newlines;
 Type: Class;
 Type: UseEnum | UseEnum Newlines;
@@ -582,11 +582,11 @@ Type: Enum;
 
 Comma: comma | comma Newlines;
 
-Include: include;
+PreprocessorDirective: preprocessor_directive;
 /.
     case $rule_number:
     {
-        m_ast.includes.append(captured().value(QStringLiteral("include")));
+        m_ast.preprocessorDirectives.append(captured().value(QStringLiteral("preprocessor_directive")));
     }
     break;
 ./

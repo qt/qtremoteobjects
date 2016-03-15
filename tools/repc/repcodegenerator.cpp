@@ -194,7 +194,7 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
         out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
     out << "\n";
 
-    out << ast.includes.join(QLatin1Char('\n'));
+    out << ast.preprocessorDirectives.join(QLatin1Char('\n'));
     out << "\n";
 }
 
