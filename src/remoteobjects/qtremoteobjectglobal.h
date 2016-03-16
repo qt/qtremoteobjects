@@ -49,8 +49,50 @@
 
 QT_BEGIN_NAMESPACE
 
-typedef QPair<QString, QUrl> QRemoteObjectSourceLocation;
-typedef QHash<QString, QUrl> QRemoteObjectSourceLocations;
+struct QRemoteObjectSourceLocationInfo
+{
+    QRemoteObjectSourceLocationInfo() {}
+    QRemoteObjectSourceLocationInfo(const QString &typeName_, const QUrl &hostUrl_)
+        : typeName(typeName_), hostUrl(hostUrl_) {}
+
+    QRemoteObjectSourceLocationInfo &operator=(const QRemoteObjectSourceLocationInfo &other)
+    {
+        typeName = other.typeName;
+        hostUrl = other.hostUrl;
+        return *this;
+    }
+
+    inline bool operator==(const QRemoteObjectSourceLocationInfo &other) const Q_DECL_NOTHROW
+    {
+        return other.typeName == typeName && other.hostUrl == hostUrl;
+    }
+    inline bool operator!=(const QRemoteObjectSourceLocationInfo &other) const Q_DECL_NOTHROW
+    {
+        return !(*this == other);
+    }
+
+    QString typeName;
+    QUrl hostUrl;
+};
+
+inline QDebug operator<<(QDebug dbg, const QRemoteObjectSourceLocationInfo &info)
+{
+    dbg.nospace() << "SourceLocationInfo(" << info.typeName << ", " << info.hostUrl << ")";
+    return dbg.space();
+}
+
+inline QDataStream& operator<<(QDataStream &stream, const QRemoteObjectSourceLocationInfo &info)
+{
+    return stream << info.typeName << info.hostUrl;
+}
+
+inline QDataStream& operator>>(QDataStream &stream, QRemoteObjectSourceLocationInfo &info)
+{
+    return stream >> info.typeName >> info.hostUrl;
+}
+
+typedef QPair<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocation;
+typedef QHash<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocations;
 typedef QHash<int, QByteArray> QIntHash;
 
 Q_DECLARE_METATYPE(QRemoteObjectSourceLocation)

@@ -64,8 +64,32 @@ namespace QRemoteObjectPackets {
 
 class DataStreamPacket;
 
-void serializeObjectListPacket(DataStreamPacket&, const QStringList&);
-void deserializeObjectListPacket(QDataStream&, QStringList&);
+struct ObjectInfo
+{
+    QString name;
+    QString typeName;
+};
+
+inline QDebug operator<<(QDebug dbg, const ObjectInfo &info)
+{
+    dbg.nospace() << "ObjectInfo(" << info.name << ", " << info.typeName << ")";
+    return dbg.space();
+}
+
+inline QDataStream& operator<<(QDataStream &stream, const ObjectInfo &info)
+{
+    return stream << info.name << info.typeName;
+}
+
+inline QDataStream& operator>>(QDataStream &stream, ObjectInfo &info)
+{
+    return stream >> info.name >> info.typeName;
+}
+
+typedef QVector<ObjectInfo> ObjectInfoList;
+
+void serializeObjectListPacket(DataStreamPacket&, const ObjectInfoList&);
+void deserializeObjectListPacket(QDataStream&, ObjectInfoList&);
 
 //Helper class for creating a QByteArray from a QRemoteObjectPacket
 class DataStreamPacket : public QDataStream

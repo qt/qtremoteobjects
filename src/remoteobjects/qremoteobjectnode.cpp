@@ -201,7 +201,7 @@ void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
         return;
     }
 
-    if (initConnection(remoteObjectAddresses()[name]))
+    if (initConnection(remoteObjectAddresses()[name].hostUrl))
         qROPrivDebug() << "openedConnection" << remoteObjectAddresses()[name];
     else
         qROPrivWarning() << "failed to open connection to" << name;
@@ -263,7 +263,7 @@ void QRemoteObjectNodePrivate::onRemoteObjectSourceAdded(const QRemoteObjectSour
             return;
         }
 
-        initConnection(entry.second);
+        initConnection(entry.second.hostUrl);
 
         qROPrivDebug() << "Called initConnection due to new RemoteObjectSource added via registry" << entry.first;
     }
@@ -282,14 +282,14 @@ void QRemoteObjectNodePrivate::onRegistryInitialized()
 {
     qROPrivDebug() << "Registry Initialized" << remoteObjectAddresses();
 
-    QHashIterator<QString, QUrl> i(remoteObjectAddresses());
+    QHashIterator<QString, QRemoteObjectSourceLocationInfo> i(remoteObjectAddresses());
     while (i.hasNext()) {
         i.next();
         if (replicas.contains(i.key())) //We have a replica waiting on this remoteObject
         {
             QSharedPointer<QReplicaPrivateInterface> rep = replicas.value(i.key()).toStrongRef();
-            if (rep && !requestedUrls.contains(i.value()))
-                initConnection(i.value());
+            if (rep && !requestedUrls.contains(i.value().hostUrl))
+                initConnection(i.value().hostUrl);
             else if (!rep) //replica has been deleted, remove from list
                 replicas.remove(i.key());
 
@@ -331,7 +331,7 @@ QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMeta
     if (connectedSources.contains(name)) { //Either we have a peer connections, or existing connection via registry
         rp->setConnection(connectedSources[name]);
     } else if (remoteObjectAddresses().contains(name)) { //No existing connection, but we know we can connect via registry
-        initConnection(remoteObjectAddresses()[name]); //This will try the connection, and if successful, the remoteObjects will be sent
+        initConnection(remoteObjectAddresses()[name].hostUrl); //This will try the connection, and if successful, the remoteObjects will be sent
                                               //The link to the replica will be handled then
     }
     return rp;
@@ -369,23 +369,22 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case ObjectList:
         {
             deserializeObjectListPacket(connection->stream(), m_rxObjects);
-            const QSet<QString> newObjects = m_rxObjects.toSet();
-            qROPrivDebug() << "newObjects:" << newObjects;
-            Q_FOREACH (const QString &remoteObject, newObjects) {
-                qROPrivDebug() << "  connectedSources.contains("<<remoteObject<<")"<<connectedSources.contains(remoteObject)<<replicas.contains(remoteObject);
-                if (!connectedSources.contains(remoteObject)) {
-                    connectedSources[remoteObject] = connection;
-                    connection->addSource(remoteObject);
-                    if (replicas.contains(remoteObject)) //We have a replica waiting on this remoteObject
+            qROPrivDebug() << "newObjects:" << m_rxObjects;
+            Q_FOREACH (const auto &remoteObject, m_rxObjects) {
+                qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
+                if (!connectedSources.contains(remoteObject.name)) {
+                    connectedSources[remoteObject.name] = connection;
+                    connection->addSource(remoteObject.name);
+                    if (replicas.contains(remoteObject.name)) //We have a replica waiting on this remoteObject
                     {
-                        QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(remoteObject).toStrongRef());
+                        QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(remoteObject.name).toStrongRef());
                         if (rep && rep->connectionToSource.isNull())
                         {
                             qROPrivDebug() << "Test" << remoteObject<<replicas.keys();
                             qROPrivDebug() << rep;
                             rep->setConnection(connection);
                         } else if (!rep) { //replica has been deleted, remove from list
-                            replicas.remove(remoteObject);
+                            replicas.remove(remoteObject.name);
                         }
 
                         continue;

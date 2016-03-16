@@ -344,14 +344,14 @@ void deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &valu
     in >> value;
 }
 
-void serializeObjectListPacket(DataStreamPacket &ds, const QStringList &objects)
+void serializeObjectListPacket(DataStreamPacket &ds, const ObjectInfoList &objects)
 {
     ds.setId(ObjectList);
     ds << objects;
     ds.finishPacket();
 }
 
-void deserializeObjectListPacket(QDataStream &in, QStringList &objects)
+void deserializeObjectListPacket(QDataStream &in, ObjectInfoList &objects)
 {
     in >> objects;
 }

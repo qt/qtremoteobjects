@@ -118,7 +118,8 @@ void QRemoteObjectRegistry::initialize()
 }
 
 /*!
-    Returns a QRemoteObjectSourceLocations object, which is a typedef for QHash<QString, QUrl> that includes the name and location of all Sources known to the Registry.
+    Returns a QRemoteObjectSourceLocations object, which includes the name and additional information of all Sources
+    known to the Registry.
 */
 QRemoteObjectSourceLocations QRemoteObjectRegistry::sourceLocations() const
 {

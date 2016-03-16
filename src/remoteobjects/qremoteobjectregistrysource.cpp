@@ -67,7 +67,7 @@ void QRegistrySource::removeServer(const QUrl &url)
     typedef QRemoteObjectSourceLocations::const_iterator CustomIterator;
     const CustomIterator end = m_sourceLocations.constEnd();
     for (CustomIterator it = m_sourceLocations.constBegin(); it != end; ++it)
-        if (it.value() == url)
+        if (it.value().hostUrl == url)
             results.push_back(it.key());
     Q_FOREACH (const QString &res, results)
         m_sourceLocations.remove(res);
@@ -77,7 +77,7 @@ void QRegistrySource::addSource(const QRemoteObjectSourceLocation &entry)
 {
     qCDebug(QT_REMOTEOBJECT) << "An entry was added to the RegistrySource" << entry;
     if (m_sourceLocations.contains(entry.first)) {
-        if (m_sourceLocations[entry.first] == entry.second)
+        if (m_sourceLocations[entry.first].hostUrl == entry.second.hostUrl)
             qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << entry.first
                                        << "as this Node already has a Source by that name.";
         else
@@ -92,7 +92,7 @@ void QRegistrySource::addSource(const QRemoteObjectSourceLocation &entry)
 
 void QRegistrySource::removeSource(const QRemoteObjectSourceLocation &entry)
 {
-    if (m_sourceLocations.contains(entry.first) && m_sourceLocations[entry.first] == entry.second) {
+    if (m_sourceLocations.contains(entry.first) && m_sourceLocations[entry.first].hostUrl == entry.second.hostUrl) {
         m_sourceLocations.remove(entry.first);
         emit remoteObjectRemoved(entry);
     }

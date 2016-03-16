@@ -340,10 +340,10 @@ private slots:
         QCOMPARE(added, true);
         QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), false);
         QCOMPARE(host.registry()->sourceLocations().keys().at(0), QStringLiteral("Engine"));
-        QCOMPARE(host.registry()->sourceLocations().value(QStringLiteral("Engine")), hostUrl);
+        QCOMPARE(host.registry()->sourceLocations().value(QStringLiteral("Engine")).hostUrl, hostUrl);
         //This should produce a warning...
         registry.enableRemoting(localEngine.data());
-        QVERIFY(host.registry()->sourceLocations().value(QStringLiteral("Engine")) != registryUrl);
+        QVERIFY(host.registry()->sourceLocations().value(QStringLiteral("Engine")).hostUrl != registryUrl);
     }
 
     void basicTest() {

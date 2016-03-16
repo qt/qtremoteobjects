@@ -702,6 +702,7 @@ void RepCodeGenerator::generateSourceAPI(QStringList &out, const ASTClass &astCl
     out << QStringLiteral("    }");
     out << QStringLiteral("");
     out << QString::fromLatin1("    QString name() const Q_DECL_OVERRIDE { return QStringLiteral(\"%1\"); }").arg(astClass.name);
+    out << QString::fromLatin1("    QString typeName() const Q_DECL_OVERRIDE { return QStringLiteral(\"%1\"); }").arg(astClass.name);
     out << QStringLiteral("    int propertyCount() const Q_DECL_OVERRIDE { return _properties[0]; }");
     out << QStringLiteral("    int signalCount() const Q_DECL_OVERRIDE { return _signals[0]; }");
     out << QStringLiteral("    int methodCount() const Q_DECL_OVERRIDE { return _methods[0]; }");

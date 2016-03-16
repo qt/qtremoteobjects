@@ -104,7 +104,7 @@ public:
     QBasicTimer reconnectTimer;
     QRemoteObjectNode::ErrorCode m_lastError;
     QString m_rxName;
-    QStringList m_rxObjects;
+    QRemoteObjectPackets::ObjectInfoList m_rxObjects;
     QVariantList m_rxArgs;
     QVariant m_rxValue;
     Q_DECLARE_PUBLIC(QRemoteObjectNode);

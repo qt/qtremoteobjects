@@ -86,6 +86,7 @@ public:
     DynamicApiMap(const QMetaObject *metaObject, const QString &name);
     ~DynamicApiMap() {}
     QString name() const Q_DECL_OVERRIDE { return m_name; }
+    QString typeName() const Q_DECL_OVERRIDE { return QLatin1String(m_metaObject->className()); }
     int propertyCount() const Q_DECL_OVERRIDE { return m_properties.size(); }
     int signalCount() const Q_DECL_OVERRIDE { return m_signals.size(); }
     int methodCount() const Q_DECL_OVERRIDE { return m_methods.size(); }
