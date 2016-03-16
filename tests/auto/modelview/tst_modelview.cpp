@@ -45,7 +45,7 @@
 #include <QMetaType>
 #include <QRemoteObjectReplica>
 #include <QRemoteObjectNode>
-#include <QAbstractItemReplica>
+#include <QAbstractItemModelReplica>
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
 #include <QEventLoop>
@@ -267,7 +267,7 @@ inline void dumpModel(const QAbstractItemModel *model, const QModelIndex &parent
 }
 #endif
 
-void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
+void compareData(const QAbstractItemModel *sourceModel, const QAbstractItemModelReplica *replica)
 {
     QVERIFY(sourceModel);
     QVERIFY(replica);
@@ -312,7 +312,7 @@ void compareIndex(const QModelIndex &sourceIndex, const QModelIndex &replicaInde
     }
 }
 
-void compareTreeData(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
+void compareTreeData(const QAbstractItemModel *sourceModel, const QAbstractItemModelReplica *replica)
 {
     QVERIFY(sourceModel);
     QVERIFY(replica);
@@ -346,7 +346,7 @@ void compareTreeData(const QAbstractItemModel *sourceModel, const QAbstractItemM
     }
 }
 
-void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemReplica *replica)
+void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemModelReplica *replica)
 {
     QVERIFY(sourceModel);
     QVERIFY(replica);
@@ -425,15 +425,15 @@ class FetchData : public QObject
 {
     Q_OBJECT
 public:
-    FetchData(const QAbstractItemReplica *replica) : QObject(), m_replica(replica), isFinished(false) {
+    FetchData(const QAbstractItemModelReplica *replica) : QObject(), m_replica(replica), isFinished(false) {
         if (!m_replica->isInitialized()) {
             QEventLoop l;
             connect(m_replica, SIGNAL(initialized()), &l, SLOT(quit()));
             l.exec();
         }
 
-        connect(m_replica, &QAbstractItemReplica::dataChanged, this, &FetchData::dataChanged);
-        connect(m_replica, &QAbstractItemReplica::rowsInserted, this, &FetchData::rowsInserted);
+        connect(m_replica, &QAbstractItemModelReplica::dataChanged, this, &FetchData::dataChanged);
+        connect(m_replica, &QAbstractItemModelReplica::rowsInserted, this, &FetchData::rowsInserted);
     }
 
     void addData(const QModelIndex &index, const QVector<int> &roles)
@@ -501,7 +501,7 @@ signals:
     void fetched();
 
 private:
-    const QAbstractItemReplica *m_replica;
+    const QAbstractItemModelReplica *m_replica;
     QHash<QPersistentModelIndex, QVector<int> > m_pending;
     QSet<QPersistentModelIndex> m_waitForInsertion;
     bool isFinished;
@@ -693,7 +693,7 @@ void TestModelView::testEmptyModel()
     QStandardItemModel emptyModel;
     m_basicServer.enableRemoting(&emptyModel, "emptyModel", roles);
 
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("emptyModel"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("emptyModel"));
 
     FetchData f(model.data());
     f.addAll();
@@ -704,7 +704,7 @@ void TestModelView::testEmptyModel()
 
 void TestModelView::testInitialData()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -715,7 +715,7 @@ void TestModelView::testInitialData()
 
 void TestModelView::testInitialDataTree()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -726,7 +726,7 @@ void TestModelView::testInitialDataTree()
 
 void TestModelView::testHeaderData()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -748,7 +748,7 @@ void TestModelView::testHeaderData()
 
 void TestModelView::testDataChangedTree()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -788,7 +788,7 @@ void TestModelView::testDataChangedTree()
 
 void TestModelView::testFlags()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -813,7 +813,7 @@ void TestModelView::testFlags()
 
 void TestModelView::testDataChanged()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -835,7 +835,7 @@ void TestModelView::testDataChanged()
 
 void TestModelView::testDataInsertion()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -898,7 +898,7 @@ void TestModelView::testDataInsertion()
 
 void TestModelView::testDataInsertionTree()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -985,7 +985,7 @@ void TestModelView::testDataInsertionTree()
 
 void TestModelView::testDataRemoval()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -1024,7 +1024,7 @@ void TestModelView::testDataRemoval()
 
 void TestModelView::testRoleNames()
 {
-    QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("testRoleNames")));
+    QScopedPointer<QAbstractItemModelReplica> repModel( m_client.acquireModel(QStringLiteral("testRoleNames")));
     FetchData f(repModel.data());
     f.addAll();
     QVERIFY(f.fetchAndWait());
@@ -1044,7 +1044,7 @@ void TestModelView::testDataRemovalTree()
 
 void TestModelView::testModelTest()
 {
-    QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
+    QScopedPointer<QAbstractItemModelReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
     ModelTest test(repModel.data());
 
     FetchData f(repModel.data());
@@ -1055,7 +1055,7 @@ void TestModelView::testModelTest()
 
 void TestModelView::testSortFilterModel()
 {
-    QScopedPointer<QAbstractItemReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
+    QScopedPointer<QAbstractItemModelReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
 
     FetchData f(repModel.data());
     f.addAll();
@@ -1073,7 +1073,7 @@ void TestModelView::testSortFilterModel()
 
 void TestModelView::testSetData()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();
@@ -1103,7 +1103,7 @@ void TestModelView::testSetData()
 
 void TestModelView::testSetDataTree()
 {
-    QScopedPointer<QAbstractItemReplica> model(m_client.acquireModel("test"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
 
     FetchData f(model.data());
     f.addAll();

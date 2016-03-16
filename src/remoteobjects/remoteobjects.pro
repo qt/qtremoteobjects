@@ -30,7 +30,7 @@ PUBLIC_HEADERS += \
     $$PWD/qtremoteobjectglobal.h \
     $$PWD/qremoteobjectregistry.h \
     $$PWD/qremoteobjectabstractitemmodeltypes.h \
-    $$PWD/qremoteobjectabstractitemreplica.h
+    $$PWD/qremoteobjectabstractitemmodelreplica.h
 
 
 PRIVATE_HEADERS += \
@@ -44,8 +44,8 @@ PRIVATE_HEADERS += \
     $$PWD/qremoteobjectpacket_p.h \
     $$PWD/qremoteobjectpendingcall_p.h \
     $$PWD/qremoteobjectreplica_p.h \
-    $$PWD/qremoteobjectabstractitemreplica_p.h \
-    $$PWD/qremoteobjectabstractitemadapter_p.h
+    $$PWD/qremoteobjectabstractitemmodelreplica_p.h \
+    $$PWD/qremoteobjectabstractitemmodeladapter_p.h
 
 SOURCES += \
     $$PWD/qconnection_local_backend.cpp \
@@ -61,8 +61,8 @@ SOURCES += \
     $$PWD/qremoteobjectpacket.cpp \
     $$PWD/qremoteobjectpendingcall.cpp \
     $$PWD/qtremoteobjectglobal.cpp \
-    $$PWD/qremoteobjectabstractitemreplica.cpp \
-    $$PWD/qremoteobjectabstractitemadapter.cpp
+    $$PWD/qremoteobjectabstractitemmodelreplica.cpp \
+    $$PWD/qremoteobjectabstractitemmodeladapter.cpp
 
 qnx {
     SOURCES += \

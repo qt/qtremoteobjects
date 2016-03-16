@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include "qremoteobjectabstractitemadapter_p.h"
+#include "qremoteobjectabstractitemmodeladapter_p.h"
 
 #include <QItemSelectionModel>
 
@@ -86,7 +86,7 @@ inline QVector<int> filterRoles(const QVector<int> &roles, const QVector<int> &a
     return neededRoles;
 }
 
-QAbstractItemSourceAdapter::QAbstractItemSourceAdapter(QAbstractItemModel *obj, QItemSelectionModel *sel, const QVector<int> &roles)
+QAbstractItemModelSourceAdapter::QAbstractItemModelSourceAdapter(QAbstractItemModel *obj, QItemSelectionModel *sel, const QVector<int> &roles)
     : QObject(obj),
       m_model(obj),
       m_availableRoles(roles)
@@ -102,7 +102,7 @@ QAbstractItemSourceAdapter::QAbstractItemSourceAdapter(QAbstractItemModel *obj, 
         connect(m_selectionModel, SIGNAL(currentChanged(QModelIndex,QModelIndex)), this, SLOT(sourceCurrentChanged(QModelIndex,QModelIndex)));
 }
 
-void QAbstractItemSourceAdapter::registerTypes()
+void QAbstractItemModelSourceAdapter::registerTypes()
 {
     static bool alreadyRegistered = false;
     if (!alreadyRegistered) {
@@ -122,12 +122,12 @@ void QAbstractItemSourceAdapter::registerTypes()
     }
 }
 
-QItemSelectionModel* QAbstractItemSourceAdapter::selectionModel() const
+QItemSelectionModel* QAbstractItemModelSourceAdapter::selectionModel() const
 {
     return m_selectionModel;
 }
 
-QSize QAbstractItemSourceAdapter::replicaSizeRequest(IndexList parentList)
+QSize QAbstractItemModelSourceAdapter::replicaSizeRequest(IndexList parentList)
 {
     QModelIndex parent = toQModelIndex(parentList, m_model);
     const int rowCount = m_model->rowCount(parent);
@@ -137,7 +137,7 @@ QSize QAbstractItemSourceAdapter::replicaSizeRequest(IndexList parentList)
     return size;
 }
 
-void QAbstractItemSourceAdapter::replicaSetData(const IndexList &index, const QVariant &value, int role)
+void QAbstractItemModelSourceAdapter::replicaSetData(const IndexList &index, const QVariant &value, int role)
 {
     const QModelIndex modelIndex = toQModelIndex(index, m_model);
     Q_ASSERT(modelIndex.isValid());
@@ -146,7 +146,7 @@ void QAbstractItemSourceAdapter::replicaSetData(const IndexList &index, const QV
     Q_UNUSED(result);
 }
 
-DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
+DataEntries QAbstractItemModelSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << "Requested rows" << "start=" << start << "end=" << end << "roles=" << roles;
 
@@ -189,7 +189,7 @@ DataEntries QAbstractItemSourceAdapter::replicaRowRequest(IndexList start, Index
     return entries;
 }
 
-QVariantList QAbstractItemSourceAdapter::replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles)
+QVariantList QAbstractItemModelSourceAdapter::replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "orientations=" << orientations << "sections=" << sections << "roles=" << roles;
     QVariantList data;
@@ -201,13 +201,13 @@ QVariantList QAbstractItemSourceAdapter::replicaHeaderRequest(QVector<Qt::Orient
     return data;
 }
 
-void QAbstractItemSourceAdapter::replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command)
+void QAbstractItemModelSourceAdapter::replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command)
 {
     if (m_selectionModel)
         m_selectionModel->setCurrentIndex(toQModelIndex(index, m_model), command);
 }
 
-void QAbstractItemSourceAdapter::sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QVector<int> & roles) const
+void QAbstractItemModelSourceAdapter::sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QVector<int> & roles) const
 {
     QVector<int> neededRoles = filterRoles(roles, availableRoles());
     if (neededRoles.isEmpty()) {
@@ -222,30 +222,30 @@ void QAbstractItemSourceAdapter::sourceDataChanged(const QModelIndex & topLeft, 
     emit dataChanged(start, end, neededRoles);
 }
 
-void QAbstractItemSourceAdapter::sourceRowsInserted(const QModelIndex & parent, int start, int end)
+void QAbstractItemModelSourceAdapter::sourceRowsInserted(const QModelIndex & parent, int start, int end)
 {
     IndexList parentList = toModelIndexList(parent, m_model);
     emit rowsInserted(parentList, start, end);
 }
 
-void QAbstractItemSourceAdapter::sourceColumnsInserted(const QModelIndex & parent, int start, int end)
+void QAbstractItemModelSourceAdapter::sourceColumnsInserted(const QModelIndex & parent, int start, int end)
 {
     IndexList parentList = toModelIndexList(parent, m_model);
     emit columnsInserted(parentList, start, end);
 }
 
-void QAbstractItemSourceAdapter::sourceRowsRemoved(const QModelIndex & parent, int start, int end)
+void QAbstractItemModelSourceAdapter::sourceRowsRemoved(const QModelIndex & parent, int start, int end)
 {
     IndexList parentList = toModelIndexList(parent, m_model);
     emit rowsRemoved(parentList, start, end);
 }
 
-void QAbstractItemSourceAdapter::sourceRowsMoved(const QModelIndex & sourceParent, int sourceRow, int count, const QModelIndex & destinationParent, int destinationChild) const
+void QAbstractItemModelSourceAdapter::sourceRowsMoved(const QModelIndex & sourceParent, int sourceRow, int count, const QModelIndex & destinationParent, int destinationChild) const
 {
     emit rowsMoved(toModelIndexList(sourceParent, m_model), sourceRow, count, toModelIndexList(destinationParent, m_model), destinationChild);
 }
 
-void QAbstractItemSourceAdapter::sourceCurrentChanged(const QModelIndex & current, const QModelIndex & previous)
+void QAbstractItemModelSourceAdapter::sourceCurrentChanged(const QModelIndex & current, const QModelIndex & previous)
 {
     IndexList currentIndex = toModelIndexList(current, m_model);
     IndexList previousIndex = toModelIndexList(previous, m_model);

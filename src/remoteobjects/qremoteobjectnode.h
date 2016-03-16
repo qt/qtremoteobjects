@@ -52,7 +52,7 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectReplica;
 class SourceApiMap;
 class QAbstractItemModel;
-class QAbstractItemReplica;
+class QAbstractItemModelReplica;
 class QItemSelectionModel;
 class QRemoteObjectNodePrivate;
 class QRemoteObjectHostBasePrivate;
@@ -91,7 +91,7 @@ public:
         return new ObjectType(this, name);
     }
     QRemoteObjectDynamicReplica *acquire(const QString &name);
-    QAbstractItemReplica *acquireModel(const QString &name);
+    QAbstractItemModelReplica *acquireModel(const QString &name);
     QUrl registryUrl() const;
     virtual bool setRegistryUrl(const QUrl &registryAddress);
     bool waitForRegistry(int timeout = 30000);

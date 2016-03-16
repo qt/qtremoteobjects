@@ -50,11 +50,11 @@
 class QAbstractItemModel;
 class QItemSelectionModel;
 
-class QAbstractItemSourceAdapter : public QObject
+class QAbstractItemModelSourceAdapter : public QObject
 {
     Q_OBJECT
 public:
-    Q_INVOKABLE explicit QAbstractItemSourceAdapter(QAbstractItemModel *object, QItemSelectionModel *sel, const QVector<int> &roles = QVector<int>());
+    Q_INVOKABLE explicit QAbstractItemModelSourceAdapter(QAbstractItemModel *object, QItemSelectionModel *sel, const QVector<int> &roles = QVector<int>());
     Q_PROPERTY(QVector<int> availableRoles READ availableRoles WRITE setAvailableRoles NOTIFY availableRolesChanged)
     Q_PROPERTY(QIntHash roleNames READ roleNames)
     void registerTypes();
@@ -96,7 +96,7 @@ Q_SIGNALS:
     void columnsInserted(IndexList parent, int start, int end) const;
 
 private:
-    QAbstractItemSourceAdapter();
+    QAbstractItemModelSourceAdapter();
     QAbstractItemModel *m_model;
     QItemSelectionModel *m_selectionModel;
     QVector<int> m_availableRoles;
@@ -141,7 +141,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     }
 
     QString name() const Q_DECL_OVERRIDE { return m_name; }
-    QString typeName() const Q_DECL_OVERRIDE { return QStringLiteral("QAbstractItemAdapter"); }
+    QString typeName() const Q_DECL_OVERRIDE { return QStringLiteral("QAbstractItemModelAdapter"); }
     int propertyCount() const Q_DECL_OVERRIDE { return _properties[0]; }
     int signalCount() const Q_DECL_OVERRIDE { return _signals[0]; }
     int methodCount() const Q_DECL_OVERRIDE { return _methods[0]; }

@@ -3,7 +3,7 @@
 ** Copyright (C) 2014 Ford Motor Company
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the examples of the Qt Toolkit.
+** This file is part of the QtRemoteObjects module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,29 +39,51 @@
 **
 ****************************************************************************/
 
-#include <QTreeView>
-#include <QApplication>
-#include <QRemoteObjectNode>
-#include <QAbstractItemModelReplica>
+#ifndef QREMOTEOBJECTS_ABSTRACTITEMMODELREPLICA_H
+#define QREMOTEOBJECTS_ABSTRACTITEMMODELREPLICA_H
 
-int main(int argc, char **argv)
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
+
+#include <QAbstractItemModel>
+#include <QItemSelectionModel>
+
+QT_BEGIN_NAMESPACE
+
+class QAbstractItemModelReplicaPrivate;
+
+class Q_REMOTEOBJECTS_EXPORT QAbstractItemModelReplica : public QAbstractItemModel
 {
+    Q_OBJECT
+public:
+    ~QAbstractItemModelReplica();
 
-    QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
-                                     "qt.remoteobjects.warning=false\n"
-                                     "qt.remoteobjects.models.debug=false\n"
-                                     "qt.remoteobjects.models.debug=false");
+    QItemSelectionModel* selectionModel() const;
 
-    QApplication app(argc, argv);
+    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
+    QModelIndex parent(const QModelIndex & index) const  Q_DECL_OVERRIDE;
+    QModelIndex index(int row, int column, const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    bool hasChildren(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const Q_DECL_OVERRIDE;
+    Qt::ItemFlags flags(const QModelIndex &index) const Q_DECL_OVERRIDE;
+    QVector<int> availableRoles() const;
+    QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE;
 
+    bool isInitialized() const;
+    bool hasData(const QModelIndex &index, int role) const;
 
+Q_SIGNALS:
+    void initialized();
 
-    QRemoteObjectNode node(QUrl(QStringLiteral("local:registry")));
-    QTreeView view;
-    view.setWindowTitle(QStringLiteral("RemoteView"));
-    view.resize(640,480);
-    view.setModel(node.acquireModel(QStringLiteral("RemoteModel")));
-    view.show();
+private:
+    explicit QAbstractItemModelReplica(QAbstractItemModelReplicaPrivate *rep);
+    QScopedPointer<QAbstractItemModelReplicaPrivate> d;
+    friend class QAbstractItemModelReplicaPrivate;
+    friend class QRemoteObjectNode;
+};
 
-    return app.exec();
-}
+QT_END_NAMESPACE
+
+#endif // QREMOTEOBJECTS_ABSTRACTITEMMODELREPLICA_H

@@ -50,8 +50,8 @@
 #include "qremoteobjectregistrysource_p.h"
 #include "qremoteobjectreplica_p.h"
 #include "qremoteobjectsource_p.h"
-#include "qremoteobjectabstractitemreplica_p.h"
-#include "qremoteobjectabstractitemadapter_p.h"
+#include "qremoteobjectabstractitemmodelreplica_p.h"
+#include "qremoteobjectabstractitemmodeladapter_p.h"
 #include <QAbstractItemModel>
 
 QT_BEGIN_NAMESPACE
@@ -962,11 +962,11 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 {
     //This looks complicated, but hopefully there is a way to have an adapter be a template
     //parameter and this makes sure that is supported.
-    QObject *adapter = QAbstractItemSourceAdapter::staticMetaObject.newInstance(Q_ARG(QAbstractItemModel*, model),
-                                                                                Q_ARG(QItemSelectionModel*, selectionModel),
-                                                                                Q_ARG(QVector<int>, roles));
-    QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemSourceAdapter> *api =
-        new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemSourceAdapter>(name);
+    QObject *adapter = QAbstractItemModelSourceAdapter::staticMetaObject.newInstance(Q_ARG(QAbstractItemModel*, model),
+                                                                                     Q_ARG(QItemSelectionModel*, selectionModel),
+                                                                                     Q_ARG(QVector<int>, roles));
+    QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *api =
+        new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(name);
     return enableRemoting(model, api, adapter);
 }
 
@@ -1043,10 +1043,10 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
  matching \l enableRemoting that put the Model on the network. The returned \c
  model will be empty until it is initialized with the \l Source.
  */
-QAbstractItemReplica *QRemoteObjectNode::acquireModel(const QString &name)
+QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name)
 {
-    QAbstractItemReplicaPrivate *rep = acquire<QAbstractItemReplicaPrivate>(name);
-    return new QAbstractItemReplica(rep);
+    QAbstractItemModelReplicaPrivate *rep = acquire<QAbstractItemModelReplicaPrivate>(name);
+    return new QAbstractItemModelReplica(rep);
 }
 
 QRemoteObjectHostBasePrivate::QRemoteObjectHostBasePrivate()
