@@ -126,6 +126,13 @@ int main(int argc, char *argv[])
         list << QStringLiteral("FancyTextNumber %1").arg(i);
     }
 
+    // Needed by QMLModelViewClient
+    QHash<int,QByteArray> roleNames = {
+        {Qt::DisplayRole, "_text"},
+        {Qt::BackgroundRole, "_color"}
+    };
+    sourceModel.setItemRoleNames(roleNames);
+
     QVector<int> roles;
     roles << Qt::DisplayRole << Qt::BackgroundRole;
 

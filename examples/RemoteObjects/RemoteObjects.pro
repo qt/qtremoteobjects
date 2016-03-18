@@ -10,5 +10,6 @@ SUBDIRS = \
 qtHaveModule(quick) {
     SUBDIRS += \
         plugins \
-        ClientApp
+        ClientApp \
+        QMLModelViewClient
 }
