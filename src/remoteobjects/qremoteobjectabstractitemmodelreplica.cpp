@@ -631,7 +631,7 @@ void QAbstractItemModelReplicaPrivate::requestedHeaderData(QRemoteObjectPendingC
             verticalSections.append(watcher->sections[i]);
         const int index = watcher->orientations[i] == Qt::Horizontal ? 0 : 1;
         const int role = watcher->roles[i];
-        QMap<int, QVariant> &dat = m_headerData[index][watcher->sections[i]].data;
+        QHash<int, QVariant> &dat = m_headerData[index][watcher->sections[i]].data;
         dat[role] = data[i];
     }
     QVector<QPair<int, int> > horRanges = listRanges(horizontalSections);
@@ -662,7 +662,7 @@ QVariant findData(const CachedRowEntry &row, const QModelIndex &index, int role,
 {
     if (index.column() < row.size()) {
         const CacheEntry &entry = row[index.column()];
-        QMap<int, QVariant>::ConstIterator it = entry.data.constFind(role);
+        QHash<int, QVariant>::ConstIterator it = entry.data.constFind(role);
         if (it != entry.data.constEnd()) {
             if (cached)
                 *cached = true;
@@ -826,8 +826,8 @@ QVariant QAbstractItemModelReplica::headerData(int section, Qt::Orientation orie
     if (section >= elem.size())
         return QVariant();
 
-    const QMap<int, QVariant> &dat = elem.at(section).data;
-    QMap<int, QVariant>::ConstIterator it = dat.constFind(role);
+    const QHash<int, QVariant> &dat = elem.at(section).data;
+    QHash<int, QVariant>::ConstIterator it = dat.constFind(role);
     if (it != dat.constEnd())
         return it.value();
 
