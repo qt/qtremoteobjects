@@ -301,7 +301,6 @@ void QRemoteObjectNodePrivate::onRegistryInitialized()
 void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
 {
     Q_Q(QRemoteObjectNode);
-    pendingReconnect.insert(ioDevice);
 
     Q_FOREACH (const QString &remoteObject, ioDevice->remoteObjects()) {
         connectedSources.remove(remoteObject);
@@ -315,9 +314,17 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
             }
         }
     }
-    if (!reconnectTimer.isActive()) {
-        reconnectTimer.start(retryInterval, q);
-        qROPrivDebug() << "Starting reconnect timer";
+    if (requestedUrls.contains(ioDevice->url())) {
+        // Only try to reconnect to URLs requested via connectToNode
+        // If we connected via registry, wait for the registry to see the Node/Source again
+        pendingReconnect.insert(ioDevice);
+        if (!reconnectTimer.isActive()) {
+            reconnectTimer.start(retryInterval, q);
+            qROPrivDebug() << "Starting reconnect timer";
+        }
+    } else {
+        qROPrivDebug() << "Url" << ioDevice->url().toDisplayString().toLatin1()
+                       << "lost.  We will reconnect Replicas if they reappear on the Registry.";
     }
 }
 
