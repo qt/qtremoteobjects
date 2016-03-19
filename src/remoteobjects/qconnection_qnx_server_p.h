@@ -70,7 +70,12 @@ public:
 
     void cleanupIOSource(QIOQnxSource *conn);
     void teardownServer();
-    void createSource(int rcvid, uint64_t uid);
+    void createSource(int rcvid, uint64_t uid, pid_t toPid);
+#ifdef USE_HAM
+    bool initializeHam();
+    void configureHamDeath(int sentChannelId, pid_t toPid, uint64_t uid);
+    void closeHamResources();
+#endif
 
     bool listen(const QString &name);
     QString errorString;
@@ -83,6 +88,12 @@ public:
     QAtomicInt running;
     Thread<QQnxNativeServerPrivate> thread;
     mutable QMutex mutex;
+#ifdef USE_HAM
+    ham_entity_t *hamEntityHandle;
+    ham_condition_t *hamConditionHandle;
+    QHash<uint64_t, ham_action_t*> hamActions;
+    bool hamAvailable, hamInitialized;
+#endif
 };
 
 #endif // QQNXNATIVESERVER_P_H

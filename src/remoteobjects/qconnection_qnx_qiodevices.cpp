@@ -44,8 +44,6 @@
 #include "qconnection_qnx_server.h"
 #include "qconnection_qnx_qiodevices_p.h"
 
-#include <sys/netmgr.h>  //FOR ND_LOCAL_NODE
-
 QQnxNativeIoPrivate::QQnxNativeIoPrivate()
     : QIODevicePrivate()
     , serverId(-1)
@@ -101,6 +99,7 @@ bool QQnxNativeIoPrivate::establishConnection()
     Q_Q(QQnxNativeIo);
     qCDebug(QT_REMOTEOBJECT) << "Before INIT: ServerId" << id << "name" << serverName << q;
     SETIOV(tx_iov + 1, &tx_pulse, sizeof(tx_pulse));
+    SETIOV(tx_iov + 2, &channelId, sizeof(channelId));
 
     //Send our registration message to the server
     msgType = MsgType::REPLICA_INIT;
@@ -108,7 +107,13 @@ bool QQnxNativeIoPrivate::establishConnection()
     //transmit data, it sends the pulse back to us.
     //When we see that (in receive_thread) we send a
     //message and get the server's tx data in the reply.
-    if (MsgSendv(serverId, tx_iov, 2, NULL, 0) == -1) {
+    //
+    //We transmit the channelId as well - it is only used
+    //if HAM is enabled, but this will prevent a possible
+    //mismatch between code compiled with vs. without HAM
+    //(which could happen if we ever use QCONN between
+    //devices)
+    if (MsgSendv(serverId, tx_iov, 3, NULL, 0) == -1) {
         WARNING(MsgSendv)
         teardownConnection();
         return false;
@@ -249,6 +254,11 @@ void QQnxNativeIoPrivate::thread_func()
             break;
         case TERMINATE:
             running = false;
+            continue;
+        case NODE_DEATH:
+            qCWarning(QT_REMOTEOBJECT) << "Host node died";
+            running = false;
+            emit q->error(QAbstractSocket::RemoteHostClosedError);
             continue;
         default:
           /* some other unexpected message */

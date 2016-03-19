@@ -553,6 +553,7 @@ void QRemoteObjectNodePrivate::initialize()
 {
     Q_Q(QRemoteObjectNode);
     qRegisterMetaType<QRemoteObjectNode *>();
+    qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     QObject::connect(&clientRead, SIGNAL(mapped(QObject*)), q, SLOT(onClientRead(QObject*)));
 }

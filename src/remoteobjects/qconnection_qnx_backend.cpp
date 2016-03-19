@@ -88,9 +88,10 @@ void QnxClientIo::onError(QAbstractSocket::SocketError error)
     qCDebug(QT_REMOTEOBJECT) << "onError" << error << m_socket.serverName();
 
     switch (error) {
+    case QAbstractSocket::RemoteHostClosedError:
+        m_socket.close();
+        qCWarning(QT_REMOTEOBJECT) << "RemoteHostClosedError";
     case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
-        emit shouldReconnect(this);
-        break;
     case QAbstractSocket::AddressInUseError:
     case QAbstractSocket::ConnectionRefusedError:
         //... TODO error reporting

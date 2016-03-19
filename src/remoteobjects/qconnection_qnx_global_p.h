@@ -46,8 +46,12 @@
 #include <sys/dispatch.h>
 #include <sys/siginfo.h>
 #include <unistd.h> // provides SETIOV
+#include <sys/netmgr.h>  //FOR ND_LOCAL_NODE
 #include <errno.h>
 #include <QThread>
+#ifdef USE_HAM
+# include <ha/ham.h>
+#endif
 
 #define WARNING(cmd) qCWarning(QT_REMOTEOBJECT) << "Warning " #cmd << strerror(errno) \
                         << Q_FUNC_INFO << __FILE__ << __LINE__;
@@ -71,7 +75,8 @@ enum MsgType : uint16_t { REPLICA_INIT = _IO_MAX+100,
                         };
 enum PulseType : uint8_t { SOURCE_TX_RQ = _PULSE_CODE_MINAVAIL+42,
                            REPLICA_WRITE,
-                           TERMINATE
+                           TERMINATE,
+                           NODE_DEATH
                          };
 union recv_msgs
 {

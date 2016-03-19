@@ -69,7 +69,7 @@ public:
     QAbstractSocket::SocketState state;
     QScopedPointer<QRingBuffer> obuffer;
     MsgType msgType;
-    iov_t tx_iov[2], rx_iov[2];
+    iov_t tx_iov[3], rx_iov[2];
     Thread<QQnxNativeIoPrivate> thread;
 };
 

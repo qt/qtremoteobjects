@@ -175,6 +175,11 @@ void QQnxNativeServerPrivate::thread_func()
                     if (sources.contains(uid))
                         io = sources.take(uid);
                     mutex.unlock();
+#ifdef USE_HAM
+                    ham_action_t *action = hamActions.take(uid);
+                    ham_action_remove(action, 0);
+                    ham_action_handle_free(action);
+#endif
 
                     if (io) {
                         io->d_func()->m_serverClosing.ref();
@@ -206,6 +211,11 @@ void QQnxNativeServerPrivate::thread_func()
                     if (sources.contains(uid))
                         io = sources.take(uid);
                     mutex.unlock();
+#ifdef USE_HAM
+                    ham_action_t *action = hamActions.take(uid);
+                    ham_action_remove(action, 0);
+                    ham_action_handle_free(action);
+#endif
 
                     if (io) {
                         io->d_func()->m_serverClosing.ref();
@@ -248,7 +258,7 @@ void QQnxNativeServerPrivate::thread_func()
                 connections[msg_info.scoid] << msg_info.coid;
                 qCDebug(QT_REMOTEOBJECT) << "New connection (qns)" << msg_info.coid << msg_info.scoid;
                 const uint64_t uid = static_cast<uint64_t>(msg_info.scoid) << 32 | static_cast<uint32_t>(msg_info.coid);
-                createSource(rcvid, uid);
+                createSource(rcvid, uid, msg_info.pid);  // Reads more and then calls MsgReply
             }
             break;
 
@@ -266,7 +276,7 @@ void QQnxNativeServerPrivate::thread_func()
                 connections[msg_info.scoid] << msg_info.coid;
                 qCDebug(QT_REMOTEOBJECT) << "New connection (non-gns)" << rcvid << msg_info.coid << msg_info.scoid;
                 const uint64_t uid = static_cast<uint64_t>(msg_info.scoid) << 32 | static_cast<uint32_t>(msg_info.coid);
-                createSource(rcvid, uid);
+                createSource(rcvid, uid, msg_info.pid);  // Reads more and then calls MsgReply
             }
 
             break;
@@ -421,9 +431,13 @@ void QQnxNativeServerPrivate::teardownServer()
     //Existing QIOQnxSources will be deleted along with object
     //threads gone, don't need to use mutex
     sources.clear();
+#ifdef USE_HAM
+    if (hamAvailable)
+        closeHamResources();
+#endif
 }
 
-void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid)
+void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid, pid_t toPid)
 {
     Q_Q(QQnxNativeServer);
     QIOQnxSource *io = new QIOQnxSource(rcvid, q);
@@ -433,6 +447,9 @@ void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid)
 
     QIOQnxSourcePrivate *iop = io->d_func();
     FATAL_ON_ERROR(MsgRead, rcvid, &(iop->m_event), sizeof(sigevent), sizeof(MsgType))
+    int sentChannelId;
+    FATAL_ON_ERROR(MsgRead, rcvid, &sentChannelId, sizeof(int), sizeof(MsgType)+sizeof(sigevent))
+    FATAL_ON_ERROR(MsgReply, rcvid, EOK, NULL, 0)
 
     mutex.lock();
     sources.insert(uid, io);
@@ -440,7 +457,61 @@ void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid)
     mutex.unlock();
 
     //push an event into the main threads eventloop to emit newConnection.
-    //That way we send MsgReply sooner.
     QMetaObject::invokeMethod(q,"newConnection",Qt::QueuedConnection);
-    FATAL_ON_ERROR(MsgReply, rcvid, EOK, NULL, 0)
+#ifdef USE_HAM
+    if (!hamInitialized) {
+        hamInitialized = true;
+        hamAvailable = initializeHam();
+    }
+    if (hamAvailable)
+        configureHamDeath(sentChannelId, toPid, uid);
+#endif
 }
+
+#ifdef USE_HAM
+bool QQnxNativeServerPrivate::initializeHam()
+{
+    if (access("/proc/ham",F_OK) != 0) {
+        WARNING(access(/proc/ham))
+        return false;
+    }
+    ham_connect(0);
+    pid_t pid = getpid();
+    hamEntityHandle = ham_attach(qPrintable(serverName), ND_LOCAL_NODE, pid, NULL, 0);
+    if (!hamEntityHandle) {
+        WARNING(ham_attach)
+        ham_disconnect(0);
+        return false;
+    }
+    hamConditionHandle = ham_condition(hamEntityHandle, CONDDEATH, "death", 0);
+    if (!hamConditionHandle) {
+        WARNING(ham_condition)
+        ham_detach(hamEntityHandle, 0);
+        ham_entity_handle_free(hamEntityHandle);
+        ham_disconnect(0);
+        return false;
+    }
+    qCDebug(QT_REMOTEOBJECT, "HAM initialized for %s (pid = %d)", qPrintable(serverName), pid);
+    return true;
+}
+
+void QQnxNativeServerPrivate::configureHamDeath(int sentChannelId, pid_t toPid, uint64_t uid)
+{
+    char identifier[25];
+    snprintf(identifier, 25, "%d_%d", toPid, sentChannelId);
+    ham_action_t *a = ham_action_notify_pulse(hamConditionHandle, identifier,
+                                             ND_LOCAL_NODE, toPid,
+                                             sentChannelId, NODE_DEATH, 0, 0);
+    if (!a)
+        WARNING(ham_action_notify_pulse)
+    else
+        hamActions.insert(uid, a);
+}
+
+void QQnxNativeServerPrivate::closeHamResources()
+{
+    ham_entity_handle_free(hamEntityHandle);
+    ham_condition_handle_free(hamConditionHandle);
+    ham_disconnect(0);
+}
+#endif
