@@ -179,6 +179,7 @@ void QQnxNativeServerPrivate::thread_func()
                     if (io) {
                         io->d_func()->m_serverClosing.ref();
                         QMetaObject::invokeMethod(io,"onDisconnected",Qt::QueuedConnection);
+                        io->deleteLater();
                     }
                 }
 
@@ -209,6 +210,7 @@ void QQnxNativeServerPrivate::thread_func()
                     if (io) {
                         io->d_func()->m_serverClosing.ref();
                         QMetaObject::invokeMethod(io,"onDisconnected",Qt::QueuedConnection);
+                        io->deleteLater();
                     }
                     qCDebug(QT_REMOTEOBJECT) << "Connection dropped" << coid;
                 }
@@ -424,7 +426,7 @@ void QQnxNativeServerPrivate::teardownServer()
 void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid)
 {
     Q_Q(QQnxNativeServer);
-    QIOQnxSource *io = new QIOQnxSource(rcvid);
+    QIOQnxSource *io = new QIOQnxSource(rcvid, q);
     io->moveToThread(q->thread());
     QObject::connect(io, &QIOQnxSource::aboutToClose,
                      q,  &QQnxNativeServer::onSourceClosed);
