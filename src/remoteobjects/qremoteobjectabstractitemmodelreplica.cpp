@@ -62,6 +62,9 @@ QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate()
 {
     registerTypes();
     initializeModelConnections();
+    connect(this, &QAbstractItemModelReplicaPrivate::availableRolesChanged, this, [this]{
+        m_availableRoles.clear();
+    });
 }
 
 QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate(QRemoteObjectNode *node, const QString &name)
@@ -72,6 +75,9 @@ QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate(QRemoteObject
     registerTypes();
     initializeModelConnections();
     initializeNode(node, name);
+    connect(this, &QAbstractItemModelReplicaPrivate::availableRolesChanged, this, [this]{
+        m_availableRoles.clear();
+    });
 }
 
 QAbstractItemModelReplicaPrivate::~QAbstractItemModelReplicaPrivate()
@@ -713,6 +719,9 @@ QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) co
     }
 
     if (!index.isValid())
+        return QVariant();
+
+    if (!availableRoles().contains(role))
         return QVariant();
 
     CacheData *item = d->cacheData(index);

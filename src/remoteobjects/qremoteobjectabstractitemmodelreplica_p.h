@@ -168,9 +168,11 @@ public:
     void initialize();
     void registerTypes();
 
-    QVector<int> availableRoles() const
+    inline const QVector<int> &availableRoles() const
     {
-        return propAsVariant(0).value<QVector<int> >();
+        if (m_availableRoles.isEmpty())
+            m_availableRoles = propAsVariant(0).value<QVector<int> >();
+        return m_availableRoles;
     }
 
     QHash<int, QByteArray> roleNames() const
@@ -279,6 +281,7 @@ public:
     QVector<RequestedHeaderData> m_requestedHeaderData;
     QVector<QRemoteObjectPendingCallWatcher*> m_pendingRequests;
     QAbstractItemModelReplica *q;
+    mutable QVector<int> m_availableRoles;
 };
 
 #endif // QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_P_H
