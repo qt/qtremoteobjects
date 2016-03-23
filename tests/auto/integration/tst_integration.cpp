@@ -88,9 +88,9 @@ signals:
 
 private slots:
 
-    void initTestCase() {
-        QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
-                                         "qt.remoteobjects.warning=false");
+    void initTestCase()
+    {
+        QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
 
         qDebug() << "Running tst_Integration for backend:" << BACKEND;
     }

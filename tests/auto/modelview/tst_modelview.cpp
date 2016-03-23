@@ -634,8 +634,8 @@ private slots:
 
 void TestModelView::initTestCase()
 {
-    QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
-                                     "qt.remoteobjects.warning=false");
+    QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
+
     //Setup registry
     //Registry needs to be created first until we get the retry mechanism implemented
     m_registryServer.setRegistryUrl(QUrl(QStringLiteral("local:registry")));
