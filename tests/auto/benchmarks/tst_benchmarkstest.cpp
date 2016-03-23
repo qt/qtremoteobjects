@@ -44,9 +44,45 @@
 #include <QLocalSocket>
 #include <QLocalServer>
 #include <QtTest>
+#include <QtRemoteObjects/QAbstractItemModelReplica>
 #include <QtRemoteObjects/QRemoteObjectNode>
 #include "rep_localdatacenter_replica.h"
 #include "rep_localdatacenter_source.h"
+
+class BenchmarksModel : public QAbstractListModel
+{
+    // QAbstractItemModel interface
+public:
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    QHash<int, QByteArray> roleNames() const override;
+};
+
+int BenchmarksModel::rowCount(const QModelIndex &parent) const
+{
+    Q_UNUSED(parent);
+    return 100000;
+}
+
+QVariant BenchmarksModel::data(const QModelIndex &index, int role) const
+{
+    switch (role) {
+    case Qt::DisplayRole:
+        return QStringLiteral("Benchmark data %1").arg(index.row());
+    case Qt::BackgroundRole:
+        return index.row() % 2 ? QStringLiteral("red") : QStringLiteral("green");
+    }
+    return QVariant();
+}
+
+QHash<int, QByteArray> BenchmarksModel::roleNames() const
+{
+    static QHash<int,QByteArray> roleNames = {
+        {Qt::DisplayRole, "_text"},
+        {Qt::BackgroundRole, "_color"}
+    };
+    return roleNames;
+}
 
 class BenchmarksTest : public QObject
 {
@@ -58,12 +94,16 @@ private:
     QRemoteObjectHost m_basicServer;
     QRemoteObjectNode m_basicClient;
     QScopedPointer<LocalDataCenterSimpleSource> dataCenterLocal;
+    BenchmarksModel m_sourceModel;
+
 private Q_SLOTS:
     void initTestCase();
     void benchPropertyChangesInt();
     void benchQDataStreamInt();
     void benchQLocalSocketInt();
     void benchQLocalSocketQDataStreamInt();
+    void benchModelLinearAccess();
+    void benchModelRandomAccess();
 };
 
 BenchmarksTest::BenchmarksTest()
@@ -71,15 +111,18 @@ BenchmarksTest::BenchmarksTest()
 }
 
 void BenchmarksTest::initTestCase() {
-    m_basicServer.setHostUrl(QUrl(QStringLiteral("local:replica")));
+    m_basicServer.setHostUrl(QUrl(QStringLiteral("local:benchmark_replica")));
     dataCenterLocal.reset(new LocalDataCenterSimpleSource);
     dataCenterLocal->setData1(5);
     const bool remoted = m_basicServer.enableRemoting(dataCenterLocal.data());
     Q_ASSERT(remoted);
     Q_UNUSED(remoted);
 
-    m_basicClient.connectToNode(QUrl(QStringLiteral("local:replica")));
+    m_basicClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
     Q_ASSERT(m_basicClient.lastError() == QRemoteObjectNode::NoError);
+
+    m_basicServer.enableRemoting(&m_sourceModel, QStringLiteral("BenchmarkRemoteModel"),
+                                 m_sourceModel.roleNames().keys().toVector());
 }
 
 void BenchmarksTest::benchPropertyChangesInt()
@@ -209,6 +252,150 @@ void BenchmarksTest::benchQLocalSocketQDataStreamInt()
     // Work-around QTBUG-38185: immediately close socket
     client.abort();
 #endif
+}
+
+void BenchmarksTest::benchModelLinearAccess()
+{
+    // Simulate an user browse through item them stops.
+    // We're measuring the time needed needed to deliver the visible chunk of data
+    // which are the last 50 items
+    QBENCHMARK {
+        QRemoteObjectNode localClient;
+        localClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
+        auto model = localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel"));
+        QEventLoop loop;
+        QHash<int, QPair<QString, QString>> dataToWait;
+        connect(model, &QAbstractItemModelReplica::dataChanged, [model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+            for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+                // we're assuming that the view will try use the sent data,
+                // therefore we're not optimizing the code
+                auto it = dataToWait.find(row);
+                if (it == dataToWait.end()) {
+                    // simulate some work with the received data
+                    QThread::usleep(10);
+                    continue;
+                }
+                foreach (int role, roles) {
+                    QVariant data = model->data(model->index(row, 0), role);
+                    switch (role) {
+                    case Qt::DisplayRole:
+                        it->first = data.toString();
+                        break;
+                    case Qt::BackgroundRole:
+                        it->second = data.toString();
+                        break;
+                    }
+                }
+
+                if (it->first == QStringLiteral("Benchmark data %1").arg(row) &&
+                        it->second == (row % 2 ? QStringLiteral("red") : QStringLiteral("green"))) {
+                    dataToWait.erase(it);
+                    if (dataToWait.isEmpty())
+                        break;
+                }
+            }
+            if (dataToWait.isEmpty())
+                loop.quit();
+        });
+
+        auto beginBenchmark = [model, &loop, &dataToWait] {
+            for (int row = 0; row < 1000; ++row) {
+                if (row >= 950)
+                    dataToWait.insert(row, QPair<QString, QString>());
+                model->data(model->index(row, 0), Qt::DisplayRole);
+                model->data(model->index(row, 0), Qt::BackgroundRole);
+
+                // Views (e.g. QTreeView) are accessing other roles
+                model->data(model->index(row, 0), Qt::FontRole);
+                model->data(model->index(row, 0), Qt::DecorationRole);
+                model->data(model->index(row, 0), Qt::SizeHintRole);
+            }
+
+        };
+        connect(model, &QAbstractItemModelReplica::initialized, [model, &loop, &beginBenchmark] {
+            if (model->isInitialized()) {
+                beginBenchmark();
+            } else {
+                Q_ASSERT(false);
+                loop.quit();
+            }
+        });
+        if (model->isInitialized())
+            beginBenchmark();
+
+        loop.exec();
+    }
+}
+
+void BenchmarksTest::benchModelRandomAccess()
+{
+    QBENCHMARK {
+        QRemoteObjectNode localClient;
+        localClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
+        auto model = localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel"));
+        QEventLoop loop;
+        QHash<int, QPair<QString, QString>> dataToWait;
+        connect(model, &QAbstractItemModelReplica::dataChanged, [model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+            for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+                // we're assuming that the view will try use the sent data,
+                // therefore we're not optimizing the code
+                auto it = dataToWait.find(row);
+                if (it == dataToWait.end()) {
+                    QThread::yieldCurrentThread(); // instead to wait
+                    continue;
+                }
+                foreach (int role, roles) {
+                    QVariant data = model->data(model->index(row, 0), role);
+                    switch (role) {
+                    case Qt::DisplayRole:
+                        it->first = data.toString();
+                        break;
+                    case Qt::BackgroundRole:
+                        it->second = data.toString();
+                        break;
+                    }
+                }
+
+                if (it->first == QStringLiteral("Benchmark data %1").arg(row) &&
+                        it->second == (row % 2 ? QStringLiteral("red") : QStringLiteral("green"))) {
+                    dataToWait.erase(it);
+                    if (dataToWait.isEmpty())
+                        break;
+                }
+            }
+            if (dataToWait.isEmpty())
+                loop.quit();
+        });
+
+        auto beginBenchmark = [model, &loop, &dataToWait] {
+            for (int chunck = 0; chunck < 100; ++chunck) {
+                int row = chunck * 950;
+                for (int r = 0; r < 50; ++r) {
+                    dataToWait.insert(r + row, QPair<QString, QString>());
+                    model->data(model->index(r + row, 0), Qt::DisplayRole);
+                    model->data(model->index(r + row, 0), Qt::BackgroundRole);
+
+                    // Views (e.g. QTreeView) are accessing other roles
+                    model->data(model->index(r + row, 0), Qt::FontRole);
+                    model->data(model->index(r + row, 0), Qt::DecorationRole);
+                    model->data(model->index(r + row, 0), Qt::SizeHintRole);
+                }
+            }
+
+        };
+        connect(model, &QAbstractItemModelReplica::initialized, [model, &loop, &beginBenchmark] {
+            if (model->isInitialized()) {
+                beginBenchmark();
+            } else {
+                Q_ASSERT(false);
+                loop.quit();
+            }
+        });
+        if (model->isInitialized())
+            beginBenchmark();
+
+        loop.exec();
+    }
 }
 
 QTEST_MAIN(BenchmarksTest)
