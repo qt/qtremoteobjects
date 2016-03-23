@@ -481,7 +481,7 @@ void QAbstractItemModelReplicaPrivate::fetchPendingData()
 
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "m_requestedData.size=" << m_requestedData.size();
 
-    QVector<RequestedData> finalRequests;
+    std::vector<RequestedData> finalRequests;
     RequestedData curData;
     Q_FOREACH (const RequestedData &data, m_requestedData) {
         qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "REQUESTED start=" << data.start << "end=" << data.end << "roles=" << data.roles;
@@ -523,7 +523,8 @@ void QAbstractItemModelReplicaPrivate::fetchPendingData()
                                  (qAbs(curIndStart.column - dataIndStart.column) == 1) ||
                                  (qAbs(curIndEnd.row - dataIndEnd.row) == 1) ||
                                  (qAbs(curIndEnd.column - dataIndEnd.column) == 1);
-            if (firstRect.intersects(secondRect) || borders) {
+
+            if ((resEnd.row - resStart.row < 100) && (firstRect.intersects(secondRect) || borders)) {
                 IndexList start = curData.start;
                 start.pop_back();
                 start.push_back(resStart);
@@ -543,11 +544,11 @@ void QAbstractItemModelReplicaPrivate::fetchPendingData()
     }
     finalRequests.push_back(curData);
     //qCDebug(QT_REMOTEOBJECT_MODELS) << "Final requests" << finalRequests;
-    Q_FOREACH (const RequestedData &data, finalRequests) {
-        qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "FINAL start=" << data.start << "end=" << data.end << "roles=" << data.roles;
+    for (auto it = finalRequests.rbegin(); it != finalRequests.rend(); ++it) {
+        qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "FINAL start=" << it->start << "end=" << it->end << "roles=" << it->roles;
 
-        QRemoteObjectPendingReply<DataEntries> reply = replicaRowRequest(data.start, data.end, data.roles);
-        RowWatcher *watcher = new RowWatcher(data.start, data.end, data.roles, reply);
+        QRemoteObjectPendingReply<DataEntries> reply = replicaRowRequest(it->start, it->end, it->roles);
+        RowWatcher *watcher = new RowWatcher(it->start, it->end, it->roles, reply);
         m_pendingRequests.push_back(watcher);
         connect(watcher, &RowWatcher::finished, this, &QAbstractItemModelReplicaPrivate::requestedData);
     }
