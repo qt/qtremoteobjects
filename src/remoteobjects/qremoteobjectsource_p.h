@@ -83,10 +83,10 @@ public:
 class DynamicApiMap : public SourceApiMap
 {
 public:
-    DynamicApiMap(const QMetaObject *metaObject, const QString &name);
+    DynamicApiMap(const QMetaObject *metaObject, const QString &name, const QString &typeName);
     ~DynamicApiMap() {}
     QString name() const Q_DECL_OVERRIDE { return m_name; }
-    QString typeName() const Q_DECL_OVERRIDE { return QLatin1String(m_metaObject->className()); }
+    QString typeName() const Q_DECL_OVERRIDE { return m_typeName; }
     int propertyCount() const Q_DECL_OVERRIDE { return m_properties.size(); }
     int signalCount() const Q_DECL_OVERRIDE { return m_signals.size(); }
     int methodCount() const Q_DECL_OVERRIDE { return m_methods.size(); }
@@ -142,6 +142,7 @@ private:
     }
 
     QString m_name;
+    QString m_typeName;
     QVector<int> m_properties;
     QVector<int> m_signals;
     QVector<int> m_methods;

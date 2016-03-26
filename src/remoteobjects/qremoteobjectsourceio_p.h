@@ -62,7 +62,7 @@ public:
     explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = Q_NULLPTR);
     ~QRemoteObjectSourceIo();
 
-    bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name);
+    bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName);
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = Q_NULLPTR);
     bool disableRemoting(QObject *object);
 

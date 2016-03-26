@@ -77,14 +77,14 @@ QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
     qDeleteAll(m_remoteObjects.values());
 }
 
-bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name)
+bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName)
 {
     if (m_remoteObjects.contains(name)) {
         qROWarning(this) << "Tried to register QRemoteObjectSource twice" << name;
         return false;
     }
 
-    return enableRemoting(object, new DynamicApiMap(meta, name));
+    return enableRemoting(object, new DynamicApiMap(meta, name, typeName));
 }
 
 bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)

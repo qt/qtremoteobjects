@@ -922,10 +922,12 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
 
     const QMetaObject *meta = object->metaObject();
     QString _name = name;
+    QString typeName;
     const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
     if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
+        typeName = QString::fromLatin1(meta->classInfo(ind).value());
         if (_name.isEmpty())
-            _name = QString::fromLatin1(meta->classInfo(ind).value());
+            _name = typeName;
         while (true) {
             Q_ASSERT(meta->superClass()); //This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
             if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE)) //At the point we don't find the same QCLASSINFO_REMOTEOBJECT_TYPE,
@@ -943,7 +945,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
             }
         }
     }
-    return d->remoteObjectIo->enableRemoting(object, meta, _name);
+    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName);
 }
 
 /*!

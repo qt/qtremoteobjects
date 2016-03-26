@@ -238,8 +238,9 @@ int QRemoteObjectSource::qt_metacall(QMetaObject::Call call, int methodId, void 
     return -1;
 }
 
-DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name)
+DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name, const QString &typeName)
     : m_name(name),
+      m_typeName(typeName),
       m_metaObject(metaObject),
       m_cachedMetamethodIndex(-1)
 {
