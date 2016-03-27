@@ -139,25 +139,20 @@ inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &rol
     }
 }
 
-struct OnConnectHandler
+void QAbstractItemModelReplicaPrivate::onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous)
 {
-    OnConnectHandler(QAbstractItemModelReplicaPrivate *rep) : m_rep(rep){}
-    void operator()(const QModelIndex &current, const QModelIndex &/*previous*/)
-    {
-        IndexList currentIndex = toModelIndexList(current, m_rep->q);
-        qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentIndex;
-        m_rep->replicaSetCurrentIndex(currentIndex, QItemSelectionModel::Clear|QItemSelectionModel::Select|QItemSelectionModel::Current);
-    }
-
-    QAbstractItemModelReplicaPrivate *m_rep;
-};
+    Q_UNUSED(previous)
+    IndexList currentIndex = toModelIndexList(current, q);
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentIndex;
+    replicaSetCurrentIndex(currentIndex, QItemSelectionModel::Clear|QItemSelectionModel::Select|QItemSelectionModel::Current);
+}
 
 void QAbstractItemModelReplicaPrivate::setModel(QAbstractItemModelReplica *model)
 {
     q = model;
     setParent(model);
     m_selectionModel.reset(new QItemSelectionModel(model));
-    connect(m_selectionModel.data(), &QItemSelectionModel::currentChanged, this, OnConnectHandler(this));
+    connect(m_selectionModel.data(), &QItemSelectionModel::currentChanged, this, &QAbstractItemModelReplicaPrivate::onReplicaCurrentChanged);
 }
 
 bool QAbstractItemModelReplicaPrivate::clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles = QVector<int>())
@@ -294,8 +289,14 @@ void QAbstractItemModelReplicaPrivate::onCurrentChanged(IndexList current, Index
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << current << "previous=" << previous;
     Q_UNUSED(previous);
     Q_ASSERT(m_selectionModel);
-    const QModelIndex currentIndex = toQModelIndex(current, q);
-    m_selectionModel->setCurrentIndex(currentIndex, QItemSelectionModel::Clear|QItemSelectionModel::Select|QItemSelectionModel::Current);
+    bool ok;
+    // If we have several tree models sharing a selection model, we
+    // can't guarantee that all Replicas have the selected cell
+    // available.
+    const QModelIndex currentIndex = toQModelIndex(current, q, &ok);
+    // Ignore selection if we can't find the desired cell.
+    if (ok)
+        m_selectionModel->setCurrentIndex(currentIndex, QItemSelectionModel::Clear|QItemSelectionModel::Select|QItemSelectionModel::Current);
 }
 
 void QAbstractItemModelReplicaPrivate::handleInitDone(QRemoteObjectPendingCallWatcher *watcher)

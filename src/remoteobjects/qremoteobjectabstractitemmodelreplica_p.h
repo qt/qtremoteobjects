@@ -250,6 +250,7 @@ public Q_SLOTS:
     void handleInitDone(QRemoteObjectPendingCallWatcher *watcher);
     void handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher);
     void handleSizeDone(QRemoteObjectPendingCallWatcher *watcher);
+    void onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
 
 public:
     QScopedPointer<QItemSelectionModel> m_selectionModel;
