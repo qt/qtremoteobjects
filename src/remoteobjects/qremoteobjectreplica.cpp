@@ -107,20 +107,6 @@ bool QConnectedReplicaPrivate::sendCommand()
     connectionToSource->write(m_packet.array, m_packet.size);
     return true;
 }
-#ifdef Q_COMPILER_UNIFORM_INIT
-// QPair (like any class) can be initialized with { }
-typedef QPair<int,void*> SignalPair;
-inline SignalPair make_pair(int first, void *second)
-{ return { qMove(first), qMove(second) }; }
-#else
-// QPair can't be initialized with { }, need to use a POD
-struct SignalPair {
-    int first;
-    void *second;
-};
-inline SignalPair make_pair(int first, void *second)
-{ SignalPair p = { qMove(first), qMove(second) }; return p; }
-#endif
 
 void QConnectedReplicaPrivate::initialize(const QVariantList &values)
 {
