@@ -336,7 +336,7 @@ QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMeta
     QConnectedReplicaPrivate *rp = new QConnectedReplicaPrivate(name, meta, q);
     rp->configurePrivate(instance);
     if (connectedSources.contains(name)) { //Either we have a peer connections, or existing connection via registry
-        rp->setConnection(connectedSources[name]);
+        rp->setConnection(connectedSources[name].device);
     } else if (remoteObjectAddresses().contains(name)) { //No existing connection, but we know we can connect via registry
         initConnection(remoteObjectAddresses()[name].hostUrl); //This will try the connection, and if successful, the remoteObjects will be sent
                                               //The link to the replica will be handled then
@@ -380,7 +380,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             Q_FOREACH (const auto &remoteObject, m_rxObjects) {
                 qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
                 if (!connectedSources.contains(remoteObject.name)) {
-                    connectedSources[remoteObject.name] = connection;
+                    connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName};
                     connection->addSource(remoteObject.name);
                     if (replicas.contains(remoteObject.name)) //We have a replica waiting on this remoteObject
                     {
@@ -885,6 +885,18 @@ bool QRemoteObjectNode::connectToNode(const QUrl &address)
 {
     Q_D(QRemoteObjectNode);
     return d->initConnection(address);
+}
+
+QStringList QRemoteObjectNode::instances(const QString &typeName) const
+{
+    Q_D(const QRemoteObjectNode);
+    QStringList names;
+    for (auto it = d->connectedSources.cbegin(), end = d->connectedSources.cend(); it != end; ++it) {
+        if (it.value().typeName == typeName) {
+            names << it.key();
+        }
+    }
+    return names;
 }
 
 /*!

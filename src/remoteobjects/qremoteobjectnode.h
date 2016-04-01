@@ -43,6 +43,7 @@
 #define QREMOTEOBJECTNODE_H
 
 #include <QtCore/QSharedPointer>
+#include <QtCore/QMetaClassInfo>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 #include <QtRemoteObjects/qremoteobjectregistry.h>
 #include <QtRemoteObjects/qremoteobjectdynamicreplica.h>
@@ -90,6 +91,20 @@ public:
     {
         return new ObjectType(this, name);
     }
+
+    template<typename T>
+    QStringList instances() const
+    {
+        const QMetaObject *mobj = &T::staticMetaObject;
+        const int index = mobj->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+        if (index == -1)
+            return QStringList();
+
+        const QString typeName = QString::fromLatin1(mobj->classInfo(index).value());
+        return instances(typeName);
+    }
+    QStringList instances(const QString &typeName) const;
+
     QRemoteObjectDynamicReplica *acquire(const QString &name);
     QAbstractItemModelReplica *acquireModel(const QString &name);
     QUrl registryUrl() const;

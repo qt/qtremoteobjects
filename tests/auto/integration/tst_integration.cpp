@@ -198,6 +198,42 @@ private slots:
         QVERIFY(!host.disableRemoting(e2));
     }
 
+    void multipleInstancesTest()
+    {
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        client.connectToNode(hostUrl);
+
+        auto instances = client.instances<EngineReplica>();
+        QCOMPARE(instances, QStringList());
+
+        Engine e2;
+        host.enableRemoting(&e2, QStringLiteral("Engine2"));
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine2_r(client.acquire<EngineReplica>(QStringLiteral("Engine2")));
+        const QScopedPointer<EngineReplica> engine3_r(client.acquire<EngineReplica>(QStringLiteral("Engine_doesnotexist")));
+        QVERIFY(engine_r->waitForSource());
+        QVERIFY(engine2_r->waitForSource());
+        QVERIFY(!engine3_r->waitForSource(500));
+
+        instances = client.instances<EngineReplica>();
+        QCOMPARE(instances, QStringList({"Engine", "Engine2"}));
+
+        QSignalSpy spy(engine_r.data(), SIGNAL(isReplicaValidChanged()));
+        host.disableRemoting(&e);
+        spy.wait();
+        QCOMPARE(spy.count(), 1);
+
+        instances = client.instances<EngineReplica>();
+        QCOMPARE(instances, QStringList({"Engine2"}));
+    }
+
     void registryAddedTest() {
         QRemoteObjectRegistryHost registry(registryUrl);
         SET_NODE_NAME(registry);

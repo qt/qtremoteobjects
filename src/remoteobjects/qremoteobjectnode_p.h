@@ -91,11 +91,17 @@ public:
     void initialize();
 
 public:
+    struct SourceInfo
+    {
+        ClientIoDevice* device;
+        QString typeName;
+    };
+
     QAtomicInt isInitialized;
     QMutex mutex;
     QUrl registryAddress;
     QHash<QString, QWeakPointer<QReplicaPrivateInterface> > replicas;
-    QMap<QString, ClientIoDevice*> connectedSources;
+    QMap<QString, SourceInfo> connectedSources;
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
     QSignalMapper clientRead;
