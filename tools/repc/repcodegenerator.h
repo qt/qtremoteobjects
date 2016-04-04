@@ -92,7 +92,7 @@ private:
     QString formatMarshallingOperators(const POD &pod);
 
     void generateClass(Mode mode, QTextStream &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
-    void generateSourceAPI(QStringList &out, const ASTClass &astClass);
+    void generateSourceAPI(QTextStream &out, const ASTClass &astClass);
 
 private:
     QIODevice *m_outputDevice;
