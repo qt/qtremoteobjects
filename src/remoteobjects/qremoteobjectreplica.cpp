@@ -223,21 +223,26 @@ bool QConnectedReplicaPrivate::isReplicaValid() const
 
 bool QConnectedReplicaPrivate::waitForSource(int timeout)
 {
-    if (isSet.load() != 2) {
-        QElapsedTimer t;
-        t.start();
-
-        while (isSet.load() != 2) {
-            if (t.elapsed() > timeout) {
-                qCWarning(QT_REMOTEOBJECT) << "Timeout waiting for client to get set" << m_objectName;
-                return false;
-            }
-
-            qApp->processEvents(QEventLoop::WaitForMoreEvents | QEventLoop::ExcludeUserInputEvents);
-        }
+    if (isReplicaValid()) {
+        return true;
     }
 
-    return true;
+    const static int validChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("isReplicaValidChanged()");
+    Q_ASSERT(validChangedIndex != -1);
+
+    QEventLoop loop;
+    QMetaObject::connect(this, validChangedIndex,
+                         &loop, QEventLoop::staticMetaObject.indexOfMethod("quit()"),
+                         Qt::DirectConnection, 0);
+
+    if (timeout >= 0) {
+        QTimer::singleShot(timeout, &loop, SLOT(quit()));
+    }
+
+    // enter the event loop and wait for a reply
+    loop.exec(QEventLoop::ExcludeUserInputEvents | QEventLoop::WaitForMoreEvents);
+
+    return isReplicaValid();
 }
 
 void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
@@ -574,6 +579,8 @@ bool QRemoteObjectReplica::isReplicaValid() const
 
 /*!
     Blocking call that waits for the Replica to become initialized or until the \a timeout (in ms) expires.  Returns \c true if the Replica is initialized when the call completes, \c false otherwise.
+
+    If \a timeout is -1, this function will not time out.
 
     \sa isInitialized(), initialized()
 */
