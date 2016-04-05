@@ -85,6 +85,7 @@ public:
     virtual ~QRemoteObjectNode();
 
     Q_INVOKABLE bool connectToNode(const QUrl &address);
+
     virtual void setName(const QString &name);
     template < class ObjectType >
     ObjectType *acquire(const QString &name = QString())

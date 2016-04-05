@@ -44,6 +44,7 @@
 
 #include <QAbstractSocket>
 #include <QDataStream>
+#include <QSharedPointer>
 #include "qtremoteobjectglobal.h"
 
 QT_BEGIN_NAMESPACE
@@ -66,7 +67,7 @@ public:
     virtual void write(const QByteArray &data, qint64);
     void close();
     virtual qint64 bytesAvailable();
-    virtual QIODevice *connection() const = 0;
+    virtual QSharedPointer<QIODevice> connection() const = 0;
     void initializeDataStream();
     QDataStream& stream() { return m_dataStream; }
 
@@ -129,7 +130,7 @@ public:
     QSet<QString> remoteObjects() const;
 
     virtual bool isOpen() = 0;
-    virtual QIODevice *connection() = 0;
+    virtual QSharedPointer<QIODevice> connection() = 0;
     inline QDataStream& stream() { return m_dataStream; }
 
 Q_SIGNALS:

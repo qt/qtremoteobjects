@@ -111,17 +111,17 @@ bool ClientIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
 
 void ClientIoDevice::write(const QByteArray &data)
 {
-    connection()->write(data);
+    connection().data()->write(data);
 }
 
 void ClientIoDevice::write(const QByteArray &data, qint64 size)
 {
-    connection()->write(data.data(), size);
+    connection().data()->write(data.data(), size);
 }
 
 qint64 ClientIoDevice::bytesAvailable()
 {
-    return connection()->bytesAvailable();
+    return connection().data()->bytesAvailable();
 }
 
 QUrl ClientIoDevice::url() const
@@ -199,7 +199,7 @@ qint64 ServerIoDevice::bytesAvailable()
 
 void ServerIoDevice::initializeDataStream()
 {
-    m_dataStream.setDevice(connection());
+    m_dataStream.setDevice(connection().data());
     m_dataStream.resetStatus();
 }
 
