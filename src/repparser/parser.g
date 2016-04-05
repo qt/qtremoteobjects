@@ -672,7 +672,9 @@ EnumParam: enum_param;
     {
         ASTEnumParam param;
         param.name = captured().value(QStringLiteral("name")).trimmed();
-        const QString value = captured().value(QStringLiteral("value")).trimmed();
+        QString value = captured().value(QStringLiteral("value"));
+        value.remove(QLatin1Char('='));
+        value = value.trimmed();
         if (value.isEmpty())
             param.value = ++m_astEnumValue;
         else if (value.toLower().startsWith(QStringLiteral("0x")))

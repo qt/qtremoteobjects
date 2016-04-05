@@ -80,7 +80,7 @@ private:
 
     void generatePOD(QTextStream &out, const POD &pod);
     void generateENUMs(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className);
-    void generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums);
+    void generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, bool generateQENUM=true);
     void generateStreamOperatorsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className);
     void generateConversionFunctionsForEnums(QTextStream &out, const QVector<ASTEnum> &enums);
     void generateENUM(QTextStream &out, const ASTEnum &en);

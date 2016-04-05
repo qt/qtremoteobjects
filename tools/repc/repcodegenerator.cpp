@@ -327,20 +327,27 @@ QString getEnumType(const ASTEnum &en)
     }
 }
 
-void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums)
+void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, bool generateQENUM)
 {
+    if (!generateQENUM) {
+        out << "    // You need to add this enum as well as Q_ENUM to your" << endl;
+        out << "    // QObject class in order to use .rep enums over QtRO for" << endl;
+        out << "    // non-repc generated QObjects." << endl;
+    }
     foreach (const ASTEnum &en, enums) {
         out << "    enum " << en.name << "{";
         foreach (const ASTEnumParam &p, en.params)
             out << p.name << " = " << p.value << ",";
 
-        out << "};\n";
+        out << "};" << endl;
 
-        out << "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))\n";
-        out << "    Q_ENUM(" << en.name << ")\n";
-        out << "#else\n";
-        out << "    Q_ENUMS(" << en.name << ")\n";
-        out << "#endif\n";
+        if (generateQENUM) {
+            out << "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))" << endl;
+            out << "    Q_ENUM(" << en.name << ")" << endl;
+            out << "#else" << endl;
+            out << "    Q_ENUMS(" << en.name << ")" << endl;
+            out << "#endif" << endl;
+        }
     }
 }
 
@@ -357,10 +364,12 @@ void RepCodeGenerator::generateENUMs(QTextStream &out, const QVector<ASTEnum> &e
 
     out << "};\n\n";
 
-    out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n";
-    foreach (const ASTEnum &en, enums)
-        out << "    Q_DECLARE_METATYPE(" << className <<"::" << en.name << ")\n";
-    out <<  "#endif\n\n";
+    if (!enums.isEmpty()) {
+        out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n";
+        foreach (const ASTEnum &en, enums)
+            out << "    Q_DECLARE_METATYPE(" << className <<"::" << en.name << ")\n";
+        out <<  "#endif\n\n";
+    }
 
     generateStreamOperatorsForEnums(out, enums, className);
 }
@@ -653,6 +662,10 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("template <class ObjectType>") << endl;
     out << QString::fromLatin1("struct %1 : public SourceApiMap").arg(className) << endl;
     out << QStringLiteral("{") << endl;
+    if (!astClass.enums.isEmpty()) {
+        // Include enum definition in SourceAPI
+        generateDeclarationsForEnums(out, astClass.enums, false);
+    }
     out << QString::fromLatin1("    %1()").arg(className) << endl;
     out << QStringLiteral("    {") << endl;
     const int propCount = astClass.properties.count();
