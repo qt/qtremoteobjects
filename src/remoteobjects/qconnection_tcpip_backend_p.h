@@ -46,6 +46,7 @@
 
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
@@ -55,9 +56,10 @@ class TcpClientIo : public ClientIoDevice
 
 public:
     explicit TcpClientIo(QObject *parent = Q_NULLPTR);
+    TcpClientIo(QSharedPointer<QTcpSocket> sock, QObject *parent = Q_NULLPTR);
     ~TcpClientIo();
 
-    QIODevice *connection() Q_DECL_OVERRIDE;
+    QSharedPointer<QIODevice> connection() Q_DECL_OVERRIDE;
     void connectToServer() Q_DECL_OVERRIDE;
     bool isOpen() Q_DECL_OVERRIDE;
 
@@ -69,7 +71,7 @@ protected:
     void doClose() Q_DECL_OVERRIDE;
 
 private:
-    QTcpSocket m_socket;
+    QSharedPointer<QTcpSocket> m_socket;
 };
 
 class TcpServerIo : public ServerIoDevice
@@ -78,12 +80,12 @@ class TcpServerIo : public ServerIoDevice
 public:
     explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
 
-    QIODevice *connection() const Q_DECL_OVERRIDE;
+    QSharedPointer<QIODevice> connection() const Q_DECL_OVERRIDE;
 protected:
     void doClose() Q_DECL_OVERRIDE;
 
 private:
-    QTcpSocket *m_connection;
+    QSharedPointer<QTcpSocket> m_connection;
 };
 
 class TcpServerImpl : public QConnectionAbstractServer

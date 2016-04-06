@@ -44,6 +44,7 @@
 
 #include <QtCore/QSharedPointer>
 #include <QtCore/QMetaClassInfo>
+#include <QtCore/QSharedPointer>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 #include <QtRemoteObjects/qremoteobjectregistry.h>
 #include <QtRemoteObjects/qremoteobjectdynamicreplica.h>
@@ -82,6 +83,7 @@ public:
 
     QRemoteObjectNode(QObject *parent = 0);
     QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = 0);
+    QRemoteObjectNode(QSharedPointer<QIODevice> device, QObject *parent = 0);
     virtual ~QRemoteObjectNode();
 
     Q_INVOKABLE bool connectToNode(const QUrl &address);

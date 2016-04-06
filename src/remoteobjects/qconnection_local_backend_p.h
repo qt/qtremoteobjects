@@ -55,6 +55,7 @@ class LocalClientIo : public ClientIoDevice
 
 public:
     explicit LocalClientIo(QObject *parent = Q_NULLPTR);
+    LocalClientIo(QSharedPointer<QLocalSocket> socket, QObject *parent = Q_NULLPTR);
     ~LocalClientIo();
 
     QSharedPointer<QIODevice> connection() Q_DECL_OVERRIDE;

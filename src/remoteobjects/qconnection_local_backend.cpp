@@ -44,6 +44,16 @@
 LocalClientIo::LocalClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
+    m_socket = QSharedPointer<QLocalSocket>(new QLocalSocket());
+    connect(m_socket.data(), &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket.data(), static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
+    connect(m_socket.data(), &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
+}
+
+LocalClientIo::LocalClientIo(QSharedPointer<QLocalSocket> socket, QObject *parent)
+    : ClientIoDevice(parent)
+{
+    m_socket = socket;
     connect(m_socket.data(), &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
     connect(m_socket.data(), static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
     connect(m_socket.data(), &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);

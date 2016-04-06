@@ -48,9 +48,19 @@ QT_BEGIN_NAMESPACE
 TcpClientIo::TcpClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
-    connect(&m_socket, &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
-    connect(&m_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
-    connect(&m_socket, &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
+    m_socket = QSharedPointer<QTcpSocket>(new QTcpSocket());
+    connect(m_socket.data(), &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket.data(), static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
+    connect(m_socket.data(), &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
+}
+
+TcpClientIo::TcpClientIo(QSharedPointer<QTcpSocket> sock, QObject *parent)
+    : ClientIoDevice(parent)
+{
+    m_socket = sock;
+    connect(m_socket.data(), &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket.data(), static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
+    connect(m_socket.data(), &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
 }
 
 TcpClientIo::~TcpClientIo()
@@ -58,16 +68,16 @@ TcpClientIo::~TcpClientIo()
     close();
 }
 
-QIODevice *TcpClientIo::connection()
+QSharedPointer<QIODevice> TcpClientIo::connection()
 {
-    return &m_socket;
+    return m_socket;
 }
 
 void TcpClientIo::doClose()
 {
-    if (m_socket.isOpen()) {
-        connect(&m_socket, &QTcpSocket::disconnected, this, &QObject::deleteLater);
-        m_socket.disconnectFromHost();
+    if (m_socket.data()->isOpen()) {
+        connect(m_socket.data(), &QTcpSocket::disconnected, this, &QObject::deleteLater);
+        m_socket.data()->disconnectFromHost();
     } else {
         this->deleteLater();
     }
@@ -84,13 +94,13 @@ void TcpClientIo::connectToServer()
         address = addresses.first();
     }
 
-    m_socket.connectToHost(address, url().port());
+    m_socket.data()->connectToHost(address, url().port());
 }
 
 bool TcpClientIo::isOpen()
 {
-    return (!isClosing() && (m_socket.state() == QAbstractSocket::ConnectedState
-                             || m_socket.state() == QAbstractSocket::ConnectingState));
+    return (!isClosing() && (m_socket.data()->state() == QAbstractSocket::ConnectedState
+                             || m_socket.data()->state() == QAbstractSocket::ConnectingState));
 }
 
 void TcpClientIo::onError(QAbstractSocket::SocketError error)
@@ -113,32 +123,32 @@ void TcpClientIo::onError(QAbstractSocket::SocketError error)
 void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
 {
     if (state == QAbstractSocket::ClosingState && !isClosing()) {
-        m_socket.abort();
+        m_socket.data()->abort();
         emit shouldReconnect(this);
     }
     if (state == QAbstractSocket::ConnectedState) {
-        m_dataStream.setDevice(connection());
+        m_dataStream.setDevice(connection().data());
         m_dataStream.resetStatus();
     }
 }
 
 
 TcpServerIo::TcpServerIo(QTcpSocket *conn, QObject *parent)
-    : ServerIoDevice(parent), m_connection(conn)
+    : ServerIoDevice(parent), m_connection(QSharedPointer<QTcpSocket>(conn))
 {
     m_connection->setParent(this);
     connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
     connect(conn, &QAbstractSocket::disconnected, this, &ServerIoDevice::disconnected);
 }
 
-QIODevice *TcpServerIo::connection() const
+QSharedPointer<QIODevice> TcpServerIo::connection() const
 {
     return m_connection;
 }
 
 void TcpServerIo::doClose()
 {
-    m_connection->disconnectFromHost();
+    m_connection.data()->disconnectFromHost();
 }
 
 

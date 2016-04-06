@@ -54,6 +54,9 @@
 #include "qremoteobjectabstractitemmodeladapter_p.h"
 #include <QAbstractItemModel>
 
+#include <qconnection_tcpip_backend_p.h>
+#include <qconnection_local_backend_p.h>
+
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
@@ -205,6 +208,34 @@ void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
         qROPrivDebug() << "openedConnection" << remoteObjectAddresses()[name];
     else
         qROPrivWarning() << "failed to open connection to" << name;
+}
+
+bool QRemoteObjectNodePrivate::setConnection(QSharedPointer<QIODevice> device)
+{
+    Q_Q(QRemoteObjectNode);
+    const QMetaObject *mo = device.data()->metaObject();
+    QString name = QString::fromLocal8Bit(mo->className());
+    ClientIoDevice *connection = 0;
+    if(name == QStringLiteral("QTcpSocket")
+            || name == QStringLiteral("QSslSocket"))
+    {
+        connection = new TcpClientIo(qSharedPointerCast<QTcpSocket>(device),q);
+    }
+    else if(name == QStringLiteral("QLocalSocket"))
+    {
+        connection = new LocalClientIo(qSharedPointerCast<QLocalSocket>(device),q);
+    }
+    if (!connection) {
+        qROPrivWarning() << "Could not create ClientIoDevice for client. Invalid device?" << name;
+        return false;
+    }
+
+    qROPrivDebug() << "Replica Connection isValid" << connection->isOpen();
+    QObject::connect(connection, SIGNAL(shouldReconnect(ClientIoDevice*)), q, SLOT(onShouldReconnect(ClientIoDevice*)));
+    connection->connectToServer();
+    QObject::connect(connection, SIGNAL(readyRead()), &clientRead, SLOT(map()));
+    clientRead.setMapping(connection, connection);
+    return true;
 }
 
 bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
@@ -586,6 +617,14 @@ QRemoteObjectNode::QRemoteObjectNode(const QUrl &registryAddress, QObject *paren
     Q_D(QRemoteObjectNode);
     d->initialize();
     setRegistryUrl(registryAddress);
+}
+
+QRemoteObjectNode::QRemoteObjectNode(QSharedPointer<QIODevice> device, QObject *parent)
+    : QObject(*new QRemoteObjectNodePrivate, parent)
+{
+    Q_D(QRemoteObjectNode);
+    d->initialize();
+    d->setConnection(device);
 }
 
 QRemoteObjectNode::QRemoteObjectNode(QRemoteObjectNodePrivate &dptr, QObject *parent)
