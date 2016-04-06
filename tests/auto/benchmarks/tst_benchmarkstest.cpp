@@ -323,7 +323,9 @@ void BenchmarksTest::benchModelLinearAccess()
         if (model->isInitialized())
             beginBenchmark();
 
+        QTimer::singleShot(5000, &loop, &QEventLoop::quit);
         loop.exec();
+        QVERIFY(dataToWait.isEmpty());
     }
 }
 
@@ -394,7 +396,9 @@ void BenchmarksTest::benchModelRandomAccess()
         if (model->isInitialized())
             beginBenchmark();
 
+        QTimer::singleShot(5000, &loop, &QEventLoop::quit);
         loop.exec();
+        QVERIFY(dataToWait.isEmpty());
     }
 }
 
