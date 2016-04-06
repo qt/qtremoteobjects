@@ -307,6 +307,7 @@ void tst_Parser::testEnums_data()
     QTest::newRow("two enum val hex") << "ENUM preset {presetNumber=0xf, foo}" << "presetNumber;foo" << (QList<int>() << 15 << 16) << 16 << false;
     QTest::newRow("two enum val hex") << "ENUM preset {presetNumber=0xff, foo}" << "presetNumber;foo" << (QList<int>() << 255 << 256) << 256 << false;
     QTest::newRow("two enum val with space") << "ENUM preset { presetNumber ,  foo } " << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false;
+    QTest::newRow("set values") << "ENUM preset { val1=1 , val3=3, val5=5 } " << "val1;val3;val5" << (QList<int>() << 1 << 3 << 5) << 5 << false;
 }
 
 void tst_Parser::testEnums()
