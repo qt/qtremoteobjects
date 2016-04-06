@@ -638,10 +638,10 @@ void TestModelView::initTestCase()
 
     //Setup registry
     //Registry needs to be created first until we get the retry mechanism implemented
-    m_registryServer.setRegistryUrl(QUrl(QStringLiteral("local:registry_tst_modelview")));
+    m_registryServer.setRegistryUrl(QUrl(QStringLiteral("tcp://127.0.0.1:65212")));
 
-    m_basicServer.setHostUrl(QUrl(QStringLiteral("local:replica_tst_modelview")));
-    m_basicServer.setRegistryUrl(QUrl(QStringLiteral("local:registry_tst_modelview")));
+    m_basicServer.setHostUrl(QUrl(QStringLiteral("tcp://127.0.0.1:65211")));
+    m_basicServer.setRegistryUrl(QUrl(QStringLiteral("tcp://127.0.0.1:65212")));
 
     static const int modelSize = 20;
 
@@ -683,7 +683,7 @@ void TestModelView::initTestCase()
     roles << Qt::UserRole << Qt::UserRole+1;
     m_basicServer.enableRemoting(&m_listModel, "testRoleNames", roles);
 
-    m_client.setRegistryUrl(QUrl(QStringLiteral("local:registry_tst_modelview")));
+    m_client.setRegistryUrl(QUrl(QStringLiteral("tcp://127.0.0.1:65212")));
 }
 
 void TestModelView::testEmptyModel()
