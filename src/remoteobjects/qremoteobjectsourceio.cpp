@@ -371,6 +371,14 @@ void QRemoteObjectSourceSocketIo::setSocket(QSharedPointer<QIODevice> device)
 
     connect(m_connection,&ServerIoDevice::disconnected,this,&QRemoteObjectSourceSocketIo::onConnectionDisconnect);
     connect(m_connection,&ServerIoDevice::readyRead,this,&QRemoteObjectSourceSocketIo::onConnectionRead);
+
+    QRemoteObjectPackets::ObjectInfoList infos;
+    foreach (auto remoteObject, m_remoteObjects) {
+        infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName()};
+    }
+    serializeObjectListPacket(m_packet, infos);
+    m_connection->write(m_packet.array, m_packet.size);
+    qRODebug(this) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
 }
 
 QSet<ServerIoDevice *> QRemoteObjectSourceSocketIo::connections()
