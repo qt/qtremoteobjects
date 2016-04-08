@@ -174,7 +174,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSocketHost : public QRemoteObjectHostB
     Q_OBJECT
 public:
     QRemoteObjectSocketHost(QObject *parent = Q_NULLPTR);
-    QRemoteObjectSocketHost(QSharedPointer<QIODevice> device, QObject *parent);
+    QRemoteObjectSocketHost(QSharedPointer<QIODevice> device, QObject *parent) = Q_NULLPTR;
     virtual ~QRemoteObjectSocketHost();
 
     QSharedPointer<QIODevice> socket() const Q_DECL_OVERRIDE;
