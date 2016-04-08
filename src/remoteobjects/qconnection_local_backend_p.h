@@ -77,6 +77,7 @@ class LocalServerIo : public ServerIoDevice
     Q_OBJECT
 public:
     explicit LocalServerIo(QLocalSocket *conn, QObject *parent = Q_NULLPTR);
+    LocalServerIo(QSharedPointer<QLocalSocket> conn, QObject *parent = Q_NULLPTR);
 
     QSharedPointer<QIODevice> connection() const Q_DECL_OVERRIDE;
 protected:

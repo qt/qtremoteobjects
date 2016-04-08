@@ -136,9 +136,15 @@ void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
 TcpServerIo::TcpServerIo(QTcpSocket *conn, QObject *parent)
     : ServerIoDevice(parent), m_connection(QSharedPointer<QTcpSocket>(conn))
 {
-    m_connection->setParent(this);
     connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
     connect(conn, &QAbstractSocket::disconnected, this, &ServerIoDevice::disconnected);
+}
+
+TcpServerIo::TcpServerIo(QSharedPointer<QTcpSocket> conn, QObject *parent)
+    : ServerIoDevice(parent), m_connection(conn)
+{
+    connect(conn.data(), &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
+    connect(conn.data(), &QAbstractSocket::disconnected, this, &ServerIoDevice::disconnected);
 }
 
 QSharedPointer<QIODevice> TcpServerIo::connection() const

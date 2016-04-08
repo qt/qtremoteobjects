@@ -58,6 +58,7 @@ class QAbstractItemModelReplica;
 class QItemSelectionModel;
 class QRemoteObjectNodePrivate;
 class QRemoteObjectHostBasePrivate;
+class QRemoteObjectSocketHostPrivate;
 class QRemoteObjectHostPrivate;
 class QRemoteObjectRegistryHostPrivate;
 class ClientIoDevice;
@@ -78,7 +79,8 @@ public:
         OperationNotValidOnClientNode,
         SourceNotRegistered,
         MissingObjectName,
-        HostUrlInvalid
+        HostUrlInvalid,
+        SocketAlreadyRegistered
     };
 
     QRemoteObjectNode(QObject *parent = 0);
@@ -156,11 +158,34 @@ public:
 protected:
     virtual QUrl hostUrl() const;
     virtual bool setHostUrl(const QUrl &hostAddress);
+
+    virtual QSharedPointer<QIODevice> socket() const;
+    virtual bool setSocket(QSharedPointer<QIODevice> device);
+
     QRemoteObjectHostBase(QRemoteObjectHostBasePrivate &, QObject *);
 
 private:
     bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=0);
     Q_DECLARE_PRIVATE(QRemoteObjectHostBase)
+};
+
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSocketHost : public QRemoteObjectHostBase
+{
+    Q_OBJECT
+public:
+    QRemoteObjectSocketHost(QObject *parent = Q_NULLPTR);
+    QRemoteObjectSocketHost(QSharedPointer<QIODevice> device, QObject *parent);
+    virtual ~QRemoteObjectSocketHost();
+
+    QSharedPointer<QIODevice> socket() const Q_DECL_OVERRIDE;
+    bool setSocket(QSharedPointer<QIODevice> device) Q_DECL_OVERRIDE;
+
+protected:
+    QRemoteObjectSocketHost(QRemoteObjectSocketHostPrivate &d, QObject *parent);
+
+private:
+    Q_DECLARE_PRIVATE(QRemoteObjectSocketHost)
+
 };
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHost : public QRemoteObjectHostBase
@@ -171,6 +196,7 @@ public:
     QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = Q_NULLPTR);
     QRemoteObjectHost(const QUrl &address, QObject *parent);
     virtual ~QRemoteObjectHost();
+
     QUrl hostUrl() const Q_DECL_OVERRIDE;
     bool setHostUrl(const QUrl &hostAddress) Q_DECL_OVERRIDE;
 

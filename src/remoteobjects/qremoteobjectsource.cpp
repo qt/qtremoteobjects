@@ -59,7 +59,7 @@ const int QRemoteObjectSource::qobjectPropertyOffset = QObject::staticMetaObject
 const int QRemoteObjectSource::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 
 QRemoteObjectSource::QRemoteObjectSource(QObject *obj, const SourceApiMap *api,
-                                         QObject *adapter, QRemoteObjectSourceIo *sourceIo)
+                                         QObject *adapter, QRemoteObjectSourceIoAbstract *sourceIo)
     : QObject(obj),
       m_object(obj),
       m_adapter(adapter),

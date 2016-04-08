@@ -380,7 +380,7 @@ QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMeta
 QReplicaPrivateInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
-    if (map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
+    if (map_contains(remoteObjectIo->remoteObjects(), name, mapIt)) {
         Q_Q(QRemoteObjectHostBase);
         QInProcessReplicaPrivate *rp = new QInProcessReplicaPrivate(name, meta, q);
         rp->configurePrivate(instance);
@@ -696,6 +696,7 @@ QRemoteObjectHost::QRemoteObjectHost(QRemoteObjectHostPrivate &d, QObject *paren
 
 QRemoteObjectHost::~QRemoteObjectHost() {}
 
+
 /*!
     Constructs a new QRemoteObjectRegistryHost Node. RegistryHost Nodes have
     the same functionality as \l QRemoteObjectHost Nodes, except rather than
@@ -743,22 +744,25 @@ void QRemoteObjectHostBase::setName(const QString &name)
 }
 
 /*!
-    \internal The HostBase version of this method is protected so the method
-    isn't exposed on RegistryHost nodes.
+    Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
+    is not a Host node, it return an empty QUrl.
+
+    \sa setHostUrl()
 */
-QUrl QRemoteObjectHostBase::hostUrl() const
+QUrl QRemoteObjectHost::hostUrl() const
 {
-    Q_D(const QRemoteObjectHostBase);
+    Q_D(const QRemoteObjectHost);
     return d->remoteObjectIo->serverAddress();
 }
 
 /*!
-    \internal The HostBase version of this method is protected so the method
-    isn't exposed on RegistryHost nodes.
+    Sets the \a hostAddress for a host QRemoteObjectNode.
+
+    Returns \c true if the Host address is set, otherwise \c false.
 */
-bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
+bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress)
 {
-    Q_D(QRemoteObjectHostBase);
+    Q_D(QRemoteObjectHost);
     if (d->remoteObjectIo) {
         d->m_lastError = ServerAlreadyCreated;
         return false;
@@ -769,7 +773,7 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
     }
 
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
-    if (d->remoteObjectIo->m_server.isNull()) { //Invalid url/scheme
+    if (d->remoteObjectIo->serverIsNull()) { //Invalid url/scheme
         d->m_lastError = HostUrlInvalid;
         delete d->remoteObjectIo;
         d->remoteObjectIo = 0;
@@ -786,27 +790,6 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
     QObject::connect(d->remoteObjectIo, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), this, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)));
 
     return true;
-}
-
-/*!
-    Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
-    is not a Host node, it return an empty QUrl.
-
-    \sa setHostUrl()
-*/
-QUrl QRemoteObjectHost::hostUrl() const
-{
-    return QRemoteObjectHostBase::hostUrl();
-}
-
-/*!
-    Sets the \a hostAddress for a host QRemoteObjectNode.
-
-    Returns \c true if the Host address is set, otherwise \c false.
-*/
-bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress)
-{
-    return QRemoteObjectHostBase::setHostUrl(hostAddress);
 }
 
 bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
@@ -1098,6 +1081,28 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
     return true;
 }
 
+QUrl QRemoteObjectHostBase::hostUrl() const
+{
+    return QUrl();
+}
+
+bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
+{
+    Q_UNUSED(hostAddress)
+    return false;
+}
+
+QSharedPointer<QIODevice> QRemoteObjectHostBase::socket() const
+{
+    return QSharedPointer<QIODevice>();
+}
+
+bool QRemoteObjectHostBase::setSocket(QSharedPointer<QIODevice> device)
+{
+    Q_UNUSED(device)
+    return false;
+}
+
 /*!
  Returns a pointer to a Replica which is specifically derived from \l
  QAbstractItemModel. The \a name provided must match the name used with the
@@ -1124,6 +1129,65 @@ QRemoteObjectRegistryHostPrivate::QRemoteObjectRegistryHostPrivate()
     , registrySource(Q_NULLPTR)
 { }
 
+
+QRemoteObjectSocketHost::QRemoteObjectSocketHost(QObject *parent)
+    : QRemoteObjectHostBase(*new QRemoteObjectSocketHostPrivate, parent)
+{ }
+
+QRemoteObjectSocketHost::QRemoteObjectSocketHost(QSharedPointer<QIODevice> device, QObject *parent)
+    : QRemoteObjectHostBase(*new QRemoteObjectHostPrivate, parent)
+{
+    if (!device.isNull())
+    {
+       setSocket(device);
+    }
+}
+
+QRemoteObjectSocketHost::~QRemoteObjectSocketHost()
+{ }
+
+QSharedPointer<QIODevice> QRemoteObjectSocketHost::socket() const
+{
+    Q_D(const QRemoteObjectSocketHost);
+    if(!d->remoteObjectIo || d->remoteObjectIo->connections().isEmpty())
+    {
+        return QSharedPointer<QIODevice>();
+    }
+    return d->remoteObjectIo->connections().toList().first()->connection();
+}
+
+bool QRemoteObjectSocketHost::setSocket(QSharedPointer<QIODevice> device)
+{
+    Q_D(QRemoteObjectSocketHost);
+    if (d->remoteObjectIo && !d->remoteObjectIo->connections().isEmpty()) {
+        d->m_lastError = SocketAlreadyRegistered;
+        return false;
+    }
+
+    if(d->remoteObjectIo->connections().isEmpty())
+    {
+        qobject_cast<QRemoteObjectSourceSocketIo *>(d->remoteObjectIo)->setSocket(device);
+        return true;
+    }
+
+    d->remoteObjectIo = new QRemoteObjectSourceSocketIo(device, this);
+
+    //If we've given a name to the node, set it on the sourceIo as well
+    if (!objectName().isEmpty())
+        d->remoteObjectIo->setObjectName(objectName());
+
+    return true;
+}
+
+QRemoteObjectSocketHost::QRemoteObjectSocketHost(QRemoteObjectSocketHostPrivate &d, QObject *parent)
+    : QRemoteObjectHostBase(d, parent)
+{ }
+
+QRemoteObjectSocketHostPrivate::QRemoteObjectSocketHostPrivate()
+    : QRemoteObjectHostBasePrivate()
+{ }
+
 QT_END_NAMESPACE
 
 #include "moc_qremoteobjectnode.cpp"
+
