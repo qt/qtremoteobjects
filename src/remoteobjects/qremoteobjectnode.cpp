@@ -1159,15 +1159,14 @@ QSharedPointer<QIODevice> QRemoteObjectSocketHost::socket() const
 bool QRemoteObjectSocketHost::setSocket(QSharedPointer<QIODevice> device)
 {
     Q_D(QRemoteObjectSocketHost);
-    if (d->remoteObjectIo && !d->remoteObjectIo->connections().isEmpty()) {
+    if (d->remoteObjectIo) {
+        if(d->remoteObjectIo->connections().isEmpty())
+        {
+            qobject_cast<QRemoteObjectSourceSocketIo *>(d->remoteObjectIo)->setSocket(device);
+            return true;
+        }
         d->m_lastError = SocketAlreadyRegistered;
         return false;
-    }
-
-    if(d->remoteObjectIo->connections().isEmpty())
-    {
-        qobject_cast<QRemoteObjectSourceSocketIo *>(d->remoteObjectIo)->setSocket(device);
-        return true;
     }
 
     d->remoteObjectIo = new QRemoteObjectSourceSocketIo(device, this);
