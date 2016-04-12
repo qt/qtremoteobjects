@@ -54,13 +54,14 @@ TcpClientIo::TcpClientIo(QObject *parent)
     connect(m_socket.data(), &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
 }
 
-TcpClientIo::TcpClientIo(QSharedPointer<QTcpSocket> sock, QObject *parent)
+TcpClientIo::TcpClientIo(QSharedPointer<QTcpSocket> socket, QObject *parent)
     : ClientIoDevice(parent)
 {
-    m_socket = sock;
+    m_socket = socket;
     connect(m_socket.data(), &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
     connect(m_socket.data(), static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
     connect(m_socket.data(), &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
+    onStateChanged(m_socket->state());
 }
 
 TcpClientIo::~TcpClientIo()
@@ -145,6 +146,7 @@ TcpServerIo::TcpServerIo(QSharedPointer<QTcpSocket> conn, QObject *parent)
 {
     connect(conn.data(), &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
     connect(conn.data(), &QAbstractSocket::disconnected, this, &ServerIoDevice::disconnected);
+    initializeDataStream();
 }
 
 QSharedPointer<QIODevice> TcpServerIo::connection() const

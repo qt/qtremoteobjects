@@ -56,7 +56,7 @@ class TcpClientIo : public ClientIoDevice
 
 public:
     explicit TcpClientIo(QObject *parent = Q_NULLPTR);
-    TcpClientIo(QSharedPointer<QTcpSocket> sock, QObject *parent = Q_NULLPTR);
+    TcpClientIo(QSharedPointer<QTcpSocket> socket, QObject *parent = Q_NULLPTR);
     ~TcpClientIo();
 
     QSharedPointer<QIODevice> connection() Q_DECL_OVERRIDE;
