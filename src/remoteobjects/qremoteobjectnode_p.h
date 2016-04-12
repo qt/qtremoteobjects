@@ -77,6 +77,7 @@ public:
     void connectReplica(QObject *object, QRemoteObjectReplica *instance);
     void openConnectionIfNeeded(const QString &name);
 
+    bool setConnection(QSharedPointer<QIODevice> device);
     bool initConnection(const QUrl &address);
     bool hasInstance(const QString &name);
     void setRegistry(QRemoteObjectRegistry *);
@@ -124,8 +125,16 @@ public:
     QReplicaPrivateInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) Q_DECL_OVERRIDE;
 
 public:
-    QRemoteObjectSourceIo *remoteObjectIo;
-    Q_DECLARE_PUBLIC(QRemoteObjectHostBase);
+    QRemoteObjectSourceIoAbstract *remoteObjectIo;
+    Q_DECLARE_PUBLIC(QRemoteObjectHostBase)
+};
+
+class QRemoteObjectSocketHostPrivate : QRemoteObjectHostBasePrivate
+{
+public:
+    QRemoteObjectSocketHostPrivate();
+    virtual ~QRemoteObjectSocketHostPrivate() {}
+    Q_DECLARE_PUBLIC(QRemoteObjectSocketHost)
 };
 
 class QRemoteObjectHostPrivate : public QRemoteObjectHostBasePrivate
@@ -133,7 +142,7 @@ class QRemoteObjectHostPrivate : public QRemoteObjectHostBasePrivate
 public:
     QRemoteObjectHostPrivate();
     virtual ~QRemoteObjectHostPrivate() {}
-    Q_DECLARE_PUBLIC(QRemoteObjectHost);
+    Q_DECLARE_PUBLIC(QRemoteObjectHost)
 };
 
 class QRemoteObjectRegistryHostPrivate : public QRemoteObjectHostBasePrivate
@@ -143,7 +152,7 @@ public:
     virtual ~QRemoteObjectRegistryHostPrivate() {}
     QRemoteObjectSourceLocations remoteObjectAddresses() const Q_DECL_OVERRIDE;
     QRegistrySource *registrySource;
-    Q_DECLARE_PUBLIC(QRemoteObjectRegistryHost);
+    Q_DECLARE_PUBLIC(QRemoteObjectRegistryHost)
 };
 
 QT_END_NAMESPACE

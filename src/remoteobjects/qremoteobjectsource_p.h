@@ -52,13 +52,14 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectSourceIo;
+class QRemoteObjectSourceIoAbstract;
 class ServerIoDevice;
 
 class QRemoteObjectSource : public QObject
 {
 public:
     explicit QRemoteObjectSource(QObject *object, const SourceApiMap *,
-                                 QObject *adapter, QRemoteObjectSourceIo *sourceIo);
+                                 QObject *adapter, QRemoteObjectSourceIoAbstract *sourceIo);
 
     ~QRemoteObjectSource();
 
@@ -66,7 +67,7 @@ public:
     QVector<ServerIoDevice*> listeners;
     QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;
-    QRemoteObjectSourceIo *m_sourceIo;
+    QRemoteObjectSourceIoAbstract *m_sourceIo;
     QRemoteObjectPackets::DataStreamPacket m_packet;
     QVariantList m_marshalledArgs;
     bool hasAdapter() const { return m_adapter; }
