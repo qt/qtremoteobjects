@@ -44,9 +44,20 @@
 LocalClientIo::LocalClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
-    connect(&m_socket, &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
-    connect(&m_socket, static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
-    connect(&m_socket, &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
+    m_socket = QSharedPointer<QLocalSocket>(new QLocalSocket());
+    connect(m_socket.data(), &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket.data(), static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
+    connect(m_socket.data(), &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
+}
+
+LocalClientIo::LocalClientIo(QSharedPointer<QLocalSocket> socket, QObject *parent)
+    : ClientIoDevice(parent)
+{
+    m_socket = socket;
+    connect(m_socket.data(), &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket.data(), static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
+    connect(m_socket.data(), &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
+    onStateChanged(m_socket->state());
 }
 
 LocalClientIo::~LocalClientIo()
@@ -54,16 +65,16 @@ LocalClientIo::~LocalClientIo()
     close();
 }
 
-QIODevice *LocalClientIo::connection()
+QSharedPointer<QIODevice> LocalClientIo::connection()
 {
-    return &m_socket;
+    return m_socket;
 }
 
 void LocalClientIo::doClose()
 {
-    if (m_socket.isOpen()) {
-        connect(&m_socket, &QLocalSocket::disconnected, this, &QObject::deleteLater);
-        m_socket.disconnectFromServer();
+    if (m_socket.data()->isOpen()) {
+        connect(m_socket.data(), &QLocalSocket::disconnected, this, &QObject::deleteLater);
+        m_socket.data()->disconnectFromServer();
     } else {
         this->deleteLater();
     }
@@ -72,17 +83,17 @@ void LocalClientIo::doClose()
 void LocalClientIo::connectToServer()
 {
     if (!isOpen())
-        m_socket.connectToServer(url().path());
+        m_socket.data()->connectToServer(url().path());
 }
 
 bool LocalClientIo::isOpen()
 {
-    return !isClosing() && m_socket.isOpen();
+    return !isClosing() && m_socket.data()->isOpen();
 }
 
 void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
 {
-    qCDebug(QT_REMOTEOBJECT) << "onError" << error << m_socket.serverName();
+    qCDebug(QT_REMOTEOBJECT) << "onError" << error << m_socket.data()->serverName();
 
     switch (error) {
     case QLocalSocket::ServerNotFoundError:
@@ -105,24 +116,31 @@ void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
 void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
 {
     if (state == QLocalSocket::ClosingState && !isClosing()) {
-        m_socket.abort();
+        m_socket.data()->abort();
         emit shouldReconnect(this);
     }
     if (state == QLocalSocket::ConnectedState) {
-        m_dataStream.setDevice(connection());
+        m_dataStream.setDevice(connection().data());
         m_dataStream.resetStatus();
     }
 }
 
 LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
-    : ServerIoDevice(parent), m_connection(conn)
+    : ServerIoDevice(parent), m_connection(QSharedPointer<QLocalSocket>(conn))
 {
-    m_connection->setParent(this);
     connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
     connect(conn, &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
 }
 
-QIODevice *LocalServerIo::connection() const
+LocalServerIo::LocalServerIo(QSharedPointer<QLocalSocket> conn, QObject *parent)
+    : ServerIoDevice(parent), m_connection(conn)
+{
+    connect(m_connection.data(), &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
+    connect(m_connection.data(), &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
+    initializeDataStream();
+}
+
+QSharedPointer<QIODevice> LocalServerIo::connection() const
 {
     return m_connection;
 }

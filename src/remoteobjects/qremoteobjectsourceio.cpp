@@ -46,14 +46,24 @@
 #include "qremoteobjectnode_p.h"
 #include "qtremoteobjectglobal.h"
 
+#include "qconnection_tcpip_backend_p.h"
+#include "qconnection_local_backend_p.h"
+
 #include <QStringList>
 
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
 
-QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
+
+QRemoteObjectSourceIoAbstract::QRemoteObjectSourceIoAbstract(QObject *parent)
     : QObject(parent)
+{
+
+}
+
+QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
+    : QRemoteObjectSourceIoAbstract(parent)
     , m_server(QtROServerFactory::create(address, this))
 {
     if (m_server && m_server->listen(address)) {
@@ -72,12 +82,22 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *paren
     connect(&m_serverRead, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerRead);
 }
 
-QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
+QRemoteObjectSourceIoAbstract::~QRemoteObjectSourceIoAbstract()
 {
     qDeleteAll(m_remoteObjects.values());
 }
 
-bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName)
+QUrl QRemoteObjectSourceIoAbstract::serverAddress() const
+{
+    return QUrl();
+}
+
+bool QRemoteObjectSourceIoAbstract::serverIsNull() const
+{
+    return true;
+}
+
+bool QRemoteObjectSourceIoAbstract::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName)
 {
     if (m_remoteObjects.contains(name)) {
         qROWarning(this) << "Tried to register QRemoteObjectSource twice" << name;
@@ -87,7 +107,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *m
     return enableRemoting(object, new DynamicApiMap(meta, name, typeName));
 }
 
-bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
+bool QRemoteObjectSourceIoAbstract::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     const QString name = api->name();
     if (!api->isDynamic() && m_remoteObjects.contains(name)) {
@@ -97,14 +117,14 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
 
     new QRemoteObjectSource(object, api, adapter, this);
     serializeObjectListPacket(m_packet, {QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName()}});
-    foreach (ServerIoDevice *conn, m_connections)
+    foreach (ServerIoDevice *conn, connections())
         conn->write(m_packet.array, m_packet.size);
-    if (const int count = m_connections.size())
+    if (const int count = connections().size())
         qRODebug(this) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
     return true;
 }
 
-bool QRemoteObjectSourceIo::disableRemoting(QObject *object)
+bool QRemoteObjectSourceIoAbstract::disableRemoting(QObject *object)
 {
     QRemoteObjectSource *pp = m_objectToSourceMap.take(object);
     if (!pp)
@@ -114,48 +134,8 @@ bool QRemoteObjectSourceIo::disableRemoting(QObject *object)
     return true;
 }
 
-void QRemoteObjectSourceIo::registerSource(QRemoteObjectSource *pp)
+void QRemoteObjectSourceIoAbstract::onReadData(ServerIoDevice *connection)
 {
-    Q_ASSERT(pp);
-    const QString name = pp->m_api->name();
-    const auto type = pp->m_api->typeName();
-    m_objectToSourceMap[pp->m_object] = pp;
-    m_remoteObjects[name] = pp;
-    qRODebug(this) << "Registering" << name;
-    emit remoteObjectAdded(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
-}
-
-void QRemoteObjectSourceIo::unregisterSource(QRemoteObjectSource *pp)
-{
-    Q_ASSERT(pp);
-    const QString name = pp->m_api->name();
-    const auto type = pp->m_api->typeName();
-    m_objectToSourceMap.remove(pp->m_object);
-    m_remoteObjects.remove(name);
-    emit remoteObjectRemoved(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
-}
-
-void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
-{
-    ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
-    m_connections.remove(connection);
-
-    qRODebug(this) << "OnServerDisconnect";
-
-    Q_FOREACH (QRemoteObjectSource *pp, m_remoteObjects)
-        pp->removeListener(connection);
-
-    const QUrl location = m_registryMapping.value(connection);
-    emit serverRemoved(location);
-    m_registryMapping.remove(connection);
-    connection->close();
-    connection->deleteLater();
-}
-
-void QRemoteObjectSourceIo::onServerRead(QObject *conn)
-{
-    // Assert the invariant here conn is of type QIODevice
-    ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
     QRemoteObjectPacketTypeEnum packetType;
 
     do {
@@ -246,6 +226,89 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
     } while (connection->bytesAvailable()); // have bytes left over, so do another iteration
 }
 
+void QRemoteObjectSourceIoAbstract::registerSource(QRemoteObjectSource *pp)
+{
+    Q_ASSERT(pp);
+    const QString name = pp->m_api->name();
+    const auto type = pp->m_api->typeName();
+    m_objectToSourceMap[pp->m_object] = pp;
+    m_remoteObjects[name] = pp;
+    qRODebug(this) << "Registering" << name;
+    notifyObjectAdded(name,type);
+}
+
+void QRemoteObjectSourceIoAbstract::unregisterSource(QRemoteObjectSource *pp)
+{
+    Q_ASSERT(pp);
+    const QString name = pp->m_api->name();
+    const auto type = pp->m_api->typeName();
+    m_objectToSourceMap.remove(pp->m_object);
+    m_remoteObjects.remove(name);
+    notifyObjectRemoved(name,type);
+}
+
+QMap<QString, QRemoteObjectSource *> QRemoteObjectSourceIoAbstract::remoteObjects() const
+{
+    return m_remoteObjects;
+}
+
+void QRemoteObjectSourceIoAbstract::notifyObjectAdded(const QString name, const QString type)
+{
+    Q_UNUSED(name)
+    Q_UNUSED(type)
+}
+
+void QRemoteObjectSourceIoAbstract::notifyObjectRemoved(const QString name, const QString type)
+{
+    Q_UNUSED(name)
+    Q_UNUSED(type)
+}
+
+bool QRemoteObjectSourceIo::serverIsNull() const
+{
+    return m_server.isNull();
+}
+
+QSet<ServerIoDevice *> QRemoteObjectSourceIo::connections()
+{
+    return m_connections;
+}
+
+void QRemoteObjectSourceIo::notifyObjectAdded(const QString name, const QString type)
+{
+    emit remoteObjectAdded(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
+}
+
+void QRemoteObjectSourceIo::notifyObjectRemoved(const QString name, const QString type)
+{
+    emit remoteObjectRemoved(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
+}
+
+void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
+{
+    ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
+    m_connections.remove(connection);
+
+    qRODebug(this) << "OnServerDisconnect";
+
+    Q_FOREACH (QRemoteObjectSource *pp, m_remoteObjects)
+        pp->removeListener(connection);
+
+    const QUrl location = m_registryMapping.value(connection);
+    emit serverRemoved(location);
+    m_registryMapping.remove(connection);
+    connection->close();
+    connection->deleteLater();
+}
+
+void QRemoteObjectSourceIo::onServerRead(QObject *conn)
+{
+    // Assert the invariant here conn is of type QIODevice
+    ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
+
+    onReadData(connection);
+}
+
 void QRemoteObjectSourceIo::handleConnection()
 {
     qRODebug(this) << "handleConnection" << m_connections;
@@ -272,3 +335,76 @@ QUrl QRemoteObjectSourceIo::serverAddress() const
 }
 
 QT_END_NAMESPACE
+
+QRemoteObjectSourceSocketIo::QRemoteObjectSourceSocketIo(QSharedPointer<QIODevice> device, QObject *parent)
+    : QRemoteObjectSourceIoAbstract(parent)
+{
+    m_connection = 0;
+    setSocket(device);
+}
+
+void QRemoteObjectSourceSocketIo::setSocket(QSharedPointer<QIODevice> device)
+{
+    const QMetaObject *mo = device.data()->metaObject();
+    QString name = QString::fromLocal8Bit(mo->className());
+    if(m_connection)
+    {
+        disconnect(m_connection,&ServerIoDevice::disconnected,this,&QRemoteObjectSourceSocketIo::onConnectionDisconnect);
+        disconnect(m_connection,&ServerIoDevice::readyRead,this,&QRemoteObjectSourceSocketIo::onConnectionRead);
+        m_connection->deleteLater();
+    }
+
+    m_connection = 0;
+    if(name == QStringLiteral("QTcpSocket")
+            || name == QStringLiteral("QSslSocket"))
+    {
+        m_connection = new TcpServerIo(qSharedPointerCast<QTcpSocket>(device),this);
+    }
+    else if(name == QStringLiteral("QLocalSocket"))
+    {
+        m_connection = new LocalServerIo(qSharedPointerCast<QLocalSocket>(device),this);
+    }
+    if (!m_connection) {
+        qROWarning(this) << "Could not create ServerIoDevice for socket. Invalid device?" << name;
+        return;
+    }
+
+    connect(m_connection,&ServerIoDevice::disconnected,this,&QRemoteObjectSourceSocketIo::onConnectionDisconnect);
+    connect(m_connection,&ServerIoDevice::readyRead,this,&QRemoteObjectSourceSocketIo::onConnectionRead);
+
+    QRemoteObjectPackets::ObjectInfoList infos;
+    foreach (auto remoteObject, m_remoteObjects) {
+        infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName()};
+    }
+    serializeObjectListPacket(m_packet, infos);
+    m_connection->write(m_packet.array, m_packet.size);
+    qRODebug(this) << "Wrote ObjectList packet from Server" << QStringList(m_remoteObjects.keys());
+}
+
+QSet<ServerIoDevice *> QRemoteObjectSourceSocketIo::connections()
+{
+    QSet<ServerIoDevice*> ret;
+    if(m_connection)
+    {
+        ret << m_connection;
+        return ret;
+    }
+    return ret;
+}
+
+void QRemoteObjectSourceSocketIo::onConnectionDisconnect()
+{
+    Q_FOREACH (QRemoteObjectSource *pp, m_remoteObjects)
+        pp->removeListener(m_connection);
+
+    m_connection->close();
+    disconnect(m_connection,&ServerIoDevice::disconnected,this,&QRemoteObjectSourceSocketIo::onConnectionDisconnect);
+    disconnect(m_connection,&ServerIoDevice::readyRead,this,&QRemoteObjectSourceSocketIo::onConnectionRead);
+    m_connection->deleteLater();
+    m_connection = 0;
+}
+
+void QRemoteObjectSourceSocketIo::onConnectionRead()
+{
+    onReadData(m_connection);
+}

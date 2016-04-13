@@ -55,18 +55,60 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectSource;
 class SourceApiMap;
 
-class QRemoteObjectSourceIo : public QObject
+class QRemoteObjectSourceIoAbstract : public QObject
 {
     Q_OBJECT
+
 public:
-    explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = Q_NULLPTR);
-    ~QRemoteObjectSourceIo();
+    explicit QRemoteObjectSourceIoAbstract(QObject *parent = Q_NULLPTR);
+    ~QRemoteObjectSourceIoAbstract();
+
+    virtual QUrl serverAddress() const;
+    virtual bool serverIsNull() const;
 
     bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName);
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = Q_NULLPTR);
     bool disableRemoting(QObject *object);
 
-    QUrl serverAddress() const;
+    virtual QSet<ServerIoDevice*> connections() = 0;
+
+public Q_SLOTS:
+    void onReadData(ServerIoDevice *connection);
+
+Q_SIGNALS:
+
+public:
+    void registerSource(QRemoteObjectSource *pp);
+    void unregisterSource(QRemoteObjectSource *pp);
+
+    QMap<QString, QRemoteObjectSource *> remoteObjects() const;
+
+protected:
+    QMap<QString, QRemoteObjectSource*> m_remoteObjects;
+    QHash<QObject *, QRemoteObjectSource*> m_objectToSourceMap;
+    QHash<ServerIoDevice*, QUrl> m_registryMapping;
+    QRemoteObjectPackets::DataStreamPacket m_packet;
+    QString m_rxName;
+    QVariantList m_rxArgs;
+
+    virtual void notifyObjectAdded(const QString name, const QString type);
+    virtual void notifyObjectRemoved(const QString name, const QString type);
+
+};
+
+class QRemoteObjectSourceIo : public QRemoteObjectSourceIoAbstract
+{
+    Q_OBJECT
+public:
+    explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = Q_NULLPTR);
+
+    QUrl serverAddress() const Q_DECL_OVERRIDE;
+    bool serverIsNull() const Q_DECL_OVERRIDE;
+
+    void registerSource(QRemoteObjectSource *pp);
+    void unregisterSource(QRemoteObjectSource *pp);
+
+    QSet<ServerIoDevice*> connections();
 
 public Q_SLOTS:
     void handleConnection();
@@ -74,25 +116,38 @@ public Q_SLOTS:
     void onServerRead(QObject *obj);
 
 Q_SIGNALS:
+    void serverRemoved(const QUrl& url);
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
     void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
-    void serverRemoved(const QUrl& url);
 
-public:
-    void registerSource(QRemoteObjectSource *pp);
-    void unregisterSource(QRemoteObjectSource *pp);
-
-    QHash<QIODevice*, quint32> m_readSize;
+private:
     QSet<ServerIoDevice*> m_connections;
-    QHash<QObject *, QRemoteObjectSource*> m_objectToSourceMap;
-    QMap<QString, QRemoteObjectSource*> m_remoteObjects;
     QSignalMapper m_serverDelete;
     QSignalMapper m_serverRead;
-    QHash<ServerIoDevice*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
-    QRemoteObjectPackets::DataStreamPacket m_packet;
-    QString m_rxName;
-    QVariantList m_rxArgs;
+
+
+    void notifyObjectAdded(const QString name, const QString type) Q_DECL_OVERRIDE;
+    void notifyObjectRemoved(const QString name, const QString type) Q_DECL_OVERRIDE;
+};
+
+class QRemoteObjectSourceSocketIo : public QRemoteObjectSourceIoAbstract
+{
+    Q_OBJECT
+public:
+    explicit QRemoteObjectSourceSocketIo(QSharedPointer<QIODevice> device, QObject *parent = Q_NULLPTR);
+
+    void setSocket(QSharedPointer<QIODevice> device);
+
+    QSet<ServerIoDevice*> connections();
+
+public Q_SLOTS:
+    void onConnectionDisconnect();
+    void onConnectionRead();
+
+private:
+    ServerIoDevice* m_connection;
+
 };
 
 QT_END_NAMESPACE

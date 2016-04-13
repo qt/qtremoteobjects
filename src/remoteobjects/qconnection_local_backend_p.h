@@ -55,9 +55,10 @@ class LocalClientIo : public ClientIoDevice
 
 public:
     explicit LocalClientIo(QObject *parent = Q_NULLPTR);
+    LocalClientIo(QSharedPointer<QLocalSocket> socket, QObject *parent = Q_NULLPTR);
     ~LocalClientIo();
 
-    QIODevice *connection() Q_DECL_OVERRIDE;
+    QSharedPointer<QIODevice> connection() Q_DECL_OVERRIDE;
     void connectToServer() Q_DECL_OVERRIDE;
     bool isOpen() Q_DECL_OVERRIDE;
 
@@ -68,7 +69,7 @@ public Q_SLOTS:
 protected:
     void doClose() Q_DECL_OVERRIDE;
 private:
-    QLocalSocket m_socket;
+    QSharedPointer<QLocalSocket> m_socket;
 };
 
 class LocalServerIo : public ServerIoDevice
@@ -76,13 +77,14 @@ class LocalServerIo : public ServerIoDevice
     Q_OBJECT
 public:
     explicit LocalServerIo(QLocalSocket *conn, QObject *parent = Q_NULLPTR);
+    LocalServerIo(QSharedPointer<QLocalSocket> conn, QObject *parent = Q_NULLPTR);
 
-    QIODevice *connection() const Q_DECL_OVERRIDE;
+    QSharedPointer<QIODevice> connection() const Q_DECL_OVERRIDE;
 protected:
     void doClose() Q_DECL_OVERRIDE;
 
 private:
-    QLocalSocket *m_connection;
+    QSharedPointer<QLocalSocket> m_connection;
 };
 
 class LocalServerImpl : public QConnectionAbstractServer
