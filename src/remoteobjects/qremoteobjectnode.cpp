@@ -903,7 +903,7 @@ QStringList QRemoteObjectNode::instances(const QString &typeName) const
     \keyword dynamic acquire
     Returns a QRemoteObjectDynamicReplica of the Source \a name.
 */
-QRemoteObjectDynamicReplica *QRemoteObjectNode::acquire(const QString &name)
+QRemoteObjectDynamicReplica *QRemoteObjectNode::acquireDynamic(const QString &name)
 {
     return new QRemoteObjectDynamicReplica(this, name);
 }

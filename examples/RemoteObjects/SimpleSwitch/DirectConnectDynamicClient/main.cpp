@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     QRemoteObjectNode repNode; // create remote object node
     repNode.connectToNode(QUrl(QStringLiteral("local:replica"))); // connect with remote host node
 
-    ptr.reset(repNode.acquire("SimpleSwitch")); // acquire replica of source from host node
+    ptr.reset(repNode.acquireDynamic("SimpleSwitch")); // acquire replica of source from host node
 
     DynamicClient rswitch(ptr); // create client switch object and pass replica reference to it
 

@@ -105,7 +105,7 @@ public:
     }
     QStringList instances(const QString &typeName) const;
 
-    QRemoteObjectDynamicReplica *acquire(const QString &name);
+    QRemoteObjectDynamicReplica *acquireDynamic(const QString &name);
     QAbstractItemModelReplica *acquireModel(const QString &name);
     QUrl registryUrl() const;
     virtual bool setRegistryUrl(const QUrl &registryAddress);

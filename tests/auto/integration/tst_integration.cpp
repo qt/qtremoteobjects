@@ -136,7 +136,7 @@ private slots:
             QCOMPARE((qint32)tc.classEnum(), (qint32)tc_rep->classEnum());
         }
 
-        QScopedPointer<QRemoteObjectDynamicReplica> tc_repDynamic(client.acquire(QStringLiteral("TestClass")));
+        QScopedPointer<QRemoteObjectDynamicReplica> tc_repDynamic(client.acquireDynamic(QStringLiteral("TestClass")));
 
         tc_repDynamic->waitForSource(1000);
         QVERIFY(tc_repDynamic->isInitialized());
@@ -254,12 +254,12 @@ private slots:
                     ++regAdded;
                     //Add regular replica first, then dynamic one
                     regBase.reset(client.acquire<EngineReplica>());
-                    regDynamic.reset(client.acquire(QStringLiteral("Engine")));
+                    regDynamic.reset(client.acquireDynamic(QStringLiteral("Engine")));
                 }
                 if (entry.first == QLatin1String("MyTestEngine")) {
                     regAdded += 2;
                     //Now add dynamic replica first, then regular one
-                    regDynamicNamed.reset(client.acquire(QStringLiteral("MyTestEngine")));
+                    regDynamicNamed.reset(client.acquireDynamic(QStringLiteral("MyTestEngine")));
                     regNamed.reset(client.acquire<EngineReplica>(QStringLiteral("MyTestEngine")));
                 }
             });
@@ -446,7 +446,7 @@ private slots:
         Q_SET_OBJECT_NAME(client);
 
         QSignalSpy spy(this, SIGNAL(forwardResult(int)));
-        QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquire(QStringLiteral("Engine")));
+        QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquireDynamic(QStringLiteral("Engine")));
         connect(engine_dr.data(), &QRemoteObjectDynamicReplica::initialized, [&]()
             {
                 const QMetaObject *metaObject = engine_dr->metaObject();
@@ -537,7 +537,7 @@ private slots:
         Q_SET_OBJECT_NAME(client);
         e.setStarted(false);
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquire(QStringLiteral("Engine")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquireDynamic(QStringLiteral("Engine")));
         Q_ASSERT(engine_r);
         QEventLoop loop;
         QTimer::singleShot(100, &loop, &QEventLoop::quit);
@@ -576,7 +576,7 @@ private slots:
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquire(QStringLiteral("Engine")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquireDynamic(QStringLiteral("Engine")));
         Q_ASSERT(engine_r);
         bool ok = engine_r->waitForSource();
         QVERIFY(ok);
@@ -622,7 +622,7 @@ private slots:
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquire(QStringLiteral("Engine")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_r(client.acquireDynamic(QStringLiteral("Engine")));
         const QMetaObject *metaObject = engine_r->metaObject();
         const int propIndex = metaObject->indexOfProperty("purchasedPart");
         QVERIFY(propIndex < 0);
@@ -698,7 +698,7 @@ private slots:
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquire(QStringLiteral("Engine")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquireDynamic(QStringLiteral("Engine")));
         engine_dr->waitForSource();
         const QMetaObject *metaObject = engine_dr->metaObject();
         const int propIndex = metaObject->indexOfProperty("rpm");
@@ -830,9 +830,9 @@ private slots:
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
 
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep1(client.acquire(QStringLiteral("TcpDataCenter")));
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep2(client.acquire(QStringLiteral("TcpDataCenter")));
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep3(client.acquire(QStringLiteral("LocalDataCenter")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep1(client.acquireDynamic(QStringLiteral("TcpDataCenter")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep2(client.acquireDynamic(QStringLiteral("TcpDataCenter")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep3(client.acquireDynamic(QStringLiteral("LocalDataCenter")));
         rep1->waitForSource();
         rep2->waitForSource();
         rep3->waitForSource();
@@ -933,7 +933,7 @@ private slots:
         QRemoteObjectNode client;
         Q_SET_OBJECT_NAME(client);
         client.connectToNode(hostUrl);
-        const QScopedPointer<QRemoteObjectDynamicReplica> rep(client.acquire(QStringLiteral("large")));
+        const QScopedPointer<QRemoteObjectDynamicReplica> rep(client.acquireDynamic(QStringLiteral("large")));
         rep->waitForSource();
         QVERIFY(rep->isInitialized());
         const QMetaObject *metaObject = rep->metaObject();
@@ -1000,7 +1000,7 @@ private slots:
         localSocketTestClient.connectToNode(connection);
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
         QScopedPointer<QRemoteObjectDynamicReplica> replica;
-        replica.reset(localSocketTestClient.acquire(objectname));
+        replica.reset(localSocketTestClient.acquireDynamic(objectname));
 
         testServer.start(progName);
         QVERIFY(testServer.waitForStarted());
@@ -1030,7 +1030,7 @@ private slots:
         localSocketTestClient.connectToNode(connection);
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
         QScopedPointer<QRemoteObjectDynamicReplica> replica;
-        replica.reset(localSocketTestClient.acquire(objectname));
+        replica.reset(localSocketTestClient.acquireDynamic(objectname));
 
         testServer.start(progName);
         QVERIFY(testServer.waitForStarted());
