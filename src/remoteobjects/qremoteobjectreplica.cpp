@@ -464,6 +464,11 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 */
 
 /*!
+    \internal
+    \enum QRemoteObjectReplica::ConstructorType
+*/
+
+/*!
     \property QRemoteObjectReplica::isReplicaValid
     \brief Whether the Replica is valid or not.
 
@@ -471,7 +476,12 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 */
 
 /*!
-    This (protected) constructor for QRemoteObjectReplica can be used to create
+    \property QRemoteObjectReplica::node
+    \brief A pointer to the Node this object was acquired from.
+*/
+
+/*!
+    \internal This (protected) constructor for QRemoteObjectReplica can be used to create
     Replica objects from QML.
 */
 QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
@@ -513,6 +523,9 @@ const QVariant QRemoteObjectReplica::propAsVariant(int i) const
     return d_ptr->getProperty(i);
 }
 
+/*!
+    \internal
+*/
 void QRemoteObjectReplica::initializeNode(QRemoteObjectNode *node, const QString &name)
 {
     node->initializeReplica(this, name);
