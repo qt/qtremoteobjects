@@ -61,7 +61,6 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
 
 public:
     virtual ~QRemoteObjectReplica();
-    enum ConstructorType {DefaultConstructor, ConstructWithNode};
 
     bool isReplicaValid() const;
     bool waitForSource(int timeout = 30000);
@@ -74,6 +73,7 @@ Q_SIGNALS:
     void initialized();
 
 protected:
+    enum ConstructorType {DefaultConstructor, ConstructWithNode};
     explicit QRemoteObjectReplica(ConstructorType t = DefaultConstructor);
 
     virtual void initialize();
