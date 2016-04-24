@@ -44,8 +44,7 @@
 \title Qt Remote Objects
 \brief An introduction to Inter-Process Communication using Qt Remote Objects.
 
-\keyword Qt Remote Objects
-
+\target Qt Remote Objects
 \section1 Remote Object Concepts
 
 Qt Remote Objects (QtRO) is an Inter-Process Communication (IPC) module
@@ -162,7 +161,7 @@ processes/devices that want to interact with a shared object use one of the \l
 {QRemoteObjectNode::acquire()} {Node's acquire()} methods to instantiate a
 Replica.
 
-\keyword Source
+\target Source
 \section1 Source objects
 
 A Remote Object Source is the QObject that is responsible for the
@@ -183,7 +182,17 @@ compile-time checks).
 
 Letting \l {repc} generate a \l {Source} header file for your project (using
 the \l {REPC_SOURCE} macro) provides three options of implementing the desired
-API. There is a <Type>SimpleSource class defined in the header, which provides
+API. If your class name was Foo, the options would be the following (and see \l
+{The rep file format} for help in creating a rep file)
+
+\list
+\li \l {TypeSimpleSource} {FooSimpleSource} inheritance
+\li \l {TypeSource} {FooSource} inheritance
+\li \l {TypeAPI} {FooSourceAPI} usage with your own QObject
+\endlist
+
+\target TypeSimpleSource
+There is a <Type>SimpleSource class defined in the header, which provides
 basic getter/setter methods for each property and implements data members of
 the correct property type in the header. Here "<Type>" represents the class
 name from the .rep file, so if your class is of type "MyType" in the .rep file,
@@ -194,6 +203,7 @@ in the generated header file). Whatever logic is needed to manage the
 exposed properties and define when Signals need to be emitted would be added to
 the overriding class as well.
 
+\target TypeSource
 If you need to hide the implementation details, you can use the <Type>Source
 class instead, which is the 2nd class declared in the same resulting header
 file. This class definition does not provide data members, and makes the
@@ -201,7 +211,8 @@ getter/setter functions pure virtual as well. You have more flexibility in how
 you implement the class, although you need to write more code. This defines the
 API for both the Source and Replica side from a single .rep template file.
 
-Finally, the is the <Type>SourceAPI class generated in the header. This is a
+\target TypeAPI
+Finally, there is the <Type>SourceAPI class generated in the header. This is a
 templated class, for use specifically by the templated version of \l
 {QRemoteObjectHostBase::enableRemoting()} function overload, which allows you to
 use any QObject that supports the desired API as the source. You will get
@@ -231,7 +242,7 @@ name will be used. \li Otherwise, the QObject's objectName (if set) will be
 used. \li If neither is available, the call to \l
 {QRemoteObjectHostBase::enableRemoting()} will fail, returning False. \endlist
 
-\keyword Replica
+\target Replica
 \section1 Replica objects
 
 A Remote Object Replica is a proxy object that has (approximately) the same API
@@ -297,7 +308,7 @@ If the connection to a Host Node is lost, the Replica will transition to the
 invalid state. It will attempt to reconnect and will re-initialize if the
 connection is restored (this making sure all Properties are current).
 
-\keyword Registry
+\target Registry
 \section1 The Registry
 
 When you \l {QRemoteObjectNode::acquire} a Replica, the Node URL is not passed
