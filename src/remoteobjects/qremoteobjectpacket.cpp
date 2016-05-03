@@ -101,6 +101,7 @@ void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object
 
 bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
 {
+    // note: optimized version of: QDataStream operator>>(QDataStream& s, QList<T>& l)
     quint32 c;
     s >> c;
     const int initialListSize = l.size();
@@ -280,7 +281,15 @@ void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, 
     ds << name;
     ds << call;
     ds << index;
-    ds << args;
+
+    ds << (quint32)args.size();
+    foreach (const auto &arg, args) {
+        if (QMetaType::typeFlags(arg.userType()).testFlag(QMetaType::IsEnumeration))
+            ds << QVariant::fromValue<qint32>(arg.toInt());
+        else
+            ds << arg;
+    }
+
     ds << serialId;
     ds.finishPacket();
 }
