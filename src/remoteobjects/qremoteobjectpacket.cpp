@@ -75,10 +75,6 @@ QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property)
 
 void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
-    const QMetaObject *meta = object->m_object->metaObject();
-    const QMetaObject *adapterMeta = Q_NULLPTR;
-    if (object->hasAdapter())
-        adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
     ds.setId(InitPacket);
@@ -95,13 +91,10 @@ void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object
             ds.size = 0;
             return;
         }
-        if (api->isAdapterProperty(i)) {
-            const QMetaProperty mp = adapterMeta->property(index);
-            ds << serializedProperty(mp, object->m_adapter);
-        } else {
-            const QMetaProperty mp = meta->property(index);
-            ds << serializedProperty(mp, object->m_object);
-        }
+
+        const auto target = api->isAdapterProperty(i) ? object->m_adapter : object->m_object;
+        const auto metaProperty = target->metaObject()->property(index);
+        ds << serializedProperty(metaProperty, target);
     }
     ds.finishPacket();
 }
@@ -145,10 +138,6 @@ void deserializeInitPacket(QDataStream &in, QVariantList &values)
 
 void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
-    const QMetaObject *meta = object->m_object->metaObject();
-    const QMetaObject *adapterMeta = Q_NULLPTR;
-    if (object->hasAdapter())
-        adapterMeta = object->m_adapter->metaObject();
     const SourceApiMap *api = object->m_api;
 
     ds.setId(InitDynamicPacket);
@@ -191,25 +180,16 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
             ds.size = 0;
             return;
         }
-        if (api->isAdapterProperty(i)) {
-            const QMetaProperty mp = adapterMeta->property(index);
-            ds << mp.name();
-            ds << mp.typeName();
-            if (mp.notifySignalIndex() == -1)
-                ds << QByteArray();
-            else
-                ds << mp.notifySignal().methodSignature();
-            ds << mp.read(object->m_adapter);
-        } else {
-            const QMetaProperty mp = meta->property(index);
-            ds << mp.name();
-            ds << mp.typeName();
-            if (mp.notifySignalIndex() == -1)
-                ds << QByteArray();
-            else
-                ds << mp.notifySignal().methodSignature();
-            ds << mp.read(object->m_object);
-        }
+
+        const auto target = api->isAdapterProperty(i) ? object->m_adapter : object->m_object;
+        const auto metaProperty = target->metaObject()->property(index);
+        ds << metaProperty.name();
+        ds << metaProperty.typeName();
+        if (metaProperty.notifySignalIndex() == -1)
+            ds << QByteArray();
+        else
+            ds << metaProperty.notifySignal().methodSignature();
+        ds << metaProperty.read(target);
     }
     ds.finishPacket();
 }

@@ -81,16 +81,10 @@ QRemoteObjectSource::QRemoteObjectSource(QObject *obj, const SourceApiMap *api,
         //
         //We know no one will inherit from this class, so no need to worry about indices from
         //derived classes.
-        if (m_api->isAdapterSignal(idx)) {
-            if (!QMetaObject::connect(adapter, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
-                qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
-                return;
-            }
-        } else {
-            if (!QMetaObject::connect(obj, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
-                qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
-                return;
-            }
+        const auto target = m_api->isAdapterSignal(idx) ? adapter : obj;
+        if (!QMetaObject::connect(target, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+            qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
+            return;
         }
 
         qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << meta->method(sourceIndex).name();
@@ -180,15 +174,10 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
     const int propertyIndex = m_api->propertyIndexFromSignal(index);
     if (propertyIndex >= 0) {
         const int rawIndex = m_api->propertyRawIndexFromSignal(index);
-        if (m_api->isAdapterProperty(index)) {
-            const QMetaProperty mp = m_adapter->metaObject()->property(propertyIndex);
-            qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property (adapter)" << rawIndex << propertyIndex << mp.name() << mp.read(m_adapter);
-            serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, serializedProperty(mp, m_adapter));
-        } else {
-            const QMetaProperty mp = m_object->metaObject()->property(propertyIndex);
-            qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << rawIndex << propertyIndex << mp.name() << mp.read(m_object);
-            serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, serializedProperty(mp, m_object));
-        }
+        const auto target = m_api->isAdapterProperty(index) ? m_adapter : m_object;
+        const QMetaProperty mp = target->metaObject()->property(propertyIndex);
+        qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(index) ? "via adapter" : "") << rawIndex << propertyIndex << mp.name() << mp.read(target);
+        serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, serializedProperty(mp, target));
         m_packet.baseAddress = m_packet.size;
     }
 
