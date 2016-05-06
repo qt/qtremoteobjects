@@ -60,7 +60,8 @@ int main(int argc, char **argv)
     QTreeView view;
     view.setWindowTitle(QStringLiteral("RemoteView"));
     view.resize(640,480);
-    view.setModel(node.acquireModel(QStringLiteral("RemoteModel")));
+    QScopedPointer<QAbstractItemModelReplica> model(node.acquireModel(QStringLiteral("RemoteModel")));
+    view.setModel(model.data());
     view.show();
 
     return app.exec();

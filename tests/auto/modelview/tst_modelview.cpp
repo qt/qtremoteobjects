@@ -776,7 +776,7 @@ void TestModelView::testDataChangedTree()
     while (runs < maxRuns) {
         if (dataChangedSpy.wait() &&!dataChangedSpy.isEmpty()) {
             signalsReceived = true;
-            if (dataChangedSpy.takeLast().at(1).value<QModelIndex>().row() == 19)
+            if (dataChangedSpy.takeFirst().at(1).value<QModelIndex>().row() == 19)
                 break;
         }
         ++runs;
@@ -985,7 +985,8 @@ void TestModelView::testDataInsertionTree()
 void TestModelView::testDataRemoval()
 {
     QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("test"));
-
+    qputenv("QTRO_NODES_CACHE_SIZE", "1000");
+    model->setRootCacheSize(1000);
     FetchData f(model.data());
     f.addAll();
     QVERIFY(f.fetchAndWait());
@@ -1024,6 +1025,8 @@ void TestModelView::testDataRemoval()
 void TestModelView::testRoleNames()
 {
     QScopedPointer<QAbstractItemModelReplica> repModel( m_client.acquireModel(QStringLiteral("testRoleNames")));
+    // Set a bigger cache enough to keep all the data otherwise the last test will fail
+    repModel->setRootCacheSize(1500);
     FetchData f(repModel.data());
     f.addAll();
     QVERIFY(f.fetchAndWait());
@@ -1121,7 +1124,7 @@ void TestModelView::testSetDataTree()
     sourceStack.push_back(QModelIndex());
 
 
-    const QString newData = QStringLiteral("This entry was changed with setData in a tree");
+    const QString newData = QStringLiteral("This entry was changed with setData in a tree %1 %2 %3");
     while (!stack.isEmpty()) {
         const QModelIndex parent = stack.takeLast();
         const QModelIndex parentSource = sourceStack.takeLast();
@@ -1129,7 +1132,7 @@ void TestModelView::testSetDataTree()
             for (int column = 0; column < model->columnCount(parent); ++column) {
                 const QModelIndex index = model->index(row, column, parent);
                 const QModelIndex indexSource = m_sourceModel.index(row, column, parentSource);
-                QVERIFY(model->setData(index, newData, Qt::DisplayRole));
+                QVERIFY(model->setData(index, newData.arg(parent.isValid()).arg(row).arg(column), Qt::DisplayRole));
                 pending.append(indexSource);
                 pendingReplica.append(index);
                 if (column == 0) {

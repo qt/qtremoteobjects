@@ -46,11 +46,12 @@
 #include "qremoteobjectabstractitemmodelreplica.h"
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectpendingcall.h"
+#include <list>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace {
-const int BufferSize = 1000;
-const int LookAhead = 100;
-const int HalfLookAhead = LookAhead/2;
+    const int DefaultNodesCacheSize = 50;
 }
 
 struct CacheEntry
@@ -65,46 +66,185 @@ struct CacheEntry
 
 typedef QVector<CacheEntry> CachedRowEntry;
 
+template <class Key, class Value>
+struct LRUCache
+{
+    typedef std::pair<Key, Value*> Pair;
+    std::list<Pair> cachedItems;
+    typedef typename std::list<Pair>::iterator CacheIterator;
+    std::unordered_map<Key, CacheIterator> cachedItemsMap;
+    size_t cacheSize;
+
+    explicit LRUCache()
+    {
+        bool ok;
+        cacheSize = qEnvironmentVariableIntValue("QTRO_NODES_CACHE_SIZE" , &ok);
+        if (!ok)
+            cacheSize = DefaultNodesCacheSize;
+    }
+
+    ~LRUCache()
+    {
+        clear();
+    }
+
+    void changeKeys(Key key, Key delta) {
+        std::vector<std::pair<Key, CacheIterator>> changed;
+        auto it = cachedItemsMap.begin();
+        while (it != cachedItemsMap.end()) {
+            if (it->first >= key) {
+                changed.emplace_back(it->first + delta, it->second);
+                it->second->first += delta;
+                it = cachedItemsMap.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        for (auto pair : changed)
+            cachedItemsMap[pair.first] = pair.second;
+    }
+
+    void insert(Key key, Value *value)
+    {
+        changeKeys(key, 1);
+        ensure(key, value);
+        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+    }
+
+    void ensure(Key key, Value *value)
+    {
+        cachedItems.emplace_front(key, value);
+        cachedItemsMap[key] = cachedItems.begin();
+        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+
+        auto it = cachedItems.rbegin();
+        while (cachedItemsMap.size() >= cacheSize) {
+            // Do not trash elements with children
+            // Workaround QTreeView bugs which caches the children indexes for very long time
+            while (it->second->hasChildren && it != cachedItems.rend())
+                ++it;
+
+            if (it == cachedItems.rend())
+                break;
+
+            cachedItemsMap.erase(it->first);
+            delete it->second;
+            cachedItems.erase((++it).base());
+        }
+        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+    }
+
+    void remove(Key key)
+    {
+        auto it = cachedItemsMap.find(key);
+        if (it != cachedItemsMap.end()) {
+            cachedItems.erase(it->second);
+            delete it->second->second;
+            cachedItemsMap.erase(it);
+        }
+        changeKeys(key, -1);
+        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+    }
+
+    Value *get(Key key)
+    {
+        auto it = cachedItemsMap.find(key);
+        if (it == cachedItemsMap.end())
+            return nullptr;
+
+        // Move the accessed item to front
+        cachedItems.splice(cachedItems.begin(), cachedItems, it->second);
+        Q_ASSERT(it->second->first == key);
+        return it->second->second;
+    }
+
+    Key find(Value *val)
+    {
+        for (auto it = cachedItemsMap.begin(); it != cachedItemsMap.end(); ++it) {
+            if (it->second->second == val)
+                return it->first;
+        }
+        Q_ASSERT_X(false, __FUNCTION__, "Value not found");
+        return Key{};
+    }
+
+    bool exists(Value *val)
+    {
+        for (const auto &pair : cachedItems)
+            if (pair.second == val)
+                return true;
+
+        return false;
+    }
+
+    bool exists(Key key)
+    {
+        return cachedItemsMap.find(key) != cachedItemsMap.end();
+    }
+
+    size_t size()
+    {
+        return cachedItemsMap.size();
+    }
+
+    void clear()
+    {
+        for (const auto &pair : cachedItems)
+            delete pair.second;
+        cachedItems.clear();
+        cachedItemsMap.clear();
+    }
+};
+
+class QAbstractItemModelReplicaPrivate;
 struct CacheData
 {
+    QAbstractItemModelReplicaPrivate *replicaModel;
     CacheData *parent;
     CachedRowEntry cachedRowEntry;
 
     bool hasChildren;
-    QList<CacheData*> children;
+    LRUCache<int, CacheData> children;
     int columnCount;
+    int rowCount;
 
-    explicit CacheData(CacheData *parentItem = 0)
-        : parent(parentItem)
-        , hasChildren(false)
-        , columnCount(0)
-    {}
-    ~CacheData() { qDeleteAll(children); }
+    explicit CacheData(QAbstractItemModelReplicaPrivate *model, CacheData *parentItem = nullptr);
+
+    ~CacheData();
+
+    void ensureChildren(int start, int end)
+    {
+        for (int i = start; i <= end; ++i)
+            if (!children.exists(i))
+                children.ensure(i, new CacheData(replicaModel, this));
+    }
+
     void insertChildren(int start, int end) {
         Q_ASSERT_X(start >= 0 && start <= end, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2")).arg(start).arg(end)));
         for (int i = start; i <= end; ++i) {
-            auto cacheData = new CacheData(this);
+            auto cacheData = new CacheData(replicaModel, this);
             cacheData->columnCount = columnCount;
             children.insert(i, cacheData);
+            ++rowCount;
         }
-        if (!children.isEmpty())
+        if (rowCount)
             hasChildren = true;
     }
     void removeChildren(int start, int end) {
-        Q_ASSERT_X(start >= 0 && start <= end && end < children.count(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2 < %3")).arg(start).arg(end).arg(children.count())));
-        for (int i = start; i <= end; ++i)
-            delete children.takeAt(start);
-        if (children.isEmpty())
-            hasChildren = false;
+        Q_ASSERT_X(start >= 0 && start <= end && end < rowCount, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 <= %2 < %3")).arg(start).arg(end).arg(rowCount)));
+        for (int i = end; i >= start; --i) {
+            children.remove(i);
+            --rowCount;
+        }
+        hasChildren = rowCount;
     }
     void clear() {
         cachedRowEntry.clear();
-        qDeleteAll(children);
         children.clear();
         hasChildren = false;
         columnCount = 0;
+        rowCount = 0;
     }
-
 };
 
 struct RequestedData
@@ -259,17 +399,27 @@ public:
     CacheData m_rootItem;
     inline CacheData* cacheData(const QModelIndex &index) const {
         Q_ASSERT(!index.isValid() || index.model() == q);
-        CacheData *data = index.isValid() ? static_cast<CacheData*>(index.internalPointer()) : const_cast<CacheData*>(&m_rootItem);
-        Q_ASSERT(data);
-        return data;
+        if (!index.isValid())
+            return const_cast<CacheData*>(&m_rootItem);
+        if (index.internalPointer()) {
+            auto parent = static_cast<CacheData*>(index.internalPointer());
+            if (m_activeParents.find(parent) != m_activeParents.end())
+                return parent->children.get(index.row());
+        }
+        return nullptr;
     }
     inline CacheData* cacheData(const IndexList &index) const {
         return cacheData(toQModelIndex(index, q));
     }
+    inline CacheData* createCacheData(const IndexList &index) const {
+        auto modelIndex = toQModelIndex(index, q);
+        cacheData(modelIndex.parent())->ensureChildren(modelIndex.row() , modelIndex.row());
+        return cacheData(modelIndex);
+    }
     inline CacheEntry* cacheEntry(const QModelIndex &index) const {
-        CacheData *data = cacheData(index);
-        if (index.column() < 0 || index.column() >= data->cachedRowEntry.size())
-            return 0;
+        auto data = cacheData(index);
+        if (!data || index.column() < 0 || index.column() >= data->cachedRowEntry.size())
+            return nullptr;
         CacheEntry &entry = data->cachedRowEntry[index.column()];
         return &entry;
     }
@@ -286,6 +436,7 @@ public:
     QVector<QRemoteObjectPendingCallWatcher*> m_pendingRequests;
     QAbstractItemModelReplica *q;
     mutable QVector<int> m_availableRoles;
+    std::unordered_set<CacheData*> m_activeParents;
 };
 
 #endif // QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_P_H

@@ -262,10 +262,10 @@ void BenchmarksTest::benchModelLinearAccess()
     QBENCHMARK {
         QRemoteObjectNode localClient;
         localClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
-        auto model = localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel"));
+        QScopedPointer<QAbstractItemModelReplica> model(localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel")));
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
-        connect(model, &QAbstractItemModelReplica::dataChanged, [model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
             for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                 // we're assuming that the view will try use the sent data,
                 // therefore we're not optimizing the code
@@ -298,7 +298,7 @@ void BenchmarksTest::benchModelLinearAccess()
                 loop.quit();
         });
 
-        auto beginBenchmark = [model, &loop, &dataToWait] {
+        auto beginBenchmark = [&model, &loop, &dataToWait] {
             for (int row = 0; row < 1000; ++row) {
                 if (row >= 950)
                     dataToWait.insert(row, QPair<QString, QString>());
@@ -312,7 +312,7 @@ void BenchmarksTest::benchModelLinearAccess()
             }
 
         };
-        connect(model, &QAbstractItemModelReplica::initialized, [model, &loop, &beginBenchmark] {
+        connect(model.data(), &QAbstractItemModelReplica::initialized, [&model, &loop, &beginBenchmark] {
             if (model->isInitialized()) {
                 beginBenchmark();
             } else {
@@ -334,10 +334,11 @@ void BenchmarksTest::benchModelRandomAccess()
     QBENCHMARK {
         QRemoteObjectNode localClient;
         localClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
-        auto model = localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel"));
+        QScopedPointer<QAbstractItemModelReplica> model(localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel")));
+        model->setRootCacheSize(5000); // we need to make room for all 5000 rows that we'll use
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
-        connect(model, &QAbstractItemModelReplica::dataChanged, [model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
             for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                 // we're assuming that the view will try use the sent data,
                 // therefore we're not optimizing the code
@@ -369,7 +370,7 @@ void BenchmarksTest::benchModelRandomAccess()
                 loop.quit();
         });
 
-        auto beginBenchmark = [model, &loop, &dataToWait] {
+        auto beginBenchmark = [&model, &loop, &dataToWait] {
             for (int chunck = 0; chunck < 100; ++chunck) {
                 int row = chunck * 950;
                 for (int r = 0; r < 50; ++r) {
@@ -385,7 +386,7 @@ void BenchmarksTest::benchModelRandomAccess()
             }
 
         };
-        connect(model, &QAbstractItemModelReplica::initialized, [model, &loop, &beginBenchmark] {
+        connect(model.data(), &QAbstractItemModelReplica::initialized, [&model, &loop, &beginBenchmark] {
             if (model->isInitialized()) {
                 beginBenchmark();
             } else {

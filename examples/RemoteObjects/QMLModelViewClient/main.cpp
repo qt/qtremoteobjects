@@ -56,7 +56,8 @@ int main(int argc, char *argv[])
 
     QRemoteObjectNode node(QUrl(QStringLiteral("local:registry")));
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("remoteModel", node.acquireModel(QStringLiteral("RemoteModel")));
+    QScopedPointer<QAbstractItemModelReplica> model(node.acquireModel(QStringLiteral("RemoteModel")));
+    engine.rootContext()->setContextProperty("remoteModel", model.data());
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
     return app.exec();

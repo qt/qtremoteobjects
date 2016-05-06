@@ -74,6 +74,9 @@ public:
     bool isInitialized() const;
     bool hasData(const QModelIndex &index, int role) const;
 
+    size_t rootCacheSize() const;
+    void setRootCacheSize(size_t rootCacheSize);
+
 Q_SIGNALS:
     void initialized();
 
