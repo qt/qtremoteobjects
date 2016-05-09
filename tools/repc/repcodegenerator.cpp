@@ -335,11 +335,11 @@ void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVec
         out << "    // non-repc generated QObjects." << endl;
     }
     foreach (const ASTEnum &en, enums) {
-        out << "    enum " << en.name << "{";
+        out << "    enum " << en.name << " {" << endl;
         foreach (const ASTEnumParam &p, en.params)
-            out << p.name << " = " << p.value << ",";
+            out << "        " << p.name << " = " << p.value << "," << endl;
 
-        out << "};" << endl;
+        out << "    };" << endl;
 
         if (generateQENUM) {
             out << "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))" << endl;
@@ -400,7 +400,8 @@ void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const Q
     foreach (const ASTEnum &en, enums)
     {
         const QString type = getEnumType(en);
-        out <<  "inline QDataStream &operator<<(QDataStream &ds, const " << className << "::" << en.name << " &obj) {\n"
+        out <<  "inline QDataStream &operator<<(QDataStream &ds, const " << className << "::" << en.name << " &obj)\n"
+                "{\n"
                 "    " << type << " val = obj;\n"
                 "    ds << val;\n"
                 "    return ds;\n"
