@@ -693,6 +693,7 @@ void TestModelView::testEmptyModel()
     m_basicServer.enableRemoting(&emptyModel, "emptyModel", roles);
 
     QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("emptyModel"));
+    model->setRootCacheSize(1000);
 
     FetchData f(model.data());
     f.addAll();

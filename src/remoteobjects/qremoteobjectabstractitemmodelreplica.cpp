@@ -285,7 +285,8 @@ void QAbstractItemModelReplicaPrivate::onRowsRemoved(const IndexList &parent, in
 
     auto parentItem = cacheData(parentIndex);
     q->beginRemoveRows(parentIndex, start, end);
-    parentItem->removeChildren(start, end);
+    if (parentItem)
+        parentItem->removeChildren(start, end);
     q->endRemoveRows();
 }
 
@@ -762,7 +763,7 @@ QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) co
     IndexList parentList = toModelIndexList(index.parent(), this);
     IndexList start = IndexList() << parentList << ModelIndex(row, 0);
     IndexList end = IndexList() << parentList << ModelIndex(row, std::max(0, parentItem->columnCount - 1));
-//    parentItem->ensureChildren(low, high);
+    parentItem->ensureChildren(row, row);
     Q_ASSERT(toQModelIndex(start, this).isValid());
 
     RequestedData data;
