@@ -50,7 +50,7 @@
 
 QT_BEGIN_NAMESPACE
 enum {
-    DefaultRootCacheSize = 100
+    DefaultRootCacheSize = 1000
 };
 
 inline QDebug operator<<(QDebug stream, const RequestedData &data)
