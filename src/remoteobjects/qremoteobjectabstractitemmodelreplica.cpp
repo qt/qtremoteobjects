@@ -80,7 +80,7 @@ QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate()
     , m_rootItem(this)
     , m_lastRequested(-1)
 {
-    m_rootItem.children.cacheSize = DefaultRootCacheSize;
+    m_rootItem.children.setCacheSize(DefaultRootCacheSize);
     registerTypes();
     initializeModelConnections();
     connect(this, &QAbstractItemModelReplicaPrivate::availableRolesChanged, this, [this]{
@@ -94,7 +94,7 @@ QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate(QRemoteObject
     , m_rootItem(this)
     , m_lastRequested(-1)
 {
-    m_rootItem.children.cacheSize = DefaultRootCacheSize;
+    m_rootItem.children.setCacheSize(DefaultRootCacheSize);
     registerTypes();
     initializeModelConnections();
     initializeNode(node, name);
@@ -909,7 +909,7 @@ size_t QAbstractItemModelReplica::rootCacheSize() const
 
 void QAbstractItemModelReplica::setRootCacheSize(size_t rootCacheSize)
 {
-    d->m_rootItem.children.cacheSize = rootCacheSize;
+    d->m_rootItem.children.setCacheSize(rootCacheSize);
 }
 
 QVector<int> QAbstractItemModelReplica::availableRoles() const

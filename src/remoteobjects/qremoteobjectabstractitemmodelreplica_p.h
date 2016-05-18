@@ -88,6 +88,34 @@ struct LRUCache
         clear();
     }
 
+    inline void cleanCache()
+    {
+        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+
+        auto it = cachedItems.rbegin();
+        while (cachedItemsMap.size() >= cacheSize) {
+            // Do not trash elements with children
+            // Workaround QTreeView bugs which caches the children indexes for very long time
+            while (it->second->hasChildren && it != cachedItems.rend())
+                ++it;
+
+            if (it == cachedItems.rend())
+                break;
+
+            cachedItemsMap.erase(it->first);
+            delete it->second;
+            cachedItems.erase((++it).base());
+        }
+        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+    }
+
+    void setCacheSize(size_t rootCacheSize)
+    {
+        cacheSize = rootCacheSize;
+        cleanCache();
+        cachedItemsMap.reserve(rootCacheSize);
+    }
+
     void changeKeys(Key key, Key delta) {
         std::vector<std::pair<Key, CacheIterator>> changed;
         auto it = cachedItemsMap.begin();
@@ -115,23 +143,7 @@ struct LRUCache
     {
         cachedItems.emplace_front(key, value);
         cachedItemsMap[key] = cachedItems.begin();
-        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
-
-        auto it = cachedItems.rbegin();
-        while (cachedItemsMap.size() >= cacheSize) {
-            // Do not trash elements with children
-            // Workaround QTreeView bugs which caches the children indexes for very long time
-            while (it->second->hasChildren && it != cachedItems.rend())
-                ++it;
-
-            if (it == cachedItems.rend())
-                break;
-
-            cachedItemsMap.erase(it->first);
-            delete it->second;
-            cachedItems.erase((++it).base());
-        }
-        Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
+        cleanCache();
     }
 
     void remove(Key key)
