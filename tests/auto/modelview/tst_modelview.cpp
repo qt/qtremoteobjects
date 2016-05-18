@@ -623,6 +623,7 @@ private slots:
     void testSetDataTree();
     void testDataRemoval();
     void testDataRemovalTree();
+    void testServerInsertDataTree();
 
     void testRoleNames();
 
@@ -1043,6 +1044,36 @@ void TestModelView::testDataRemovalTree()
 {
     m_sourceModel.removeRows(2, 4);
     //Maybe some checks here?
+}
+
+void TestModelView::testServerInsertDataTree()
+{
+    QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole;
+    QStandardItemModel testTreeModel;
+    m_basicServer.enableRemoting(&testTreeModel, "testTreeModel", roles);
+
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("testTreeModel"));
+
+    QTRY_COMPARE(testTreeModel.rowCount(), model->rowCount());
+
+    QVERIFY(testTreeModel.insertRow(0));
+    QVERIFY(testTreeModel.insertColumn(0));
+    auto root = testTreeModel.index(0, 0);
+    QVERIFY(testTreeModel.setData(root, QLatin1String("Root"), Qt::DisplayRole));
+    QVERIFY(testTreeModel.setData(root, QColor(Qt::green), Qt::BackgroundRole));
+    QVERIFY(testTreeModel.insertRow(0, root));
+    QVERIFY(testTreeModel.insertColumn(0, root));
+    auto child1 = testTreeModel.index(0, 0, root);
+    QVERIFY(testTreeModel.setData(child1, QLatin1String("Child1"), Qt::DisplayRole));
+    QVERIFY(testTreeModel.setData(child1, QColor(Qt::red), Qt::BackgroundRole));
+
+    QTRY_COMPARE(testTreeModel.rowCount(), model->rowCount());
+
+    FetchData f(model.data());
+    f.addAll();
+    QVERIFY(f.fetchAndWait());
+
+    compareData(&testTreeModel, model.data());
 }
 
 void TestModelView::testModelTest()

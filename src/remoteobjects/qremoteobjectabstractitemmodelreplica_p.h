@@ -138,8 +138,8 @@ struct LRUCache
     {
         auto it = cachedItemsMap.find(key);
         if (it != cachedItemsMap.end()) {
-            cachedItems.erase(it->second);
             delete it->second->second;
+            cachedItems.erase(it->second);
             cachedItemsMap.erase(it);
         }
         changeKeys(key, -1);

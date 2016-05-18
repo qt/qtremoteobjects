@@ -185,11 +185,14 @@ inline QString modelIndexToString(const ModelIndex &index)
     return s;
 }
 
-inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model, bool *ok = 0)
+inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model, bool *ok = nullptr, bool ensureItem = false)
 {
     QModelIndex result;
     for (int i = 0; i < list.count(); ++i) {
         const ModelIndex &index = list[i];
+        if (ensureItem)
+            const_cast<QAbstractItemModel *>(model)->setData(result, index.row, Qt::UserRole - 1);
+
         result = model->index(index.row, index.column, result);
         if (!result.isValid()) {
             if (ok) {

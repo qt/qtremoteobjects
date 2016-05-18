@@ -233,7 +233,7 @@ void QAbstractItemModelReplicaPrivate::onRowsInserted(const IndexList &parent, i
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "parent=" << parent;
 
     bool treeFullyLazyLoaded = true;
-    const QModelIndex parentIndex = toQModelIndex(parent, q, &treeFullyLazyLoaded);
+    const QModelIndex parentIndex = toQModelIndex(parent, q, &treeFullyLazyLoaded, true);
     if (!treeFullyLazyLoaded)
         return;
 
@@ -716,6 +716,16 @@ QItemSelectionModel* QAbstractItemModelReplica::selectionModel() const
 
 bool QAbstractItemModelReplica::setData(const QModelIndex &index, const QVariant &value, int role)
 {
+    if (role == Qt::UserRole - 1) {
+        auto parent = d->cacheData(index);
+        if (!parent)
+            return false;
+        bool ok = true;
+        auto row = value.toInt(&ok);
+        if (ok)
+            parent->ensureChildren(row, row);
+        return ok;
+    }
     if (!index.isValid())
         return false;
     if (index.row() < 0 || index.row() >= rowCount(index.parent()))
@@ -763,7 +773,6 @@ QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) co
     IndexList parentList = toModelIndexList(index.parent(), this);
     IndexList start = IndexList() << parentList << ModelIndex(row, 0);
     IndexList end = IndexList() << parentList << ModelIndex(row, std::max(0, parentItem->columnCount - 1));
-    parentItem->ensureChildren(row, row);
     Q_ASSERT(toQModelIndex(start, this).isValid());
 
     RequestedData data;
