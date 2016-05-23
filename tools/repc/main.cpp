@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     int mode = 0;
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("repc tool v%1 (Qt %2).\n")
-                                     .arg(QStringLiteral(REPC_VERSION)).arg(QString::fromLatin1(QT_VERSION_STR)));
+                                     .arg(QStringLiteral(REPC_VERSION), QString::fromLatin1(QT_VERSION_STR)));
     parser.addHelpOption();
     parser.addVersionOption();
     QCommandLineOption inputTypeOption(QStringLiteral("i"));

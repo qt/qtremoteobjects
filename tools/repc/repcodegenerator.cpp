@@ -678,10 +678,10 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
         out << QString::fromLatin1("        _properties[%1] = qtro_prop_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<%3 (QObject::*)()>(0),\"%2\");")
-                             .arg(i+1).arg(prop.name).arg(propTypeName) << endl;
+                             .arg(QString::number(i+1), prop.name, propTypeName) << endl;
         if (prop.modifier == prop.ReadWrite) //Make sure we have a setter function
             out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::set%1, static_cast<void (QObject::*)(%2)>(0));")
-                                 .arg(cap(prop.name)).arg(propTypeName) << endl;
+                                 .arg(cap(prop.name), propTypeName) << endl;
         if (prop.modifier != prop.Constant) { //Make sure we have an onChange signal
             out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(0));")
                                  .arg(prop.name) << endl;
@@ -700,7 +700,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         const ASTFunction &sig = astClass.signalsList.at(i);
         out << QString::fromLatin1("        _signals[%1] = qtro_signal_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(0),signalArgCount+%4,signalArgTypes[%4]);")
-                             .arg(changedCount+i+1).arg(sig.name).arg(sig.paramsAsString(ASTFunction::Normalized)).arg(i) << endl;
+                             .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
     }
     const int slotCount = astClass.slotsList.count();
     out << QString::fromLatin1("        _methods[0] = %1;").arg(slotCount) << endl;
@@ -708,7 +708,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         const ASTFunction &slot = astClass.slotsList.at(i);
         out << QString::fromLatin1("        _methods[%1] = qtro_method_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",methodArgCount+%4,methodArgTypes[%4]);")
-                             .arg(i+1).arg(slot.name).arg(slot.paramsAsString(ASTFunction::Normalized)).arg(i) << endl;
+                             .arg(QString::number(i+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
     }
 
     out << QStringLiteral("    }") << endl;
@@ -808,7 +808,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         {
             const ASTFunction &sig = astClass.signalsList.at(i);
             out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\");")
-                                      .arg(i+changedCount).arg(sig.name).arg(sig.paramsAsString(ASTFunction::Normalized)) << endl;
+                                      .arg(QString::number(i+changedCount), sig.name, sig.paramsAsString(ASTFunction::Normalized)) << endl;
         }
         out << QStringLiteral("        }") << endl;
     } else
@@ -825,7 +825,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         {
             const ASTFunction &slot = astClass.slotsList.at(i);
             out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\");")
-                                      .arg(i).arg(slot.name).arg(slot.paramsAsString(ASTFunction::Normalized)) << endl;
+                                      .arg(QString::number(i), slot.name, slot.paramsAsString(ASTFunction::Normalized)) << endl;
         }
         out << QStringLiteral("        }") << endl;
     } else
