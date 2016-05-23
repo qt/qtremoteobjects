@@ -337,7 +337,7 @@ void QAbstractItemModelReplicaPrivate::handleInitDone(QRemoteObjectPendingCallWa
 
 void QAbstractItemModelReplicaPrivate::handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher)
 {
-    const QSize size = watcher->returnValue().value<QSize>();
+    const QSize size = watcher->returnValue().toSize();
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "size=" << size;
 
     q->beginResetModel();
@@ -358,7 +358,7 @@ void QAbstractItemModelReplicaPrivate::handleModelResetDone(QRemoteObjectPending
 void QAbstractItemModelReplicaPrivate::handleSizeDone(QRemoteObjectPendingCallWatcher *watcher)
 {
     SizeWatcher *sizeWatcher = static_cast<SizeWatcher*>(watcher);
-    const QSize size = sizeWatcher->returnValue().value<QSize>();
+    const QSize size = sizeWatcher->returnValue().toSize();
     auto parentItem = cacheData(sizeWatcher->parentList);
     const QModelIndex parent = toQModelIndex(sizeWatcher->parentList, q);
 
