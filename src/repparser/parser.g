@@ -677,7 +677,7 @@ EnumParam: enum_param;
         value = value.trimmed();
         if (value.isEmpty())
             param.value = ++m_astEnumValue;
-        else if (value.toLower().startsWith(QStringLiteral("0x")))
+        else if (value.startsWith(QStringLiteral("0x"), Qt::CaseInsensitive))
             param.value = m_astEnumValue = value.toInt(0,16);
         else
             param.value = m_astEnumValue = value.toInt();
