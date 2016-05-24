@@ -218,13 +218,45 @@ void QAbstractItemModelReplicaPrivate::onDataChanged(const IndexList &start, con
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "roles=" << roles;
 
     // we need to clear the cache to make sure the new remote data is fetched if the new data call is happening
-    RequestedData data;
-    data.start = start;
-    data.end = end;
-    data.roles = roles;
     if (clearCache(start, end, roles)) {
-        m_requestedData.append(data);
-        QMetaObject::invokeMethod(this, "fetchPendingData", Qt::QueuedConnection);
+        bool ok = true;
+        const QModelIndex startIndex = toQModelIndex(start, q, &ok);
+        if (!ok)
+            return;
+        const QModelIndex endIndex = toQModelIndex(end, q, &ok);
+        if (!ok)
+            return;
+        Q_ASSERT(startIndex.parent() == endIndex.parent());
+        auto parentItem = cacheData(startIndex.parent());
+        int startRow = start.last().row;
+        int endRow = end.last().row;
+        bool dataChanged = false;
+        while (startRow <= endRow) {
+            for (;startRow <= endRow; startRow++) {
+                if (parentItem->children.exists(startRow))
+                    break;
+            }
+
+            if (startRow  > endRow)
+                break;
+
+            RequestedData data;
+            data.roles = roles;
+            data.start = start;
+            data.start.last().row = startRow;
+
+            while (startRow <= endRow && parentItem->children.exists(startRow))
+                ++startRow;
+
+            data.end = end;
+            data.end.last().row = startRow -1;
+
+            m_requestedData.append(data);
+            dataChanged = true;
+        }
+
+        if (dataChanged)
+            QMetaObject::invokeMethod(this, "fetchPendingData", Qt::QueuedConnection);
     }
 }
 
