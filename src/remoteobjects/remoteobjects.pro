@@ -80,7 +80,12 @@ qnx {
         qconnection_qnx_server_p.h \
         qconnection_qnx_global_p.h \
 
-    contains(DEFINES , USE_HAM):  LIBS += -lham
+    contains(DEFINES , USE_HAM) {
+      LIBS += -lham
+      message(configured for using HAM)
+    } else {
+      message(configured without using HAM)
+    }
 }
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
