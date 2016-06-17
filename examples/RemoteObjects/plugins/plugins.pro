@@ -18,11 +18,13 @@ pluginfiles.files += \
     imports/TimeExample/hour.png \
     imports/TimeExample/minute.png
 
-#qml.files = plugins.qml
-#qml.path += $$[QT_HOST_PREFIX]/qml/plugins
-target.path += $$[QT_HOST_PREFIX]/qml/TimeExample
-pluginfiles.path += $$[QT_HOST_PREFIX]/qml/TimeExample
+qml.files = plugins.qml
+qml.path += $$[QT_INSTALL_EXAMPLES]/RemoteObjects/plugins
+target.path += $$[QT_INSTALL_EXAMPLES]/RemoteObjects/plugins/imports/TimeExample
+pluginfiles.path += $$[QT_INSTALL_EXAMPLES]/RemoteObjects/plugins/imports/TimeExample
 
-INSTALLS += target pluginfiles
+INSTALLS += target qml pluginfiles
+
+CONFIG += install_ok # Do not cargo-cult this!
 
 contains(QT_CONFIG, c++11): CONFIG += c++11

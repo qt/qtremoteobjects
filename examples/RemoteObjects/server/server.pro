@@ -9,5 +9,5 @@ HEADERS += TimeModel.h
 
 contains(QT_CONFIG, c++11): CONFIG += c++11
 
-target.path = $$[QT_INSTALL_EXAMPLES]/RemoteObjects/Server
+target.path = $$[QT_INSTALL_EXAMPLES]/RemoteObjects/server
 INSTALLS += target

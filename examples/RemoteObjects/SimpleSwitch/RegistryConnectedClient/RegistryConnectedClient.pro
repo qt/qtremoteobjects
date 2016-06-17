@@ -14,6 +14,8 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
+target.path = $$[QT_INSTALL_EXAMPLES]/RemoteObjects/SimpleSwitch/RegistryConnectedClient
+INSTALLS += target
 
 SOURCES += main.cpp \
     dynamicclient.cpp

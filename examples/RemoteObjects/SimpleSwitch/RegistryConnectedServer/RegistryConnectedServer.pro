@@ -17,6 +17,8 @@ REPC_SOURCE = simpleswitch.rep
 
 TEMPLATE = app
 
+target.path = $$[QT_INSTALL_EXAMPLES]/RemoteObjects/SimpleSwitch/RegistryConnectedServer
+INSTALLS += target
 
 SOURCES += main.cpp \
     simpleswitch.cpp
