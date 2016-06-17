@@ -410,7 +410,6 @@ public:
 
     CacheData m_rootItem;
     inline CacheData* cacheData(const QModelIndex &index) const {
-        Q_ASSERT(!index.isValid() || index.model() == q);
         if (!index.isValid())
             return const_cast<CacheData*>(&m_rootItem);
         if (index.internalPointer()) {
