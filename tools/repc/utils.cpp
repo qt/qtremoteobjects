@@ -120,6 +120,26 @@ static QList<FunctionDef> cleanedSignalList(const ClassDef &cdef)
     return ret;
 }
 
+static QList<FunctionDef> cleanedSlotList(const ClassDef &cdef)
+{
+    QList<FunctionDef> ret = cdef.slotList;
+    foreach (const PropertyDef &prop, cdef.propertyList) {
+        if (!prop.write.isEmpty()) {
+            QList<FunctionDef>::Iterator it = ret.begin();
+            while (it != ret.end()) {
+                const FunctionDef& fdef = *it;
+                if (fdef.name == prop.write &&
+                    fdef.arguments.size() == 1 &&
+                    fdef.arguments[0].type.name == prop.type) {
+                    ret.erase(it);
+                    break;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass /* = false */)
 {
     QList<FunctionDef> signalList = cleanedSignalList(cdef);
@@ -129,7 +149,7 @@ QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass /* = fal
     QByteArray ret("class " + cdef.classname + "\n{\n");
     if (!cdef.propertyList.isEmpty())
         ret += "    PROP(" + join(generateProperties(cdef.propertyList), ");\n    PROP(") + ");\n";
-    ret += generateFunctions("    SLOT", cdef.slotList);
+    ret += generateFunctions("    SLOT", cleanedSlotList(cdef));
     ret += generateFunctions("    SIGNAL", signalList);
     ret += "}\n";
     return ret;
@@ -194,8 +214,8 @@ AST classList2AST(const QList<ClassDef> &classList)
         } else {
             ASTClass cl(_(cdef.classname));
             cl.properties = propertyList2AstProperties(cdef.propertyList);
-            cl.signalsList = functionList2AstFunctionList(cdef.signalList);
-            cl.slotsList = functionList2AstFunctionList(cdef.slotList);
+            cl.signalsList = functionList2AstFunctionList(signalList);
+            cl.slotsList = functionList2AstFunctionList(cleanedSlotList(cdef));
             ret.classes.push_back(cl);
         }
     }
