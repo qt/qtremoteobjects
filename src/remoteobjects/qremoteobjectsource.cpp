@@ -171,7 +171,7 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
     if (listeners.empty())
         return;
 
-    const int propertyIndex = m_api->propertyIndexFromSignal(index);
+    int propertyIndex = m_api->propertyIndexFromSignal(index);
     if (propertyIndex >= 0) {
         const int rawIndex = m_api->propertyRawIndexFromSignal(index);
         const auto target = m_api->isAdapterProperty(index) ? m_adapter : m_object;
@@ -179,12 +179,13 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
         qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(index) ? "via adapter" : "") << rawIndex << propertyIndex << mp.name() << mp.read(target);
         serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, serializedProperty(mp, target));
         m_packet.baseAddress = m_packet.size;
+        propertyIndex = rawIndex;
     }
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
 
-    serializeInvokePacket(m_packet, m_api->name(), call, index, *marshalArgs(index, a));
+    serializeInvokePacket(m_packet, m_api->name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
     m_packet.baseAddress = 0;
 
     Q_FOREACH (ServerIoDevice *io, listeners)

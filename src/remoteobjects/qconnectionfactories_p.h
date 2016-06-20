@@ -48,7 +48,7 @@ QT_BEGIN_NAMESPACE
 
 namespace QtRemoteObjects {
 
-const int dataStreamVersion = QDataStream::Qt_5_0;
+const int dataStreamVersion = QDataStream::Qt_5_1;
 
 }
 

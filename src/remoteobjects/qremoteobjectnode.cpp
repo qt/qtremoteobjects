@@ -458,8 +458,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             int propertyIndex;
             deserializePropertyChangePacket(connection->stream(), propertyIndex, m_rxValue);
             QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
-            if (rep)
-            {
+            if (rep) {
                 const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
                 rep->setProperty(propertyIndex, deserializedProperty(m_rxValue, property));
             } else { //replica has been deleted, remove from list
@@ -469,18 +468,23 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case InvokePacket:
         {
-            int call, index, serialId;
-            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId);
+            int call, index, serialId, propertyIndex;
+            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId, propertyIndex);
             QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
-            if (rep)
-            {
+            if (rep) {
                 static QVariant null(QMetaType::QObjectStar, (void*)0);
-
+                QVariant paramValue;
                 // Qt usually supports 9 arguments, so ten should be usually safe
                 QVarLengthArray<void*, 10> param(m_rxArgs.size() + 1);
                 param[0] = null.data(); //Never a return value
-                for (int i = 0; i < m_rxArgs.size(); i++) {
-                    param[i + 1] = const_cast<void *>(m_rxArgs[i].data());
+                if (m_rxArgs.size()) {
+                    for (int i = 0; i < m_rxArgs.size(); i++) {
+                        param[i + 1] = const_cast<void *>(m_rxArgs[i].data());
+                    }
+                } else if (propertyIndex != -1) {
+                    param.resize(2);
+                    paramValue = rep->getProperty(propertyIndex);
+                    param[1] = paramValue.data();
                 }
                 qROPrivDebug() << "Replica Invoke-->" << m_rxName << rep->m_metaObject->method(index+rep->m_signalOffset).name() << index << rep->m_signalOffset;
                 QMetaObject::activate(rep.data(), rep->metaObject(), index+rep->m_signalOffset, param.data());

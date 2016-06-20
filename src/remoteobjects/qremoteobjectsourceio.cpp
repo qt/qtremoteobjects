@@ -195,8 +195,8 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         }
         case InvokePacket:
         {
-            int call, index, serialId;
-            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId);
+            int call, index, serialId, propertyId;
+            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId, propertyId);
             if (m_rxName == QStringLiteral("Registry") && !m_registryMapping.contains(connection)) {
                 const QRemoteObjectSourceLocation loc = m_rxArgs.first().value<QRemoteObjectSourceLocation>();
                 m_registryMapping[connection] = loc.second.hostUrl;

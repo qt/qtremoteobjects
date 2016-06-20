@@ -139,8 +139,8 @@ void deserializeAddObjectPacket(QDataStream &ds, bool &isDynamic);
 void serializeRemoveObjectPacket(DataStreamPacket&, const QString &name);
 //There is no deserializeRemoveObjectPacket - no parameters other than id and name
 
-void serializeInvokePacket(DataStreamPacket&, const QString &name, int call, int index, const QVariantList &args, int serialId = -1);
-void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantList &args, int &serialId);
+void serializeInvokePacket(DataStreamPacket&, const QString &name, int call, int index, const QVariantList &args, int serialId = -1, int propertyIndex = -1);
+void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantList &args, int &serialId, int &propertyIndex);
 
 void serializeInvokeReplyPacket(DataStreamPacket&, const QString &name, int ackedSerialId, const QVariant &value);
 void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant &value);
