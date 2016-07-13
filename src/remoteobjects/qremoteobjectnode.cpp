@@ -78,7 +78,7 @@ QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     : QObjectPrivate()
     , registry(Q_NULLPTR)
     , retryInterval(250)
-    , m_lastError(QRemoteObjectNode::NoError)
+    , lastError(QRemoteObjectNode::NoError)
 { }
 
 QRemoteObjectNodePrivate::~QRemoteObjectNodePrivate()
@@ -372,15 +372,15 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 
     do {
 
-        if (!connection->read(packetType, m_rxName))
+        if (!connection->read(packetType, rxName))
             return;
 
         switch (packetType) {
         case ObjectList:
         {
-            deserializeObjectListPacket(connection->stream(), m_rxObjects);
-            qROPrivDebug() << "newObjects:" << m_rxObjects;
-            Q_FOREACH (const auto &remoteObject, m_rxObjects) {
+            deserializeObjectListPacket(connection->stream(), rxObjects);
+            qROPrivDebug() << "newObjects:" << rxObjects;
+            Q_FOREACH (const auto &remoteObject, rxObjects) {
                 qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
                 if (!connectedSources.contains(remoteObject.name)) {
                     connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName};
@@ -405,42 +405,42 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case InitPacket:
         {
-            qROPrivDebug() << "InitObject-->" << m_rxName << this;
-            QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
+            qROPrivDebug() << "InitObject-->" << rxName << this;
+            QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(rxName).toStrongRef());
             //Use m_rxArgs (a QVariantList to hold the properties QVariantList)
-            deserializeInitPacket(connection->stream(), m_rxArgs);
+            deserializeInitPacket(connection->stream(), rxArgs);
             if (rep)
             {
-                rep->initialize(m_rxArgs);
+                rep->initialize(rxArgs);
             } else { //replica has been deleted, remove from list
-                replicas.remove(m_rxName);
+                replicas.remove(rxName);
             }
             break;
         }
         case InitDynamicPacket:
         {
-            qROPrivDebug() << "InitObject-->" << m_rxName << this;
+            qROPrivDebug() << "InitObject-->" << rxName << this;
             QMetaObjectBuilder builder;
             builder.setClassName("QRemoteObjectDynamicReplica");
             builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
             builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
-            deserializeInitDynamicPacket(connection->stream(), builder, m_rxArgs);
-            QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
+            deserializeInitDynamicPacket(connection->stream(), builder, rxArgs);
+            QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(rxName).toStrongRef());
             if (rep)
             {
-                rep->initializeMetaObject(builder, m_rxArgs);
+                rep->initializeMetaObject(builder, rxArgs);
             } else { //replica has been deleted, remove from list
-                replicas.remove(m_rxName);
+                replicas.remove(rxName);
             }
             break;
         }
         case RemoveObject:
         {
-            qROPrivDebug() << "RemoveObject-->" << m_rxName << this;
-            connectedSources.remove(m_rxName);
-            connection->removeSource(m_rxName);
-            if (replicas.contains(m_rxName)) { //We have a replica waiting on this remoteObject
-                QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
+            qROPrivDebug() << "RemoveObject-->" << rxName << this;
+            connectedSources.remove(rxName);
+            connection->removeSource(rxName);
+            if (replicas.contains(rxName)) { //We have a replica waiting on this remoteObject
+                QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(rxName).toStrongRef());
                 if (rep && !rep->connectionToSource.isNull()) {
                     rep->connectionToSource.clear();
                     if (rep->isReplicaValid()) {
@@ -448,7 +448,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         rep->emitValidChanged();
                     }
                 } else if (!rep) {
-                    replicas.remove(m_rxName);
+                    replicas.remove(rxName);
                 }
             }
             break;
@@ -456,53 +456,53 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case PropertyChangePacket:
         {
             int propertyIndex;
-            deserializePropertyChangePacket(connection->stream(), propertyIndex, m_rxValue);
-            QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
+            deserializePropertyChangePacket(connection->stream(), propertyIndex, rxValue);
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
-                rep->setProperty(propertyIndex, deserializedProperty(m_rxValue, property));
+                rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
             } else { //replica has been deleted, remove from list
-                replicas.remove(m_rxName);
+                replicas.remove(rxName);
             }
             break;
         }
         case InvokePacket:
         {
             int call, index, serialId, propertyIndex;
-            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId, propertyIndex);
-            QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
+            deserializeInvokePacket(connection->stream(), call, index, rxArgs, serialId, propertyIndex);
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 static QVariant null(QMetaType::QObjectStar, (void*)0);
                 QVariant paramValue;
                 // Qt usually supports 9 arguments, so ten should be usually safe
-                QVarLengthArray<void*, 10> param(m_rxArgs.size() + 1);
+                QVarLengthArray<void*, 10> param(rxArgs.size() + 1);
                 param[0] = null.data(); //Never a return value
-                if (m_rxArgs.size()) {
-                    for (int i = 0; i < m_rxArgs.size(); i++) {
-                        param[i + 1] = const_cast<void *>(m_rxArgs[i].data());
+                if (rxArgs.size()) {
+                    for (int i = 0; i < rxArgs.size(); i++) {
+                        param[i + 1] = const_cast<void *>(rxArgs[i].data());
                     }
                 } else if (propertyIndex != -1) {
                     param.resize(2);
                     paramValue = rep->getProperty(propertyIndex);
                     param[1] = paramValue.data();
                 }
-                qROPrivDebug() << "Replica Invoke-->" << m_rxName << rep->m_metaObject->method(index+rep->m_signalOffset).name() << index << rep->m_signalOffset;
+                qROPrivDebug() << "Replica Invoke-->" << rxName << rep->m_metaObject->method(index+rep->m_signalOffset).name() << index << rep->m_signalOffset;
                 QMetaObject::activate(rep.data(), rep->metaObject(), index+rep->m_signalOffset, param.data());
             } else { //replica has been deleted, remove from list
-                replicas.remove(m_rxName);
+                replicas.remove(rxName);
             }
             break;
         }
         case InvokeReplyPacket:
         {
             int ackedSerialId;
-            deserializeInvokeReplyPacket(connection->stream(), ackedSerialId, m_rxValue);
-            QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(m_rxName).toStrongRef());
+            deserializeInvokeReplyPacket(connection->stream(), ackedSerialId, rxValue);
+            QSharedPointer<QRemoteObjectReplicaPrivate> rep = qSharedPointerCast<QRemoteObjectReplicaPrivate>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 qROPrivDebug() << "Received InvokeReplyPacket ack'ing serial id:" << ackedSerialId;
-                rep->notifyAboutReply(ackedSerialId, m_rxValue);
+                rep->notifyAboutReply(ackedSerialId, rxValue);
             } else { //replica has been deleted, remove from list
-                replicas.remove(m_rxName);
+                replicas.remove(rxName);
             }
             break;
         }
@@ -813,17 +813,17 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
 {
     Q_D(QRemoteObjectHostBase);
     if (d->remoteObjectIo) {
-        d->m_lastError = ServerAlreadyCreated;
+        d->lastError = ServerAlreadyCreated;
         return false;
     }
     else if (d->isInitialized.loadAcquire()) {
-        d->m_lastError = RegistryAlreadyHosted;
+        d->lastError = RegistryAlreadyHosted;
         return false;
     }
 
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
     if (d->remoteObjectIo->m_server.isNull()) { //Invalid url/scheme
-        d->m_lastError = HostUrlInvalid;
+        d->lastError = HostUrlInvalid;
         delete d->remoteObjectIo;
         d->remoteObjectIo = 0;
         return false;
@@ -877,10 +877,10 @@ bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
     Q_D(QRemoteObjectRegistryHost);
     if (setHostUrl(registryUrl)) {
         if (!d->remoteObjectIo) {
-            d->m_lastError = ServerAlreadyCreated;
+            d->lastError = ServerAlreadyCreated;
             return false;
         } else if (d->isInitialized.loadAcquire() || d->registry) {
-            d->m_lastError = RegistryAlreadyHosted;
+            d->lastError = RegistryAlreadyHosted;
             return false;
         }
 
@@ -905,7 +905,7 @@ bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
 QRemoteObjectNode::ErrorCode QRemoteObjectNode::lastError() const
 {
     Q_D(const QRemoteObjectNode);
-    return d->m_lastError;
+    return d->lastError;
 }
 
 /*!
@@ -924,12 +924,12 @@ bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
 {
     Q_D(QRemoteObjectNode);
     if (d->isInitialized.loadAcquire() || d->registry) {
-        d->m_lastError = RegistryAlreadyHosted;
+        d->lastError = RegistryAlreadyHosted;
         return false;
     }
 
     if (!connectToNode(registryAddress)) {
-        d->m_lastError = RegistryNotAcquired;
+        d->lastError = RegistryNotAcquired;
         return false;
     }
 
@@ -1078,7 +1078,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
 {
     Q_D(QRemoteObjectHostBase);
     if (!d->remoteObjectIo) {
-        d->m_lastError = OperationNotValidOnClientNode;
+        d->lastError = OperationNotValidOnClientNode;
         return false;
     }
 
@@ -1101,7 +1101,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
         if (_name.isEmpty()) {
             _name = object->objectName();
             if (_name.isEmpty()) {
-                d->m_lastError = MissingObjectName;
+                d->lastError = MissingObjectName;
                 qCWarning(QT_REMOTEOBJECT) << qPrintable(objectName()) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
                 return false;
             }
@@ -1197,12 +1197,12 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
 {
     Q_D(QRemoteObjectHostBase);
     if (!d->remoteObjectIo) {
-        d->m_lastError = OperationNotValidOnClientNode;
+        d->lastError = OperationNotValidOnClientNode;
         return false;
     }
 
     if (!d->remoteObjectIo->disableRemoting(remoteObject)) {
-        d->m_lastError = SourceNotRegistered;
+        d->lastError = SourceNotRegistered;
         return false;
     }
 

@@ -108,11 +108,11 @@ public:
     QRemoteObjectRegistry *registry;
     int retryInterval;
     QBasicTimer reconnectTimer;
-    QRemoteObjectNode::ErrorCode m_lastError;
-    QString m_rxName;
-    QRemoteObjectPackets::ObjectInfoList m_rxObjects;
-    QVariantList m_rxArgs;
-    QVariant m_rxValue;
+    QRemoteObjectNode::ErrorCode lastError;
+    QString rxName;
+    QRemoteObjectPackets::ObjectInfoList rxObjects;
+    QVariantList rxArgs;
+    QVariant rxValue;
     Q_DECLARE_PUBLIC(QRemoteObjectNode);
 };
 
