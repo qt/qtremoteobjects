@@ -135,6 +135,13 @@ void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const 
     }
 }
 
+void QRemoteObjectNodePrivate::setLastError(QRemoteObjectNode::ErrorCode errorCode)
+{
+    Q_Q(QRemoteObjectNode);
+    lastError = errorCode;
+    emit q->error(lastError);
+}
+
 void QRemoteObjectNodePrivate::setReplicaPrivate(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     qROPrivDebug() << "Starting setReplicaPrivate for" << name;
@@ -636,6 +643,7 @@ void QRemoteObjectNodePrivate::initialize()
 {
     Q_Q(QRemoteObjectNode);
     qRegisterMetaType<QRemoteObjectNode *>();
+    qRegisterMetaType<QRemoteObjectNode::ErrorCode>();
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     QObject::connect(&clientRead, SIGNAL(mapped(QObject*)), q, SLOT(onClientRead(QObject*)));
@@ -813,17 +821,17 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
 {
     Q_D(QRemoteObjectHostBase);
     if (d->remoteObjectIo) {
-        d->lastError = ServerAlreadyCreated;
+        d->setLastError(ServerAlreadyCreated);
         return false;
     }
     else if (d->isInitialized.loadAcquire()) {
-        d->lastError = RegistryAlreadyHosted;
+        d->setLastError(RegistryAlreadyHosted);
         return false;
     }
 
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
     if (d->remoteObjectIo->m_server.isNull()) { //Invalid url/scheme
-        d->lastError = HostUrlInvalid;
+        d->setLastError(HostUrlInvalid);
         delete d->remoteObjectIo;
         d->remoteObjectIo = 0;
         return false;
@@ -877,10 +885,10 @@ bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
     Q_D(QRemoteObjectRegistryHost);
     if (setHostUrl(registryUrl)) {
         if (!d->remoteObjectIo) {
-            d->lastError = ServerAlreadyCreated;
+            d->setLastError(ServerAlreadyCreated);
             return false;
         } else if (d->isInitialized.loadAcquire() || d->registry) {
-            d->lastError = RegistryAlreadyHosted;
+            d->setLastError(RegistryAlreadyHosted);
             return false;
         }
 
@@ -924,12 +932,12 @@ bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
 {
     Q_D(QRemoteObjectNode);
     if (d->isInitialized.loadAcquire() || d->registry) {
-        d->lastError = RegistryAlreadyHosted;
+        d->setLastError(RegistryAlreadyHosted);
         return false;
     }
 
     if (!connectToNode(registryAddress)) {
-        d->lastError = RegistryNotAcquired;
+        d->setLastError(RegistryNotAcquired);
         return false;
     }
 
@@ -979,7 +987,11 @@ bool QRemoteObjectNode::waitForRegistry(int timeout)
 bool QRemoteObjectNode::connectToNode(const QUrl &address)
 {
     Q_D(QRemoteObjectNode);
-    return d->initConnection(address);
+    if (!d->initConnection(address)) {
+        d->setLastError(RegistryNotAcquired);
+        return false;
+    }
+    return true;
 }
 
 /*!
@@ -1078,7 +1090,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
 {
     Q_D(QRemoteObjectHostBase);
     if (!d->remoteObjectIo) {
-        d->lastError = OperationNotValidOnClientNode;
+        d->setLastError(OperationNotValidOnClientNode);
         return false;
     }
 
@@ -1101,7 +1113,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
         if (_name.isEmpty()) {
             _name = object->objectName();
             if (_name.isEmpty()) {
-                d->lastError = MissingObjectName;
+                d->setLastError(MissingObjectName);
                 qCWarning(QT_REMOTEOBJECT) << qPrintable(objectName()) << "enableRemoting() Error: Unable to Replicate an object that does not have objectName() set.";
                 return false;
             }
@@ -1197,12 +1209,12 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
 {
     Q_D(QRemoteObjectHostBase);
     if (!d->remoteObjectIo) {
-        d->lastError = OperationNotValidOnClientNode;
+        d->setLastError(OperationNotValidOnClientNode);
         return false;
     }
 
     if (!d->remoteObjectIo->disableRemoting(remoteObject)) {
-        d->lastError = SourceNotRegistered;
+        d->setLastError(SourceNotRegistered);
         return false;
     }
 

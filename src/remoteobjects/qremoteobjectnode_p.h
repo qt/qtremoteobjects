@@ -74,6 +74,8 @@ public:
 
     void setReplicaPrivate(const QMetaObject *, QRemoteObjectReplica *, const QString &);
 
+    void setLastError(QRemoteObjectNode::ErrorCode errorCode);
+
     void connectReplica(QObject *object, QRemoteObjectReplica *instance);
     void openConnectionIfNeeded(const QString &name);
 

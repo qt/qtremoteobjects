@@ -87,7 +87,6 @@ signals:
     void forwardResult(int);
 
 private slots:
-
     void initTestCase()
     {
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
@@ -903,6 +902,18 @@ private slots:
         engine_r_inProc->waitForSource();
 
         QCOMPARE(engine_r_inProc->rpm(), e.rpm());
+    }
+
+    void errorSignalTest()
+    {
+        QRemoteObjectNode client;
+        Q_SET_OBJECT_NAME(client);
+        QSignalSpy errorSpy(&client, SIGNAL(error(QRemoteObjectNode::ErrorCode)));
+        QVERIFY(!client.connectToNode(QUrl(QLatin1String("invalid:invalid"))));
+        QCOMPARE(errorSpy.count(), 1);
+        auto emittedErrorCode = errorSpy.first().at(0).value<QRemoteObjectNode::ErrorCode>();
+        QCOMPARE(emittedErrorCode, QRemoteObjectNode::RegistryNotAcquired);
+        QCOMPARE(client.lastError(), QRemoteObjectNode::RegistryNotAcquired);
     }
 
     void clientBeforeServerTest() {

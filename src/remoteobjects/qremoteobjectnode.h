@@ -65,8 +65,8 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QUrl registryUrl READ registryUrl WRITE setRegistryUrl)
-public:
 
+public:
     enum ErrorCode{
         NoError,
         RegistryNotAcquired,
@@ -79,6 +79,7 @@ public:
         MissingObjectName,
         HostUrlInvalid
     };
+    Q_ENUM(ErrorCode)
 
     QRemoteObjectNode(QObject *parent = 0);
     QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = 0);
@@ -119,6 +120,8 @@ public:
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
     void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
+
+    void error(QRemoteObjectNode::ErrorCode errorCode);
 
 protected:
     QRemoteObjectNode(QRemoteObjectNodePrivate &, QObject *parent);
