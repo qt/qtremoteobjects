@@ -100,7 +100,8 @@ private slots:
         QTest::qWait(200);
     }
 
-    void enumTest() {
+    void enumTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
 
@@ -164,7 +165,8 @@ private slots:
         }
     }
 
-    void namedObjectTest() {
+    void namedObjectTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -233,7 +235,8 @@ private slots:
         QCOMPARE(instances, QStringList({"Engine2"}));
     }
 
-    void registryAddedTest() {
+    void registryAddedTest()
+    {
         QRemoteObjectRegistryHost registry(registryUrl);
         SET_NODE_NAME(registry);
 
@@ -300,7 +303,8 @@ private slots:
         QVERIFY(host.disableRemoting(&e2));
     }
 
-    void registryTest() {
+    void registryTest()
+    {
         QRemoteObjectRegistryHost registry(registryUrl);
         SET_NODE_NAME(registry);
         TcpDataCenterSimpleSource source1;
@@ -344,7 +348,8 @@ private slots:
         QCOMPARE(localCentre->data4(), QVector<int>() << 1 << 2 << 3 << 4 << 5);
     }
 
-    void noRegistryTest() {
+    void noRegistryTest()
+    {
         QRemoteObjectHost host(hostUrl, registryUrl);
         SET_NODE_NAME(host);
         const bool res = host.waitForRegistry(3000);
@@ -355,7 +360,8 @@ private slots:
         QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), true);
     }
 
-    void delayedRegistryTest() {
+    void delayedRegistryTest()
+    {
         QRemoteObjectHost host(hostUrl, registryUrl);
         SET_NODE_NAME(host);
         const bool res = host.waitForRegistry(3000);
@@ -379,7 +385,8 @@ private slots:
         QVERIFY(host.registry()->sourceLocations().value(QStringLiteral("Engine")).hostUrl != registryUrl);
     }
 
-    void basicTest() {
+    void basicTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -395,7 +402,8 @@ private slots:
         QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
-    void defaultValueTest() {
+    void defaultValueTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -410,7 +418,8 @@ private slots:
         QCOMPARE(engine_r->cylinders(), 4);
     }
 
-    void notifyTest() {
+    void notifyTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -434,7 +443,8 @@ private slots:
         QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
-    void dynamicNotifyTest() {
+    void dynamicNotifyTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -464,7 +474,8 @@ private slots:
         QCOMPARE(res, e.rpm());
     }
 
-    void slotTest() {
+    void slotTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -493,7 +504,8 @@ private slots:
         QCOMPARE(engine_r->started(), true);
     }
 
-    void slotTestWithWatcher() {
+    void slotTestWithWatcher()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -525,7 +537,8 @@ private slots:
         QCOMPARE(engine_r->started(), true);
     }
 
-    void slotTestDynamicReplica() {
+    void slotTestDynamicReplica()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -565,7 +578,8 @@ private slots:
         QCOMPARE(started, true);
     }
 
-    void slotTestDynamicReplicaWithArguments() {
+    void slotTestDynamicReplicaWithArguments()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -611,7 +625,8 @@ private slots:
         QCOMPARE(getCall.returnValue().toString(), s);
     }
 
-    void expapiTestDynamicReplica(){
+    void expapiTestDynamicReplica()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -629,7 +644,8 @@ private slots:
         QVERIFY(methodIndex < 0);
     }
 
-    void slotTestInProcess() {
+    void slotTestInProcess()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -709,7 +725,8 @@ private slots:
         QCOMPARE(mp.read(engine_dr.data()).toInt(), 44);
     }
 
-    void slotWithParameterTest() {
+    void slotWithParameterTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -751,7 +768,8 @@ private slots:
         QCOMPARE(temperature, Temperature(400, QStringLiteral("Kelvin")));
     }
 
-    void sequentialReplicaTest() {
+    void sequentialReplicaTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -772,7 +790,8 @@ private slots:
         QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
-    void doubleReplicaTest() {
+    void doubleReplicaTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -817,7 +836,8 @@ private slots:
         QCOMPARE(speedometer_r->mph(), s.mph());
     }
 
-    void dynamicReplicaTest() {
+    void dynamicReplicaTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         TcpDataCenterSimpleSource t;
@@ -874,7 +894,8 @@ private slots:
 
     }
 
-    void apiTest() {
+    void apiTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -891,7 +912,8 @@ private slots:
         QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
-    void apiInProcTest() {
+    void apiInProcTest()
+    {
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -935,7 +957,8 @@ private slots:
         QCOMPARE(engine_d->rpm(), e.rpm());
     }
 
-    void largeDataTest() {
+    void largeDataTest()
+    {
         TestLargeData t;
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
