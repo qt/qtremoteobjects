@@ -155,7 +155,7 @@ private:
 struct QtROServerFactory {
     static QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
         Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
-        return iter == static_creators().constEnd() ? 0 : (*iter)(parent); // if found, execute the creator function pointer
+        return iter == static_creators().constEnd() ? Q_NULLPTR : (*iter)(parent); // if found, execute the creator function pointer
     }
 
 private:
@@ -172,7 +172,7 @@ private:
 struct QtROClientFactory {
     static ClientIoDevice *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
         Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
-        ClientIoDevice *res = iter == static_creators().constEnd() ? 0 : (*iter)(parent); // if found, execute the creator function pointer
+        ClientIoDevice *res = iter == static_creators().constEnd() ? Q_NULLPTR : (*iter)(parent); // if found, execute the creator function pointer
         if (res)
             res->m_url = url;
         return res;

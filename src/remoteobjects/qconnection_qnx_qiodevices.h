@@ -72,7 +72,7 @@ class Q_REMOTEOBJECTS_EXPORT QQnxNativeIo : public QIODevice
     Q_DECLARE_PRIVATE(QQnxNativeIo)
 
 public:
-    explicit QQnxNativeIo(QObject *parent = 0);
+    explicit QQnxNativeIo(QObject *parent = Q_NULLPTR);
     ~QQnxNativeIo();
 
     bool connectToServer(OpenMode openMode = ReadWrite);
@@ -119,7 +119,7 @@ class Q_REMOTEOBJECTS_EXPORT QIOQnxSource : public QIODevice
     Q_DECLARE_PRIVATE(QIOQnxSource)
 
 public:
-    explicit QIOQnxSource(int rcvid, QObject *parent = 0);
+    explicit QIOQnxSource(int rcvid, QObject *parent = Q_NULLPTR);
     ~QIOQnxSource();
 
     bool isSequential() const Q_DECL_OVERRIDE;

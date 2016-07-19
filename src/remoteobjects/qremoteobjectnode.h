@@ -81,8 +81,8 @@ public:
     };
     Q_ENUM(ErrorCode)
 
-    QRemoteObjectNode(QObject *parent = 0);
-    QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = 0);
+    QRemoteObjectNode(QObject *parent = Q_NULLPTR);
+    QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = Q_NULLPTR);
     virtual ~QRemoteObjectNode();
 
     Q_INVOKABLE bool connectToNode(const QUrl &address);
@@ -150,7 +150,7 @@ public:
         return enableRemoting(object, api);
     }
     bool enableRemoting(QObject *object, const QString &name = QString());
-    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = 0);
+    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = Q_NULLPTR);
     bool disableRemoting(QObject *remoteObject);
 
 protected:
@@ -159,7 +159,7 @@ protected:
     QRemoteObjectHostBase(QRemoteObjectHostBasePrivate &, QObject *);
 
 private:
-    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter=0);
+    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter = Q_NULLPTR);
     Q_DECLARE_PRIVATE(QRemoteObjectHostBase)
 };
 
