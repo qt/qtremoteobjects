@@ -91,12 +91,15 @@ public:
 
     virtual QReplicaPrivateInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
     void initialize();
+private:
+    bool checkSignatures(const QByteArray &a, const QByteArray &b);
 
 public:
     struct SourceInfo
     {
         ClientIoDevice* device;
         QString typeName;
+        QByteArray objectSignature;
     };
 
     QAtomicInt isInitialized;
@@ -115,7 +118,7 @@ public:
     QRemoteObjectPackets::ObjectInfoList rxObjects;
     QVariantList rxArgs;
     QVariant rxValue;
-    Q_DECLARE_PUBLIC(QRemoteObjectNode);
+    Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 
 class QRemoteObjectHostBasePrivate : public QRemoteObjectNodePrivate

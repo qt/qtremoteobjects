@@ -96,7 +96,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
     }
 
     new QRemoteObjectSource(object, api, adapter, this);
-    serializeObjectListPacket(m_packet, {QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName()}});
+    serializeObjectListPacket(m_packet, {QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName(), api->objectSignature()}});
     foreach (ServerIoDevice *conn, m_connections)
         conn->write(m_packet.array, m_packet.size);
     if (const int count = m_connections.size())
@@ -259,7 +259,7 @@ void QRemoteObjectSourceIo::handleConnection()
 
     QRemoteObjectPackets::ObjectInfoList infos;
     foreach (auto remoteObject, m_remoteObjects) {
-        infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName()};
+        infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName(), remoteObject->m_api->objectSignature()};
     }
     serializeObjectListPacket(m_packet, infos);
     conn->write(m_packet.array, m_packet.size);

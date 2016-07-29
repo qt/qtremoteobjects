@@ -68,22 +68,23 @@ struct ObjectInfo
 {
     QString name;
     QString typeName;
+    QByteArray signature;
 };
 
 inline QDebug operator<<(QDebug dbg, const ObjectInfo &info)
 {
-    dbg.nospace() << "ObjectInfo(" << info.name << ", " << info.typeName << ")";
+    dbg.nospace() << "ObjectInfo(" << info.name << ", " << info.typeName << ", " << info.signature <<")";
     return dbg.space();
 }
 
 inline QDataStream& operator<<(QDataStream &stream, const ObjectInfo &info)
 {
-    return stream << info.name << info.typeName;
+    return stream << info.name << info.typeName << info.signature;
 }
 
 inline QDataStream& operator>>(QDataStream &stream, ObjectInfo &info)
 {
-    return stream >> info.name >> info.typeName;
+    return stream >> info.name >> info.typeName >> info.signature;
 }
 
 typedef QVector<ObjectInfo> ObjectInfoList;

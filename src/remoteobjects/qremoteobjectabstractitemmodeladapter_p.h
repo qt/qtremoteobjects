@@ -223,6 +223,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return QByteArrayLiteral("");
     }
+    QByteArray objectSignature() const Q_DECL_OVERRIDE { return QByteArray{}; }
     bool isAdapterSignal(int index) const Q_DECL_OVERRIDE
     {
         switch (index) {

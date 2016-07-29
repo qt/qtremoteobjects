@@ -226,7 +226,7 @@ private slots:
         instances = client.instances<EngineReplica>();
         QCOMPARE(instances, QStringList({"Engine", "Engine2"}));
 
-        QSignalSpy spy(engine_r.data(), SIGNAL(isReplicaValidChanged()));
+        QSignalSpy spy(engine_r.data(), SIGNAL(stateChanged(State,State)));
         host.disableRemoting(&e);
         spy.wait();
         QCOMPARE(spy.count(), 1);
@@ -866,7 +866,7 @@ private slots:
         for (int i = 0; i < metaTcpRep1->propertyCount(); ++i)
         {
             const QMetaProperty propLhs =  metaTcpRep1->property(i);
-            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0 || qstrcmp(propLhs.name(), "node") == 0) //Ignore properties only on the Replica side
+            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0 || qstrcmp(propLhs.name(), "state") == 0 || qstrcmp(propLhs.name(), "node") == 0) //Ignore properties only on the Replica side
                 continue;
             const QMetaProperty propRhs =  metaTcpSource->property(metaTcpSource->indexOfProperty(propLhs.name()));
             if (propLhs.notifySignalIndex() == -1)
@@ -880,7 +880,7 @@ private slots:
         for (int i = 0; i < metaLocalRep1->propertyCount(); ++i )
         {
             const QMetaProperty propLhs =  metaLocalRep1->property(i);
-            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0 || qstrcmp(propLhs.name(), "node") == 0) //Ignore properties only on the Replica side
+            if (qstrcmp(propLhs.name(), "isReplicaValid") == 0 || qstrcmp(propLhs.name(), "state") == 0 || qstrcmp(propLhs.name(), "node") == 0) //Ignore properties only on the Replica side
                 continue;
             const QMetaProperty propRhs =  metaLocalSource->property(metaTcpSource->indexOfProperty(propLhs.name()));
             if (propLhs.notifySignalIndex() == -1)
@@ -1020,7 +1020,7 @@ private slots:
     void localServerConnectionTest()
     {
         QProcess testServer;
-        const QString progName = QStringLiteral("../localsockettestserver/localsockettestserver");
+        const QString progName = QStringLiteral("../../localsockettestserver/localsockettestserver");
         //create a fake socket as killing doesn't produce a necessarily unusable socket
         QFile fake(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
         fake.remove();
@@ -1048,7 +1048,7 @@ private slots:
     void localServerConnectionTest2()
     {
         QProcess testServer;
-        const QString progName = QStringLiteral("../localsockettestserver/localsockettestserver");
+        const QString progName = QStringLiteral("../../localsockettestserver/localsockettestserver");
 
         testServer.start(progName);
         QVERIFY(testServer.waitForStarted());

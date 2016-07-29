@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS += enums pods
+SUBDIRS += enums pods signature

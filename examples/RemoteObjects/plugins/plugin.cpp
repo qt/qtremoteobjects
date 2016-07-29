@@ -80,7 +80,7 @@ public:
 
     int minute() const { return d_ptr->minute(); }
     int hour() const { return d_ptr->hour(); }
-    bool isValid() const { return d_ptr->isReplicaValid(); }
+    bool isValid() const { return d_ptr->state() == QRemoteObjectReplica::Valid; }
 
 public slots:
     //Test a signal with parameters

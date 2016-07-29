@@ -72,6 +72,7 @@ public:
 
     void generate(const AST &ast, Mode mode, QString fileName);
 
+    QByteArray classSignature(const ASTClass &ac);
 private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
     QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
@@ -96,6 +97,7 @@ private:
 
 private:
     QIODevice *m_outputDevice;
+    QHash<QString, QByteArray> m_globalEnumsPODs;
 };
 
 #endif

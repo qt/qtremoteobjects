@@ -56,8 +56,17 @@ class QRemoteObjectNode;
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool isReplicaValid READ isReplicaValid NOTIFY isReplicaValidChanged)
     Q_PROPERTY(QRemoteObjectNode *node READ node WRITE setNode)
+    Q_PROPERTY(State state READ state NOTIFY stateChanged)
+public:
+    enum State {
+        Uninitialized,
+        Default,
+        Valid,
+        Suspect,
+        SignatureMismatch
+    };
+    Q_ENUM(State)
 
 public:
     virtual ~QRemoteObjectReplica();
@@ -65,12 +74,13 @@ public:
     bool isReplicaValid() const;
     bool waitForSource(int timeout = 30000);
     bool isInitialized() const;
+    State state() const;
     QRemoteObjectNode *node() const;
     void setNode(QRemoteObjectNode *node);
 
 Q_SIGNALS:
-    void isReplicaValidChanged();
     void initialized();
+    void stateChanged(State state, State oldState);
 
 protected:
     enum ConstructorType {DefaultConstructor, ConstructWithNode};

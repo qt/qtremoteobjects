@@ -68,6 +68,8 @@ QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, co
     , m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount())
     , m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
     , m_node(_node)
+    , m_objectSignature(qtro_classinfo_signature(m_metaObject))
+    , m_state(meta ? QRemoteObjectReplica::Default : QRemoteObjectReplica::Uninitialized)
 {
 }
 
@@ -78,7 +80,7 @@ QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
 }
 
 QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
-    : QRemoteObjectReplicaPrivate(name, meta, node), isSet(0), connectionToSource(Q_NULLPTR), m_curSerialId(0)
+    : QRemoteObjectReplicaPrivate(name, meta, node), connectionToSource(Q_NULLPTR), m_curSerialId(0)
 {
 }
 
@@ -94,6 +96,19 @@ QConnectedReplicaPrivate::~QConnectedReplicaPrivate()
 bool QRemoteObjectReplicaPrivate::needsDynamicInitialization() const
 {
     return m_metaObject == Q_NULLPTR;
+}
+
+void QRemoteObjectReplicaPrivate::setState(QRemoteObjectReplica::State state)
+{
+    if (m_state != QRemoteObjectReplica::Suspect && m_state >= state)
+        return;
+
+    int oldState = m_state;
+    m_state = state;
+    const static int stateChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("stateChanged(State,State)");
+    Q_ASSERT(stateChangedIndex != -1);
+    void *args[] = {0, &state, &oldState};
+    QMetaObject::activate(this, metaObject(), stateChangedIndex, args);
 }
 
 bool QConnectedReplicaPrivate::sendCommand()
@@ -128,14 +143,12 @@ void QConnectedReplicaPrivate::initialize(const QVariantList &values)
     //initialized and validChanged need to be sent manually, since they are not in the derived classes
     //We should emit initialized before emitting any changed signals in case connections are made in a
     //Slot responding to initialized/validChanged.
-    if (isSet.fetchAndStoreRelease(2) > 0) {
-        //We are already initialized, now we are valid again
-        emitValidChanged();
-    } else {
+    if (m_state < QRemoteObjectReplica::Valid) {
         //We need to send the initialized signal, too
         emitInitialized();
-        emitValidChanged();
     }
+    //We are already initialized, now we are valid again
+    setState(QRemoteObjectReplica::Valid);
 
     void *args[] = {Q_NULLPTR, Q_NULLPTR};
     for (int i = 0; i < nParam; ++i) {
@@ -150,14 +163,6 @@ void QConnectedReplicaPrivate::initialize(const QVariantList &values)
     }
 
     qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
-}
-
-void QRemoteObjectReplicaPrivate::emitValidChanged()
-{
-    const static int validChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("isReplicaValidChanged()");
-    Q_ASSERT(validChangedIndex != -1);
-    void *noArgs[] = {0};
-    QMetaObject::activate(this, metaObject(), validChangedIndex, noArgs);
 }
 
 void QRemoteObjectReplicaPrivate::emitInitialized()
@@ -187,14 +192,12 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &bu
     //initialized and validChanged need to be sent manually, since they are not in the derived classes
     //We should emit initialized before emitting any changed signals in case connections are made in a
     //Slot responding to initialized/validChanged.
-    if (isSet.fetchAndStoreRelease(2) > 0) {
-        //We are already initialized, now we are valid again
-        emitValidChanged();
-    } else {
+    if (m_state < QRemoteObjectReplica::Valid) {
         //We need to send the initialized signal, too
         emitInitialized();
-        emitValidChanged();
     }
+    setState(QRemoteObjectReplica::Valid);
+
 
     void *args[] = {Q_NULLPTR, Q_NULLPTR};
     for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
@@ -211,27 +214,25 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &bu
 
 bool QConnectedReplicaPrivate::isInitialized() const
 {
-    return isSet.load() > 0;
-}
-
-bool QConnectedReplicaPrivate::isReplicaValid() const
-{
-    qCDebug(QT_REMOTEOBJECT) << "isReplicaValid()" << isSet.load();
-
-    return isSet.load() == 2;
+    return  m_state > QRemoteObjectReplica::Default && m_state != QRemoteObjectReplica::SignatureMismatch;
 }
 
 bool QConnectedReplicaPrivate::waitForSource(int timeout)
 {
-    if (isReplicaValid()) {
+    switch (state()) {
+    case QRemoteObjectReplica::State::Valid:
         return true;
+    case QRemoteObjectReplica::State::SignatureMismatch:
+        return false;
+    default:
+        break;
     }
 
-    const static int validChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("isReplicaValidChanged()");
-    Q_ASSERT(validChangedIndex != -1);
+    const static int stateChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("stateChanged(State,State)");
+    Q_ASSERT(stateChangedIndex != -1);
 
     QEventLoop loop;
-    QMetaObject::connect(this, validChangedIndex,
+    QMetaObject::connect(this, stateChangedIndex,
                          &loop, QEventLoop::staticMetaObject.indexOfMethod("quit()"),
                          Qt::DirectConnection, 0);
 
@@ -242,7 +243,7 @@ bool QConnectedReplicaPrivate::waitForSource(int timeout)
     // enter the event loop and wait for a reply
     loop.exec(QEventLoop::ExcludeUserInputEvents | QEventLoop::WaitForMoreEvents);
 
-    return isReplicaValid();
+    return state() == QRemoteObjectReplica::State::Valid;
 }
 
 void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
@@ -362,8 +363,7 @@ void QConnectedReplicaPrivate::setConnection(ClientIoDevice *conn)
 void QConnectedReplicaPrivate::setDisconnected()
 {
     connectionToSource.clear();
-    if (isSet.fetchAndStoreRelease(1) == 2)
-        emitValidChanged();
+    setState(QRemoteObjectReplica::State::Suspect);
 }
 
 void QConnectedReplicaPrivate::requestRemoteObjectSource()
@@ -410,10 +410,11 @@ void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
             qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate initialized, emitting signal on Replica");
             emit rep->initialized(); //Emit from new replica only
         }
-        if (!isReplicaValid()) {
+        if (state() != QRemoteObjectReplica::Valid) {
             qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate not currently valid, emitting signal on Replica");
-            emit rep->isReplicaValidChanged(); //Emit from new replica only
+            emit rep->stateChanged(state(), m_metaObject ? QRemoteObjectReplica::Default : QRemoteObjectReplica::Uninitialized);
         }
+
         qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, added Replica to existing ReplicaPrivate");
     }
 }
@@ -440,19 +441,29 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
     communication latency. As long as the Replica has been initialized and the
     communication is not disrupted, receipt and order of changes is guaranteed.
 
-    The \l {isInitialized} and \l {isReplicaValid} properties (and corresponding \l {initialized()}/\l {isReplicaValidChanged()} Signals) allow the state of a \l {Replica} to be determined.
+    The \l {isInitialized} and \l {state} properties (and corresponding \l {initialized()}/\l {stateChanged()} Signals) allow the state of a \l {Replica} to be determined.
 
     While Qt Remote Objects (QtRO) handles the initialization and synchronization of \l {Replica} objects, there are numerous steps happening behind the scenes which can fail and that aren't encountered in single process Qt applications.  See \l {Troubleshooting} for advice on how to handle such issues when using a Remote Objects network.
 */
 
 /*!
-    \fn void QRemoteObjectReplica::isReplicaValidChanged()
+    \enum QRemoteObjectReplica::State
 
-    This signal is emitted whenever a Replica's state toggles between valid and invalid.
+    This enum type specifies the various state codes associated with QRemoteObjectReplica states:
 
-    A Replica is valid when there is a connection between its Node and the Source objects Host Node, and the Replica has been initialized.
+    \value Uninitialized initial value of DynamicReplica, where nothing is known about the Replica before connection to Source.
+    \value Default initial value of static Replica, where any defaults set in the .rep file are available so it can be used if necessary.
+    \value Valid indicates the Replica is connected, has good property values and can be interacted with.
+    \value Suspect error state that occurs if the connection to the Source is lost after it is initialized.
+    \value SignatureMismatch error state that occurs if a connection to the Source is made, but the Source and Replica are not derived from the same .rep (only possible for static Replicas).
+*/
 
-    \sa isReplicaValid(), initialized()
+/*!
+    \fn void QRemoteObjectReplica::stateChanged()
+
+    This signal is emitted whenever a Replica's state toggles between \l QRemoteObjectReplica::State.
+
+    \sa state(), initialized()
 */
 
 /*!
@@ -460,7 +471,7 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 
     This signal is emitted once the Replica is initialized.
 
-    \sa isInitialized(), isReplicaValidChanged()
+    \sa isInitialized(), stateChanged()
 */
 
 /*!
@@ -469,10 +480,10 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 */
 
 /*!
-    \property QRemoteObjectReplica::isReplicaValid
-    \brief Whether the Replica is valid or not.
+    \property QRemoteObjectReplica::state
+    \brief Returns the Replica state.
 
-    This property will be false until the Replica is initialized, at which point it is set to true.  If the connection to the Host Node (of the \l {Source}) is lost, it will become false until the connection is restored.
+    This property holds the Replica \l QRemoteObjectReplica::State.
 */
 
 /*!
@@ -488,6 +499,7 @@ QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
     : QObject(Q_NULLPTR)
     , d_ptr(t == DefaultConstructor ? new QStubReplicaPrivate : 0)
 {
+    qRegisterMetaType<State>("State");
 }
 
 /*!
@@ -550,11 +562,21 @@ void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
 /*!
     Returns \c true if this Replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
 
-    \sa isReplicaValid()
+    \sa state()
 */
 bool QRemoteObjectReplica::isInitialized() const
 {
     return d_ptr->isInitialized();
+}
+
+/*!
+    Returns \c true if this Replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
+
+    \sa isInitialized()
+*/
+QRemoteObjectReplica::State QRemoteObjectReplica::state() const
+{
+    return d_ptr->state();
 }
 
 QRemoteObjectNode *QRemoteObjectReplica::node() const
@@ -587,7 +609,7 @@ void QRemoteObjectReplica::initialize()
 */
 bool QRemoteObjectReplica::isReplicaValid() const
 {
-    return d_ptr->isReplicaValid();
+    return state() == Valid;
 }
 
 /*!

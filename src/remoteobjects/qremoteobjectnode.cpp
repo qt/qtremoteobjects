@@ -346,7 +346,10 @@ QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMeta
     QConnectedReplicaPrivate *rp = new QConnectedReplicaPrivate(name, meta, q);
     rp->configurePrivate(instance);
     if (connectedSources.contains(name)) { //Either we have a peer connections, or existing connection via registry
-        rp->setConnection(connectedSources[name].device);
+        if (checkSignatures(rp->m_objectSignature, connectedSources[name].objectSignature))
+            rp->setConnection(connectedSources[name].device);
+        else
+            rp->setState(QRemoteObjectReplica::SignatureMismatch);
     } else if (remoteObjectAddresses().contains(name)) { //No existing connection, but we know we can connect via registry
         initConnection(remoteObjectAddresses()[name].hostUrl); //This will try the connection, and if successful, the remoteObjects will be sent
                                               //The link to the replica will be handled then
@@ -390,20 +393,22 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             Q_FOREACH (const auto &remoteObject, rxObjects) {
                 qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
                 if (!connectedSources.contains(remoteObject.name)) {
-                    connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName};
+                    connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName, remoteObject.signature};
                     connection->addSource(remoteObject.name);
-                    if (replicas.contains(remoteObject.name)) //We have a replica waiting on this remoteObject
-                    {
+                    if (replicas.contains(remoteObject.name)) { //We have a replica waiting on this remoteObject
                         QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(remoteObject.name).toStrongRef());
-                        if (rep && rep->connectionToSource.isNull())
-                        {
-                            qROPrivDebug() << "Test" << remoteObject<<replicas.keys();
-                            qROPrivDebug() << rep;
-                            rep->setConnection(connection);
-                        } else if (!rep) { //replica has been deleted, remove from list
-                            replicas.remove(remoteObject.name);
+                        if (!rep || checkSignatures(remoteObject.signature, rep->m_objectSignature)) {
+                            if (rep && rep->connectionToSource.isNull()) {
+                                qROPrivDebug() << "Test" << remoteObject<<replicas.keys();
+                                qROPrivDebug() << rep;
+                                rep->setConnection(connection);
+                            } else if (!rep) { //replica has been deleted, remove from list
+                                replicas.remove(remoteObject.name);
+                            }
+                        } else {
+                            if (rep)
+                                rep->setState(QRemoteObjectReplica::SignatureMismatch);
                         }
-
                         continue;
                     }
                 }
@@ -450,10 +455,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 QSharedPointer<QConnectedReplicaPrivate> rep = qSharedPointerCast<QConnectedReplicaPrivate>(replicas.value(rxName).toStrongRef());
                 if (rep && !rep->connectionToSource.isNull()) {
                     rep->connectionToSource.clear();
-                    if (rep->isReplicaValid()) {
-                        //Changed from receiving to not receiving
-                        rep->emitValidChanged();
-                    }
+                    rep->setState(QRemoteObjectReplica::Suspect);
                 } else if (!rep) {
                     replicas.remove(rxName);
                 }
@@ -647,6 +649,14 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     QObject::connect(&clientRead, SIGNAL(mapped(QObject*)), q, SLOT(onClientRead(QObject*)));
+}
+
+bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteArray &b)
+{
+    // if any of a or b is empty it means it's a dynamic ojects or an item model
+    if (a.isEmpty() || b.isEmpty())
+        return true;
+    return a == b;
 }
 
 /*!

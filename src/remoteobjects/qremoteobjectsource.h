@@ -123,6 +123,8 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
     return ObjectType::staticMetaObject.indexOfMethod(methodName);
 }
 
+QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
+
 class SourceApiMap
 {
 protected:
@@ -147,6 +149,7 @@ public:
     virtual const QByteArray typeName(int index) const = 0;
     virtual int propertyIndexFromSignal(int index) const = 0;
     virtual int propertyRawIndexFromSignal(int index) const = 0;
+    virtual QByteArray objectSignature() const = 0;
     virtual bool isDynamic() const { return false; }
     virtual bool isAdapterSignal(int) const { return false; }
     virtual bool isAdapterMethod(int) const { return false; }

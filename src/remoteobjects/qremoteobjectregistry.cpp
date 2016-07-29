@@ -60,13 +60,13 @@ QT_BEGIN_NAMESPACE
 */
 QRemoteObjectRegistry::QRemoteObjectRegistry() : QRemoteObjectReplica()
 {
-    connect(this, &QRemoteObjectRegistry::isReplicaValidChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
+    connect(this, &QRemoteObjectRegistry::stateChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
 }
 
 QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QString &name)
     : QRemoteObjectReplica(ConstructWithNode)
 {
-    connect(this, &QRemoteObjectRegistry::isReplicaValidChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
+    connect(this, &QRemoteObjectRegistry::stateChanged, this, &QRemoteObjectRegistry::pushToRegistryIfNeeded);
     initializeNode(node, name);
 }
 
@@ -137,9 +137,9 @@ void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
         return;
     }
     hostedSources.insert(entry.first, entry.second);
-    if (!isReplicaValid()) {
+    if (state() != QRemoteObjectReplica::State::Valid)
         return;
-    }
+
     if (sourceLocations().contains(entry.first)) {
         qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << entry.first
                                    << "as another source (" << sourceLocations()[entry.first]
@@ -162,9 +162,9 @@ void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entr
     if (!hostedSources.contains(entry.first))
         return;
     hostedSources.remove(entry.first);
-    if (!isReplicaValid()) {
+    if (state() != QRemoteObjectReplica::State::Valid)
         return;
-    }
+
     qCDebug(QT_REMOTEOBJECT) << "An entry was removed from the registry - Sending to Source" << entry.first << entry.second;
     // This does not set any data to avoid a coherency problem between client and server
     static int index = QRemoteObjectRegistry::staticMetaObject.indexOfMethod("removeSource(QRemoteObjectSourceLocation)");
@@ -182,7 +182,7 @@ void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entr
 */
 void QRemoteObjectRegistry::pushToRegistryIfNeeded()
 {
-    if (!isReplicaValid())
+    if (state() != QRemoteObjectReplica::State::Valid)
         return;
     const QSet<QString> myLocs = QSet<QString>::fromList(hostedSources.keys());
     if (myLocs.empty())

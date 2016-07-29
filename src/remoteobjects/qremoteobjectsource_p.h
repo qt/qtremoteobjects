@@ -76,6 +76,7 @@ public:
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
     bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
+    QByteArray m_objectChecksum;
     static const int qobjectPropertyOffset;
     static const int qobjectMethodOffset;
 };
@@ -128,6 +129,8 @@ public:
             return m_propertyAssociatedWithSignal.at(index);
         return -1;
     }
+    QByteArray objectSignature() const Q_DECL_OVERRIDE { return m_objectSignature; }
+
     bool isDynamic() const Q_DECL_OVERRIDE { return true; }
 private:
     int parameterCount(int objectIndex) const;
@@ -150,6 +153,7 @@ private:
     const QMetaObject *m_metaObject;
     mutable QMetaMethod m_cachedMetamethod;
     mutable int m_cachedMetamethodIndex;
+    QByteArray m_objectSignature;
 };
 
 QT_END_NAMESPACE

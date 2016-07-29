@@ -57,6 +57,21 @@ using namespace QRemoteObjectPackets;
 
 const int QRemoteObjectSource::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
 const int QRemoteObjectSource::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
+static const QByteArray s_classinfoRemoteobjectSignature(QCLASSINFO_REMOTEOBJECT_SIGNATURE);
+
+
+QByteArray qtro_classinfo_signature(const QMetaObject *metaObject)
+{
+    if (!metaObject)
+        return QByteArray{};
+
+    for (int i = metaObject->classInfoOffset(); i < metaObject->classInfoCount(); ++i) {
+        auto ci = metaObject->classInfo(i);
+        if (s_classinfoRemoteobjectSignature == ci.name())
+            return ci.value();
+    }
+    return QByteArray{};
+}
 
 QRemoteObjectSource::QRemoteObjectSource(QObject *obj, const SourceApiMap *api,
                                          QObject *adapter, QRemoteObjectSourceIo *sourceIo)
@@ -261,6 +276,8 @@ DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name,
         } else if (m == QMetaMethod::Slot || m == QMetaMethod::Method)
             m_methods << i;
     }
+
+    m_objectSignature = qtro_classinfo_signature(metaObject);
 }
 
 int DynamicApiMap::parameterCount(int objectIndex) const

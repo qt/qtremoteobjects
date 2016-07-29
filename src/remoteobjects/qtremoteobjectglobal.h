@@ -110,6 +110,7 @@ Q_DECLARE_METATYPE(QIntHash)
 #endif
 
 #define QCLASSINFO_REMOTEOBJECT_TYPE "RemoteObject Type"
+#define QCLASSINFO_REMOTEOBJECT_SIGNATURE "RemoteObject Signature"
 
 class QDataStream;
 

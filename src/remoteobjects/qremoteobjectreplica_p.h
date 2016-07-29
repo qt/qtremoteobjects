@@ -74,7 +74,7 @@ public:
     virtual void setProperties(const QVariantList &) = 0;
     virtual void setProperty(int i, const QVariant &) = 0;
     virtual bool isInitialized() const = 0;
-    virtual bool isReplicaValid() const = 0;
+    virtual QRemoteObjectReplica::State state() const = 0;
     virtual bool waitForSource(int) = 0;
     virtual QRemoteObjectNode *node() const = 0;
 
@@ -92,7 +92,7 @@ public:
     void setProperties(const QVariantList &) Q_DECL_OVERRIDE;
     void setProperty(int i, const QVariant &) Q_DECL_OVERRIDE;
     bool isInitialized() const Q_DECL_OVERRIDE { return false; }
-    bool isReplicaValid() const Q_DECL_OVERRIDE { return false; }
+    QRemoteObjectReplica::State state() const Q_DECL_OVERRIDE { return QRemoteObjectReplica::State::Uninitialized;}
     bool waitForSource(int) Q_DECL_OVERRIDE { return false; }
     QRemoteObjectNode *node() const Q_DECL_OVERRIDE { return Q_NULLPTR; }
 
@@ -114,12 +114,12 @@ public:
     virtual void setProperty(int i, const QVariant &) Q_DECL_OVERRIDE = 0;
     virtual bool isShortCircuit() const = 0;
     virtual bool isInitialized() const Q_DECL_OVERRIDE { return true; }
-    virtual bool isReplicaValid() const Q_DECL_OVERRIDE { return true; }
+    QRemoteObjectReplica::State state() const Q_DECL_OVERRIDE { return QRemoteObjectReplica::State(m_state.load()); }
+    void setState(QRemoteObjectReplica::State state);
     virtual bool waitForSource(int) Q_DECL_OVERRIDE { return true; }
     virtual bool waitForFinished(const QRemoteObjectPendingCall &, int) { return true; }
     virtual void notifyAboutReply(int, const QVariant &) {}
     virtual void configurePrivate(QRemoteObjectReplica *);
-    void emitValidChanged();
     void emitInitialized();
     QRemoteObjectNode *node() const Q_DECL_OVERRIDE { return m_node; }
 
@@ -138,6 +138,8 @@ public:
     int m_signalOffset;
     int m_propertyOffset;
     QRemoteObjectNode *m_node;
+    QByteArray m_objectSignature;
+    QAtomicInt m_state;
 };
 
 class QConnectedReplicaPrivate : public QRemoteObjectReplicaPrivate
@@ -150,7 +152,6 @@ public:
     void setProperty(int i, const QVariant &) Q_DECL_OVERRIDE;
     bool isShortCircuit() const Q_DECL_OVERRIDE { return false; }
     bool isInitialized() const Q_DECL_OVERRIDE;
-    bool isReplicaValid() const Q_DECL_OVERRIDE;
     bool waitForSource(int timeout) Q_DECL_OVERRIDE;
     void initialize(const QVariantList &values);
     void configurePrivate(QRemoteObjectReplica *) Q_DECL_OVERRIDE;
@@ -166,7 +167,6 @@ public:
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) Q_DECL_OVERRIDE;
 
     void initializeMetaObject(const QMetaObjectBuilder&, const QVariantList&) Q_DECL_OVERRIDE;
-    QAtomicInt isSet;
     QVector<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
     QPointer<ClientIoDevice> connectionToSource;
