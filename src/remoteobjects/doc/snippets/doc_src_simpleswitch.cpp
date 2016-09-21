@@ -145,7 +145,7 @@ REPC_REPLICA = simpleswitch.rep
 //! [simpleSwitch_clientrep_example1]
 
 //! [simpleSwitch_clientremotenode_example1]
-QRemoteObjectNode repNode = QRemoteObjectNode(); // create remote object node
+QRemoteObjectNode repNode; // create remote object node
 repNode.connect(); // connect with remote host node
  //! [simpleSwitch_clientremotenode_example1]
 
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 
     QSharedPointer<SimpleSwitchReplica> ptr; // shared pointer to hold source replica
 
-    QRemoteObjectNode repNode = QRemoteObjectNode(); // create remote object node
+    QRemoteObjectNode repNode; // create remote object node
     repNode.connect(); // connect with remote host node
 
     ptr.reset(repNode.acquire<SimpleSwitchReplica>()); // acquire replica of source from host node
@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
 //! [simpleSwitch_clientmain_example1]
 
 //! [simpleSwitch_dynamicclientnode_example2]
-QRemoteObjectNode repNode = QRemoteObjectNode(); // create remote object node
+QRemoteObjectNode repNode; // create remote object node
 repNode.connect(); // connect with remote host node
 //! [simpleSwitch_dynamicclientnode_example2]
 
@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
 
     QSharedPointer<QRemoteObjectDynamicReplica> ptr; // shared pointer to hold replica
 
-    QRemoteObjectNode repNode = QRemoteObjectNode(); // create remote object node
+    QRemoteObjectNode repNode; // create remote object node
     repNode.connect(); // connect with remote host node
 
     ptr.reset(repNode.acquire("SimpleSwitch")); // acquire replica of source from host node
