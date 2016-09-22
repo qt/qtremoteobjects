@@ -21,7 +21,13 @@ EXTRA_HEADERS += \
     $$PWD/parser.g
 
 extra_headers.files = $$EXTRA_HEADERS
-extra_headers.path = $$[QT_INSTALL_HEADERS]/$$MODULE_INCNAME
+# Replicates a bit of logic of qtbase.git:mkspecs/features/qt_module_headers.prf
+# Make sure we install parser.g to the resp. Frameworks include path if required
+prefix_build:lib_bundle {
+    extra_headers.path = $$[QT_INSTALL_LIBS]/QtRepParser.framework/Headers
+} else {
+    extra_headers.path = $$[QT_INSTALL_HEADERS]/$$MODULE_INCNAME
+}
 INSTALLS += extra_headers
 
 PUBLIC_HEADERS += \
