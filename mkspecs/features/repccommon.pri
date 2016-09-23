@@ -1,3 +1,8 @@
+# Detect repc when QtRO is installed into non-Qt prefix
+cmd = $${QT.remoteobjects.bins}/repc
+exists($$cmd): QT_TOOL.repc.binary = $$cmd
+
+# qtPrepareTool honors QT_TOOL.repc.binary if set
 qtPrepareTool(QMAKE_REPC, repc)
 
 REPC_INCLUDEPATHES = $$QT.remoteobjects.includes
