@@ -1,8 +1,8 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
+** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2014 Olivier Goffart <ogoffart@woboq.org>
-** Contact: http://www.qt-project.org/legal
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
 **
@@ -11,9 +11,9 @@
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and Digia. For licensing terms and
-** conditions see http://qt.digia.com/licensing. For further information
-** use the contact form at http://qt.digia.com/contact-us.
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
@@ -24,8 +24,8 @@
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** In addition, as a special exception, Digia gives you certain additional
-** rights. These rights are described in the Digia Qt LGPL Exception
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
@@ -50,13 +50,14 @@ QT_BEGIN_NAMESPACE
 static QByteArray cleaned(const QByteArray &input)
 {
     QByteArray result;
-    result.reserve(input.size());
+    result.resize(input.size());
     const char *data = input.constData();
+    const char *end = input.constData() + input.size();
     char *output = result.data();
 
     int newlines = 0;
-    while (*data) {
-        while (*data && is_space(*data))
+    while (data != end) {
+        while (data != end && is_space(*data))
             ++data;
         bool takeLine = (*data == '#');
         if (*data == '%' && *(data+1) == ':') {
@@ -66,24 +67,26 @@ static QByteArray cleaned(const QByteArray &input)
         if (takeLine) {
             *output = '#';
             ++output;
-            do ++data; while (*data && is_space(*data));
+            do ++data; while (data != end && is_space(*data));
         }
-        while (*data) {
+        while (data != end) {
             // handle \\\n, \\\r\n and \\\r
             if (*data == '\\') {
                 if (*(data + 1) == '\r') {
                     ++data;
                 }
-                if (*data && (*(data + 1) == '\n' || (*data) == '\r')) {
+                if (data != end && (*(data + 1) == '\n' || (*data) == '\r')) {
                     ++newlines;
                     data += 1;
-                    if (*data != '\r')
+                    if (data != end && *data != '\r')
                         data += 1;
                     continue;
                 }
             } else if (*data == '\r' && *(data + 1) == '\n') { // reduce \r\n to \n
                 ++data;
             }
+            if (data == end)
+                break;
 
             char ch = *data;
             if (ch == '\r') // os9: replace \r with \n
@@ -185,7 +188,8 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
                 token = keywords[state].ident;
 
             if (token == NOTOKEN) {
-                ++data;
+                if (*data)
+                    ++data;
                 // an error really, but let's ignore this input
                 // to not confuse moc later. However in pre-processor
                 // only mode let's continue.
@@ -201,7 +205,7 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
                     data = skipQuote(data);
                     token = STRING_LITERAL;
                     // concatenate multi-line strings for easier
-                    // STRING_LITERAAL handling in moc
+                    // STRING_LITERAL handling in moc
                     if (!Preprocessor::preprocessOnly
                         && !symbols.isEmpty()
                         && symbols.last().token == STRING_LITERAL) {
@@ -358,7 +362,6 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
                     ++data;
                     continue;
                 }
-
                 int nextindex = pp_keywords[state].next;
                 int next = 0;
                 if (*data == pp_keywords[state].defchar)
@@ -377,7 +380,8 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
 
             switch (token) {
             case NOTOKEN:
-                ++data;
+                if (*data)
+                    ++data;
                 break;
             case PP_DEFINE:
                 mode = PrepareDefine;
@@ -528,7 +532,7 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
     return symbols;
 }
 
-Symbols Preprocessor::macroExpand(Preprocessor *that, Symbols &toExpand, int &index,
+void Preprocessor::macroExpand(Symbols *into, Preprocessor *that, const Symbols &toExpand, int &index,
                                   int lineNum, bool one, const QSet<QByteArray> &excludeSymbols)
 {
     SymbolStack symbols;
@@ -538,16 +542,18 @@ Symbols Preprocessor::macroExpand(Preprocessor *that, Symbols &toExpand, int &in
     sf.excludedSymbols = excludeSymbols;
     symbols.push(sf);
 
-    Symbols result;
     if (toExpand.isEmpty())
-        return result;
+        return;
 
     for (;;) {
         QByteArray macro;
         Symbols newSyms = macroExpandIdentifier(that, symbols, lineNum, &macro);
 
         if (macro.isEmpty()) {
-            result += newSyms;
+            // not a macro
+            Symbol s = symbols.symbol();
+            s.lineNum = lineNum;
+            *into += s;
         } else {
             SafeSymbols sf;
             sf.symbols = newSyms;
@@ -564,8 +570,6 @@ Symbols Preprocessor::macroExpand(Preprocessor *that, Symbols &toExpand, int &in
         index = symbols.top().index;
     else
         index = toExpand.size();
-
-    return result;
 }
 
 
@@ -575,10 +579,7 @@ Symbols Preprocessor::macroExpandIdentifier(Preprocessor *that, SymbolStack &sym
 
     // not a macro
     if (s.token != PP_IDENTIFIER || !that->macros.contains(s) || symbols.dontReplaceSymbol(s.lexem())) {
-        Symbols syms;
-        syms += s;
-        syms.last().lineNum = lineNum;
-        return syms;
+        return Symbols();
     }
 
     const Macro &macro = that->macros.value(s);
@@ -599,7 +600,7 @@ Symbols Preprocessor::macroExpandIdentifier(Preprocessor *that, SymbolStack &sym
             syms.last().lineNum = lineNum;
             return syms;
         }
-        QList<Symbols> arguments;
+        QVarLengthArray<Symbols, 5> arguments;
         while (symbols.hasNext()) {
             Symbols argument;
             // strip leading space
@@ -652,7 +653,7 @@ Symbols Preprocessor::macroExpandIdentifier(Preprocessor *that, SymbolStack &sym
                     if (i == macro.symbols.size() - 1 || macro.symbols.at(i + 1).token != PP_HASHHASH) {
                         Symbols arg = arguments.at(index);
                         int idx = 1;
-                        expansion += macroExpand(that, arg, idx, lineNum, false, symbols.excludeSymbols());
+                        macroExpand(&expansion, that, arg, idx, lineNum, false, symbols.excludeSymbols());
                     } else {
                         expansion += arguments.at(index);
                     }
@@ -660,8 +661,13 @@ Symbols Preprocessor::macroExpandIdentifier(Preprocessor *that, SymbolStack &sym
                     expansion += s;
                 }
             } else if (mode == Hash) {
-                if (index < 0)
+                if (index < 0) {
                     that->error("'#' is not followed by a macro parameter");
+                    continue;
+                } else if (index >= arguments.size()) {
+                    that->error("Macro invoked with too few parameters for a use of '#'");
+                    continue;
+                }
 
                 const Symbols &arg = arguments.at(index);
                 QByteArray stringified;
@@ -680,7 +686,7 @@ Symbols Preprocessor::macroExpandIdentifier(Preprocessor *that, SymbolStack &sym
                     expansion.pop_back();
 
                 Symbol next = s;
-                if (index >= 0) {
+                if (index >= 0 && index < arguments.size()) {
                     const Symbols &arg = arguments.at(index);
                     if (arg.size() == 0) {
                         mode = Normal;
@@ -702,7 +708,7 @@ Symbols Preprocessor::macroExpandIdentifier(Preprocessor *that, SymbolStack &sym
                     expansion += next;
                 }
 
-                if (index >= 0) {
+                if (index >= 0 && index < arguments.size()) {
                     const Symbols &arg = arguments.at(index);
                     for (int i = 1; i < arg.size(); ++i)
                         expansion += arg.at(i);
@@ -723,7 +729,7 @@ void Preprocessor::substituteUntilNewline(Symbols &substituted)
     while (hasNext()) {
         Token token = next();
         if (token == PP_IDENTIFIER) {
-            substituted += macroExpand(this, symbols, index, symbol().lineNum, true);
+            macroExpand(&substituted, this, symbols, index, symbol().lineNum, true);
         } else if (token == PP_DEFINED) {
             bool braces = test(PP_LPAREN);
             next(PP_IDENTIFIER);
@@ -964,6 +970,43 @@ int Preprocessor::evaluateCondition()
     return expression.value();
 }
 
+static QByteArray readOrMapFile(QFile *file)
+{
+    const qint64 size = file->size();
+    char *rawInput = reinterpret_cast<char*>(file->map(0, size));
+    return rawInput ? QByteArray::fromRawData(rawInput, size) : file->readAll();
+}
+
+static void mergeStringLiterals(Symbols *_symbols)
+{
+    Symbols &symbols = *_symbols;
+    for (Symbols::iterator i = symbols.begin(); i != symbols.end(); ++i) {
+        if (i->token == STRING_LITERAL) {
+            Symbols::Iterator mergeSymbol = i;
+            int literalsLength = mergeSymbol->len;
+            while (++i != symbols.end() && i->token == STRING_LITERAL)
+                literalsLength += i->len - 2; // no quotes
+
+            if (literalsLength != mergeSymbol->len) {
+                QByteArray mergeSymbolOriginalLexem = mergeSymbol->unquotedLexem();
+                QByteArray &mergeSymbolLexem = mergeSymbol->lex;
+                mergeSymbolLexem.resize(0);
+                mergeSymbolLexem.reserve(literalsLength);
+                mergeSymbolLexem.append('"');
+                mergeSymbolLexem.append(mergeSymbolOriginalLexem);
+                for (Symbols::const_iterator j = mergeSymbol + 1; j != i; ++j)
+                    mergeSymbolLexem.append(j->lex.constData() + j->from + 1, j->len - 2); // append j->unquotedLexem()
+                mergeSymbolLexem.append('"');
+                mergeSymbol->len = mergeSymbol->lex.length();
+                mergeSymbol->from = 0;
+                i = symbols.erase(mergeSymbol + 1, i);
+            }
+            if (i == symbols.end())
+                break;
+        }
+    }
+}
+
 void Preprocessor::preprocess(const QByteArray &filename, Symbols &preprocessed)
 {
     currentFilenames.push(filename);
@@ -1020,7 +1063,8 @@ void Preprocessor::preprocess(const QByteArray &filename, Symbols &preprocessed)
             if (!file.open(QFile::ReadOnly))
                 continue;
 
-            QByteArray input = file.readAll();
+            QByteArray input = readOrMapFile(&file);
+
             file.close();
             if (input.isEmpty())
                 continue;
@@ -1107,7 +1151,7 @@ void Preprocessor::preprocess(const QByteArray &filename, Symbols &preprocessed)
         }
         case PP_IDENTIFIER: {
             // substitute macros
-            preprocessed += macroExpand(this, symbols, index, symbol().lineNum, true);
+            macroExpand(&preprocessed, this, symbols, index, symbol().lineNum, true);
             continue;
         }
         case PP_HASH:
@@ -1153,9 +1197,10 @@ void Preprocessor::preprocess(const QByteArray &filename, Symbols &preprocessed)
     currentFilenames.pop();
 }
 
-Symbols Preprocessor::preprocessed(const QByteArray &filename, QIODevice *file)
+Symbols Preprocessor::preprocessed(const QByteArray &filename, QFile *file)
 {
-    QByteArray input = file->readAll();
+    QByteArray input = readOrMapFile(file);
+
     if (input.isEmpty())
         return symbols;
 
@@ -1176,6 +1221,7 @@ Symbols Preprocessor::preprocessed(const QByteArray &filename, QIODevice *file)
     // phase 3: preprocess conditions and substitute macros
     Symbols result;
     preprocess(filename, result);
+    mergeStringLiterals(&result);
 
 #if 0
     for (int j = 0; j < result.size(); ++j)
@@ -1206,7 +1252,6 @@ void Preprocessor::parseDefineArguments(Macro *m)
                     error("missing ')' in macro argument list");
                 break;
             } else if (!is_identifier(l.constData(), l.length())) {
-                qDebug() << l;
                 error("Unexpected character in macro argument list.");
             }
         }

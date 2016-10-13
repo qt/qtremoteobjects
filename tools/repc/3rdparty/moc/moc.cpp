@@ -1,7 +1,8 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
-** Contact: http://www.qt-project.org/legal
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2016 Olivier Goffart <ogoffart@woboq.com>
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
 **
@@ -10,9 +11,9 @@
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and Digia. For licensing terms and
-** conditions see http://qt.digia.com/licensing. For further information
-** use the contact form at http://qt.digia.com/contact-us.
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
@@ -23,8 +24,8 @@
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** In addition, as a special exception, Digia gives you certain additional
-** rights. These rights are described in the Digia Qt LGPL Exception
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
@@ -139,6 +140,13 @@ bool Moc::parseClassHead(ClassDef *def)
                 def->superclassList += qMakePair(type, access);
             }
         } while (test(COMMA));
+
+        if (!def->superclassList.isEmpty()
+            && knownGadgets.contains(def->superclassList.first().first)) {
+            // Q_GADGET subclasses are treated as Q_GADGETs
+            knownGadgets.insert(def->classname, def->qualified);
+            knownGadgets.insert(def->qualified, def->qualified);
+        }
     }
     if (!test(LBRACE))
         return false;
@@ -177,6 +185,8 @@ Type Moc::parseType()
             case Q_SLOT_TOKEN:
                 type.name += lexem();
                 return type;
+            case NOTOKEN:
+                return type;
             default:
                 prev();
                 break;
@@ -211,6 +221,8 @@ Type Moc::parseType()
             type.name += lexem();
             isVoid |= (lookup(0) == VOID);
             break;
+        case NOTOKEN:
+            return type;
         default:
             prev();
             ;
@@ -371,8 +383,8 @@ bool Moc::parseFunction(FunctionDef *def, bool inMacro)
     def->isVirtual = false;
     def->isStatic = false;
     //skip modifiers and attributes
-    while (test(INLINE) || (test(STATIC) && (def->isStatic = true)) ||
-        (test(VIRTUAL) && (def->isVirtual = true)) //mark as virtual
+    while (test(INLINE) || (test(STATIC) && (def->isStatic = true) == true) ||
+        (test(VIRTUAL) && (def->isVirtual = true) == true) //mark as virtual
         || testFunctionAttribute(def) || testFunctionRevision(def)) {}
     bool templateFunction = (lookup() == TEMPLATE);
     def->type = parseType();
@@ -466,8 +478,8 @@ bool Moc::parseMaybeFunction(const ClassDef *cdef, FunctionDef *def)
     def->isVirtual = false;
     def->isStatic = false;
     //skip modifiers and attributes
-    while (test(EXPLICIT) || test(INLINE) || (test(STATIC) && (def->isStatic = true)) ||
-        (test(VIRTUAL) && (def->isVirtual = true)) //mark as virtual
+    while (test(EXPLICIT) || test(INLINE) || (test(STATIC) && (def->isStatic = true) == true) ||
+        (test(VIRTUAL) && (def->isVirtual = true) == true) //mark as virtual
         || testFunctionAttribute(def) || testFunctionRevision(def)) {}
     bool tilde = test(TILDE);
     def->type = parseType();
@@ -690,9 +702,11 @@ void Moc::parse()
                     parsePluginData(&def);
                     break;
                 case Q_ENUMS_TOKEN:
+                case Q_ENUM_TOKEN:
                     parseEnumOrFlag(&def, false);
                     break;
                 case Q_FLAGS_TOKEN:
+                case Q_FLAG_TOKEN:
                     parseEnumOrFlag(&def, true);
                     break;
                 case Q_DECLARE_FLAGS_TOKEN:
@@ -810,7 +824,7 @@ static void findRequiredContainers(ClassDef *cdef, QSet<QByteArray> *requiredQtC
 
     for (int i = 0; i < cdef->propertyList.count(); ++i) {
         const PropertyDef &p = cdef->propertyList.at(i);
-        foreach (const QByteArray candidate, candidates) {
+        foreach (const QByteArray &candidate, candidates) {
             if (p.type.contains(candidate + "<"))
                 requiredQtContainers->insert(candidate);
         }
@@ -821,7 +835,7 @@ static void findRequiredContainers(ClassDef *cdef, QSet<QByteArray> *requiredQtC
     for (int i = 0; i < allFunctions.count(); ++i) {
         const FunctionDef &f = allFunctions.at(i);
         foreach (const ArgumentDef &arg, f.arguments) {
-            foreach (const QByteArray candidate, candidates) {
+            foreach (const QByteArray &candidate, candidates) {
                 if (arg.normalizedType.contains(candidate + "<"))
                     requiredQtContainers->insert(candidate);
             }
@@ -1051,6 +1065,7 @@ void Moc::createPropertyDef(PropertyDef &propDef)
         QByteArray v, v2;
         if (test(LPAREN)) {
             v = lexemUntil(RPAREN);
+            v = v.mid(1, v.length() - 2); // removes the '(' and ')'
         } else if (test(INTEGER_LITERAL)) {
             v = lexem();
             if (l != "REVISION")

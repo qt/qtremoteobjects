@@ -1,8 +1,8 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
+** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2013 Olivier Goffart <ogoffart@woboq.com>
-** Contact: http://www.qt-project.org/legal
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
 **
@@ -11,9 +11,9 @@
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and Digia. For licensing terms and
-** conditions see http://qt.digia.com/licensing. For further information
-** use the contact form at http://qt.digia.com/contact-us.
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
@@ -24,8 +24,8 @@
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** In addition, as a special exception, Digia gives you certain additional
-** rights. These rights are described in the Digia Qt LGPL Exception
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
@@ -230,13 +230,23 @@ void Generator::generateCode()
 //
 // Build stringdata struct
 //
+    const int constCharArraySizeLimit = 65535;
     fprintf(out, "struct qt_meta_stringdata_%s_t {\n", qualifiedClassNameIdentifier.constData());
     fprintf(out, "    QByteArrayData data[%d];\n", strings.size());
     {
-        int len = 0;
-        for (int i = 0; i < strings.size(); ++i)
-            len += strings.at(i).length() + 1;
-        fprintf(out, "    char stringdata[%d];\n", len);
+        int stringDataLength = 0;
+        int stringDataCounter = 0;
+        for (int i = 0; i < strings.size(); ++i) {
+            int thisLength = strings.at(i).length() + 1;
+            stringDataLength += thisLength;
+            if (stringDataLength / constCharArraySizeLimit) {
+                // save previous stringdata and start computing the next one.
+                fprintf(out, "    char stringdata%d[%d];\n", stringDataCounter++, stringDataLength - thisLength);
+                stringDataLength = thisLength;
+            }
+        }
+        fprintf(out, "    char stringdata%d[%d];\n", stringDataCounter, stringDataLength);
+
     }
     fprintf(out, "};\n");
 
@@ -247,7 +257,7 @@ void Generator::generateCode()
     // QByteArrayData::data() implementation returning simply "this + offset".
     fprintf(out, "#define QT_MOC_LITERAL(idx, ofs, len) \\\n"
             "    Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \\\n"
-            "    qptrdiff(offsetof(qt_meta_stringdata_%s_t, stringdata) + ofs \\\n"
+            "    qptrdiff(offsetof(qt_meta_stringdata_%s_t, stringdata0) + ofs \\\n"
             "        - idx * sizeof(QByteArrayData)) \\\n"
             "    )\n",
             qualifiedClassNameIdentifier.constData());
@@ -282,9 +292,18 @@ void Generator::generateCode()
     fprintf(out, "    \"");
     int col = 0;
     int len = 0;
+    int stringDataLength = 0;
     for (int i = 0; i < strings.size(); ++i) {
         QByteArray s = strings.at(i);
         len = s.length();
+        stringDataLength += len + 1;
+        if (stringDataLength >= constCharArraySizeLimit) {
+            fprintf(out, "\",\n    \"");
+            stringDataLength = len + 1;
+            col = 0;
+        } else if (i)
+            fputs("\\0", out); // add \0 at the end of each string
+
         if (col && col + len >= 72) {
             fprintf(out, "\"\n    \"");
             col = 0;
@@ -309,9 +328,6 @@ void Generator::generateCode()
             idx += spanLen;
             col += spanLen;
         }
-
-        if (i != strings.size() - 1) // skip the last \0 the c++ will add it for us
-            fputs("\\0", out);
         col += len + 2;
     }
 
@@ -359,7 +375,13 @@ void Generator::generateCode()
     fprintf(out, "    %4d, %4d, // constructors\n", isConstructible ? cdef->constructorList.count() : 0,
             isConstructible ? index : 0);
 
-    fprintf(out, "    %4d,       // flags\n", 0);
+    int flags = 0;
+    if (cdef->hasQGadget) {
+        // Ideally, all the classes could have that flag. But this broke classes generated
+        // by qdbusxml2cpp which generate code that require that we call qt_metacall for properties
+        flags |= PropertyAccessInStaticMetaCall;
+    }
+    fprintf(out, "    %4d,       // flags\n", flags);
     fprintf(out, "    %4d,       // signalCount\n", cdef->signalList.count());
 
 
@@ -425,7 +447,10 @@ void Generator::generateCode()
 //
 // Generate internal qt_static_metacall() function
 //
-    if (cdef->hasQObject && !isQt)
+    const bool hasStaticMetaCall = !isQt &&
+            (cdef->hasQObject || !cdef->methodList.isEmpty()
+             || !cdef->propertyList.isEmpty() || !cdef->constructorList.isEmpty());
+    if (hasStaticMetaCall)
         generateStaticMetacall();
 
 //
@@ -506,14 +531,14 @@ void Generator::generateCode()
 
     if (isQObject)
         fprintf(out, "    { Q_NULLPTR, ");
-    else if (cdef->superclassList.size())
+    else if (cdef->superclassList.size() && (!cdef->hasQGadget || knownGadgets.contains(purestSuperClass)))
         fprintf(out, "    { &%s::staticMetaObject, ", purestSuperClass.constData());
     else
         fprintf(out, "    { Q_NULLPTR, ");
     fprintf(out, "qt_meta_stringdata_%s.data,\n"
             "      qt_meta_data_%s, ", qualifiedClassNameIdentifier.constData(),
             qualifiedClassNameIdentifier.constData());
-    if (cdef->hasQObject && !isQt)
+    if (hasStaticMetaCall)
         fprintf(out, " qt_static_metacall, ");
     else
         fprintf(out, " Q_NULLPTR, ");
@@ -538,7 +563,7 @@ void Generator::generateCode()
 //
     fprintf(out, "\nvoid *%s::qt_metacast(const char *_clname)\n{\n", cdef->qualified.constData());
     fprintf(out, "    if (!_clname) return Q_NULLPTR;\n");
-    fprintf(out, "    if (!strcmp(_clname, qt_meta_stringdata_%s.stringdata))\n"
+    fprintf(out, "    if (!strcmp(_clname, qt_meta_stringdata_%s.stringdata0))\n"
                   "        return static_cast<void*>(const_cast< %s*>(this));\n",
             qualifiedClassNameIdentifier.constData(), cdef->classname.constData());
     for (int i = 1; i < cdef->superclassList.size(); ++i) { // for all superclasses but the first one
@@ -919,10 +944,6 @@ void Generator::generateMetacall()
     }
 
     if (cdef->propertyList.size()) {
-        bool needGet = false;
-        bool needTempVarForGet = false;
-        bool needSet = false;
-        bool needReset = false;
         bool needDesignable = false;
         bool needScriptable = false;
         bool needStored = false;
@@ -930,132 +951,21 @@ void Generator::generateMetacall()
         bool needUser = false;
         for (int i = 0; i < cdef->propertyList.size(); ++i) {
             const PropertyDef &p = cdef->propertyList.at(i);
-            needGet |= !p.read.isEmpty() || !p.member.isEmpty();
-            if (!p.read.isEmpty() || !p.member.isEmpty())
-                needTempVarForGet |= (p.gspec != PropertyDef::PointerSpec
-                                      && p.gspec != PropertyDef::ReferenceSpec);
-
-            needSet |= !p.write.isEmpty() || (!p.member.isEmpty() && !p.constant);
-            needReset |= !p.reset.isEmpty();
             needDesignable |= p.designable.endsWith(')');
             needScriptable |= p.scriptable.endsWith(')');
             needStored |= p.stored.endsWith(')');
             needEditable |= p.editable.endsWith(')');
             needUser |= p.user.endsWith(')');
         }
-        fprintf(out, "\n#ifndef QT_NO_PROPERTIES\n     ");
 
+        fprintf(out, "\n#ifndef QT_NO_PROPERTIES\n   ");
         if (needElse)
-            fprintf(out, " else ");
-        fprintf(out, "if (_c == QMetaObject::ReadProperty) {\n");
-        if (needGet) {
-            if (needTempVarForGet)
-                fprintf(out, "        void *_v = _a[0];\n");
-            fprintf(out, "        switch (_id) {\n");
-            for (int propindex = 0; propindex < cdef->propertyList.size(); ++propindex) {
-                const PropertyDef &p = cdef->propertyList.at(propindex);
-                if (p.read.isEmpty() && p.member.isEmpty())
-                    continue;
-                QByteArray prefix;
-                if (p.inPrivateClass.size()) {
-                    prefix = p.inPrivateClass;
-                    prefix.append("->");
-                }
-                if (p.gspec == PropertyDef::PointerSpec)
-                    fprintf(out, "        case %d: _a[0] = const_cast<void*>(reinterpret_cast<const void*>(%s%s())); break;\n",
-                            propindex, prefix.constData(), p.read.constData());
-                else if (p.gspec == PropertyDef::ReferenceSpec)
-                    fprintf(out, "        case %d: _a[0] = const_cast<void*>(reinterpret_cast<const void*>(&%s%s())); break;\n",
-                            propindex, prefix.constData(), p.read.constData());
-                else if (cdef->enumDeclarations.value(p.type, false))
-                    fprintf(out, "        case %d: *reinterpret_cast<int*>(_v) = QFlag(%s%s()); break;\n",
-                            propindex, prefix.constData(), p.read.constData());
-                else if (!p.read.isEmpty())
-                    fprintf(out, "        case %d: *reinterpret_cast< %s*>(_v) = %s%s(); break;\n",
-                            propindex, p.type.constData(), prefix.constData(), p.read.constData());
-                else
-                    fprintf(out, "        case %d: *reinterpret_cast< %s*>(_v) = %s%s; break;\n",
-                            propindex, p.type.constData(), prefix.constData(), p.member.constData());
-            }
-            fprintf(out, "        default: break;\n");
-            fprintf(out, "        }\n");
-        }
-
+            fprintf(out, "else ");
         fprintf(out,
-                "        _id -= %d;\n"
-                "    }", cdef->propertyList.count());
-
-        fprintf(out, " else ");
-        fprintf(out, "if (_c == QMetaObject::WriteProperty) {\n");
-
-        if (needSet) {
-            fprintf(out, "        void *_v = _a[0];\n");
-            fprintf(out, "        switch (_id) {\n");
-            for (int propindex = 0; propindex < cdef->propertyList.size(); ++propindex) {
-                const PropertyDef &p = cdef->propertyList.at(propindex);
-                if (p.constant)
-                    continue;
-                if (p.write.isEmpty() && p.member.isEmpty())
-                    continue;
-                QByteArray prefix;
-                if (p.inPrivateClass.size()) {
-                    prefix = p.inPrivateClass;
-                    prefix.append("->");
-                }
-                if (cdef->enumDeclarations.value(p.type, false)) {
-                    fprintf(out, "        case %d: %s%s(QFlag(*reinterpret_cast<int*>(_v))); break;\n",
-                            propindex, prefix.constData(), p.write.constData());
-                } else if (!p.write.isEmpty()) {
-                    fprintf(out, "        case %d: %s%s(*reinterpret_cast< %s*>(_v)); break;\n",
-                            propindex, prefix.constData(), p.write.constData(), p.type.constData());
-                } else {
-                    fprintf(out, "        case %d:\n", propindex);
-                    fprintf(out, "            if (%s%s != *reinterpret_cast< %s*>(_v)) {\n",
-                            prefix.constData(), p.member.constData(), p.type.constData());
-                    fprintf(out, "                %s%s = *reinterpret_cast< %s*>(_v);\n",
-                            prefix.constData(), p.member.constData(), p.type.constData());
-                    if (!p.notify.isEmpty() && p.notifyId != -1) {
-                        const FunctionDef &f = cdef->signalList.at(p.notifyId);
-                        if (f.arguments.size() == 0)
-                            fprintf(out, "                Q_EMIT %s();\n", p.notify.constData());
-                        else if (f.arguments.size() == 1 && f.arguments.at(0).normalizedType == p.type)
-                            fprintf(out, "                Q_EMIT %s(%s%s);\n",
-                                    p.notify.constData(), prefix.constData(), p.member.constData());
-                    }
-                    fprintf(out, "            }\n");
-                    fprintf(out, "            break;\n");
-                }
-            }
-            fprintf(out, "        default: break;\n");
-            fprintf(out, "        }\n");
-        }
-
-        fprintf(out,
-                "        _id -= %d;\n"
-                "    }", cdef->propertyList.count());
-
-        fprintf(out, " else ");
-        fprintf(out, "if (_c == QMetaObject::ResetProperty) {\n");
-        if (needReset) {
-            fprintf(out, "        switch (_id) {\n");
-            for (int propindex = 0; propindex < cdef->propertyList.size(); ++propindex) {
-                const PropertyDef &p = cdef->propertyList.at(propindex);
-                if (!p.reset.endsWith(')'))
-                    continue;
-                QByteArray prefix;
-                if (p.inPrivateClass.size()) {
-                    prefix = p.inPrivateClass;
-                    prefix.append("->");
-                }
-                fprintf(out, "        case %d: %s%s; break;\n",
-                        propindex, prefix.constData(), p.reset.constData());
-            }
-            fprintf(out, "        default: break;\n");
-            fprintf(out, "        }\n");
-        }
-        fprintf(out,
-                "        _id -= %d;\n"
-                "    }", cdef->propertyList.count());
+            "if (_c == QMetaObject::ReadProperty || _c == QMetaObject::WriteProperty\n"
+            "            || _c == QMetaObject::ResetProperty || _c == QMetaObject::RegisterPropertyMetaType) {\n"
+            "        qt_static_metacall(this, _c, _id, _a);\n"
+            "        _id -= %d;\n    }", cdef->propertyList.count());
 
         fprintf(out, " else ");
         fprintf(out, "if (_c == QMetaObject::QueryPropertyDesignable) {\n");
@@ -1153,16 +1063,6 @@ void Generator::generateMetacall()
                 "        _id -= %d;\n"
                 "    }", cdef->propertyList.count());
 
-        fprintf(out, " else ");
-        fprintf(out, "if (_c == QMetaObject::RegisterPropertyMetaType) {\n");
-        fprintf(out, "        if (_id < %d)\n", cdef->propertyList.size());
-
-        if (automaticPropertyMetaTypesHelper().isEmpty())
-            fprintf(out, "            *reinterpret_cast<int*>(_a[0]) = -1;\n");
-        else
-            fprintf(out, "            qt_static_metacall(this, _c, _id, _a);\n");
-        fprintf(out, "        _id -= %d;\n    }", cdef->propertyList.size());
-
         fprintf(out, "\n#endif // QT_NO_PROPERTIES");
     }
     if (methodList.size() || cdef->signalList.size() || cdef->propertyList.size())
@@ -1226,7 +1126,8 @@ void Generator::generateStaticMetacall()
                 fprintf(out, "%s", QByteArray("QPrivateSignal()").constData());
             }
             fprintf(out, ");\n");
-            fprintf(out, "            if (_a[0]) *reinterpret_cast<QObject**>(_a[0]) = _r; } break;\n");
+            fprintf(out, "            if (_a[0]) *reinterpret_cast<%s**>(_a[0]) = _r; } break;\n",
+                    cdef->hasQGadget ? "void" : "QObject");
         }
         fprintf(out, "        default: break;\n");
         fprintf(out, "        }\n");
@@ -1246,10 +1147,15 @@ void Generator::generateStaticMetacall()
         else
             fprintf(out, "    ");
         fprintf(out, "if (_c == QMetaObject::InvokeMetaMethod) {\n");
+        if (cdef->hasQObject) {
 #ifndef QT_NO_DEBUG
-        fprintf(out, "        Q_ASSERT(staticMetaObject.cast(_o));\n");
+            fprintf(out, "        Q_ASSERT(staticMetaObject.cast(_o));\n");
 #endif
-        fprintf(out, "        %s *_t = static_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            fprintf(out, "        %s *_t = static_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+        } else {
+            fprintf(out, "        %s *_t = reinterpret_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+        }
+        fprintf(out, "        Q_UNUSED(_t)\n");
         fprintf(out, "        switch (_id) {\n");
         for (int methodindex = 0; methodindex < methodList.size(); ++methodindex) {
             const FunctionDef &f = methodList.at(methodindex);
@@ -1348,6 +1254,7 @@ void Generator::generateStaticMetacall()
             fprintf(out, "            if (*reinterpret_cast<_t *>(func) == static_cast<_t>(&%s::%s)) {\n",
                     cdef->classname.constData(), f.name.constData());
             fprintf(out, "                *result = %d;\n", methodindex);
+            fprintf(out, "                return;\n");
             fprintf(out, "            }\n        }\n");
         }
         if (!anythingUsed)
@@ -1374,6 +1281,156 @@ void Generator::generateStaticMetacall()
         fprintf(out, "        }\n");
         fprintf(out, "    }\n");
         isUsed_a = true;
+        needElse = true;
+    }
+
+    if (!cdef->propertyList.empty()) {
+        bool needGet = false;
+        bool needTempVarForGet = false;
+        bool needSet = false;
+        bool needReset = false;
+        for (int i = 0; i < cdef->propertyList.size(); ++i) {
+            const PropertyDef &p = cdef->propertyList.at(i);
+            needGet |= !p.read.isEmpty() || !p.member.isEmpty();
+            if (!p.read.isEmpty() || !p.member.isEmpty())
+                needTempVarForGet |= (p.gspec != PropertyDef::PointerSpec
+                                      && p.gspec != PropertyDef::ReferenceSpec);
+
+            needSet |= !p.write.isEmpty() || (!p.member.isEmpty() && !p.constant);
+            needReset |= !p.reset.isEmpty();
+        }
+        fprintf(out, "\n#ifndef QT_NO_PROPERTIES\n    ");
+
+        if (needElse)
+            fprintf(out, "else ");
+        fprintf(out, "if (_c == QMetaObject::ReadProperty) {\n");
+        if (needGet) {
+            if (cdef->hasQObject) {
+#ifndef QT_NO_DEBUG
+                fprintf(out, "        Q_ASSERT(staticMetaObject.cast(_o));\n");
+#endif
+                fprintf(out, "        %s *_t = static_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            } else {
+                fprintf(out, "        %s *_t = reinterpret_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            }
+            fprintf(out, "        Q_UNUSED(_t)\n");
+            if (needTempVarForGet)
+                fprintf(out, "        void *_v = _a[0];\n");
+            fprintf(out, "        switch (_id) {\n");
+            for (int propindex = 0; propindex < cdef->propertyList.size(); ++propindex) {
+                const PropertyDef &p = cdef->propertyList.at(propindex);
+                if (p.read.isEmpty() && p.member.isEmpty())
+                    continue;
+                QByteArray prefix = "_t->";
+                if (p.inPrivateClass.size()) {
+                    prefix += p.inPrivateClass + "->";
+                }
+                if (p.gspec == PropertyDef::PointerSpec)
+                    fprintf(out, "        case %d: _a[0] = const_cast<void*>(reinterpret_cast<const void*>(%s%s())); break;\n",
+                            propindex, prefix.constData(), p.read.constData());
+                else if (p.gspec == PropertyDef::ReferenceSpec)
+                    fprintf(out, "        case %d: _a[0] = const_cast<void*>(reinterpret_cast<const void*>(&%s%s())); break;\n",
+                            propindex, prefix.constData(), p.read.constData());
+                else if (cdef->enumDeclarations.value(p.type, false))
+                    fprintf(out, "        case %d: *reinterpret_cast<int*>(_v) = QFlag(%s%s()); break;\n",
+                            propindex, prefix.constData(), p.read.constData());
+                else if (!p.read.isEmpty())
+                    fprintf(out, "        case %d: *reinterpret_cast< %s*>(_v) = %s%s(); break;\n",
+                            propindex, p.type.constData(), prefix.constData(), p.read.constData());
+                else
+                    fprintf(out, "        case %d: *reinterpret_cast< %s*>(_v) = %s%s; break;\n",
+                            propindex, p.type.constData(), prefix.constData(), p.member.constData());
+            }
+            fprintf(out, "        default: break;\n");
+            fprintf(out, "        }\n");
+        }
+
+        fprintf(out, "    }");
+
+        fprintf(out, " else ");
+        fprintf(out, "if (_c == QMetaObject::WriteProperty) {\n");
+
+        if (needSet) {
+            if (cdef->hasQObject) {
+#ifndef QT_NO_DEBUG
+                fprintf(out, "        Q_ASSERT(staticMetaObject.cast(_o));\n");
+#endif
+                fprintf(out, "        %s *_t = static_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            } else {
+                fprintf(out, "        %s *_t = reinterpret_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            }
+            fprintf(out, "        Q_UNUSED(_t)\n");
+            fprintf(out, "        void *_v = _a[0];\n");
+            fprintf(out, "        switch (_id) {\n");
+            for (int propindex = 0; propindex < cdef->propertyList.size(); ++propindex) {
+                const PropertyDef &p = cdef->propertyList.at(propindex);
+                if (p.constant)
+                    continue;
+                if (p.write.isEmpty() && p.member.isEmpty())
+                    continue;
+                QByteArray prefix = "_t->";
+                if (p.inPrivateClass.size()) {
+                    prefix += p.inPrivateClass + "->";
+                }
+                if (cdef->enumDeclarations.value(p.type, false)) {
+                    fprintf(out, "        case %d: %s%s(QFlag(*reinterpret_cast<int*>(_v))); break;\n",
+                            propindex, prefix.constData(), p.write.constData());
+                } else if (!p.write.isEmpty()) {
+                    fprintf(out, "        case %d: %s%s(*reinterpret_cast< %s*>(_v)); break;\n",
+                            propindex, prefix.constData(), p.write.constData(), p.type.constData());
+                } else {
+                    fprintf(out, "        case %d:\n", propindex);
+                    fprintf(out, "            if (%s%s != *reinterpret_cast< %s*>(_v)) {\n",
+                            prefix.constData(), p.member.constData(), p.type.constData());
+                    fprintf(out, "                %s%s = *reinterpret_cast< %s*>(_v);\n",
+                            prefix.constData(), p.member.constData(), p.type.constData());
+                    if (!p.notify.isEmpty() && p.notifyId != -1) {
+                        const FunctionDef &f = cdef->signalList.at(p.notifyId);
+                        if (f.arguments.size() == 0)
+                            fprintf(out, "                Q_EMIT _t->%s();\n", p.notify.constData());
+                        else if (f.arguments.size() == 1 && f.arguments.at(0).normalizedType == p.type)
+                            fprintf(out, "                Q_EMIT _t->%s(%s%s);\n",
+                                    p.notify.constData(), prefix.constData(), p.member.constData());
+                    }
+                    fprintf(out, "            }\n");
+                    fprintf(out, "            break;\n");
+                }
+            }
+            fprintf(out, "        default: break;\n");
+            fprintf(out, "        }\n");
+        }
+
+        fprintf(out, "    }");
+
+        fprintf(out, " else ");
+        fprintf(out, "if (_c == QMetaObject::ResetProperty) {\n");
+        if (needReset) {
+            if (cdef->hasQObject) {
+#ifndef QT_NO_DEBUG
+                fprintf(out, "        Q_ASSERT(staticMetaObject.cast(_o));\n");
+#endif
+                fprintf(out, "        %s *_t = static_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            } else {
+                fprintf(out, "        %s *_t = reinterpret_cast<%s *>(_o);\n", cdef->classname.constData(), cdef->classname.constData());
+            }
+            fprintf(out, "        Q_UNUSED(_t)\n");
+            fprintf(out, "        switch (_id) {\n");
+            for (int propindex = 0; propindex < cdef->propertyList.size(); ++propindex) {
+                const PropertyDef &p = cdef->propertyList.at(propindex);
+                if (!p.reset.endsWith(')'))
+                    continue;
+                QByteArray prefix = "_t->";
+                if (p.inPrivateClass.size()) {
+                    prefix += p.inPrivateClass + "->";
+                }
+                fprintf(out, "        case %d: %s%s; break;\n",
+                        propindex, prefix.constData(), p.reset.constData());
+            }
+            fprintf(out, "        default: break;\n");
+            fprintf(out, "        }\n");
+        }
+        fprintf(out, "    }");
+        fprintf(out, "\n#endif // QT_NO_PROPERTIES");
         needElse = true;
     }
 
@@ -1479,7 +1536,13 @@ static void writePluginMetaData(FILE *out, const QJsonObject &data)
     const QByteArray binary = doc.toBinaryData();
     const int last = binary.size() - 1;
     for (int i = 0; i < last; ++i) {
-        fprintf(out, " 0x%02x,", (uchar)binary.at(i));
+        uchar c = (uchar)binary.at(i);
+        if (c < 0x20 || c >= 0x7f)
+            fprintf(out, " 0x%02x,", c);
+        else if (c == '\'' || c == '\\')
+            fprintf(out, " '\\%c',", c);
+        else
+            fprintf(out, " '%c', ", c);
         if (!((i + 1) % 8))
             fputs("\n   ", out);
     }
