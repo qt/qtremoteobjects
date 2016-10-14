@@ -353,6 +353,7 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
     out << "class " << pod.name << "\n"
            "{\n"
            "    Q_GADGET\n"
+        << "\n"
         <<      formatQPropertyDeclarations(pod)
         << "public:\n"
         <<      formatConstructors(pod)
@@ -422,6 +423,7 @@ void RepCodeGenerator::generateENUMs(QTextStream &out, const QVector<ASTEnum> &e
            "{\n"
            "    Q_GADGET\n"
            "    " << className << "();\n"
+           "\n"
            "public:\n";
 
     generateDeclarationsForEnums(out, enums);
@@ -544,7 +546,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
 {
     const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : mode == SOURCE ? QStringLiteral("Source") : QStringLiteral("SimpleSource")));
     if (mode == REPLICA)
-        out << "class " << className << " : public QRemoteObjectReplica" << endl << endl;
+        out << "class " << className << " : public QRemoteObjectReplica" << endl;
     else
         out << "class " << className << " : public QObject" << endl;
 
@@ -552,7 +554,24 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "    Q_OBJECT" << endl;
     out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << endl;
     out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \"" << QLatin1String(classSignature(astClass)) << "\")" << endl;
-    out << "    friend class QRemoteObjectNode;" << endl;
+
+    //First output properties
+    Q_FOREACH (const ASTProperty &property, astClass.properties) {
+        out << "    Q_PROPERTY(" << property.type << " " << property.name << " READ " << property.name;
+        if (property.modifier == ASTProperty::Constant)
+            out << " CONSTANT";
+        else if (property.modifier == ASTProperty::ReadOnly)
+            out << " NOTIFY " << property.name << "Changed";
+        else if (property.modifier == ASTProperty::ReadWrite)
+            out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
+        out << ")" << endl;
+    }
+
+    if (!astClass.enums.isEmpty()) {
+        out << "" << endl;
+        out << "public:" << endl;
+        generateDeclarationsForEnums(out, astClass.enums);
+    }
 
     out << "" << endl;
     out << "public:" << endl;
@@ -565,6 +584,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "    " << className << "(QRemoteObjectNode *node, const QString &name = QString())" << endl;
         out << "        : QRemoteObjectReplica(ConstructWithNode)" << endl;
         out << "        { initializeNode(node, name); }" << endl;
+
+        out << "" << endl;
         out << "    void initialize()" << endl;
     } else {
         out << "    explicit " << className << "(QObject *parent = Q_NULLPTR) : QObject(parent)" << endl;
@@ -620,21 +641,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     } else {
         out << "    virtual ~" << className << "() {}" << endl;
     }
-
-    //First output properties
-    Q_FOREACH (const ASTProperty &property, astClass.properties) {
-        out << "    Q_PROPERTY(" << property.type << " " << property.name << " READ " << property.name;
-        if (property.modifier == ASTProperty::Constant)
-            out << " CONSTANT";
-        else if (property.modifier == ASTProperty::ReadOnly)
-            out << " NOTIFY " << property.name << "Changed";
-        else if (property.modifier == ASTProperty::ReadWrite)
-            out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
-        out << ")" << endl;
-    }
     out << "" << endl;
 
-    generateDeclarationsForEnums(out, astClass.enums);
     generateConversionFunctionsForEnums(out, astClass.enums);
 
     //Next output getter/setter
@@ -742,12 +750,18 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
     }
 
-    out << "};" << endl;
+    out << "" << endl;
+    out << "private:" << endl;
+    out << "    friend class QRemoteObjectNode;" << endl;
 
-    out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n";
+    out << "};" << endl;
+    out << "" << endl;
+
+    out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))" << endl;
     Q_FOREACH (const ASTEnum &en, astClass.enums)
-        out << "    Q_DECLARE_METATYPE(" << className << "::" << en.name << ")\n";
-    out <<  "#endif\n\n";
+        out << "    Q_DECLARE_METATYPE(" << className << "::" << en.name << ")" << endl;
+    out <<  "#endif" << endl;
+    out << "" << endl;
 
     generateStreamOperatorsForEnums(out, astClass.enums, className);
 
