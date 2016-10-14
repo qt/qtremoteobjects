@@ -553,10 +553,15 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << endl;
     out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \"" << QLatin1String(classSignature(astClass)) << "\")" << endl;
     out << "    friend class QRemoteObjectNode;" << endl;
+
+    out << "" << endl;
     out << "public:" << endl;
 
     if (mode == REPLICA) {
         out << "    " << className << "() : QRemoteObjectReplica() { initialize(); }" << endl;
+
+        out << "" << endl;
+        out << "private:" << endl;
         out << "    " << className << "(QRemoteObjectNode *node, const QString &name = QString())" << endl;
         out << "        : QRemoteObjectReplica(ConstructWithNode)" << endl;
         out << "        { initializeNode(node, name); }" << endl;
@@ -598,6 +603,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     }
 
     out << "    }" << endl;
+
+    out << "" << endl;
     out << "public:" << endl;
 
     if (mode == REPLICA && astClass.hasPersisted) {
