@@ -149,7 +149,7 @@ static QByteArray functionsData(const QVector<ASTFunction> &functions, const QHa
 
 QByteArray RepCodeGenerator::classSignature(const ASTClass &ac)
 {
-    QCryptographicHash checksum(QCryptographicHash::Sha256);
+    QCryptographicHash checksum(QCryptographicHash::Sha1);
     QHash<QString, QByteArray> localTypes = m_globalEnumsPODs;
     Q_FOREACH (const ASTEnum &e, ac.enums) // add local enums
         localTypes[e.name] = enumSignature(e);
