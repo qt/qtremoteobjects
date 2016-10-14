@@ -362,14 +362,25 @@ private slots:
 
     void delayedRegistryTest()
     {
+        QRemoteObjectNode client(registryUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        // create a replica before the registry host started
+        // to check whether it gets valid later on
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        Q_SET_OBJECT_NAME(engine_r.data());
+        QTRY_VERIFY(!engine_r->waitForSource(100));
+
         QRemoteObjectHost host(hostUrl, registryUrl);
         SET_NODE_NAME(host);
         const bool res = host.waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(host.registry()->isInitialized(), false);
+
         const QScopedPointer<Engine> localEngine(new Engine);
         host.enableRemoting(localEngine.data());
         QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), true);
+
         QSignalSpy spy(host.registry(), SIGNAL(initialized()));
         QSignalSpy addedSpy(host.registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
         QRemoteObjectRegistryHost registry(registryUrl);
@@ -380,6 +391,11 @@ private slots:
         QCOMPARE(host.registry()->sourceLocations().keys().isEmpty(), false);
         QCOMPARE(host.registry()->sourceLocations().keys().at(0), QStringLiteral("Engine"));
         QCOMPARE(host.registry()->sourceLocations().value(QStringLiteral("Engine")).hostUrl, hostUrl);
+
+        // the replicate should be valid now
+        QTRY_VERIFY(engine_r->isInitialized());
+        QTRY_VERIFY(engine_r->isReplicaValid());
+
         //This should produce a warning...
         registry.enableRemoting(localEngine.data());
         QVERIFY(host.registry()->sourceLocations().value(QStringLiteral("Engine")).hostUrl != registryUrl);
