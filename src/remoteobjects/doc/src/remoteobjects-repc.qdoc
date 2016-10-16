@@ -138,7 +138,7 @@
     in changing any values, those changes would then be propagated to ALL
     Replicas of that Source.
 
-    You can also use the \c CONSTANT and \c READONLY keywords in the PROP
+    You can also use the \c CONSTANT, \c READONLY, or \c PERSISTED keywords in the PROP
     declaration, which affect how this is implemented.
 
     \code
@@ -151,7 +151,11 @@
     cannot know the correct value until they are initialized, which means the
     property value has to be allowed to change during initialization. For
     READONLY, neither the Source or Replica side will have a property setter
-    method.
+    method. Adding the PERSISTED trait to a PROP will have the PROP use the \l
+    QRemoteObjectPersistedStore instance set on a Node (if any) to save/restore
+    PROP values.
+
+    \sa QRemoteObjectPersistedStore
 
     \section3 SIGNAL
 

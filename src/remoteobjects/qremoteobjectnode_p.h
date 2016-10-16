@@ -118,6 +118,8 @@ public:
     QRemoteObjectPackets::ObjectInfoList rxObjects;
     QVariantList rxArgs;
     QVariant rxValue;
+    QRemoteObjectPersistedStore *persistedStore;
+    QRemoteObjectNode::StorageOwnership persistedStoreOwnership;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 

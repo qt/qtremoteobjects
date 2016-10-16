@@ -79,10 +79,14 @@ QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     , registry(Q_NULLPTR)
     , retryInterval(250)
     , lastError(QRemoteObjectNode::NoError)
+    , persistedStore(Q_NULLPTR)
 { }
 
 QRemoteObjectNodePrivate::~QRemoteObjectNodePrivate()
-{ }
+{
+    if (persistedStore && persistedStoreOwnership == QRemoteObjectNode::PassOwnershipToNode)
+        delete persistedStore;
+}
 
 QRemoteObjectSourceLocations QRemoteObjectNodePrivate::remoteObjectAddresses() const
 {
@@ -169,6 +173,76 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 {
     Q_D(const QRemoteObjectNode);
     return d->registry;
+}
+
+/*!
+    \class QRemoteObjectPersistedStore
+    \inmodule QtRemoteObjects
+    \brief The QRemoteObjectPersistedStore virtual class provides the methods
+    for setting PROP values of a Replica to value they had the last time the
+    Replica was used.
+
+    This can be used to provide a "reasonable" value to be displayed until the
+    connection to the Source is established and current values are available.
+
+    This class must be overridden to provide an implementation for saving (\l
+    QRemoteObjectPersistedStore::saveProperties) and restoring (\l
+    QRemoteObjectPersistedStore::restoreProperties) PROP values. The derived
+    type can then be set for a Node, and any Replica acquired from that Node
+    will then automatically store PERSISTED properties when the Replica
+    destructor is called, and retrieve the values when the Replica is
+    instantiated.
+*/
+
+/*!
+    \fn virtual void QRemoteObjectPersistedStore::saveProperties(const QString &repName, const QVariantList &values)
+
+    This method will be provided the Replica class's \a repName and the list of
+    \a values that PERSISTED properties have when the Replica destructor was
+    called. It is the responsibility of the inheriting class to store the
+    information in a manner consistent for \l
+    QRemoteObjectPersistedStore::restoreProperties to retrieve.
+
+    \sa QRemoteObjectPersistedStore::restoreProperties
+*/
+
+/*!
+    \fn virtual QVariantList QRemoteObjectPersistedStore::restoreProperties(const QString &repName)
+
+    This method will be provided the Replica class's \a repName when the
+    Replica is being initialized. It is the responsibility of the inheriting
+    class to get the last values persisted by \l
+    QRemoteObjectPersistedStore::saveProperties and return them. An empty
+    QVariantList should be returned if no values are available.
+
+    \sa QRemoteObjectPersistedStore::saveProperties
+*/
+
+/*!
+    \enum QRemoteObjectNode::StorageOwnership
+
+    Used to tell a Node whether it should take ownership of a passed pointer or not:
+
+    \value DoNotPassOwnership The ownership of the object is not passed.
+    \value PassOwnershipToNode The ownership of the object is passed, and the Node destructor will call delete.
+*/
+
+/*!
+    Provides a \l QRemoteObjectPersistedStore \a store for the Node, allowing
+    Replica \l PROP members with the PERSISTED trait of \l PROP to save their
+    current value when the Replica is deleted and restore a stored value the
+    next time the Replica is started. Requires a \l QRemoteObjectPersistedStore
+    class implementation to control where and how persistence is handled. Use
+    the \l QRemoteObjectNode::StorageOwnership enum passed by \a ownership to
+    determine whether the Node will delete the provided pointer or not.
+
+    \sa QRemoteObjectPersistedStore, QRemoteObjectNode::StorageOwnership
+*/
+void QRemoteObjectNode::setPersistedStore(QRemoteObjectPersistedStore *store, StorageOwnership ownership)
+{
+    Q_D(QRemoteObjectNode);
+    d->persistedStore = store;
+    d->persistedStoreOwnership = ownership;
 }
 
 void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectReplica *instance)
@@ -657,6 +731,29 @@ bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteA
     if (a.isEmpty() || b.isEmpty())
         return true;
     return a == b;
+}
+
+
+void QRemoteObjectNode::persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props)
+{
+    Q_D(QRemoteObjectNode);
+    if (d->persistedStore) {
+        d->persistedStore->saveProperties(repName, repSig, props);
+    } else {
+        qCWarning(QT_REMOTEOBJECT) << qPrintable(objectName()) << "Unable to store persisted properties for" << repName;
+        qCWarning(QT_REMOTEOBJECT) << "    No persisted store set.";
+    }
+}
+
+QVariantList QRemoteObjectNode::retrieveProperties(const QString &repName, const QByteArray &repSig)
+{
+    Q_D(QRemoteObjectNode);
+    if (d->persistedStore) {
+        return d->persistedStore->restoreProperties(repName, repSig);
+    }
+    qCWarning(QT_REMOTEOBJECT) << qPrintable(objectName()) << "Unable to retrieve persisted properties for" << repName;
+    qCWarning(QT_REMOTEOBJECT) << "    No persisted store set.";
+    return QVariantList();
 }
 
 /*!

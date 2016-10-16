@@ -101,23 +101,29 @@ void tst_Parser::testProperties_data()
     QTest::addColumn<QString>("expectedName");
     QTest::addColumn<QString>("expectedDefaultValue");
     QTest::addColumn<ASTProperty::Modifier>("expectedModifier");
+    QTest::addColumn<bool>("expectedPersistence");
 
-    QTest::newRow("default") << "PROP(QString foo)" << "QString" << "foo" << QString() << ASTProperty::ReadWrite;
-    QTest::newRow("readonly") << "PROP(QString foo READONLY)" << "QString" << "foo" << QString() << ASTProperty::ReadOnly;
-    QTest::newRow("constant") << "PROP(QString foo CONSTANT)" << "QString" << "foo" << QString() << ASTProperty::Constant;
-    QTest::newRow("defaultWithValue") << "PROP(int foo=1)" << "int" << "foo" << "1" << ASTProperty::ReadWrite;
-    QTest::newRow("readonlyWithValue") << "PROP(int foo=1 READONLY)" << "int" << "foo" << "1" << ASTProperty::ReadOnly;
-    QTest::newRow("constantWithValue") << "PROP(int foo=1 CONSTANT)" << "int" << "foo" << "1" << ASTProperty::Constant;
-    QTest::newRow("defaultWhitespaces") << "PROP(  QString   foo  )" << "QString" << "foo" << QString() << ASTProperty::ReadWrite;
-    QTest::newRow("defaultWhitespacesBeforeParentheses") << "PROP     (  QString   foo  )" << "QString" << "foo" << QString() << ASTProperty::ReadWrite;
-    QTest::newRow("readonlyWhitespaces") << "PROP(  QString   foo   READONLY  )" << "QString" << "foo" << QString() << ASTProperty::ReadOnly;
-    QTest::newRow("constantWhitespaces") << "PROP(  QString   foo   CONSTANT  )" << "QString" << "foo" << QString() << ASTProperty::Constant;
-    QTest::newRow("defaultWithValueWhitespaces") << "PROP(  int foo  = 1 )" << "int" << "foo" << "1" << ASTProperty::ReadWrite;
-    QTest::newRow("readonlyWithValueWhitespaces") << "PROP(  int foo = 1 READONLY  )" << "int" << "foo" << "1" << ASTProperty::ReadOnly;
-    QTest::newRow("constantWithValueWhitespaces") << "PROP(  int foo = 1 CONSTANT )" << "int" << "foo" << "1" << ASTProperty::Constant;
-    QTest::newRow("templatetype") << "PROP(QVector<int> bar)" << "QVector<int>" << "bar" << QString() << ASTProperty::ReadWrite;
-    QTest::newRow("nested templatetype") << "PROP(QMap<int, QVector<int> > bar)" << "QMap<int, QVector<int> >" << "bar" << QString() << ASTProperty::ReadWrite;
-    QTest::newRow("non-int default value") << "PROP(double foo=1.1 CONSTANT)" << "double" << "foo" << "1.1" << ASTProperty::Constant;
+    QTest::newRow("default") << "PROP(QString foo)" << "QString" << "foo" << QString() << ASTProperty::ReadWrite << false;
+    QTest::newRow("readonly") << "PROP(QString foo READONLY)" << "QString" << "foo" << QString() << ASTProperty::ReadOnly << false;
+    QTest::newRow("constant") << "PROP(QString foo CONSTANT)" << "QString" << "foo" << QString() << ASTProperty::Constant << false;
+    QTest::newRow("persisted") << "PROP(QString foo PERSISTED)" << "QString" << "foo" << QString() << ASTProperty::ReadWrite << true;
+    QTest::newRow("readonly, persisted") << "PROP(QString foo READONLY, PERSISTED)" << "QString" << "foo" << QString() << ASTProperty::ReadOnly << true;
+    QTest::newRow("constant,persisted") << "PROP(QString foo CONSTANT, PERSISTED)" << "QString" << "foo" << QString() << ASTProperty::Constant << true;
+    QTest::newRow("constant,readonly,persisted") << "PROP(QString foo CONSTANT, READONLY, PERSISTED)" << "QString" << "foo" << QString() << ASTProperty::Constant << true;
+    QTest::newRow("readonly,constant,persisted") << "PROP(QString foo READONLY,CONSTANT, PERSISTED)" << "QString" << "foo" << QString() << ASTProperty::Constant << true;
+    QTest::newRow("defaultWithValue") << "PROP(int foo=1)" << "int" << "foo" << "1" << ASTProperty::ReadWrite << false;
+    QTest::newRow("readonlyWithValue") << "PROP(int foo=1 READONLY)" << "int" << "foo" << "1" << ASTProperty::ReadOnly << false;
+    QTest::newRow("constantWithValue") << "PROP(int foo=1 CONSTANT)" << "int" << "foo" << "1" << ASTProperty::Constant << false;
+    QTest::newRow("defaultWhitespaces") << "PROP(  QString   foo  )" << "QString" << "foo" << QString() << ASTProperty::ReadWrite << false;
+    QTest::newRow("defaultWhitespacesBeforeParentheses") << "PROP     (  QString   foo  )" << "QString" << "foo" << QString() << ASTProperty::ReadWrite << false;
+    QTest::newRow("readonlyWhitespaces") << "PROP(  QString   foo   READONLY  )" << "QString" << "foo" << QString() << ASTProperty::ReadOnly << false;
+    QTest::newRow("constantWhitespaces") << "PROP(  QString   foo   CONSTANT  )" << "QString" << "foo" << QString() << ASTProperty::Constant << false;
+    QTest::newRow("defaultWithValueWhitespaces") << "PROP(  int foo  = 1 )" << "int" << "foo" << "1" << ASTProperty::ReadWrite << false;
+    QTest::newRow("readonlyWithValueWhitespaces") << "PROP(  int foo = 1 READONLY  )" << "int" << "foo" << "1" << ASTProperty::ReadOnly << false;
+    QTest::newRow("constantWithValueWhitespaces") << "PROP(  int foo = 1 CONSTANT )" << "int" << "foo" << "1" << ASTProperty::Constant << false;
+    QTest::newRow("templatetype") << "PROP(QVector<int> bar)" << "QVector<int>" << "bar" << QString() << ASTProperty::ReadWrite << false;
+    QTest::newRow("nested templatetype") << "PROP(QMap<int, QVector<int> > bar)" << "QMap<int, QVector<int> >" << "bar" << QString() << ASTProperty::ReadWrite << false;
+    QTest::newRow("non-int default value") << "PROP(double foo=1.1 CONSTANT)" << "double" << "foo" << "1.1" << ASTProperty::Constant << false;
 }
 
 void tst_Parser::testProperties()
@@ -127,6 +133,7 @@ void tst_Parser::testProperties()
     QFETCH(QString, expectedName);
     QFETCH(QString, expectedDefaultValue);
     QFETCH(ASTProperty::Modifier, expectedModifier);
+    QFETCH(bool, expectedPersistence);
 
     QTemporaryFile file;
     file.open();
@@ -152,6 +159,7 @@ void tst_Parser::testProperties()
     QCOMPARE(property.name, expectedName);
     QCOMPARE(property.defaultValue, expectedDefaultValue);
     QCOMPARE(property.modifier, expectedModifier);
+    QCOMPARE(property.persisted, expectedPersistence);
 }
 
 void tst_Parser::testSlots_data()

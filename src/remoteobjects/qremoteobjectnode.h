@@ -61,6 +61,14 @@ class QRemoteObjectHostPrivate;
 class QRemoteObjectRegistryHostPrivate;
 class ClientIoDevice;
 
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPersistedStore
+{
+public:
+    virtual ~QRemoteObjectPersistedStore() {}
+    virtual void saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values) = 0;
+    virtual QVariantList restoreProperties(const QString &repName, const QByteArray &repSig) = 0;
+};
+
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode : public QObject
 {
     Q_OBJECT
@@ -80,6 +88,10 @@ public:
         HostUrlInvalid
     };
     Q_ENUM(ErrorCode)
+    enum StorageOwnership {
+        DoNotPassOwnership,
+        PassOwnershipToNode
+    };
 
     QRemoteObjectNode(QObject *parent = Q_NULLPTR);
     QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = Q_NULLPTR);
@@ -112,6 +124,7 @@ public:
     virtual bool setRegistryUrl(const QUrl &registryAddress);
     bool waitForRegistry(int timeout = 30000);
     const QRemoteObjectRegistry *registry() const;
+    void setPersistedStore(QRemoteObjectPersistedStore *store, StorageOwnership ownership=DoNotPassOwnership);
 
     ErrorCode lastError() const;
 
@@ -128,6 +141,8 @@ protected:
 
 private:
     void initializeReplica(QRemoteObjectReplica *instance, const QString &name = QString());
+    void persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props);
+    QVariantList retrieveProperties(const QString &repName, const QByteArray &repSig);
     Q_DECLARE_PRIVATE(QRemoteObjectNode)
     Q_PRIVATE_SLOT(d_func(), void onClientRead(QObject *obj))
     Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry))

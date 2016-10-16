@@ -582,13 +582,37 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             out << "        properties << QVariant::fromValue(" << property.type << "(" << property.defaultValue << "));" << endl;
         }
+        int nPersisted = 0;
+        if (astClass.hasPersisted) {
+            out << "        QVariantList stored = retrieveProperties(\"" << astClass.name << "\", \"" << classSignature(astClass) << "\");" << endl;
+            out << "        if (!stored.isEmpty()) {" << endl;
+            for (int i = 0; i < astClass.properties.size(); i++) {
+                if (astClass.properties.at(i).persisted) {
+                    out << "            properties[" << i << "] = stored.at(" << nPersisted << ");" << endl;
+                    nPersisted++;
+                }
+            }
+            out << "        }" << endl;
+        }
         out << "        setProperties(properties);" << endl;
     }
 
     out << "    }" << endl;
     out << "public:" << endl;
 
-    out << "    virtual ~" << className << "() {}" << endl;
+    if (mode == REPLICA && astClass.hasPersisted) {
+        out << "    virtual ~" << className << "() {" << endl;
+        out << "        QVariantList persisted;" << endl;
+        for (int i = 0; i < astClass.properties.size(); i++) {
+            if (astClass.properties.at(i).persisted) {
+                out << "        persisted << propAsVariant(" << i << ");" << endl;
+            }
+        }
+        out << "        persistProperties(\"" << astClass.name << "\", \"" << classSignature(astClass) << "\", persisted);" << endl;
+        out << "    }" << endl;
+    } else {
+        out << "    virtual ~" << className << "() {}" << endl;
+    }
 
     //First output properties
     Q_FOREACH (const ASTProperty &property, astClass.properties) {

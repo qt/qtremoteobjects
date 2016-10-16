@@ -79,6 +79,21 @@ Q_SIGNALS:
     void send(const QByteArray &data);
 };
 
+class Persist : public QRemoteObjectPersistedStore
+{
+public:
+    Persist() : type(EngineReplica::HYBRID) {}
+    void saveProperties(const QString &, const QByteArray &, const QVariantList &values) Q_DECL_OVERRIDE
+    {
+        type = values.at(0).value<EngineReplica::EngineType>();
+    }
+    QVariantList restoreProperties(const QString &, const QByteArray &) Q_DECL_OVERRIDE
+    {
+        return QVariantList() << QVariant::fromValue(type);
+    }
+    EngineReplica::EngineType type;
+};
+
 class tst_Integration: public QObject
 {
     Q_OBJECT
@@ -98,6 +113,62 @@ private slots:
     {
         // wait for delivery of RemoveObject events to the source
         QTest::qWait(200);
+    }
+
+    void basicTest()
+    {
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        e.setRpm(1234);
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->rpm(), e.rpm());
+    }
+
+    void persistRestoreTest()
+    {
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+        client.setPersistedStore(new Persist, QRemoteObjectNode::PassOwnershipToNode);
+
+        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        QCOMPARE(engine_r->engineType(), EngineReplica::HYBRID);
+    }
+
+    void persistTest()
+    {
+        Persist persist;
+
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        Engine e;
+        e.setEngineType(EngineSimpleSource::ELECTRIC);
+        host.enableRemoting(&e);
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+        client.setPersistedStore(&persist);
+
+        QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        engine_r->waitForSource();
+        QCOMPARE(engine_r->engineType(), EngineReplica::ELECTRIC);
+
+        // Delete to persist
+        engine_r.reset();
+        host.disableRemoting(&e);
+
+        engine_r.reset(client.acquire<EngineReplica>());
+        QCOMPARE(engine_r->waitForSource(1000), false);
+        QCOMPARE(engine_r->engineType(), EngineReplica::ELECTRIC);
     }
 
     void enumTest()
@@ -399,23 +470,6 @@ private slots:
         //This should produce a warning...
         registry.enableRemoting(localEngine.data());
         QVERIFY(host.registry()->sourceLocations().value(QStringLiteral("Engine")).hostUrl != registryUrl);
-    }
-
-    void basicTest()
-    {
-        QRemoteObjectHost host(hostUrl);
-        SET_NODE_NAME(host);
-        Engine e;
-        e.setRpm(1234);
-        host.enableRemoting(&e);
-
-        QRemoteObjectNode client;
-        client.connectToNode(hostUrl);
-        Q_SET_OBJECT_NAME(client);
-
-        const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
-        engine_r->waitForSource();
-        QCOMPARE(engine_r->rpm(), e.rpm());
     }
 
     void defaultValueTest()

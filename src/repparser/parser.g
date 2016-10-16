@@ -84,12 +84,13 @@ struct ASTProperty
     };
 
     ASTProperty();
-    ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier);
+    ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier, bool persisted);
 
     QString type;
     QString name;
     QString defaultValue;
     Modifier modifier;
+    bool persisted;
 };
 Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
@@ -173,6 +174,7 @@ struct ASTClass
     QVector<ASTFunction> signalsList;
     QVector<ASTFunction> slotsList;
     QVector<ASTEnum> enums;
+    bool hasPersisted;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -234,7 +236,7 @@ private:
 
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
     /// A helper function to parse modifier flag of property declaration
-    bool parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier);
+    bool parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier, bool &persisted);
 
     AST m_ast;
 
@@ -288,12 +290,12 @@ static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
 }
 
 ASTProperty::ASTProperty()
-    : modifier(ReadWrite)
+    : modifier(ReadWrite), persisted(false)
 {
 }
 
-ASTProperty::ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier)
-    : type(type), name(name), defaultValue(defaultValue), modifier(modifier)
+ASTProperty::ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier, bool persisted)
+    : type(type), name(name), defaultValue(defaultValue), modifier(modifier), persisted(persisted)
 {
 }
 
@@ -348,7 +350,7 @@ ASTEnum::ASTEnum(const QString &name)
 }
 
 ASTClass::ASTClass(const QString &name)
-    : name(name)
+    : name(name), hasPersisted(false)
 {
 }
 
@@ -371,15 +373,27 @@ void RepParser::reset()
     //setDebug();
 }
 
-bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier)
+bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier, bool &persisted)
 {
-    if (flag == QStringLiteral("READONLY")) {
-        modifier = ASTProperty::ReadOnly;
-    } else if (flag == QStringLiteral("CONSTANT")) {
-        modifier = ASTProperty::Constant;
-    } else {
-        setErrorString(QStringLiteral("Invalid property declaration: flag %1 is unknown").arg(flag));
-        return false;
+    QRegExp regex(QStringLiteral("\\s*,\\s*"));
+    QStringList flags = flag.split(regex);
+    foreach (const QString &f, flags) {
+        if (f == QStringLiteral("READONLY")) {
+            if (modifier != ASTProperty::ReadWrite) {
+                // If we have READONLY and CONSTANT that means CONSTANT
+                modifier = ASTProperty::Constant;
+            } else {
+                modifier = ASTProperty::ReadOnly;
+            }
+        } else if (f == QStringLiteral("CONSTANT")) {
+            // We can set to Constant whether READONLY or READWRITE
+            modifier = ASTProperty::Constant;
+        } else if (f == QStringLiteral("PERSISTED")) {
+            persisted = true;
+        } else {
+            setErrorString(QStringLiteral("Invalid property declaration: flag %1 is unknown").arg(flag));
+            return false;
+        }
     }
 
     return true;
@@ -392,7 +406,8 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     QString propertyType;
     QString propertyName;
     QString propertyDefaultValue;
-    ASTProperty::Modifier propertyModifier;
+    ASTProperty::Modifier propertyModifier = ASTProperty::ReadWrite;
+    bool persisted = false;
 
     // parse type declaration which could be a nested template as well
     bool inTemplate = false;
@@ -443,7 +458,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
             propertyDefaultValue = input.left(whitespaceIndex).trimmed();
 
             const QString flag = input.mid(whitespaceIndex + 1).trimmed();
-            if (!parseModifierFlag(flag, propertyModifier))
+            if (!parseModifierFlag(flag, propertyModifier, persisted))
                 return false;
         }
     } else { // there is no default value
@@ -455,12 +470,14 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
             propertyName = input.left(whitespaceIndex).trimmed();
 
             const QString flag = input.mid(whitespaceIndex + 1).trimmed();
-            if (!parseModifierFlag(flag, propertyModifier))
+            if (!parseModifierFlag(flag, propertyModifier, persisted))
                 return false;
         }
     }
 
-    astClass.properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier);
+    astClass.properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier, persisted);
+    if (persisted)
+        astClass.hasPersisted = true;
     return true;
 }
 

@@ -173,6 +173,30 @@ void QRemoteObjectReplicaPrivate::emitInitialized()
     QMetaObject::activate(this, metaObject(), initializedIndex, noArgs);
 }
 
+/*!
+    \internal
+*/
+void QRemoteObjectReplica::persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props) const
+{
+    if (!node()) {
+        qWarning("Tried calling persistProperties on a Replica (%s) that hasn't been initialized with a Node", qPrintable(repName));
+        return;
+    }
+    node()->persistProperties(repName, repSig, props);
+}
+
+/*!
+    \internal
+*/
+QVariantList QRemoteObjectReplica::retrieveProperties(const QString &repName, const QByteArray &repSig) const
+{
+    if (!node()) {
+        qWarning("Tried calling retrieveProperties on a Replica (%s) that hasn't been initialized with a Node", qPrintable(repName));
+        return QVariantList();
+    }
+    return node()->retrieveProperties(repName, repSig);
+}
+
 void QRemoteObjectReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
 {
     Q_ASSERT(!m_metaObject);
