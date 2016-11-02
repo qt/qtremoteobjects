@@ -105,6 +105,14 @@ void QRemoteObjectReplicaPrivate::setState(QRemoteObjectReplica::State state)
 
     int oldState = m_state;
     m_state = state;
+
+    // We should emit initialized before emitting any changed signals in case connections are made in a
+    // Slot responding to initialized/validChanged.
+    if (oldState < QRemoteObjectReplica::Valid && m_state == QRemoteObjectReplica::Valid) {
+        // we're initialized now, emit signal
+        emitInitialized();
+    }
+
     const static int stateChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("stateChanged(State,State)");
     Q_ASSERT(stateChangedIndex != -1);
     void *args[] = {0, &state, &oldState};
@@ -140,14 +148,7 @@ void QConnectedReplicaPrivate::initialize(const QVariantList &values)
         qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name() << values.at(i).typeName() << values.at(i).toString();
     }
 
-    //initialized and validChanged need to be sent manually, since they are not in the derived classes
-    //We should emit initialized before emitting any changed signals in case connections are made in a
-    //Slot responding to initialized/validChanged.
-    if (m_state < QRemoteObjectReplica::Valid) {
-        //We need to send the initialized signal, too
-        emitInitialized();
-    }
-    //We are already initialized, now we are valid again
+    Q_ASSERT(m_state < QRemoteObjectReplica::Valid);
     setState(QRemoteObjectReplica::Valid);
 
     void *args[] = {Q_NULLPTR, Q_NULLPTR};
@@ -213,15 +214,8 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &bu
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();
 
-    //initialized and validChanged need to be sent manually, since they are not in the derived classes
-    //We should emit initialized before emitting any changed signals in case connections are made in a
-    //Slot responding to initialized/validChanged.
-    if (m_state < QRemoteObjectReplica::Valid) {
-        //We need to send the initialized signal, too
-        emitInitialized();
-    }
+    Q_ASSERT(m_state < QRemoteObjectReplica::Valid);
     setState(QRemoteObjectReplica::Valid);
-
 
     void *args[] = {Q_NULLPTR, Q_NULLPTR};
     for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
