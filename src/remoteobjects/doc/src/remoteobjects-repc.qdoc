@@ -107,7 +107,7 @@
     Q_PROPERTY elements are created by using the PROP keyword in the rep
     file. The syntax is the \c PROP keyword followed by the definition enclosed
     in quotes, where the definition is the type, the name and (optionally) a
-    default value.
+    default value or attributes.
     \code
         PROP(bool simpleBool)                // boolean named simpleBool
         PROP(bool defaultFalseBool=false)    // boolean named defaultFalseBool, with false
@@ -117,6 +117,11 @@
         PROP(QByteArray myBinaryInfo)        // Qt types are fine, may need #include
                                              // additional headers in your rep file
 
+        PROP(QString name CONSTANT)          // Property with the CONSTANT attribute
+        PROP(QString setable READWRITE)      // Property with the READWRITE attribute
+                                             // note: Properties default to READPUSH
+                                             // (see description below)
+
         PROP(SomeOtherType myCustomType)     // Custom types work. Needs #include for the
                                              // appropriate header for your type, make
                                              // sure your type is known to the metabject
@@ -124,22 +129,85 @@
                                              // Connections (see Q_DECLARE_METATYPE and
                                              // qRegisterMetaType)
     \endcode
-    More information about creating custom types can be found \l {Creating Custom Qt Types} {here}.
+    More information about creating custom types can be found \l {Creating
+    Custom Qt Types} {here}.
 
-    By default, properties will have getters and setters as well as a notify
-    signal emitted when the value is changed. Qt Remote Objects needs the
-    notify signal on the Source object to trigger sending updates to the
-    attached Replicas.
+    By default, properties will have getters and a "push" Slot defined, as well
+    as a notify signal emitted when the value is changed. Qt Remote Objects
+    requires the notify signal on the Source object to trigger sending updates
+    to the attached Replicas. In earlier versions of QtRO, properties defaulted
+    to being read/write, i.e., having getters and setters. However, due to the
+    asynchronous nature of QtRO, this led to unintuitive behavior at times.
+    Setting the READWRITE attribute on the PROP will provide the old (getter
+    and setter) behavior.
+    \code
+        // In .rep file, old (setter) behavior
+        PROP(int myVal READWRITE)             // Old behavior with setMyVal(int myVal) method
 
-    Calling a setter on a Replica will not directly change the value. This
-    would break the expected behavior as otherwise the Replica would not match
-    the Source anymore. Instead, the setter would pass the set call back to the
-    Source where the Source object's setter would be called. If this resulted
-    in changing any values, those changes would then be propagated to ALL
-    Replicas of that Source.
+        // In code...  Assume myVal is initially set to 0 in Source
+        int originalValue = rep->myVal();     // Will be 0
+        rep->setMyVal(10);                    // Call setter, expecting a blocking/
+                                              // non-asynchronous return
 
-    You can also use the \c CONSTANT, \c READONLY, or \c PERSISTED keywords in the PROP
-    declaration, which affect how this is implemented.
+        if (rep->myVal() == 10) ...           // Test will usually fail
+    \endcode
+
+    If it is necessary to block until the value is changed, something like the
+    following is necessary.
+    \code
+        // In .rep file, old (setter) behavior
+        PROP(int myVal READWRITE)             // Old behavior with setMyVal(int myVal) method
+
+        // In code...  Assume myVal is initially set to 0 in Source
+        bool originalValue = rep->myVal();    // Will be 0
+
+        // We can wait for the change using \l QSignalSpy
+        QSignalSpy spy(rep, SIGNAL(myValChanged(int)));
+
+        rep->setMyVal(10);                    // Call setter, expecting a blocking/
+                                              // non-asynchronous return
+
+        spy.wait();                           // spy.wait() blocks until changed signal
+                                              // is received
+        if (rep->myVal() == 10) ...           // Test will succeed assuming
+                                              // 1. Source object is connected
+                                              // 2. Nobody else (Source or other Replica)
+                                              //    set the myVal to something else (race
+                                              //    condition)
+        // Rather than use QSignalSpy, the event-driven practice would be to connect the
+        // myValChanged notify signal to a Slot that responds to the changes.
+    \endcode
+
+    QtRO now defaults to READPUSH, which provides an automatically generated
+    Slot for requesting a property change.
+    \code
+        // In .rep file, defaults to READPUSH
+        PROP(bool myVal)                      // No setMyVal(int myVal) on Replica, has
+                                              // pushMyVal(int myVal) instead
+
+        // In code...  Assume myVal is initially set to 0 in Source
+        bool originalValue = rep->myVal();    // Will be 0
+
+        // We can wait for the change using \l QSignalSpy
+        QSignalSpy spy(rep, SIGNAL(myValChanged(int)));
+
+        rep->pushMyVal(10);                   // Call push method, no expectation that change
+                                              // is applied upon method completion.
+
+        // Some way of waiting for change to be received by the Replica is still necessary,
+        // but hopefully not a surprise with the new pushMyVal() Slot.
+        spy.wait();                           // spy.wait() blocks until changed signal
+                                              // is received
+        if (rep->myVal() == 10) ...           // Test will succeed assuming
+                                              // 1. Source object is connected
+                                              // 2. Nobody else (Source or other Replica)
+                                              //    set the myVal to something else (race
+                                              //    condition)
+    \endcode
+
+    You can also use the \c CONSTANT, \c READONLY, \c PERSISTED, \c READWRITE
+    or \c READPUSH keywords in the PROP declaration, which affect how this is
+    implemented.  READPUSH is the default value if no value used.
 
     \code
         PROP(int lifeUniverseEverything=42 CONSTANT)
@@ -150,10 +218,10 @@
     Q_PROPERTY declared as CONSTANT on the SOURCE side. However, Replicas
     cannot know the correct value until they are initialized, which means the
     property value has to be allowed to change during initialization. For
-    READONLY, neither the Source or Replica side will have a property setter
-    method. Adding the PERSISTED trait to a PROP will have the PROP use the \l
-    QRemoteObjectPersistedStore instance set on a Node (if any) to save/restore
-    PROP values.
+    READONLY, the Source will have neither a setter nor a push Slot, and the
+    Replica side will not have a push Slot generated. Adding the PERSISTED
+    trait to a PROP will have the PROP use the \l QRemoteObjectPersistedStore
+    instance set on a Node (if any) to save/restore PROP values.
 
     \sa QRemoteObjectPersistedStore
 

@@ -564,6 +564,12 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << " NOTIFY " << property.name << "Changed";
         else if (property.modifier == ASTProperty::ReadWrite)
             out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
+        else if (property.modifier == ASTProperty::ReadPush) {
+            if (mode == REPLICA) // The setter slot isn't known to the PROP
+                out << " NOTIFY " << property.name << "Changed";
+            else // The Source can use the setter, since non-asynchronous
+                out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
+        }
         out << ")" << endl;
     }
 
@@ -674,7 +680,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         Q_FOREACH (const ASTProperty &property, astClass.properties)
             out << "    virtual " << property.type << " " << property.name << "() const = 0;" << endl;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
-            if (property.modifier == ASTProperty::ReadWrite)
+            if (property.modifier == ASTProperty::ReadWrite ||
+                    property.modifier == ASTProperty::ReadPush)
                 out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ") = 0;" << endl;
         }
     } else {
@@ -682,7 +689,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << "    virtual " << property.type << " " << property.name << "() const { return _" << property.name << "; }" << endl;
         }
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
-            if (property.modifier == ASTProperty::ReadWrite) {
+            if (property.modifier == ASTProperty::ReadWrite ||
+                    property.modifier == ASTProperty::ReadPush) {
                 out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
                 out << "    {" << endl;
                 out << "        if (" << property.name << " != _" << property.name << ") { " << endl;
@@ -706,9 +714,32 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         Q_FOREACH (const ASTFunction &signal, astClass.signalsList)
             out << "    void " << signal.name << "(" << signal.paramsAsString() << ");" << endl;
     }
-    if (!astClass.slotsList.isEmpty()) {
+    bool hasWriteSlots = false;
+    Q_FOREACH (const ASTProperty &property, astClass.properties) {
+        if (property.modifier == ASTProperty::ReadPush)
+            hasWriteSlots = true;
+    }
+    if (hasWriteSlots || !astClass.slotsList.isEmpty()) {
         out << "" << endl;
         out << "public Q_SLOTS:" << endl;
+        Q_FOREACH (const ASTProperty &property, astClass.properties) {
+            if (property.modifier == ASTProperty::ReadPush) {
+                if (mode != REPLICA) {
+                    out << "    virtual void push" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+                    out << "    {" << endl;
+                    out << "        set" << cap(property.name) << "(" << property.name << ");" << endl;
+                    out << "    }" << endl;
+                } else {
+                    out << "    void push" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+                    out << "    {" << endl;
+                    out << "        static int __repc_index = " << className << "::staticMetaObject.indexOfSlot(\"push" << cap(property.name) << "(" << property.type << ")\");" << endl;
+                    out << "        QVariantList __repc_args;" << endl;
+                    out << "        __repc_args << QVariant::fromValue(" << property.name << ");" << endl;
+                    out << "        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);" << endl;
+                    out << "    }" << endl;
+                }
+            }
+        }
         Q_FOREACH (const ASTFunction &slot, astClass.slotsList) {
             if (mode != REPLICA) {
                 out << "    virtual " << slot.returnType << " " << slot.name << "(" << slot.paramsAsString() << ") = 0;" << endl;

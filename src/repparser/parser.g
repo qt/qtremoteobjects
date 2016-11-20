@@ -80,6 +80,7 @@ struct ASTProperty
     {
         Constant,
         ReadOnly,
+        ReadPush,
         ReadWrite
     };
 
@@ -290,7 +291,7 @@ static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
 }
 
 ASTProperty::ASTProperty()
-    : modifier(ReadWrite), persisted(false)
+    : modifier(ReadPush), persisted(false)
 {
 }
 
@@ -377,23 +378,33 @@ bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &mo
 {
     QRegExp regex(QStringLiteral("\\s*,\\s*"));
     QStringList flags = flag.split(regex);
-    foreach (const QString &f, flags) {
-        if (f == QStringLiteral("READONLY")) {
-            if (modifier != ASTProperty::ReadWrite) {
-                // If we have READONLY and CONSTANT that means CONSTANT
-                modifier = ASTProperty::Constant;
-            } else {
-                modifier = ASTProperty::ReadOnly;
-            }
-        } else if (f == QStringLiteral("CONSTANT")) {
-            // We can set to Constant whether READONLY or READWRITE
+    persisted = flags.removeAll(QStringLiteral("PERSISTED")) > 0;
+    if (flags.length() == 0)
+        return true;
+    if (flags.length() > 1) {
+        // Only valid combination is "READONLY" and "CONSTANT"
+        if (flags.length() == 2 && flags.contains(QStringLiteral("READONLY")) &&
+            flags.contains(QStringLiteral("CONSTANT"))) {
+            // If we have READONLY and CONSTANT that means CONSTANT
             modifier = ASTProperty::Constant;
-        } else if (f == QStringLiteral("PERSISTED")) {
-            persisted = true;
+            return true;
         } else {
-            setErrorString(QStringLiteral("Invalid property declaration: flag %1 is unknown").arg(flag));
+            setErrorString(QStringLiteral("Invalid property declaration: combination not allowed (%1)").arg(flag));
             return false;
         }
+    }
+    const QString &f = flags.at(0);
+    if (f == QStringLiteral("READONLY"))
+        modifier = ASTProperty::ReadOnly;
+    else if (f == QStringLiteral("CONSTANT"))
+        modifier = ASTProperty::Constant;
+    else if (f == QStringLiteral("READPUSH"))
+        modifier = ASTProperty::ReadPush;
+    else if (f == QStringLiteral("READWRITE"))
+        modifier = ASTProperty::ReadWrite;
+    else {
+        setErrorString(QStringLiteral("Invalid property declaration: flag %1 is unknown").arg(flag));
+        return false;
     }
 
     return true;
@@ -406,7 +417,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     QString propertyType;
     QString propertyName;
     QString propertyDefaultValue;
-    ASTProperty::Modifier propertyModifier = ASTProperty::ReadWrite;
+    ASTProperty::Modifier propertyModifier = ASTProperty::ReadPush;
     bool persisted = false;
 
     // parse type declaration which could be a nested template as well
@@ -453,7 +464,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
         const int whitespaceIndex = input.indexOf(QLatin1Char(' '));
         if (whitespaceIndex == -1) { // no flag given
             propertyDefaultValue = input;
-            propertyModifier = ASTProperty::ReadWrite;
+            propertyModifier = ASTProperty::ReadPush;
         } else { // flag given
             propertyDefaultValue = input.left(whitespaceIndex).trimmed();
 
@@ -465,7 +476,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
         const int whitespaceIndex = input.indexOf(QLatin1Char(' '));
         if (whitespaceIndex == -1) { // no flag given
             propertyName = input;
-            propertyModifier = ASTProperty::ReadWrite;
+            propertyModifier = ASTProperty::ReadPush;
         } else { // flag given
             propertyName = input.left(whitespaceIndex).trimmed();
 

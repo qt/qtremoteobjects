@@ -5,4 +5,5 @@ class TestClass
     ENUM ClassEnum {Null, One, Two}
     PROP(TestEnum::Test testEnum)
     PROP(ClassEnum classEnum)
+    PROP(ClassEnum classEnumRW READWRITE)
 }

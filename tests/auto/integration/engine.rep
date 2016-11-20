@@ -5,7 +5,7 @@ class Engine
     ENUM EngineType { GAS=0, ELECTRIC=1, HYBRID=2 }
     PROP(int cylinders = 4 CONSTANT);
     PROP(bool started);
-    PROP(int rpm);
+    PROP(int rpm READWRITE);
     PROP(EngineType engineType=GAS PERSISTED)
 
     SLOT(bool start());
