@@ -43,24 +43,6 @@
 
 #include <QItemSelectionModel>
 
-struct IndexRange
-{
-    IndexRange() {}
-    IndexRange(const QModelIndex &parent, int startRow, int endRow, int startColumn, int endColumn)
-        : parent(parent)
-        , startRow(startRow)
-        , endRow(endRow)
-        , startColumn(startColumn)
-        , endColumn(endColumn)
-    {}
-
-    QModelIndex parent;
-    int startRow;
-    int endRow;
-    int startColumn;
-    int endColumn;
-};
-
 // consider evaluating performance difference with item data
 inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model, const QVector<int> &roles)
 {
