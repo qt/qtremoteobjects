@@ -80,6 +80,7 @@ QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     , retryInterval(250)
     , lastError(QRemoteObjectNode::NoError)
     , persistedStore(Q_NULLPTR)
+    , persistedStoreOwnership(QRemoteObjectNode::DoNotPassOwnership)
 { }
 
 QRemoteObjectNodePrivate::~QRemoteObjectNodePrivate()

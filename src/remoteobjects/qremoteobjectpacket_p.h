@@ -110,6 +110,7 @@ public:
     DataStreamPacket(quint16 id = QtRemoteObjects::InvokePacket)
         : QDataStream(&array, QIODevice::WriteOnly)
         , baseAddress(0)
+        , size(0)
     {
         this->setVersion(QtRemoteObjects::dataStreamVersion);
         *this << quint32(0);

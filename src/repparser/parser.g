@@ -361,7 +361,7 @@ bool ASTClass::isValid() const
 }
 
 RepParser::RepParser(QIODevice &outputDevice)
-    : QRepRegexParser()
+    : QRepRegexParser(), m_astEnumValue(-1)
 {
     setBufferFromDevice(&outputDevice);
 }
