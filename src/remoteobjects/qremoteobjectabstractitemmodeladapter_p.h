@@ -112,43 +112,35 @@ private:
     QItemSelectionModel *m_selectionModel;
     QVector<int> m_availableRoles;
 };
-namespace{
-    const int s1[] = {qMetaTypeId<IndexList>(), qMetaTypeId<IndexList>(), qMetaTypeId<QVector<int> >()};
-    const int s2[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int s3[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int s4[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>(), qMetaTypeId<IndexList>(),qMetaTypeId<int>()};
-    const int s5[] = {qMetaTypeId<IndexList>(), qMetaTypeId<IndexList>()};
-    const int s7[] = {qMetaTypeId<Qt::Orientation>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int s8[] = {qMetaTypeId<IndexList>(), qMetaTypeId<int>(), qMetaTypeId<int>()};
-    const int * const signalArgTypes[] = {Q_NULLPTR, s1, s2, s3, s4, s5, Q_NULLPTR, s7, s8};
-}
 
 template <class ObjectType, class AdapterType>
 struct QAbstractItemAdapterSourceAPI : public SourceApiMap
 {
     QAbstractItemAdapterSourceAPI(const QString &name)
         : SourceApiMap()
+        , signalArgTypes{}
+        , methodArgTypes{}
         , m_name(name)
     {
         _properties[0] = 2;
         _properties[1] = qtro_prop_index<AdapterType>(&AdapterType::availableRoles, static_cast<QVector<int> (QObject::*)()>(0),"availableRoles");
         _properties[2] = qtro_prop_index<AdapterType>(&AdapterType::roleNames, static_cast<QIntHash (QObject::*)()>(0),"roleNames");
         _signals[0] = 9;
-        _signals[1] = qtro_signal_index<AdapterType>(&AdapterType::availableRolesChanged, static_cast<void (QObject::*)()>(0),signalArgCount+0,signalArgTypes[0]);
-        _signals[2] = qtro_signal_index<AdapterType>(&AdapterType::dataChanged, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),signalArgCount+1,signalArgTypes[1]);
-        _signals[3] = qtro_signal_index<AdapterType>(&AdapterType::rowsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+2,signalArgTypes[2]);
-        _signals[4] = qtro_signal_index<AdapterType>(&AdapterType::rowsRemoved, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+3,signalArgTypes[3]);
-        _signals[5] = qtro_signal_index<AdapterType>(&AdapterType::rowsMoved, static_cast<void (QObject::*)(IndexList,int,int,IndexList,int)>(0),signalArgCount+4,signalArgTypes[4]);
-        _signals[6] = qtro_signal_index<AdapterType>(&AdapterType::currentChanged, static_cast<void (QObject::*)(IndexList,IndexList)>(0),signalArgCount+5,signalArgTypes[5]);
-        _signals[7] = qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(0),signalArgCount+6,signalArgTypes[6]);
-        _signals[8] = qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(0),signalArgCount+7,signalArgTypes[7]);
-        _signals[9] = qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+8,signalArgTypes[8]);
+        _signals[1] = qtro_signal_index<AdapterType>(&AdapterType::availableRolesChanged, static_cast<void (QObject::*)()>(0),signalArgCount+0,&signalArgTypes[0]);
+        _signals[2] = qtro_signal_index<AdapterType>(&AdapterType::dataChanged, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),signalArgCount+1,&signalArgTypes[1]);
+        _signals[3] = qtro_signal_index<AdapterType>(&AdapterType::rowsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+2,&signalArgTypes[2]);
+        _signals[4] = qtro_signal_index<AdapterType>(&AdapterType::rowsRemoved, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+3,&signalArgTypes[3]);
+        _signals[5] = qtro_signal_index<AdapterType>(&AdapterType::rowsMoved, static_cast<void (QObject::*)(IndexList,int,int,IndexList,int)>(0),signalArgCount+4,&signalArgTypes[4]);
+        _signals[6] = qtro_signal_index<AdapterType>(&AdapterType::currentChanged, static_cast<void (QObject::*)(IndexList,IndexList)>(0),signalArgCount+5,&signalArgTypes[5]);
+        _signals[7] = qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(0),signalArgCount+6,&signalArgTypes[6]);
+        _signals[8] = qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(0),signalArgCount+7,&signalArgTypes[7]);
+        _signals[9] = qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),signalArgCount+8,&signalArgTypes[8]);
         _methods[0] = 5;
-        _methods[1] = qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(0),"replicaSizeRequest(IndexList)",methodArgCount+0,methodArgTypes[0]);
-        _methods[2] = qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",methodArgCount+1,methodArgTypes[1]);
-        _methods[3] = qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QVector<Qt::Orientation>,QVector<int>,QVector<int>)>(0),"replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)",methodArgCount+2,methodArgTypes[2]);
-        _methods[4] = qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(0),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",methodArgCount+3,methodArgTypes[3]);
-        _methods[5] = qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(IndexList,QVariant,int)>(0),"replicaSetData(IndexList,QVariant,int)",methodArgCount+4,methodArgTypes[4]);
+        _methods[1] = qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(0),"replicaSizeRequest(IndexList)",methodArgCount+0,&methodArgTypes[0]);
+        _methods[2] = qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",methodArgCount+1,&methodArgTypes[1]);
+        _methods[3] = qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QVector<Qt::Orientation>,QVector<int>,QVector<int>)>(0),"replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)",methodArgCount+2,&methodArgTypes[2]);
+        _methods[4] = qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(0),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",methodArgCount+3,&methodArgTypes[3]);
+        _methods[5] = qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(IndexList,QVariant,int)>(0),"replicaSetData(IndexList,QVariant,int)",methodArgCount+4,&methodArgTypes[4]);
     }
 
     QString name() const Q_DECL_OVERRIDE { return m_name; }
@@ -275,6 +267,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     int _signals[10];
     int _methods[6];
     int signalArgCount[9];
+    const int* signalArgTypes[9];
     int methodArgCount[5];
     const int* methodArgTypes[5];
     QString m_name;

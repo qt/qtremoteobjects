@@ -810,6 +810,9 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         generateDeclarationsForEnums(out, astClass.enums, false);
     }
     out << QString::fromLatin1("    %1()").arg(className) << endl;
+    out << QStringLiteral("        : SourceApiMap()") << endl;
+    out << QStringLiteral("        , signalArgTypes{}") << endl;
+    out << QStringLiteral("        , methodArgTypes{}") << endl;
     out << QStringLiteral("    {") << endl;
     const int propCount = astClass.properties.count();
     out << QString::fromLatin1("        _properties[0] = %1;").arg(propCount) << endl;
@@ -836,12 +839,12 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QString::fromLatin1("        _signals[0] = %1;").arg(signalCount+changeSignals.size()) << endl;
     for (int i = 0; i < changedCount; ++i)
         out << QString::fromLatin1("        _signals[%1] = qtro_signal_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<void (QObject::*)()>(0),signalArgCount+%4,signalArgTypes[%4]);")
+                              "static_cast<void (QObject::*)()>(0),signalArgCount+%4,&signalArgTypes[%4]);")
                              .arg(i+1).arg(changeSignals.at(i)).arg(i) << endl;
     for (int i = 0; i < signalCount; ++i) {
         const ASTFunction &sig = astClass.signalsList.at(i);
         out << QString::fromLatin1("        _signals[%1] = qtro_signal_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<void (QObject::*)(%3)>(0),signalArgCount+%4,signalArgTypes[%4]);")
+                              "static_cast<void (QObject::*)(%3)>(0),signalArgCount+%4,&signalArgTypes[%4]);")
                              .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
     }
     const int slotCount = astClass.slotsList.count();
@@ -849,7 +852,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     for (int i = 0; i < slotCount; ++i) {
         const ASTFunction &slot = astClass.slotsList.at(i);
         out << QString::fromLatin1("        _methods[%1] = qtro_method_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",methodArgCount+%4,methodArgTypes[%4]);")
+                              "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",methodArgCount+%4,&methodArgTypes[%4]);")
                              .arg(QString::number(i+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
     }
 
