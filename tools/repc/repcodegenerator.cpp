@@ -848,12 +848,26 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                              .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
     }
     const int slotCount = astClass.slotsList.count();
-    out << QString::fromLatin1("        _methods[0] = %1;").arg(slotCount) << endl;
+    QVector<ASTProperty> pushProps;
+    Q_FOREACH (const ASTProperty &property, astClass.properties) {
+        if (property.modifier == ASTProperty::ReadPush)
+            pushProps << property;
+    }
+    const int pushCount = pushProps.count();
+    const int methodCount = slotCount + pushCount;
+    out << QString::fromLatin1("        _methods[0] = %1;").arg(methodCount) << endl;
+    for (int i = 0; i < pushCount; ++i) {
+        const ASTProperty &prop = pushProps.at(i);
+        const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
+        out << QString::fromLatin1("        _methods[%1] = qtro_method_index<ObjectType>(&ObjectType::push%2, "
+                              "static_cast<void (QObject::*)(%3)>(0),\"push%2(%3)\",methodArgCount+%4,&methodArgTypes[%4]);")
+                             .arg(QString::number(i+1), cap(prop.name), propTypeName, QString::number(i)) << endl;
+    }
     for (int i = 0; i < slotCount; ++i) {
         const ASTFunction &slot = astClass.slotsList.at(i);
         out << QString::fromLatin1("        _methods[%1] = qtro_method_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",methodArgCount+%4,&methodArgTypes[%4]);")
-                             .arg(QString::number(i+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
+                             .arg(QString::number(i+pushCount+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i+pushCount)) << endl;
     }
 
     out << QStringLiteral("    }") << endl;
@@ -899,7 +913,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE") << endl;
         out << QStringLiteral("    { Q_UNUSED(sigIndex); Q_UNUSED(paramIndex); return -1; }") << endl;
     }
-    if (slotCount) {
+    if (methodCount > 0) {
         out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE") << endl;
         out << QStringLiteral("    {") << endl;
         out << QStringLiteral("        if (index < 0 || index >= _methods[0])") << endl;
@@ -964,13 +978,19 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     //methodSignature method
     out << QStringLiteral("    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE") << endl;
     out << QStringLiteral("    {") << endl;
-    if (slotCount) {
+    if (methodCount > 0) {
         out << QStringLiteral("        switch (index) {") << endl;
+        for (int i = 0; i < pushCount; ++i)
+        {
+            const ASTProperty &prop = pushProps.at(i);
+            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"push%2(%3)\");")
+                                      .arg(QString::number(i), cap(prop.name), prop.type) << endl;
+        }
         for (int i = 0; i < slotCount; ++i)
         {
             const ASTFunction &slot = astClass.slotsList.at(i);
             out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\");")
-                                      .arg(QString::number(i), slot.name, slot.paramsAsString(ASTFunction::Normalized)) << endl;
+                                      .arg(QString::number(i+pushCount), slot.name, slot.paramsAsString(ASTFunction::Normalized)) << endl;
         }
         out << QStringLiteral("        }") << endl;
     } else
@@ -987,12 +1007,18 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     //typeName method
     out << QStringLiteral("    const QByteArray typeName(int index) const Q_DECL_OVERRIDE") << endl;
     out << QStringLiteral("    {") << endl;
-    if (slotCount) {
+    if (methodCount > 0) {
         out << QStringLiteral("        switch (index) {") << endl;
+        for (int i = 0; i < pushCount; ++i)
+        {
+            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"void\");")
+                                      .arg(QString::number(i)) << endl;
+        }
         for (int i = 0; i < slotCount; ++i)
         {
             const ASTFunction &slot = astClass.slotsList.at(i);
-            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2\");").arg(i).arg(slot.returnType) << endl;
+            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2\");")
+                                      .arg(QString::number(i+pushCount), slot.returnType) << endl;
         }
         out << QStringLiteral("        }") << endl;
     } else
@@ -1008,12 +1034,14 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("") << endl;
     out << QString::fromLatin1("    int _properties[%1];").arg(propCount+1) << endl;
     out << QString::fromLatin1("    int _signals[%1];").arg(signalCount+changedCount+1) << endl;
-    out << QString::fromLatin1("    int _methods[%1];").arg(slotCount+1) << endl;
+    out << QString::fromLatin1("    int _methods[%1];").arg(methodCount+1) << endl;
     if (signalCount+changedCount > 0) {
         out << QString::fromLatin1("    int signalArgCount[%1];").arg(signalCount+changedCount) << endl;
         out << QString::fromLatin1("    const int* signalArgTypes[%1];").arg(signalCount+changedCount) << endl;
     }
-    out << QString::fromLatin1("    int methodArgCount[%1];").arg(slotCount) << endl;
-    out << QString::fromLatin1("    const int* methodArgTypes[%1];").arg(slotCount) << endl;
+    if (methodCount > 0) {
+        out << QString::fromLatin1("    int methodArgCount[%1];").arg(methodCount) << endl;
+        out << QString::fromLatin1("    const int* methodArgTypes[%1];").arg(methodCount) << endl;
+    }
     out << QStringLiteral("};") << endl;
 }
