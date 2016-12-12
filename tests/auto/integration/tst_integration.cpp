@@ -448,6 +448,31 @@ private slots:
         QCOMPARE(localCentre->data4(), QVector<int>() << 1 << 2 << 3 << 4 << 5);
     }
 
+    void invalidUrlsTest()
+    {
+        const QUrl invalidUrl;
+        {
+            QRemoteObjectHost host(invalidUrl, registryUrl);
+            SET_NODE_NAME(host);
+            const bool res = host.waitForRegistry(3000);
+            QVERIFY(!res);
+        }
+
+        {
+            QRemoteObjectHost host(hostUrl, invalidUrl);
+            SET_NODE_NAME(host);
+            const bool res = host.waitForRegistry(3000);
+            QVERIFY(!res);
+        }
+
+        {
+            QRemoteObjectHost host(invalidUrl, invalidUrl);
+            SET_NODE_NAME(host);
+            const bool res = host.waitForRegistry(3000);
+            QVERIFY(!res);
+        }
+    }
+
     void noRegistryTest()
     {
         QRemoteObjectHost host(hostUrl, registryUrl);

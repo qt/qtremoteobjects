@@ -437,7 +437,7 @@ QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMeta
 QReplicaPrivateInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
-    if (map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
+    if (remoteObjectIo && map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
         Q_Q(QRemoteObjectHostBase);
         QInProcessReplicaPrivate *rp = new QInProcessReplicaPrivate(name, meta, q);
         rp->configurePrivate(instance);
@@ -1077,6 +1077,11 @@ void QRemoteObjectNodePrivate::setRegistry(QRemoteObjectRegistry *reg)
 bool QRemoteObjectNode::waitForRegistry(int timeout)
 {
     Q_D(QRemoteObjectNode);
+    if (!d->registry) {
+        qCWarning(QT_REMOTEOBJECT) << qPrintable(objectName()) << "waitForRegistry() error: No valid registry url set";
+        return false;
+    }
+
     return d->registry->waitForSource(timeout);
 }
 
