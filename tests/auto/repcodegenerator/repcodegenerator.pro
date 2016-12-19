@@ -5,8 +5,11 @@ QT -= gui
 
 SOURCES += tst_repcodegenerator.cpp
 
-REP_FILES = preprocessortest.rep
+REP_FILES += \
+    classwithsignalonlytest.rep \
+    preprocessortest.rep \
 
-REPC_REPLICA = $$REP_FILES
+# Make sure we test both source + replica generated code
+REPC_MERGED = $$REP_FILES
 
 contains(QT_CONFIG, c++11): CONFIG += c++11

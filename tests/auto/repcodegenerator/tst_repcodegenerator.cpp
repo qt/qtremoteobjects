@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include "rep_preprocessortest_replica.h"
+#include "rep_preprocessortest_merged.h"
 
 #include <QTest>
 

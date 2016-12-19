@@ -811,8 +811,6 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     }
     out << QString::fromLatin1("    %1()").arg(className) << endl;
     out << QStringLiteral("        : SourceApiMap()") << endl;
-    out << QStringLiteral("        , signalArgTypes{}") << endl;
-    out << QStringLiteral("        , methodArgTypes{}") << endl;
     out << QStringLiteral("    {") << endl;
     const int propCount = astClass.properties.count();
     out << QString::fromLatin1("        _properties[0] = %1;").arg(propCount) << endl;
