@@ -241,7 +241,9 @@ int main(int argc, char **argv)
             fprintf(stderr, PROGRAM_NAME ": No QObject classes found.\n");
             return 0;
         }
+
         input.close();
+
         if (mode & OutRep) {
             CppCodeGenerator generator(&output);
             generator.generate(moc.classList, parser.isSet(alwaysClassOption));
@@ -250,7 +252,6 @@ int main(int argc, char **argv)
             RepCodeGenerator generator(&output);
             generator.generate(classList2AST(moc.classList), RepCodeGenerator::REPLICA, outputFile);
         }
-        output.close();
     } else {
         Q_ASSERT(!(mode & OutRep));
         RepParser repparser(input);
@@ -258,9 +259,15 @@ int main(int argc, char **argv)
             repparser.setDebug();
         if (!repparser.parse()) {
             fprintf(stderr, PROGRAM_NAME ": %s:%d: error: %s\n", qPrintable(inputFile), repparser.lineNumber(), qPrintable(repparser.errorString()));
+            // if everything is okay and only the input was malformed => remove the output file
+            // let's not create an empty file -- make sure the build system tries to run repc again
+            // this is the same behavior other code generators exhibit (e.g. flex)
+            output.remove();
             return 1;
         }
+
         input.close();
+
         RepCodeGenerator generator(&output);
         if ((mode & OutMerged) == OutMerged)
             generator.generate(repparser.ast(), RepCodeGenerator::MERGED, outputFile);
@@ -272,8 +279,8 @@ int main(int argc, char **argv)
             fprintf(stderr, PROGRAM_NAME ": Unknown mode.\n");
             return 1;
         }
-
-        output.close();
     }
+
+    output.close();
     return 0;
 }
