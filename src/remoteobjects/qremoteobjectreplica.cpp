@@ -63,10 +63,17 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
+Q_STATIC_ASSERT_X(&QRemoteObjectReplica::staticMetaObject == &QRemoteObjectDynamicReplica::staticMetaObject,
+                  "m_signalOffset initializer expects QRemoteObjectDynamicReplica to not have a unique staticMetaObject "
+                  "(see FIX #1, #2, #3 in commented code.)");
+
 QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *_node)
     : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0)
-    , m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount())
-    , m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
+    // Uncomment the following two lines if QRemoteObjectDynamicReplica gets a unique staticMetaObject (FIX #1, #2)
+    //, m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount())
+    //, m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
+    , m_signalOffset(QRemoteObjectReplica::staticMetaObject.methodCount())
+    , m_propertyOffset(QRemoteObjectReplica::staticMetaObject.propertyCount())
     , m_node(_node)
     , m_objectSignature(qtro_classinfo_signature(m_metaObject))
     , m_state(meta ? QRemoteObjectReplica::Default : QRemoteObjectReplica::Uninitialized)
@@ -394,8 +401,10 @@ void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 {
     qCDebug(QT_REMOTEOBJECT) << "configurePrivate starting for" << this->m_objectName;
     //We need to connect the Replicant only signals too
-    const QMetaObject *m =  rep->inherits("QRemoteObjectDynamicReplica") ?
-                &QRemoteObjectDynamicReplica::staticMetaObject : &QRemoteObjectReplica::staticMetaObject;
+    // Uncomment the following two lines if QRemoteObjectDynamicReplica gets a unique staticMetaObject (FIX #3)
+    //const QMetaObject *m =  rep->inherits("QRemoteObjectDynamicReplica") ?
+    //            &QRemoteObjectDynamicReplica::staticMetaObject : &QRemoteObjectReplica::staticMetaObject;
+    const QMetaObject *m = &QRemoteObjectReplica::staticMetaObject;
     for (int i = m->methodOffset(); i < m->methodCount(); ++i)
     {
         const QMetaMethod mm = m->method(i);
