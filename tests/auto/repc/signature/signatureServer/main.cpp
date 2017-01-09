@@ -60,6 +60,8 @@ public slots:
 
     bool quit() Q_DECL_OVERRIDE
     {
+        qDebug() << "quit() called";
+
         return shouldQuit = true;
     }
 };
@@ -79,6 +81,9 @@ private Q_SLOTS:
         qDebug() << "Waiting for incoming connections";
 
         QTRY_VERIFY_WITH_TIMEOUT(myTestServer.shouldQuit, 20000); // wait up to 20s
+
+        qDebug() << "Stopping server";
+        QTest::qWait(200); // wait for server to send reply to client invoking quit() function
     }
 };
 
