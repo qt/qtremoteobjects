@@ -42,22 +42,18 @@
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QProcess>
+#include <QStandardPaths>
 
 namespace {
 
-QString findExecutable(const QString &executableName, const QStringList &pathHints)
+QString findExecutable(const QString &executableName, const QStringList &paths)
 {
-    foreach (const auto &pathHint, pathHints) {
-#ifdef Q_OS_WIN
-        const QString executablePath = pathHint + executableName + ".exe";
-#else
-        const QString executablePath = pathHint + executableName;
-#endif
-        if (QFileInfo::exists(executablePath))
-            return executablePath;
+    const auto path = QStandardPaths::findExecutable(executableName, paths);
+    if (!path.isEmpty()) {
+        return path;
     }
 
-    qWarning() << "Could not find executable:" << executableName << "in any of" << pathHints;
+    qWarning() << "Could not find executable:" << executableName << "in any of" << paths;
     return QString();
 }
 
