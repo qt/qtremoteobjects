@@ -61,6 +61,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+QT_BEGIN_NAMESPACE
+
 namespace {
     const int DefaultNodesCacheSize = 50;
 }
@@ -460,5 +462,7 @@ public:
     mutable QVector<int> m_availableRoles;
     std::unordered_set<CacheData*> m_activeParents;
 };
+
+QT_END_NAMESPACE
 
 #endif // QREMOTEOBJECTS_ABSTRACT_ITEM_REPLICA_P_H

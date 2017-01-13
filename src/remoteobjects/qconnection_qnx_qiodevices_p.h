@@ -61,6 +61,8 @@
 #include "private/qiodevice_p.h"
 #include "private/qringbuffer_p.h"
 
+QT_BEGIN_NAMESPACE
+
 class QQnxNativeIoPrivate : public QIODevicePrivate
 {
     Q_DECLARE_PUBLIC(QQnxNativeIo)
@@ -102,6 +104,8 @@ public:
     QRingBuffer obuffer;
     QAtomicInt m_serverClosing;
 };
+
+QT_END_NAMESPACE
 
 #endif // QQNXNATIVEIO_P_H
 

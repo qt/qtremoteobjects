@@ -84,7 +84,9 @@ private:
     friend class QConnectedReplicaPrivate;
 };
 
+QT_END_NAMESPACE
 Q_DECLARE_METATYPE(QRemoteObjectPendingCall)
+QT_BEGIN_NAMESPACE
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPendingCallWatcher: public QObject, public QRemoteObjectPendingCall
 {

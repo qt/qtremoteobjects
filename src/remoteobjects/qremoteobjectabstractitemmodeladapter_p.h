@@ -58,6 +58,8 @@
 
 #include <QSize>
 
+QT_BEGIN_NAMESPACE
+
 class QAbstractItemModel;
 class QItemSelectionModel;
 
@@ -272,5 +274,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     const int* methodArgTypes[5];
     QString m_name;
 };
+
+QT_END_NAMESPACE
 
 #endif //QREMOTEOBJECTS_ABSTRACT_ITEM_ADAPTER_P_H

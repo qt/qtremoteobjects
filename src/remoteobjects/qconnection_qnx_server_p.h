@@ -59,6 +59,8 @@
 #include <QAtomicInt>
 #include <QMutex>
 
+QT_BEGIN_NAMESPACE
+
 class QQnxNativeServerPrivate : public QObjectPrivate
 {
     Q_DECLARE_PUBLIC(QQnxNativeServer)
@@ -106,6 +108,8 @@ public:
     bool hamAvailable, hamInitialized;
 #endif
 };
+
+QT_END_NAMESPACE
 
 #endif // QQNXNATIVESERVER_P_H
 

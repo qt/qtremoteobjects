@@ -218,3 +218,5 @@ ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
     iodevice->initializeDataStream();
     return iodevice;
 }
+
+QT_END_NAMESPACE

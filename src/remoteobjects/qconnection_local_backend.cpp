@@ -41,6 +41,8 @@
 
 #include "qconnection_local_backend_p.h"
 
+QT_BEGIN_NAMESPACE
+
 LocalClientIo::LocalClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {

@@ -95,9 +95,11 @@ typedef QPair<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocat
 typedef QHash<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocations;
 typedef QHash<int, QByteArray> QIntHash;
 
+QT_END_NAMESPACE
 Q_DECLARE_METATYPE(QRemoteObjectSourceLocation)
 Q_DECLARE_METATYPE(QRemoteObjectSourceLocations)
 Q_DECLARE_METATYPE(QIntHash)
+QT_BEGIN_NAMESPACE
 
 #ifndef QT_STATIC
 #  if defined(QT_BUILD_REMOTEOBJECTS_LIB)

@@ -218,13 +218,13 @@ inline IndexList toModelIndexList(const QModelIndex &index, const QAbstractItemM
     return list;
 }
 
+QT_END_NAMESPACE
+
 Q_DECLARE_METATYPE(ModelIndex)
 Q_DECLARE_METATYPE(IndexList)
 Q_DECLARE_METATYPE(DataEntries)
 Q_DECLARE_METATYPE(IndexValuePair)
 Q_DECLARE_METATYPE(Qt::Orientation)
 Q_DECLARE_METATYPE(QItemSelectionModel::SelectionFlags)
-
-QT_END_NAMESPACE
 
 #endif // QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
