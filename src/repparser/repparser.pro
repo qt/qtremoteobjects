@@ -31,6 +31,6 @@ prefix_build:lib_bundle {
 INSTALLS += extra_headers
 
 PUBLIC_HEADERS += \
-    $$PWD/qrepregexparser.h
+    $$PWD/qregexparser.h
 
 HEADERS += $$PUBLIC_HEADERS
