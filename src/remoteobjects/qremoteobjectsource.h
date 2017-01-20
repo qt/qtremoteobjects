@@ -46,7 +46,6 @@ static inline int qtro_prop_index(Func1, Func2, const char *propName)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
-    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
 
     //compilation error if the arguments do not match.
     Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
@@ -63,7 +62,6 @@ static inline int qtro_signal_index(Func1 func, Func2, int *count, int const **t
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
-    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
 
     //compilation error if the arguments do not match.
     Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
@@ -83,7 +81,6 @@ static inline void qtro_method_test(Func1, Func2)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
-    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
 
     //compilation error if the arguments do not match.
     Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
@@ -99,7 +96,6 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
-    reinterpret_cast<typename Type1::Object *>(0)->qt_check_for_QOBJECT_macro(*reinterpret_cast<typename Type1::Object *>(0));
 
     //compilation error if the arguments do not match.
     Q_STATIC_ASSERT_X(int(Type1::ArgumentCount) >= int(Type2::ArgumentCount),
