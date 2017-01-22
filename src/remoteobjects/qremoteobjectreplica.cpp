@@ -55,8 +55,10 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
+#ifndef Q_OS_WIN
 Q_STATIC_ASSERT_X(&QRemoteObjectReplica::staticMetaObject == &QRemoteObjectDynamicReplica::staticMetaObject,
                   "m_signalOffset initializer expects QRemoteObjectDynamicReplica to not have a unique staticMetaObject");
+#endif
 // If QRemoteObjectDynamicReplica ever gets its own staticMetaObject, some commented out code will need to be
 // used.  It was changed to avoid a Coverity complaint.  We use the above static assert to detect if this changes
 // in the future.  See FIX #1, #2, #3 in this file.
