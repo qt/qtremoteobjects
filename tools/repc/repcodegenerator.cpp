@@ -516,6 +516,7 @@ QString RepCodeGenerator::generateMetaTypeRegistrationForEnums(const QVector<QSt
 
 void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enumUses)
 {
+    out << "QT_BEGIN_NAMESPACE" << endl;
     Q_FOREACH (const QString &enumName, enumUses) {
         out << "inline QDataStream &operator<<(QDataStream &out, " << enumName << " value)" << endl;
         out << "{" << endl;
@@ -532,6 +533,7 @@ void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const Q
         out << "}" << endl;
         out << endl;
     }
+    out << "QT_END_NAMESPACE" << endl << endl;
 }
 
 void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass &astClass, const QString &metaTypeRegistrationCode)
@@ -775,7 +777,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
 
     out << "" << endl;
     out << "private:" << endl;
-    out << "    friend class QRemoteObjectNode;" << endl;
+    out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << endl;
 
     out << "};" << endl;
     out << "" << endl;
