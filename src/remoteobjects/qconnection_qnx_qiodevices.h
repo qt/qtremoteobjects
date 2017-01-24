@@ -122,10 +122,10 @@ public:
     bool isValid() const;
 
     QAbstractSocket::SocketState state() const;
-    bool waitForBytesWritten(int msecs = 30000);
+    bool waitForBytesWritten(int msecs = 30000) Q_DECL_OVERRIDE;
     bool waitForConnected(int msecs = 30000);
     bool waitForDisconnected(int msecs = 30000);
-    bool waitForReadyRead(int msecs = 30000);
+    bool waitForReadyRead(int msecs = 30000) Q_DECL_OVERRIDE;
 
 Q_SIGNALS:
     void disconnected();
