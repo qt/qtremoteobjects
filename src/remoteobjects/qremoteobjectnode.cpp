@@ -278,9 +278,7 @@ void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
         return;
     }
 
-    if (initConnection(remoteObjectAddresses()[name].hostUrl))
-        qROPrivDebug() << "openedConnection" << remoteObjectAddresses()[name];
-    else
+    if (!initConnection(remoteObjectAddresses()[name].hostUrl))
         qROPrivWarning() << "failed to open connection to" << name;
 }
 
@@ -288,8 +286,8 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
 {
     Q_Q(QRemoteObjectNode);
     if (requestedUrls.contains(address)) {
-        qROPrivWarning() << "Connection already initialized for " << address.toString();
-        return false;
+        qROPrivDebug() << "Connection already requested for " << address.toString();
+        return true;
     }
 
     requestedUrls.insert(address);
@@ -300,6 +298,7 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
         return false;
     }
 
+    qROPrivDebug() << "Opening connection to" << address.toString();
     qROPrivDebug() << "Replica Connection isValid" << connection->isOpen();
     QObject::connect(connection, SIGNAL(shouldReconnect(ClientIoDevice*)), q, SLOT(onShouldReconnect(ClientIoDevice*)));
     connection->connectToServer();
