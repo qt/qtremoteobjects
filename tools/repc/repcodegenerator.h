@@ -38,16 +38,15 @@
 #include <QString>
 #include <QVector>
 
+QT_BEGIN_NAMESPACE
 struct AST;
 struct ASTClass;
 struct POD;
 struct ASTEnum;
 
-QT_BEGIN_NAMESPACE
 class QIODevice;
 class QStringList;
 class QTextStream;
-QT_END_NAMESPACE
 
 class RepCodeGenerator
 {
@@ -91,5 +90,7 @@ private:
     QIODevice *m_outputDevice;
     QHash<QString, QByteArray> m_globalEnumsPODs;
 };
+
+QT_END_NAMESPACE
 
 #endif

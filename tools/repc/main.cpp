@@ -63,6 +63,8 @@ static const QLatin1String REPLICA("replica");
 static const QLatin1String SOURCE("source");
 static const QLatin1String MERGED("merged");
 
+QT_USE_NAMESPACE
+
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);

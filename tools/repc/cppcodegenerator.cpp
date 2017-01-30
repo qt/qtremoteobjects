@@ -35,6 +35,8 @@
 #include "moc.h"
 #include "utils.h"
 
+QT_BEGIN_NAMESPACE
+
 CppCodeGenerator::CppCodeGenerator(QIODevice *outputDevice)
     : m_outputDevice(outputDevice)
 {
@@ -48,3 +50,5 @@ void CppCodeGenerator::generate(const QList<ClassDef> &classList, bool alwaysGen
 
     m_outputDevice->write("\n");
 }
+
+QT_END_NAMESPACE

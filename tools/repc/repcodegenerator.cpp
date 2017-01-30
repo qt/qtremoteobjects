@@ -40,7 +40,7 @@
 #include <QTextStream>
 #include <QCryptographicHash>
 
-QT_USE_NAMESPACE
+QT_BEGIN_NAMESPACE
 
 template <typename C>
 static int accumulatedSizeOfNames(const C &c)
@@ -1037,3 +1037,5 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     }
     out << QStringLiteral("};") << endl;
 }
+
+QT_END_NAMESPACE

@@ -39,6 +39,8 @@
 
 #define _(X) QString::fromLatin1(X)
 
+QT_BEGIN_NAMESPACE
+
 static QByteArray join(const QList<QByteArray> &array, const QByteArray &separator) {
     QByteArray res;
     const int sz = array.size();
@@ -213,3 +215,5 @@ AST classList2AST(const QList<ClassDef> &classList)
     }
     return ret;
 }
+
+QT_END_NAMESPACE

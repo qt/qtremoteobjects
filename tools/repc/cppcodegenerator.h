@@ -39,7 +39,6 @@
 QT_BEGIN_NAMESPACE
 struct ClassDef;
 class QIODevice;
-QT_END_NAMESPACE
 
 class CppCodeGenerator
 {
@@ -50,5 +49,7 @@ public:
 private:
     QIODevice *m_outputDevice;
 };
+
+QT_END_NAMESPACE
 
 #endif // CPPCODEGENERATOR_H
