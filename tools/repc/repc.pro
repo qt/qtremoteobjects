@@ -9,8 +9,8 @@ DEFINES += RO_INSTALL_HEADERS=\\\"$$clean_path($$[QT_INSTALL_HEADERS])/QtRemoteO
 win32-msvc*:!wince: QMAKE_CXXFLAGS += /wd4129
 
 CONFIG += qlalr
-QLALRSOURCES += $$top_srcdir/src/repparser/parser.g
-INCLUDEPATH += $$top_srcdir/src/repparser
+QLALRSOURCES += $$QTRO_SOURCE_TREE/src/repparser/parser.g
+INCLUDEPATH += $$QTRO_SOURCE_TREE/src/repparser
 
 # fix includes when Qt5 was installed as framework (see qt_functions.prf, keyword FRAMEWORK_INCLUDE)
 osx:contains(QT_CONFIG, qt_framework) {
