@@ -1,2 +1,3 @@
 TEMPLATE = subdirs
-SUBDIRS += enums pods signature
+SUBDIRS += enums pods
+!windows: SUBDIRS += signature # QTBUG-58773
