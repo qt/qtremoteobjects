@@ -39,6 +39,7 @@
 #include <QMetaType>
 #include <QTextStream>
 #include <QCryptographicHash>
+#include <QRegExp>
 
 QT_BEGIN_NAMESPACE
 

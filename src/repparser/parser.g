@@ -62,6 +62,7 @@
 #include <qregexparser.h>
 #include <QStringList>
 #include <QVector>
+#include <QRegExp>
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
