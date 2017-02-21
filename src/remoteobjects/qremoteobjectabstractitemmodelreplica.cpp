@@ -423,6 +423,8 @@ void QAbstractItemModelReplicaPrivate::init()
 
 SizeWatcher* QAbstractItemModelReplicaPrivate::doModelReset()
 {
+    qDeleteAll(m_pendingRequests);
+    m_pendingRequests.clear();
     IndexList parentList;
     QRemoteObjectPendingReply<QSize> reply = replicaSizeRequest(parentList);
     SizeWatcher *watcher = new SizeWatcher(parentList, reply);
