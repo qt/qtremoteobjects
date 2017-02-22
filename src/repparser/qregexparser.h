@@ -144,7 +144,7 @@ private:
 #endif
     QList<int> m_tokens;
     QString m_buffer, m_lastMatchText;
-    size_t m_loc, m_lastNewlinePosition;
+    int m_loc, m_lastNewlinePosition;
     int m_lineno;
     int m_debug;
     QStringList m_tokenNames;
@@ -340,7 +340,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
     int token = -1;
     while (token < 0)
     {
-        if (m_loc == static_cast<size_t>(m_buffer.size()))
+        if (m_loc == m_buffer.size())
             return _Table::EOF_SYMBOL;
 
         //Check m_lastMatchText for newlines and update m_lineno
@@ -428,7 +428,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             int i = 0;
             Q_FOREACH (const QRegExp &r, m_regexes)
             {
-                if (r.indexIn(m_buffer, m_loc, QRegExp::CaretAtOffset) == (int)m_loc) {
+                if (r.indexIn(m_buffer, m_loc, QRegExp::CaretAtOffset) == m_loc) {
                     if (m_debug)
                         candidates << MatchCandidate(m_tokenNames[i], r.cap(0), i);
                     if (r.matchedLength() > maxLen) {
