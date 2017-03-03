@@ -115,11 +115,11 @@ void QRemoteObjectNode::timerEvent(QTimerEvent*)
 }
 
 /*!
-    \internal In order to create a Replica from QML, it is necessary for the
-    Replica to have a default constructor.  In order for it to be properly
-    constructed, there needs to be a way to associate the Replica with a
-    Node and start the Replica initialization.  Thus we need a public
-    method on Node to facilitate that.  That's initializeReplica.
+    \internal The replica needs to have a default constructor to be able
+    to create a replica from QML.  In order for it to be properly
+    constructed, there needs to be a way to associate the replica with a
+    node and start the replica initialization.  Thus we need a public
+    method on node to facilitate that.  That's initializeReplica.
 */
 void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const QString &name)
 {
@@ -160,7 +160,8 @@ void QRemoteObjectNodePrivate::setReplicaPrivate(const QMetaObject *meta, QRemot
 }
 
 /*!
-    Returns a pointer to the Node's \l {QRemoteObjectRegistry}, if the Node is using the Registry feature; otherwise it returns 0.
+    Returns a pointer to the Node's \l {QRemoteObjectRegistry}, if the Node
+    is using the Registry feature; otherwise it returns 0.
 */
 const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 {
@@ -172,26 +173,26 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
     \class QRemoteObjectPersistedStore
     \inmodule QtRemoteObjects
     \brief The QRemoteObjectPersistedStore virtual class provides the methods
-    for setting PROP values of a Replica to value they had the last time the
-    Replica was used.
+    for setting PROP values of a replica to value they had the last time the
+    replica was used.
 
     This can be used to provide a "reasonable" value to be displayed until the
-    connection to the Source is established and current values are available.
+    connection to the source is established and current values are available.
 
     This class must be overridden to provide an implementation for saving (\l
     QRemoteObjectPersistedStore::saveProperties) and restoring (\l
     QRemoteObjectPersistedStore::restoreProperties) PROP values. The derived
-    type can then be set for a Node, and any Replica acquired from that Node
-    will then automatically store PERSISTED properties when the Replica
-    destructor is called, and retrieve the values when the Replica is
+    type can then be set for a node, and any replica acquired from that node
+    will then automatically store PERSISTED properties when the replica
+    destructor is called, and retrieve the values when the replica is
     instantiated.
 */
 
 /*!
     \fn virtual void QRemoteObjectPersistedStore::saveProperties(const QString &repName, const QVariantList &values)
 
-    This method will be provided the Replica class's \a repName and the list of
-    \a values that PERSISTED properties have when the Replica destructor was
+    This method will be provided the replica class's \a repName and the list of
+    \a values that PERSISTED properties have when the replica destructor was
     called. It is the responsibility of the inheriting class to store the
     information in a manner consistent for \l
     QRemoteObjectPersistedStore::restoreProperties to retrieve.
@@ -202,8 +203,8 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 /*!
     \fn virtual QVariantList QRemoteObjectPersistedStore::restoreProperties(const QString &repName)
 
-    This method will be provided the Replica class's \a repName when the
-    Replica is being initialized. It is the responsibility of the inheriting
+    This method will be provided the replica class's \a repName when the
+    replica is being initialized. It is the responsibility of the inheriting
     class to get the last values persisted by \l
     QRemoteObjectPersistedStore::saveProperties and return them. An empty
     QVariantList should be returned if no values are available.
@@ -214,17 +215,17 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 /*!
     \enum QRemoteObjectNode::StorageOwnership
 
-    Used to tell a Node whether it should take ownership of a passed pointer or not:
+    Used to tell a node whether it should take ownership of a passed pointer or not:
 
     \value DoNotPassOwnership The ownership of the object is not passed.
-    \value PassOwnershipToNode The ownership of the object is passed, and the Node destructor will call delete.
+    \value PassOwnershipToNode The ownership of the object is passed, and the node destructor will call delete.
 */
 
 /*!
-    Provides a \l QRemoteObjectPersistedStore \a store for the Node, allowing
-    Replica \l PROP members with the PERSISTED trait of \l PROP to save their
-    current value when the Replica is deleted and restore a stored value the
-    next time the Replica is started. Requires a \l QRemoteObjectPersistedStore
+    Provides a \l QRemoteObjectPersistedStore \a store for the node, allowing
+    replica \l PROP members with the PERSISTED trait of \l PROP to save their
+    current value when the replica is deleted and restore a stored value the
+    next time the replica is started. Requires a \l QRemoteObjectPersistedStore
     class implementation to control where and how persistence is handled. Use
     the \l QRemoteObjectNode::StorageOwnership enum passed by \a ownership to
     determine whether the Node will delete the provided pointer or not.
@@ -392,7 +393,7 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
     }
     if (requestedUrls.contains(ioDevice->url())) {
         // Only try to reconnect to URLs requested via connectToNode
-        // If we connected via registry, wait for the registry to see the Node/Source again
+        // If we connected via registry, wait for the registry to see the node/source again
         pendingReconnect.insert(ioDevice);
         if (!reconnectTimer.isActive()) {
             reconnectTimer.start(retryInterval, q);
@@ -405,7 +406,7 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
 }
 
 //This version of handleNewAcquire creates a QConnectedReplica. If this is a
-//Host Node, the QRemoteObjectHostBasePrivate overload is called instead.
+//host node, the QRemoteObjectHostBasePrivate overload is called instead.
 QReplicaPrivateInterface *QRemoteObjectNodePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     Q_Q(QRemoteObjectNode);
@@ -591,21 +592,21 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 /*!
     \class QRemoteObjectNode
     \inmodule QtRemoteObjects
-    \brief A Node on a Qt Remote Objects network.
+    \brief A node on a Qt Remote Objects network.
 
     The QRemoteObjectNode class provides an entry point to a QtRemoteObjects
-    network. A network can be as simple as two Nodes, or an arbitrarily complex
+    network. A network can be as simple as two nodes, or an arbitrarily complex
     set of processes and devices.
 
     A QRemoteObjectNode does not have a url that other nodes can connect to,
-    and thus is able to acquire Replicas only. It is not able to share Source
+    and thus is able to acquire replicas only. It is not able to share source
     objects (only QRemoteObjectHost and QRemoteObjectRegistryHost Nodes can
     share).
 
     Nodes may connect to each other directly using \l connectToNode, or
     they can use the QRemoteObjectRegistry to simplify connections.
 
-    The QRemoteObjectRegistry is a special Replica available to every Node that
+    The QRemoteObjectRegistry is a special replica available to every node that
     connects to the Registry Url. It knows how to connect to every
     QRemoteObjectSource object on the network.
 
@@ -620,7 +621,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 
     QRemoteObjectHostBase is a base class that cannot be instantiated directly.
     It provides the enableRemoting and disableRemoting functionality shared by
-    all Host Nodes (\l {QRemoteObjectHost} {Host} and \l
+    all host nodes (\l {QRemoteObjectHost} {Host} and \l
     {QRemoteObjectRegistryHost} {RegistryHost}) as well as the logic required
     to expose \l {Source} objects on the Remote Objects network.
 */
@@ -631,18 +632,17 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     \brief A (Host) Node on a Qt Remote Objects network.
 
     The QRemoteObjectHost class provides an entry point to a QtRemoteObjects
-    network. A network can be as simple as two Nodes, or an arbitrarily complex
+    network. A network can be as simple as two nodes, or an arbitrarily complex
     set of processes and devices.
 
-    QRemoteObjectHosts have the same capabilities as QRemoteObjectNodes, but in
-    addition they can be connected to and can share Source objects on the
-    network.
+    QRemoteObjectHosts have the same capabilities as QRemoteObjectNodes, but
+    they can also be connected to and can share source objects on the network.
 
     Nodes may connect to each other directly using \l connectToNode, or they
     can use the QRemoteObjectRegistry to simplify connections.
 
-    The QRemoteObjectRegistry is a special Replica available to every Node that
-    connects to the Registry Url. It knows how to connect to every
+    The QRemoteObjectRegistry is a special replica available to every node that
+    connects to the uegistry Url. It knows how to connect to every
     QRemoteObjectSource object on the network.
 
     \sa QRemoteObjectNode, QRemoteObjectRegistryHost
@@ -651,7 +651,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 /*!
     \class QRemoteObjectRegistryHost
     \inmodule QtRemoteObjects
-    \brief A (Host/Registry) Node on a Qt Remote Objects network.
+    \brief A (Host/Registry) node on a Qt Remote Objects network.
 
     The QRemoteObjectRegistryHost class provides an entry point to a QtRemoteObjects
     network. A network can be as simple as two Nodes, or an arbitrarily complex

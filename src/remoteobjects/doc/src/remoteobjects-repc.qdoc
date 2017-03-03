@@ -54,7 +54,7 @@
 
     The Qt Remote Objects module also includes qmake macros (\l REPC_SOURCE, \l
     REPC_REPLICA) that can be added to your project file to automatically run
-    repc, and add the resultant files to the list of files processed by
+    repc, and add the resulting files to the list of files processed by
     \l{moc}{Meta Object Compiler} during the build process, making use of Qt
     Remote Objects in your projects simple.
 
@@ -64,12 +64,12 @@
     of all, while \l {QRemoteObjectDynamicReplica} {DynamicReplicas} are
     useful, they are more cumbersome to work with. The API is not known until
     the object is initialized, and using the API from C++ requires string
-    lookups through QMetaObject's methods. Second, having the interface known
-    at compile time finds any issues at compile vs. at runtime. Third, the rep
+    lookups through QMetaObject's methods. Secondly, having the interface known
+    at compile time finds any issues at compile vs. at runtime. Thirdly, the rep
     format supports default values, which can be handy if you are unable to
     ensure the Source is available when the Replica is instantiated.
 
-    See the documentation \l {Source} {on Sources here} for information on uses
+    See the documentation \l {Source} {Sources here} for information on using
     the generated files in your code. Here we will focus on the repc format and
     options.
 
@@ -78,7 +78,7 @@
     The rep file format is a simple \l {Domain Specific Language (DSL)} for
     describing an interface supported over Qt Remote Objects (QtRO). Since QtRO
     is an object based system, these interfaces are defined by APIs available
-    through objects, i.e., classes with properties, signals and slots.
+    through objects, that is, classes with properties, signals, and slots.
 
     \section2 The class type
 
@@ -86,7 +86,7 @@
     files, with the described API generated for you.
 
     To define a class use the \c class keyword, followed by the name you
-    want for your type and then enclose your API in brackets like so
+    want for your type, and then enclose your API in brackets like so
     \code
         class MyType
         {
@@ -98,7 +98,7 @@
 
     Q_PROPERTY elements are created by using the PROP keyword in the rep
     file. The syntax is the \c PROP keyword followed by the definition enclosed
-    in quotes, where the definition is the type, the name and (optionally) a
+    in quotes, where the definition is the type, the name, and (optionally) a
     default value or attributes.
     \code
         PROP(bool simpleBool)                // boolean named simpleBool
@@ -128,7 +128,7 @@
     as a notify signal emitted when the value is changed. Qt Remote Objects
     requires the notify signal on the Source object to trigger sending updates
     to the attached Replicas. In earlier versions of QtRO, properties defaulted
-    to being read/write, i.e., having getters and setters. However, due to the
+    to being read/write, that is, having getters and setters. However, due to the
     asynchronous nature of QtRO, this led to unintuitive behavior at times.
     Setting the READWRITE attribute on the PROP will provide the old (getter
     and setter) behavior.
@@ -164,7 +164,7 @@
         if (rep->myVal() == 10) ...           // Test will succeed assuming
                                               // 1. Source object is connected
                                               // 2. Nobody else (Source or other Replica)
-                                              //    set the myVal to something else (race
+                                              //    sets the myVal to something else (race
                                               //    condition)
         // Rather than use QSignalSpy, the event-driven practice would be to connect the
         // myValChanged notify signal to a Slot that responds to the changes.
@@ -197,8 +197,8 @@
                                               //    condition)
     \endcode
 
-    You can also use the \c CONSTANT, \c READONLY, \c PERSISTED, \c READWRITE
-    or \c READPUSH keywords in the PROP declaration, which affect how this is
+    You can also use the \c CONSTANT, \c READONLY, \c PERSISTED, \c READWRITE,
+    or \c READPUSH keywords in the PROP declaration, which affects how this is
     implemented.  READPUSH is the default value if no value used.
 
     \code
@@ -207,11 +207,11 @@
     \endcode
 
     Please note there are some subtleties here. A CONSTANT PROP has a
-    Q_PROPERTY declared as CONSTANT on the SOURCE side. However, Replicas
+    Q_PROPERTY declared as CONSTANT on the SOURCE side. However, replicas
     cannot know the correct value until they are initialized, which means the
     property value has to be allowed to change during initialization. For
-    READONLY, the Source will have neither a setter nor a push Slot, and the
-    Replica side will not have a push Slot generated. Adding the PERSISTED
+    READONLY, the Source will have neither a setter nor a push slot, and the
+    replica side will not have a push slot generated. Adding the PERSISTED
     trait to a PROP will have the PROP use the \l QRemoteObjectPersistedStore
     instance set on a Node (if any) to save/restore PROP values.
 
@@ -232,8 +232,8 @@
         SIGNAL(test(QString &foo))
     \endcode
 
-    Just like in Qt \l {Qt::ConnectionType} {queued connections}, parameters in Signals that are
-    references will be copied when being passed to Replicas.
+    Just like in Qt \l {Qt::ConnectionType} {queued connections}, parameters in signals that are
+    references will be copied when being passed to replicas.
 
     \section3 SLOT
 
@@ -256,7 +256,7 @@
     \endcode
 
     Just like in Qt \l {Qt::ConnectionType} {queued connections} and QtRO
-    SIGNALS, parameters in Slots that are references will be copied when being
+    SIGNALS, parameters in slots that are references will be copied when being
     passed to Replicas.
 
     \section3 ENUM
@@ -279,8 +279,8 @@
 
     Plain Old Data (POD) is a term to describe a simple data collection, along
     the lines of a C++ struct. For example, if you have an API for a phonebook,
-    you may want to use the concept of an "address" in its interace (where
-    address might include street, city, state, country and postal code). You
+    you may want to use the concept of an "address" in its interface (where
+    address might include street, city, state, country, and postal code). You
     can use the POD keyword to define objects like this, which can then be used
     by in PROP/SIGNAL/SLOT definitions in your class definitions.
 
@@ -305,12 +305,12 @@
         };
     \endcode
 
-    The code generated by repc create a Q_GADGET class for each POD, with
+    The code generated by repc creates a Q_GADGET class for each POD, with
     corresponding Q_PROPERTY members for each type defined for the POD.
 
     \section2 The ENUM type
 
-    It is often easier/cleaner to define an ENUM inside a class (see \l ENUM),
+    It is often easier and cleaner to define an ENUM inside a class (see \l ENUM),
     but if you need a standalone enum type, using the ENUM keyword outside of a
     class definition can be helpful. This will generate a new class in your
     header files that handles marshalling, etc.. The syntax is identical to \l

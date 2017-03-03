@@ -43,12 +43,12 @@ QT_BEGIN_NAMESPACE
 /*!
     \class QRemoteObjectRegistry
     \inmodule QtRemoteObjects
-    \brief The Registry is a class that holds information about \l {Source} objects available on the Qt Remote Objects network
+    \brief A class holding information about \l {Source} objects available on the Qt Remote Objects network
 
     The Registry is a special Source/Replica pair held by a \l
-    {QRemoteObjectNode} {Node} itself. It knows about all other \l {Source}s
+    {QRemoteObjectNode} {node} itself. It knows about all other \l {Source}s
     available on the network, and simplifies the process of connecting to other
-    \l {QRemoteObjectNode} {Node}s.
+    \l {QRemoteObjectNode} {node}s.
 */
 QRemoteObjectRegistry::QRemoteObjectRegistry() : QRemoteObjectReplica()
 {
@@ -65,7 +65,7 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
 /*!
     \fn void QRemoteObjectRegistry::remoteObjectAdded(const QRemoteObjectSourceLocation &entry)
 
-    This signal is emitted whenever a new Source location is added to the Registry.
+    This signal is emitted whenever a new source location is added to the registry.
 
     \a entry is a QRemoteObjectSourceLocation, a typedef for QPair<QString, QUrl>.
 
@@ -84,9 +84,9 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
 
 /*!
     \property QRemoteObjectRegistry::sourceLocations
-    \brief The set of Sources known to the Registry.
+    \brief The set of sources known to the registry.
 
-    This property is a QRemoteObjectSourceLocations, which is a typedef for QHash<QString, QUrl>.  Each known \l Source is the QString key, while the Url for the Host Node is the corresponding value for that key in the hash.
+    This property is a QRemoteObjectSourceLocations, which is a typedef for QHash<QString, QUrl>.  Each known \l Source is the QString key, while the url for the host node is the corresponding value for that key in the hash.
 */
 
 /*!
@@ -110,8 +110,8 @@ void QRemoteObjectRegistry::initialize()
 }
 
 /*!
-    Returns a QRemoteObjectSourceLocations object, which includes the name and additional information of all Sources
-    known to the Registry.
+    Returns a QRemoteObjectSourceLocations object, which includes the name
+    and additional information of all sources known to the registry.
 */
 QRemoteObjectSourceLocations QRemoteObjectRegistry::sourceLocations() const
 {
@@ -124,8 +124,8 @@ QRemoteObjectSourceLocations QRemoteObjectRegistry::sourceLocations() const
 void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
 {
     if (hostedSources.contains(entry.first)) {
-        qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << entry.first
-                                   << "as this Node already has a Source by that name.";
+        qCWarning(QT_REMOTEOBJECT) << "Node warning: ignoring source" << entry.first
+                                   << "as this node already has a source by that name.";
         return;
     }
     hostedSources.insert(entry.first, entry.second);
@@ -133,12 +133,12 @@ void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
         return;
 
     if (sourceLocations().contains(entry.first)) {
-        qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << entry.first
+        qCWarning(QT_REMOTEOBJECT) << "Node warning: ignoring source" << entry.first
                                    << "as another source (" << sourceLocations()[entry.first]
                                    << ") has already registered that name.";
         return;
     }
-    qCDebug(QT_REMOTEOBJECT) << "An entry was added to the registry - Sending to Source" << entry.first << entry.second;
+    qCDebug(QT_REMOTEOBJECT) << "An entry was added to the registry - Sending to source" << entry.first << entry.second;
     // This does not set any data to avoid a coherency problem between client and server
     static int index = QRemoteObjectRegistry::staticMetaObject.indexOfMethod("addSource(QRemoteObjectSourceLocation)");
     QVariantList args;
@@ -157,7 +157,7 @@ void QRemoteObjectRegistry::removeSource(const QRemoteObjectSourceLocation &entr
     if (state() != QRemoteObjectReplica::State::Valid)
         return;
 
-    qCDebug(QT_REMOTEOBJECT) << "An entry was removed from the registry - Sending to Source" << entry.first << entry.second;
+    qCDebug(QT_REMOTEOBJECT) << "An entry was removed from the registry - Sending to source" << entry.first << entry.second;
     // This does not set any data to avoid a coherency problem between client and server
     static int index = QRemoteObjectRegistry::staticMetaObject.indexOfMethod("removeSource(QRemoteObjectSourceLocation)");
     QVariantList args;

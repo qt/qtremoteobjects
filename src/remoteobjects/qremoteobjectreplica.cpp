@@ -183,7 +183,7 @@ void QRemoteObjectReplicaPrivate::emitInitialized()
 void QRemoteObjectReplica::persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props) const
 {
     if (!node()) {
-        qWarning("Tried calling persistProperties on a Replica (%s) that hasn't been initialized with a Node", qPrintable(repName));
+        qWarning("Tried calling persistProperties on a replica (%s) that hasn't been initialized with a node", qPrintable(repName));
         return;
     }
     node()->persistProperties(repName, repSig, props);
@@ -195,7 +195,7 @@ void QRemoteObjectReplica::persistProperties(const QString &repName, const QByte
 QVariantList QRemoteObjectReplica::retrieveProperties(const QString &repName, const QByteArray &repSig) const
 {
     if (!node()) {
-        qWarning("Tried calling retrieveProperties on a Replica (%s) that hasn't been initialized with a Node", qPrintable(repName));
+        qWarning("Tried calling retrieveProperties on a replica (%s) that hasn't been initialized with a node", qPrintable(repName));
         return QVariantList();
     }
     return node()->retrieveProperties(repName, repSig);
@@ -430,15 +430,15 @@ void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
             Q_UNUSED(res);
         }
         if (isInitialized()) {
-            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate initialized, emitting signal on Replica");
+            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate initialized, emitting signal on replica");
             emit rep->initialized(); //Emit from new replica only
         }
         if (state() != QRemoteObjectReplica::Valid) {
-            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate not currently valid, emitting signal on Replica");
+            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate not currently valid, emitting signal on replica");
             emit rep->stateChanged(state(), m_metaObject ? QRemoteObjectReplica::Default : QRemoteObjectReplica::Uninitialized);
         }
 
-        qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, added Replica to existing ReplicaPrivate");
+        qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, added replica to existing ReplicaPrivate");
     }
 }
 
@@ -456,17 +456,17 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
     \brief A class interacting with (but not implementing) a Qt API on the Remote Object network
 
     A Remote Object Replica is a QObject proxy for another QObject (called the
-    \l {Source} object). Once initialized, a Replica can be considered a
+    \l {Source} object). Once initialized, a replica can be considered a
     "latent copy" of the \l {Source} object. That is, every change to a
-    Q_PROPERTY on the \l {Source}, or Signal emitted by the \l {Source} will be
+    Q_PROPERTY on the \l {Source}, or signal emitted by the \l {Source} will be
     updated/emitted by all \l {Replica} objects. Latency
     is introduced by process scheduling by any OSes involved and network
-    communication latency. As long as the Replica has been initialized and the
+    communication latency. As long as the replica has been initialized and the
     communication is not disrupted, receipt and order of changes is guaranteed.
 
-    The \l {isInitialized} and \l {state} properties (and corresponding \l {initialized()}/\l {stateChanged()} Signals) allow the state of a \l {Replica} to be determined.
+    The \l {isInitialized} and \l {state} properties (and corresponding \l {initialized()}/\l {stateChanged()} signals) allow the state of a \l {Replica} to be determined.
 
-    While Qt Remote Objects (QtRO) handles the initialization and synchronization of \l {Replica} objects, there are numerous steps happening behind the scenes which can fail and that aren't encountered in single process Qt applications.  See \l {Troubleshooting} for advice on how to handle such issues when using a Remote Objects network.
+    While Qt Remote Objects (QtRO) handles the initialization and synchronization of \l {Replica} objects, there are numerous steps happening behind the scenes which can fail and that aren't encountered in single process Qt applications.  See \l {Troubleshooting} for advice on how to handle such issues when using a remote objects network.
 */
 
 /*!
@@ -474,17 +474,17 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 
     This enum type specifies the various state codes associated with QRemoteObjectReplica states:
 
-    \value Uninitialized initial value of DynamicReplica, where nothing is known about the Replica before connection to Source.
-    \value Default initial value of static Replica, where any defaults set in the .rep file are available so it can be used if necessary.
-    \value Valid indicates the Replica is connected, has good property values and can be interacted with.
-    \value Suspect error state that occurs if the connection to the Source is lost after it is initialized.
-    \value SignatureMismatch error state that occurs if a connection to the Source is made, but the Source and Replica are not derived from the same .rep (only possible for static Replicas).
+    \value Uninitialized initial value of DynamicReplica, where nothing is known about the replica before connection to source.
+    \value Default initial value of static replica, where any defaults set in the .rep file are available so it can be used if necessary.
+    \value Valid indicates the replica is connected, has good property values and can be interacted with.
+    \value Suspect error state that occurs if the connection to the source is lost after it is initialized.
+    \value SignatureMismatch error state that occurs if a connection to the source is made, but the source and replica are not derived from the same .rep (only possible for static Replicas).
 */
 
 /*!
     \fn void QRemoteObjectReplica::stateChanged()
 
-    This signal is emitted whenever a Replica's state toggles between \l QRemoteObjectReplica::State.
+    This signal is emitted whenever a replica's state toggles between \l QRemoteObjectReplica::State.
 
     \sa state(), initialized()
 */
@@ -492,7 +492,7 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 /*!
     \fn void QRemoteObjectReplica::initialized()
 
-    This signal is emitted once the Replica is initialized.
+    This signal is emitted once the replica is initialized.
 
     \sa isInitialized(), stateChanged()
 */
@@ -504,19 +504,19 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 
 /*!
     \property QRemoteObjectReplica::state
-    \brief Returns the Replica state.
+    \brief Returns the replica state.
 
-    This property holds the Replica \l QRemoteObjectReplica::State.
+    This property holds the replica \l QRemoteObjectReplica::State.
 */
 
 /*!
     \property QRemoteObjectReplica::node
-    \brief A pointer to the Node this object was acquired from.
+    \brief A pointer to the node this object was acquired from.
 */
 
 /*!
     \internal This (protected) constructor for QRemoteObjectReplica can be used to create
-    Replica objects from QML.
+    replica objects from QML.
 */
 QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
     : QObject(Q_NULLPTR)
@@ -583,7 +583,7 @@ void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
 }
 
 /*!
-    Returns \c true if this Replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
+    Returns \c true if this replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
 
     \sa state()
 */
@@ -593,7 +593,7 @@ bool QRemoteObjectReplica::isInitialized() const
 }
 
 /*!
-    Returns \c true if this Replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
+    Returns \c true if this replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
 
     \sa isInitialized()
 */
@@ -611,7 +611,7 @@ void QRemoteObjectReplica::setNode(QRemoteObjectNode *_node)
 {
     const QRemoteObjectNode *curNode = node();
     if (curNode) {
-        qCWarning(QT_REMOTEOBJECT) << "Ignoring call to setNode as the Node has already been set";
+        qCWarning(QT_REMOTEOBJECT) << "Ignoring call to setNode as the node has already been set";
         return;
     }
     d_ptr.clear();
@@ -626,7 +626,7 @@ void QRemoteObjectReplica::initialize()
 }
 
 /*!
-    Returns \c true if this Replica has been initialized and has a valid connection with the \l {QRemoteObjectNode} {Node} hosting the \l {Source}.  Returns \c false otherwise.
+    Returns \c true if this replica has been initialized and has a valid connection with the \l {QRemoteObjectNode} {node} hosting the \l {Source}.  Returns \c false otherwise.
 
     \sa isInitialized()
 */
@@ -636,7 +636,7 @@ bool QRemoteObjectReplica::isReplicaValid() const
 }
 
 /*!
-    Blocking call that waits for the Replica to become initialized or until the \a timeout (in ms) expires.  Returns \c true if the Replica is initialized when the call completes, \c false otherwise.
+    Blocking call that waits for the replica to become initialized or until the \a timeout (in ms) expires.  Returns \c true if the replica is initialized when the call completes, \c false otherwise.
 
     If \a timeout is -1, this function will not time out.
 
@@ -746,7 +746,7 @@ void QStubReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVari
     Q_UNUSED(call);
     Q_UNUSED(index);
     Q_UNUSED(args);
-    qWarning("Tried calling a Slot or setting a property on a Replica that hasn't been initialized with a Node");
+    qWarning("Tried calling a slot or setting a property on a replica that hasn't been initialized with a node");
 }
 
 QRemoteObjectPendingCall QStubReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
@@ -754,7 +754,7 @@ QRemoteObjectPendingCall QStubReplicaPrivate::_q_sendWithReply(QMetaObject::Call
     Q_UNUSED(call);
     Q_UNUSED(index);
     Q_UNUSED(args);
-    qWarning("Tried calling a Slot or setting a property on a Replica that hasn't been initialized with a Node");
+    qWarning("Tried calling a slot or setting a property on a replica that hasn't been initialized with a node");
     return QRemoteObjectPendingCall(); //Invalid
 }
 
