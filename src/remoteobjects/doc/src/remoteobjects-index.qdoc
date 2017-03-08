@@ -66,9 +66,8 @@ mapping service for directions and get different results). While it is possible
 to implement this in QtRO (as \l {Source} without properties, and Slots that
 have return values), it is designed more to hide the fact that the processing
 is really remote. You let a node give you the \l {Replica} instead of creating
-it yourself, possibly use the status signals (\l
-{QRemoteObjectReplica::isReplicaValid} {isReplicaValid()}), but then interact
-with the object like you would with any other QObject-based type.
+it yourself, possibly use the status signals (\l {QRemoteObjectReplica::} {isReplicaValid()}),
+but then interact with the object like you would with any other QObject-based type.
 
 \section1 Uses
 
@@ -105,17 +104,17 @@ between nodes.
 Each process that participates in QtRO's IPC will instantiate a Node-based type
 (QRemoteObjectNode, QRemoteObjectHost, or QRemoteObjectRegistryHost). The
 latter types of Nodes provide additional functionality. Both QRemoteObjectHost
-and QRemoteObjectRegistryHost support the \l {QRemoteObjectHostBase::enableRemoting}
-(and the corresponding \l {QRemoteObjectHostBase::disableRemoting}) methods,
+and QRemoteObjectRegistryHost support the \l {QRemoteObjectHostBase::}{enableRemoting()}
+(and the corresponding \l {QRemoteObjectHostBase::}{disableRemoting()}) methods,
 which are the key methods to expose \l Source objects to the network. In order
 to use the \l Registry functionality, there should be one QRemoteObjectRegistryHost
 on the network.
-All other nodes can then pass the RegistryHost's url to the Node's \a
-registryAddress constructor parameter, or pass the url to the \l {QRemoteObjectNode::setRegistryUrl}
+All other nodes can then pass the RegistryHost's URL to the Node's \e registryAddress
+constructor parameter, or pass the URL to the \l {QRemoteObjectNode::}{setRegistryUrl()}
 method.
 
 QtRO works as a peer-to-peer network. That is, in order to \l
-{QRemoteObjectNode::acquire()} {acquire()} a valid \l {Replica}, the \l
+{QRemoteObjectNode::acquire()}{acquire()} a valid \l {Replica}, the \l
 {Replica} node needs a connection to the node that hosts its \l {Source}. A
 host node is a node that allows other nodes to connect to it, which is
 accomplished by giving hosts unique addresses (the address is provided to the
@@ -123,7 +122,7 @@ QRemoteObjectHost constructor or set by the setHostUrl method). The node that a
 \l {Replica} is requested from must establish the connection to the host node
 in order to initialize the \l {Replica} and keep it up to date.
 
-\section1 Connecting nodes using QtRO URLs
+\section1 Connecting Nodes using QtRO URLs
 
 Host Nodes use custom URLs to simplify connections. While the list will likely
 be extended, QtRO currently supports two types of connections. A "tcp"
@@ -223,7 +222,7 @@ level of API used.
 
 \section1 Identifying Sources
 
-Because more than one \l {Source} can be shared by a host node, each \l
+Since more than one \l {Source} can be shared by a host node, each \l
 {Source} requires a name. All \l {repc} generated headers include a way for the
 node to determine the class name (Q_CLASSINFO for replica/simplesource/source
 types, or a static name() function for the SourceAPI type). If you pass your
@@ -257,21 +256,21 @@ There is no public constructor, you need to use the \l
 {QRemoteObjectNode::acquire} template function to create the Replica instance.
 
 A \l {QRemoteObjectDynamicReplica} can be generated at runtime. To do so, you
-call the non-templated version of \l {QRemoteObjectNode::acquire}, passing in
-as an argument the \l {Source} name (a QString). Dynamic Replicas are a bit
+call the non-templated version of \l {QRemoteObjectNode::acquire()}, passing in
+as an argument the \l {Source} name (a QString). Dynamic replicas are a bit
 more verbose to use from C++, but do not require compilation and can be
 used easily in QML or (potentially) exposed to scripting languages such as Python.
-Dynamic Replicas do not support initial property values, and do not support
+Dynamic replicas do not support initial property values, and do not support
 introspection until they have been initialized.
 
-An important difference between these two ways of creating Replicas is the
-behavior before the Replica is initialized. Since a Dynamic Replica only gets
+An important difference between these two ways of creating replicas is the
+behavior before the replica is initialized. Since a Dynamic replica only gets
 a metaObject after initialization, it basically has no API before
-initialization. No properties, and no Signals to connect Slots to.
-Because of the compile time creation of the metaObject for compiled Replicas,
-their API is available when the Replica is instantiated. You can even provide
+initialization. No properties, and no Signals to connect slots to.
+Due to the compile-time creation of the metaObject for compiled replicas,
+their API is available when the replica is instantiated. You can even provide
 default values for Properties in the template file, which will be used until
-the Replica is initialized with current values from the Source.
+the replica is initialized with current values from the Source.
 
 See \l {QRemoteObjectReplica} and \l {QRemoteObjectDynamicReplica}
 
@@ -280,7 +279,7 @@ See \l {QRemoteObjectReplica} and \l {QRemoteObjectDynamicReplica}
 A host node will share the list of sources it hosts and every other node that
 connects to it. It will send updates when sources are added or removed from the
 list. In this way, a connected node will always know what sources it can attach
-to. Changes to a specific \l {Source} are only propagated to nodes that have a Replica of
+to. Changes to a specific \l {Source} are only propagated to nodes that have a replica of
 that source. This avoids unnecessary network traffic.
 
 When a node acquires a replica for a known source, the replica node sends a
@@ -306,10 +305,10 @@ connection is restored (this making sure all Properties are current).
 \target Registry
 \section1 The Registry
 
-When you \l {QRemoteObjectNode::acquire} a replica, the node URL is not passed
+When you \l {QRemoteObjectNode::acquire()} a replica, the node URL is not passed
 as an argument. This means you do not need to specify the host node, but it does
 require you to have some other means of connecting to that host. Without the
-registry, it is necessary to manually call \l {QRemoteObjectNode::connect},
+registry, it is necessary to manually call \l {QRemoteObjectNode::connect()},
 from each node, to every host node that has \l {Source} objects it should
 replicate. This is fine for small or static networks, but does not scale.
 
@@ -320,8 +319,8 @@ Connecting to the registry is simply a matter of passing the registry's URL to
 the QRemoteObjectNode or QRemoteObjectHost constructor, or passing the URL to
 the setRegistryUrl method.
 
-The Registry is tightly integrated with QtRO. Whenever a \l {Source} is added
-or removed, the name/URL is updated in the Registry automatically. So once
+The registry is tightly integrated with QtRO. Whenever a \l {Source} is added
+or removed, the name/URL is updated in the registry automatically. So once
 your node is connected to the registry, it is not necessary to connect to any
 other nodes manually. If you request an object on the network and you aren't
 connected to the hosting node, the registry will know what URL to connect to
@@ -331,7 +330,7 @@ process for the requested \l Replica will start automatically.
 
 \section1 Remote Object Interaction
 
-source/replica interaction is directional. Property changes and signal emission
+Source/replica interaction is directional. Property changes and signal emission
 happen on the source, and are propagated to all replicas. If a property is
 writable, you can call the setter function on a replica. This will be forwarded
 to the source, and if a change is made, it will be made on the source and
@@ -365,12 +364,15 @@ invalid, and cause unnecessary network communication until the calling process
 exits. For this reason, it is recommended that \l {QScopedPointer} or \l
 {QSharedPointer} be used to help track a replica lifetime.
 
-\section1 Remote Object public Classes
+\section1 Remote Object Public Classes
 
 The following classes make up the public interface for Qt Remote Objects:
 
 \generatelist{classesbymodule QtRemoteObjects}
 
+\omit
 \section1 Troubleshooting
-...
+
+TODO
+\endofomit
 */
