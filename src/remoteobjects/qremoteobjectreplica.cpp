@@ -704,7 +704,7 @@ QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject:
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
     const int ReplicaIndex = index - m_methodOffset;
-    int typeId = QVariant::nameToType(connectionToSource->m_api->typeName(ReplicaIndex).constData());
+    int typeId = QMetaType::type(connectionToSource->m_api->typeName(ReplicaIndex).constData());
     if (!QMetaType(typeId).sizeOf())
         typeId = QVariant::Invalid;
     QVariant returnValue(typeId, Q_NULLPTR);
