@@ -183,7 +183,4 @@ void LocalServerImpl::close()
     m_server.close();
 }
 
-REGISTER_QTRO_SERVER(LocalServerImpl, "local");
-REGISTER_QTRO_CLIENT(LocalClientIo, "local");
-
 QT_END_NAMESPACE

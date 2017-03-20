@@ -46,7 +46,7 @@ using namespace QtRemoteObjects;
 
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
     : QObject(parent)
-    , m_server(QtROServerFactory::create(address, this))
+    , m_server(QtROServerFactory::instance()->create(address, this))
 {
     if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;

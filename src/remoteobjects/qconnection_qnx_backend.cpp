@@ -178,7 +178,4 @@ void QnxServerImpl::close()
     close();
 }
 
-REGISTER_QTRO_CLIENT(QnxClientIo, "qnx");
-REGISTER_QTRO_SERVER(QnxServerImpl, "qnx");
-
 QT_END_NAMESPACE

@@ -293,7 +293,7 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
 
     requestedUrls.insert(address);
 
-    ClientIoDevice *connection = QtROClientFactory::create(address, q);
+    ClientIoDevice *connection = QtROClientFactory::instance()->create(address, q);
     if (!connection) {
         qROPrivWarning() << "Could not create ClientIoDevice for client. Invalid url/scheme provided?" << address;
         return false;

@@ -138,51 +138,82 @@ private:
     QUrl m_url;
 
 private:
-    friend struct QtROClientFactory;
+    friend class QtROClientFactory;
 
     quint32 m_curReadSize;
     QSet<QString> m_remoteObjects;
 };
 
-struct QtROServerFactory {
-    static QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
-        Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
-        return iter == static_creators().constEnd() ? Q_NULLPTR : (*iter)(parent); // if found, execute the creator function pointer
+class QtROServerFactory
+{
+public:
+    QtROServerFactory();
+
+    static QtROServerFactory *instance();
+
+    QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR)
+    {
+        auto creatorFunc = m_creatorFuncs.value(url.scheme());
+        return creatorFunc ? (*creatorFunc)(parent) : nullptr;
+    }
+
+    template<typename T>
+    void registerType(const QString &id)
+    {
+        m_creatorFuncs[id] = [](QObject *parent) -> QConnectionAbstractServer * {
+            return new T(parent);
+        };
     }
 
 private:
-    typedef QConnectionAbstractServer *Creator_t(QObject *); // function pointer to create QConnectionAbstractServer
-    typedef QHash<QString, Creator_t*> Creators_t; // map from id to creator
-    static Creators_t& static_creators() { static Creators_t s_creators; return s_creators; } // static instance of map
-    template<class T = int> struct Register {
-        static QConnectionAbstractServer *create(QObject *parent) { return new T(parent); }
-        static Creator_t *init_creator(const QString &id) { return static_creators()[id] = create; }
-        static Creator_t *creator;
-    };
+    using CreatorFunc = QConnectionAbstractServer * (*)(QObject *);
+    QHash<QString, CreatorFunc> m_creatorFuncs;
 };
 
-struct QtROClientFactory {
-    static ClientIoDevice *create(const QUrl &url, QObject *parent = Q_NULLPTR) { // creates an object from a string
-        Creators_t::const_iterator iter = static_creators().constFind(url.scheme());
-        ClientIoDevice *res = iter == static_creators().constEnd() ? Q_NULLPTR : (*iter)(parent); // if found, execute the creator function pointer
+class QtROClientFactory
+{
+public:
+    QtROClientFactory();
+
+    static QtROClientFactory *instance();
+
+    /// creates an object from a string
+    ClientIoDevice *create(const QUrl &url, QObject *parent = Q_NULLPTR)
+    {
+        auto creatorFunc = m_creatorFuncs.value(url.scheme());
+        if (!creatorFunc)
+            return nullptr;
+
+        ClientIoDevice *res = (*creatorFunc)(parent);
         if (res)
             res->m_url = url;
         return res;
     }
 
+    template<typename T>
+    void registerType(const QString &id)
+    {
+        m_creatorFuncs[id] = [](QObject *parent) -> ClientIoDevice * {
+            return new T(parent);
+        };
+    }
+
 private:
-    typedef ClientIoDevice *Creator_t(QObject *); // function pointer to create ClientIoDevice
-    typedef QHash<QString, Creator_t*> Creators_t; // map from id to creator
-    static Creators_t& static_creators() { static Creators_t s_creators; return s_creators; } // static instance of map
-    template<class T = int> struct Register {
-        static ClientIoDevice *create(QObject *parent) { return new T(parent); }
-        static Creator_t *init_creator(const QString &id) { return static_creators()[id] = create; }
-        static Creator_t *creator;
-    };
+    using CreatorFunc = ClientIoDevice * (*)(QObject *);
+    QHash<QString, CreatorFunc> m_creatorFuncs;
 };
 
-#define REGISTER_QTRO_CLIENT(T, STR) template<> QtROClientFactory::Creator_t* QtROClientFactory::Register<T>::creator = QtROClientFactory::Register<T>::init_creator(QLatin1String(STR))
-#define REGISTER_QTRO_SERVER(T, STR) template<> QtROServerFactory::Creator_t* QtROServerFactory::Register<T>::creator = QtROServerFactory::Register<T>::init_creator(QLatin1String(STR))
+template <typename T>
+inline void qRegisterRemoteObjectsClient(const QString &id)
+{
+    QtROClientFactory::instance()->registerType<T>(id);
+}
+
+template <typename T>
+inline void qRegisterRemoteObjectsServer(const QString &id)
+{
+    QtROServerFactory::instance()->registerType<T>(id);
+}
 
 QT_END_NAMESPACE
 
