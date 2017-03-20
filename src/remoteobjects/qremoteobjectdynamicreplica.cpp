@@ -159,7 +159,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
             QVariantList args;
             args.reserve(typeSize);
             for (int i = 0; i < typeSize; ++i) {
-                args.push_back(QVariant(QVariant::nameToType(types[i].constData()), argv[i + 1]));
+                args.push_back(QVariant(QMetaType::type(types[i].constData()), argv[i + 1]));
             }
 
             if (debugArgs) {
