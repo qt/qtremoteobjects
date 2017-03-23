@@ -55,7 +55,7 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
-#ifndef Q_OS_WIN
+#if !defined(Q_OS_WIN) && !defined(Q_OS_INTEGRITY)
 Q_STATIC_ASSERT_X(&QRemoteObjectReplica::staticMetaObject == &QRemoteObjectDynamicReplica::staticMetaObject,
                   "m_signalOffset initializer expects QRemoteObjectDynamicReplica to not have a unique staticMetaObject");
 #endif

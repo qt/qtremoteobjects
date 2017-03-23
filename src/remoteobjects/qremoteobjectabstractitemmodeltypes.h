@@ -130,6 +130,11 @@ inline QDataStream& operator>>(QDataStream &stream, QItemSelectionModel::Selecti
     return ret;
 }
 
+inline QDebug operator<<(QDebug stream, const IndexValuePair &pair)
+{
+    return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << ", hasChildren=" << pair.hasChildren << ", flags=" << pair.flags << "]";
+}
+
 inline QDebug operator<<(QDebug stream, const DataEntries &entries)
 {
     return stream.nospace() << "DataEntries[" << entries.data << "]";
@@ -143,11 +148,6 @@ inline QDataStream& operator<<(QDataStream &stream, const DataEntries &entries)
 inline QDataStream& operator>>(QDataStream &stream, DataEntries &entries)
 {
     return stream >> entries.data;
-}
-
-inline QDebug operator<<(QDebug stream, const IndexValuePair &pair)
-{
-    return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << ", hasChildren=" << pair.hasChildren << ", flags=" << pair.flags << "]";
 }
 
 inline QDataStream& operator<<(QDataStream &stream, const IndexValuePair &pair)
