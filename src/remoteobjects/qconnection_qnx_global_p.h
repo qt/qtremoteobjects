@@ -96,7 +96,7 @@ public:
         if (!name.isEmpty())
             setObjectName(name);
     }
-    void run() Q_DECL_OVERRIDE
+    void run() override
     {
         m_obj->thread_func();
     }

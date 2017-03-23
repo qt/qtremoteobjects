@@ -43,9 +43,9 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectDynamicReplica : public QRemoteObjectR
 public:
     ~QRemoteObjectDynamicReplica();
 
-    const QMetaObject *metaObject() const Q_DECL_OVERRIDE;
-    void *qt_metacast(const char *name) Q_DECL_OVERRIDE;
-    int qt_metacall(QMetaObject::Call call, int id, void **argv) Q_DECL_OVERRIDE;
+    const QMetaObject *metaObject() const override;
+    void *qt_metacast(const char *name) override;
+    int qt_metacall(QMetaObject::Call call, int id, void **argv) override;
 
 private:
     explicit QRemoteObjectDynamicReplica();

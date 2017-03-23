@@ -45,23 +45,23 @@ public:
     Engine(QObject *parent = nullptr);
     virtual ~Engine();
 
-    bool start() Q_DECL_OVERRIDE;
-    void increaseRpm(int deltaRpm) Q_DECL_OVERRIDE;
+    bool start() override;
+    void increaseRpm(int deltaRpm) override;
 
-    void unnormalizedSignature(int, int) Q_DECL_OVERRIDE {}
+    void unnormalizedSignature(int, int) override {}
 
-    Temperature temperature() Q_DECL_OVERRIDE;
+    Temperature temperature() override;
     void setTemperature(const Temperature &value);
 
-    void setSharedTemperature(const Temperature::Ptr &) Q_DECL_OVERRIDE {}
+    void setSharedTemperature(const Temperature::Ptr &) override {}
 
     bool purchasedPart() {return _purchasedPart;}
 
 public Q_SLOTS:
     void setpurchasedPart(bool value);
 
-    QString myTestString() Q_DECL_OVERRIDE { return _myTestString; }
-    void setMyTestString(QString value) Q_DECL_OVERRIDE { _myTestString = value; }
+    QString myTestString() override { return _myTestString; }
+    void setMyTestString(QString value) override { _myTestString = value; }
 
 private:
     bool _purchasedPart;

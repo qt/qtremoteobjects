@@ -75,11 +75,11 @@ class Persist : public QRemoteObjectPersistedStore
 {
 public:
     Persist() : type(EngineReplica::HYBRID) {}
-    void saveProperties(const QString &, const QByteArray &, const QVariantList &values) Q_DECL_OVERRIDE
+    void saveProperties(const QString &, const QByteArray &, const QVariantList &values) override
     {
         type = values.at(0).value<EngineReplica::EngineType>();
     }
-    QVariantList restoreProperties(const QString &, const QByteArray &) Q_DECL_OVERRIDE
+    QVariantList restoreProperties(const QString &, const QByteArray &) override
     {
         return QVariantList() << QVariant::fromValue(type);
     }

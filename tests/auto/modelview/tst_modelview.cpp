@@ -360,8 +360,8 @@ class RolenamesListModel : public QAbstractListModel
 {
 public:
     explicit RolenamesListModel(QObject *parent = 0) : QAbstractListModel(parent) { }
-    int rowCount(const QModelIndex &) const Q_DECL_OVERRIDE{return m_list.length(); }
-    QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE
+    int rowCount(const QModelIndex &) const override{return m_list.length(); }
+    QVariant data(const QModelIndex &index, int role) const override
     {
        if (role == Qt::UserRole)
            return m_list.at(index.row()).second;
@@ -370,7 +370,7 @@ public:
        else
            return QVariant();
     }
-    QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE
+    QHash<int, QByteArray> roleNames() const override
     {
         QHash<int, QByteArray> roles;
         roles[Qt::UserRole] = "name";

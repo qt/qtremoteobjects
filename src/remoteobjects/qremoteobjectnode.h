@@ -148,7 +148,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode
 {
     Q_OBJECT
 public:
-    void setName(const QString &name) Q_DECL_OVERRIDE;
+    void setName(const QString &name) override;
 
     template <template <typename> class ApiDefinition, typename ObjectType>
     bool enableRemoting(ObjectType *object)
@@ -178,8 +178,8 @@ public:
     QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
     QRemoteObjectHost(const QUrl &address, QObject *parent);
     virtual ~QRemoteObjectHost();
-    QUrl hostUrl() const Q_DECL_OVERRIDE;
-    bool setHostUrl(const QUrl &hostAddress) Q_DECL_OVERRIDE;
+    QUrl hostUrl() const override;
+    bool setHostUrl(const QUrl &hostAddress) override;
 
 protected:
     QRemoteObjectHost(QRemoteObjectHostPrivate &, QObject *);
@@ -194,7 +194,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistryHost : public QRemoteObjectHos
 public:
     QRemoteObjectRegistryHost(const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
     virtual ~QRemoteObjectRegistryHost();
-    bool setRegistryUrl(const QUrl &registryUrl) Q_DECL_OVERRIDE;
+    bool setRegistryUrl(const QUrl &registryUrl) override;
 
 protected:
     QRemoteObjectRegistryHost(QRemoteObjectRegistryHostPrivate &, QObject *);

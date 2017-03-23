@@ -75,20 +75,20 @@ public:
     QString serverName() const;
 
     void abort();
-    bool isSequential() const Q_DECL_OVERRIDE;
-    qint64 bytesAvailable() const Q_DECL_OVERRIDE;
-    qint64 bytesToWrite() const Q_DECL_OVERRIDE;
-    bool open(OpenMode openMode = ReadWrite) Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
+    bool isSequential() const override;
+    qint64 bytesAvailable() const override;
+    qint64 bytesToWrite() const override;
+    bool open(OpenMode openMode = ReadWrite) override;
+    void close() override;
     QAbstractSocket::SocketError error() const;
     bool flush();
     bool isValid() const;
 
     QAbstractSocket::SocketState state() const;
-    bool waitForBytesWritten(int msecs = 30000) Q_DECL_OVERRIDE;
+    bool waitForBytesWritten(int msecs = 30000) override;
     bool waitForConnected(int msecs = 30000);
     bool waitForDisconnected(int msecs = 30000);
-    bool waitForReadyRead(int msecs = 30000) Q_DECL_OVERRIDE;
+    bool waitForReadyRead(int msecs = 30000) override;
 
 Q_SIGNALS:
     void connected();
@@ -97,8 +97,8 @@ Q_SIGNALS:
     void stateChanged(QAbstractSocket::SocketState socketState);
 
 protected:
-    qint64 readData(char*, qint64) Q_DECL_OVERRIDE;
-    qint64 writeData(const char*, qint64) Q_DECL_OVERRIDE;
+    qint64 readData(char*, qint64) override;
+    qint64 writeData(const char*, qint64) override;
 
 private:
     Q_DISABLE_COPY(QQnxNativeIo)
@@ -114,18 +114,18 @@ public:
     explicit QIOQnxSource(int rcvid, QObject *parent = nullptr);
     ~QIOQnxSource();
 
-    bool isSequential() const Q_DECL_OVERRIDE;
-    qint64 bytesAvailable() const Q_DECL_OVERRIDE;
-    qint64 bytesToWrite() const Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
+    bool isSequential() const override;
+    qint64 bytesAvailable() const override;
+    qint64 bytesToWrite() const override;
+    void close() override;
     QAbstractSocket::SocketError error() const;
     bool isValid() const;
 
     QAbstractSocket::SocketState state() const;
-    bool waitForBytesWritten(int msecs = 30000) Q_DECL_OVERRIDE;
+    bool waitForBytesWritten(int msecs = 30000) override;
     bool waitForConnected(int msecs = 30000);
     bool waitForDisconnected(int msecs = 30000);
-    bool waitForReadyRead(int msecs = 30000) Q_DECL_OVERRIDE;
+    bool waitForReadyRead(int msecs = 30000) override;
 
 Q_SIGNALS:
     void disconnected();
@@ -133,9 +133,9 @@ Q_SIGNALS:
     void stateChanged(QAbstractSocket::SocketState socketState);
 
 protected:
-    qint64 readData(char*, qint64) Q_DECL_OVERRIDE;
-    qint64 writeData(const char*, qint64) Q_DECL_OVERRIDE;
-    bool open(OpenMode openMode) Q_DECL_OVERRIDE;
+    qint64 readData(char*, qint64) override;
+    qint64 writeData(const char*, qint64) override;
+    bool open(OpenMode openMode) override;
 
 private Q_SLOTS:
     void onDisconnected();

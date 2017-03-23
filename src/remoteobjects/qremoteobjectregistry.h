@@ -62,7 +62,7 @@ protected Q_SLOTS:
     void pushToRegistryIfNeeded();
 
 private:
-    void initialize() Q_DECL_OVERRIDE;
+    void initialize() override;
     explicit QRemoteObjectRegistry();
     explicit QRemoteObjectRegistry(QRemoteObjectNode *node, const QString &name);
     QRemoteObjectSourceLocations hostedSources;

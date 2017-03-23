@@ -137,34 +137,34 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         _methods[5] = qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(IndexList,QVariant,int)>(0),"replicaSetData(IndexList,QVariant,int)",methodArgCount+4,&methodArgTypes[4]);
     }
 
-    QString name() const Q_DECL_OVERRIDE { return m_name; }
-    QString typeName() const Q_DECL_OVERRIDE { return QStringLiteral("QAbstractItemModelAdapter"); }
-    int propertyCount() const Q_DECL_OVERRIDE { return _properties[0]; }
-    int signalCount() const Q_DECL_OVERRIDE { return _signals[0]; }
-    int methodCount() const Q_DECL_OVERRIDE { return _methods[0]; }
-    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE
+    QString name() const override { return m_name; }
+    QString typeName() const override { return QStringLiteral("QAbstractItemModelAdapter"); }
+    int propertyCount() const override { return _properties[0]; }
+    int signalCount() const override { return _signals[0]; }
+    int methodCount() const override { return _methods[0]; }
+    int sourcePropertyIndex(int index) const override
     {
         if (index < 0 || index >= _properties[0])
             return -1;
         return _properties[index+1];
     }
-    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE
+    int sourceSignalIndex(int index) const override
     {
         if (index < 0 || index >= _signals[0])
             return -1;
         return _signals[index+1];
     }
-    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE
+    int sourceMethodIndex(int index) const override
     {
         if (index < 0 || index >= _methods[0])
             return -1;
         return _methods[index+1];
     }
-    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return signalArgCount[index]; }
-    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE { return signalArgTypes[sigIndex][paramIndex]; }
-    int methodParameterCount(int index) const Q_DECL_OVERRIDE { return methodArgCount[index]; }
-    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE { return methodArgTypes[methodIndex][paramIndex]; }
-    int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    int signalParameterCount(int index) const override { return signalArgCount[index]; }
+    int signalParameterType(int sigIndex, int paramIndex) const override { return signalArgTypes[sigIndex][paramIndex]; }
+    int methodParameterCount(int index) const override { return methodArgCount[index]; }
+    int methodParameterType(int methodIndex, int paramIndex) const override { return methodArgTypes[methodIndex][paramIndex]; }
+    int propertyIndexFromSignal(int index) const override
     {
         switch (index) {
         case 0: return _properties[1];
@@ -172,7 +172,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return -1;
     }
-    int propertyRawIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    int propertyRawIndexFromSignal(int index) const override
     {
         switch (index) {
         case 0: return 0;
@@ -180,7 +180,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return -1;
     }
-    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE
+    const QByteArray signalSignature(int index) const override
     {
         switch (index) {
         case 0: return QByteArrayLiteral("availableRolesChanged()");
@@ -195,7 +195,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return QByteArrayLiteral("");
     }
-    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE
+    const QByteArray methodSignature(int index) const override
     {
         switch (index) {
         case 0: return QByteArrayLiteral("replicaSizeRequest(IndexList)");
@@ -206,11 +206,11 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return QByteArrayLiteral("");
     }
-    QMetaMethod::MethodType methodType(int) const Q_DECL_OVERRIDE
+    QMetaMethod::MethodType methodType(int) const override
     {
         return QMetaMethod::Slot;
     }
-    const QByteArray typeName(int index) const Q_DECL_OVERRIDE
+    const QByteArray typeName(int index) const override
     {
         switch (index) {
         case 0: return QByteArrayLiteral("QSize");
@@ -220,8 +220,8 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return QByteArrayLiteral("");
     }
-    QByteArray objectSignature() const Q_DECL_OVERRIDE { return QByteArray{}; }
-    bool isAdapterSignal(int index) const Q_DECL_OVERRIDE
+    QByteArray objectSignature() const override { return QByteArray{}; }
+    bool isAdapterSignal(int index) const override
     {
         switch (index) {
         case 0:
@@ -235,7 +235,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return false;
     }
-    bool isAdapterMethod(int index) const Q_DECL_OVERRIDE
+    bool isAdapterMethod(int index) const override
     {
         switch (index) {
         case 0:
@@ -247,7 +247,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         }
         return false;
     }
-    bool isAdapterProperty(int index) const Q_DECL_OVERRIDE
+    bool isAdapterProperty(int index) const override
     {
         switch (index) {
         case 0:

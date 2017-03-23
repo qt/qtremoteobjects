@@ -50,8 +50,8 @@ public:
     ~MyTestServer();
 
 public Q_SLOTS:
-    bool start() Q_DECL_OVERRIDE;
-    bool stop() Q_DECL_OVERRIDE;
+    bool start() override;
+    bool stop() override;
 };
 
 #endif // MYTESTSERVER_H
