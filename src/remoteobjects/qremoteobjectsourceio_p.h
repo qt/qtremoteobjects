@@ -51,7 +51,6 @@
 
 #include <QIODevice>
 #include <QScopedPointer>
-#include <QSignalMapper>
 
 QT_BEGIN_NAMESPACE
 
@@ -89,8 +88,6 @@ public:
     QSet<ServerIoDevice*> m_connections;
     QHash<QObject *, QRemoteObjectSource*> m_objectToSourceMap;
     QMap<QString, QRemoteObjectSource*> m_remoteObjects;
-    QSignalMapper m_serverDelete;
-    QSignalMapper m_serverRead;
     QHash<ServerIoDevice*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
     QRemoteObjectPackets::DataStreamPacket m_packet;

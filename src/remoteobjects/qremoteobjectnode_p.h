@@ -112,7 +112,6 @@ public:
     QMap<QString, SourceInfo> connectedSources;
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
-    QSignalMapper clientRead;
     QRemoteObjectRegistry *registry;
     int retryInterval;
     QBasicTimer reconnectTimer;

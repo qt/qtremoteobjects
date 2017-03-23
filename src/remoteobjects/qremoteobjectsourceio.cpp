@@ -60,8 +60,6 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *paren
     }
 
     connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
-    connect(&m_serverDelete, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerDisconnect);
-    connect(&m_serverRead, static_cast<void (QSignalMapper::*)(QObject *)>(&QSignalMapper::mapped), this, &QRemoteObjectSourceIo::onServerRead);
 }
 
 QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
@@ -244,10 +242,12 @@ void QRemoteObjectSourceIo::handleConnection()
 
     ServerIoDevice *conn = m_server->nextPendingConnection();
     m_connections.insert(conn);
-    connect(conn, SIGNAL(disconnected()), &m_serverDelete, SLOT(map()));
-    m_serverDelete.setMapping(conn, conn);
-    connect(conn, SIGNAL(readyRead()), &m_serverRead, SLOT(map()));
-    m_serverRead.setMapping(conn, conn);
+    connect(conn, &ServerIoDevice::disconnected, this, [this, conn]() {
+        onServerDisconnect(conn);
+    });
+    connect(conn, &ServerIoDevice::readyRead, this, [this, conn]() {
+        onServerRead(conn);
+    });
 
     QRemoteObjectPackets::ObjectInfoList infos;
     foreach (auto remoteObject, m_remoteObjects) {

@@ -302,8 +302,9 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
     qROPrivDebug() << "Replica Connection isValid" << connection->isOpen();
     QObject::connect(connection, SIGNAL(shouldReconnect(ClientIoDevice*)), q, SLOT(onShouldReconnect(ClientIoDevice*)));
     connection->connectToServer();
-    QObject::connect(connection, SIGNAL(readyRead()), &clientRead, SLOT(map()));
-    clientRead.setMapping(connection, connection);
+    QObject::connect(connection, &ClientIoDevice::readyRead, q, [this, connection]() {
+        onClientRead(connection);
+    });
     return true;
 }
 
@@ -709,12 +710,10 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 
 void QRemoteObjectNodePrivate::initialize()
 {
-    Q_Q(QRemoteObjectNode);
     qRegisterMetaType<QRemoteObjectNode *>();
     qRegisterMetaType<QRemoteObjectNode::ErrorCode>();
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
-    QObject::connect(&clientRead, SIGNAL(mapped(QObject*)), q, SLOT(onClientRead(QObject*)));
 }
 
 bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteArray &b)
