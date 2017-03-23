@@ -62,18 +62,18 @@ class QRemoteObjectSourceIo : public QObject
 {
     Q_OBJECT
 public:
-    explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = Q_NULLPTR);
+    explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = nullptr);
     ~QRemoteObjectSourceIo();
 
     bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName);
-    bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = Q_NULLPTR);
+    bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = nullptr);
     bool disableRemoting(QObject *object);
 
     QUrl serverAddress() const;
 
 public Q_SLOTS:
     void handleConnection();
-    void onServerDisconnect(QObject *obj = Q_NULLPTR);
+    void onServerDisconnect(QObject *obj = nullptr);
     void onServerRead(QObject *obj);
 
 Q_SIGNALS:

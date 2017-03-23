@@ -64,7 +64,7 @@ Q_STATIC_ASSERT_X(&QRemoteObjectReplica::staticMetaObject == &QRemoteObjectDynam
 // in the future.  See FIX #1, #2, #3 in this file.
 
 QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *_node)
-    : QObject(Q_NULLPTR), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0)
+    : QObject(nullptr), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0)
     // Uncomment the following two lines if QRemoteObjectDynamicReplica gets a unique staticMetaObject (FIX #1, #2)
     //, m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount())
     //, m_propertyOffset(meta ? QRemoteObjectReplica::staticMetaObject.propertyCount() : QRemoteObjectDynamicReplica::staticMetaObject.propertyCount())
@@ -83,7 +83,7 @@ QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
 }
 
 QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
-    : QRemoteObjectReplicaPrivate(name, meta, node), connectionToSource(Q_NULLPTR), m_curSerialId(0)
+    : QRemoteObjectReplicaPrivate(name, meta, node), connectionToSource(nullptr), m_curSerialId(0)
 {
 }
 
@@ -98,7 +98,7 @@ QConnectedReplicaPrivate::~QConnectedReplicaPrivate()
 
 bool QRemoteObjectReplicaPrivate::needsDynamicInitialization() const
 {
-    return m_metaObject == Q_NULLPTR;
+    return m_metaObject == nullptr;
 }
 
 void QRemoteObjectReplicaPrivate::setState(QRemoteObjectReplica::State state)
@@ -154,7 +154,7 @@ void QConnectedReplicaPrivate::initialize(const QVariantList &values)
     Q_ASSERT(m_state < QRemoteObjectReplica::Valid);
     setState(QRemoteObjectReplica::Valid);
 
-    void *args[] = {Q_NULLPTR, Q_NULLPTR};
+    void *args[] = {nullptr, nullptr};
     for (int i = 0; i < nParam; ++i) {
         if (changedProperties[i] < 0)
             continue;
@@ -220,7 +220,7 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &bu
     Q_ASSERT(m_state < QRemoteObjectReplica::Valid);
     setState(QRemoteObjectReplica::Valid);
 
-    void *args[] = {Q_NULLPTR, Q_NULLPTR};
+    void *args[] = {nullptr, nullptr};
     for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
         const QMetaProperty mp = m_metaObject->property(index);
         if (mp.hasNotifySignal()) {
@@ -521,7 +521,7 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
     replica objects from QML.
 */
 QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
-    : QObject(Q_NULLPTR)
+    : QObject(nullptr)
     , d_ptr(t == DefaultConstructor ? new QStubReplicaPrivate : 0)
 {
     qRegisterMetaType<State>("State");
@@ -709,7 +709,7 @@ QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject:
     int typeId = QMetaType::type(connectionToSource->m_api->typeName(ReplicaIndex).constData());
     if (!QMetaType(typeId).sizeOf())
         typeId = QVariant::Invalid;
-    QVariant returnValue(typeId, Q_NULLPTR);
+    QVariant returnValue(typeId, nullptr);
 
     const int resolvedIndex = connectionToSource->m_api->sourceMethodIndex(ReplicaIndex);
     if (resolvedIndex < 0) {

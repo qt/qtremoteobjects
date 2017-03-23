@@ -589,7 +589,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "" << endl;
         out << "    void initialize()" << endl;
     } else {
-        out << "    explicit " << className << "(QObject *parent = Q_NULLPTR) : QObject(parent)" << endl;
+        out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
 
         if (mode == SIMPLE_SOURCE) {
             Q_FOREACH (const ASTProperty &property, astClass.properties) {

@@ -97,7 +97,7 @@ public:
     bool isInitialized() const Q_DECL_OVERRIDE { return false; }
     QRemoteObjectReplica::State state() const Q_DECL_OVERRIDE { return QRemoteObjectReplica::State::Uninitialized;}
     bool waitForSource(int) Q_DECL_OVERRIDE { return false; }
-    QRemoteObjectNode *node() const Q_DECL_OVERRIDE { return Q_NULLPTR; }
+    QRemoteObjectNode *node() const Q_DECL_OVERRIDE { return nullptr; }
 
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) Q_DECL_OVERRIDE;

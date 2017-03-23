@@ -57,7 +57,7 @@ class LocalClientIo : public ClientIoDevice
     Q_OBJECT
 
 public:
-    explicit LocalClientIo(QObject *parent = Q_NULLPTR);
+    explicit LocalClientIo(QObject *parent = nullptr);
     ~LocalClientIo();
 
     QIODevice *connection() Q_DECL_OVERRIDE;
@@ -78,7 +78,7 @@ class LocalServerIo : public ServerIoDevice
 {
     Q_OBJECT
 public:
-    explicit LocalServerIo(QLocalSocket *conn, QObject *parent = Q_NULLPTR);
+    explicit LocalServerIo(QLocalSocket *conn, QObject *parent = nullptr);
 
     QIODevice *connection() const Q_DECL_OVERRIDE;
 protected:

@@ -142,7 +142,7 @@ QnxServerImpl::~QnxServerImpl()
 ServerIoDevice *QnxServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
-        return Q_NULLPTR;
+        return nullptr;
 
     return new QnxServerIo(m_server.nextPendingConnection(), this);
 }

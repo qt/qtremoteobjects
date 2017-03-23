@@ -52,7 +52,7 @@ Q_SIGNALS:
     void newConnection();
 
 public:
-    explicit QQnxNativeServer(QObject *parent = Q_NULLPTR);
+    explicit QQnxNativeServer(QObject *parent = nullptr);
     ~QQnxNativeServer();
 
     void close();
@@ -61,7 +61,7 @@ public:
     bool listen(const QString &name);
     QIOQnxSource *nextPendingConnection();
     QString serverName() const;
-    bool waitForNewConnection(int msec = 0, bool *timedOut = Q_NULLPTR);
+    bool waitForNewConnection(int msec = 0, bool *timedOut = nullptr);
 
 private Q_SLOTS:
     void onSourceClosed();

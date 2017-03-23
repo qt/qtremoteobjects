@@ -40,7 +40,7 @@ class SimpleSwitch : public SimpleSwitchSimpleSource
 {
     Q_OBJECT
 public:
-    SimpleSwitch(QObject *parent=Q_NULLPTR);
+    SimpleSwitch(QObject *parent = nullptr);
     ~SimpleSwitch();
     virtual void server_slot(bool clientState);
 public Q_SLOTS:

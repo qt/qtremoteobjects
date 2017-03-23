@@ -57,7 +57,7 @@ class TcpClientIo : public ClientIoDevice
     Q_OBJECT
 
 public:
-    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
+    explicit TcpClientIo(QObject *parent = nullptr);
     ~TcpClientIo();
 
     QIODevice *connection() Q_DECL_OVERRIDE;
@@ -79,7 +79,7 @@ class TcpServerIo : public ServerIoDevice
 {
     Q_OBJECT
 public:
-    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
+    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = nullptr);
 
     QIODevice *connection() const Q_DECL_OVERRIDE;
 protected:

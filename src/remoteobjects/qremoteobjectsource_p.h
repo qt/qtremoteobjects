@@ -78,7 +78,7 @@ public:
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
-    bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
+    bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = nullptr);
     QByteArray m_objectChecksum;
     static const int qobjectPropertyOffset;
     static const int qobjectMethodOffset;

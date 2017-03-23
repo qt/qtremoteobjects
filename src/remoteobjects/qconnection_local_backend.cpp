@@ -140,7 +140,7 @@ LocalServerImpl::~LocalServerImpl()
 ServerIoDevice *LocalServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
-        return Q_NULLPTR;
+        return nullptr;
 
     return new LocalServerIo(m_server.nextPendingConnection(), this);
 }

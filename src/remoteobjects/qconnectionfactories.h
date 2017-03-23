@@ -49,7 +49,7 @@ class ServerIoDevice : public QObject
     Q_DISABLE_COPY(ServerIoDevice)
 
 public:
-    explicit ServerIoDevice(QObject *parent = Q_NULLPTR);
+    explicit ServerIoDevice(QObject *parent = nullptr);
     virtual ~ServerIoDevice();
 
     bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
@@ -81,7 +81,7 @@ class QConnectionAbstractServer : public QObject
     Q_DISABLE_COPY(QConnectionAbstractServer)
 
 public:
-    explicit QConnectionAbstractServer(QObject *parent = Q_NULLPTR);
+    explicit QConnectionAbstractServer(QObject *parent = nullptr);
     virtual ~QConnectionAbstractServer();
 
     virtual bool hasPendingConnections() const = 0;
@@ -104,7 +104,7 @@ class ClientIoDevice : public QObject
     Q_DISABLE_COPY(ClientIoDevice)
 
 public:
-    explicit ClientIoDevice(QObject *parent = Q_NULLPTR);
+    explicit ClientIoDevice(QObject *parent = nullptr);
     virtual ~ClientIoDevice();
 
     bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
@@ -151,7 +151,7 @@ public:
 
     static QtROServerFactory *instance();
 
-    QConnectionAbstractServer *create(const QUrl &url, QObject *parent = Q_NULLPTR)
+    QConnectionAbstractServer *create(const QUrl &url, QObject *parent = nullptr)
     {
         auto creatorFunc = m_creatorFuncs.value(url.scheme());
         return creatorFunc ? (*creatorFunc)(parent) : nullptr;
@@ -178,7 +178,7 @@ public:
     static QtROClientFactory *instance();
 
     /// creates an object from a string
-    ClientIoDevice *create(const QUrl &url, QObject *parent = Q_NULLPTR)
+    ClientIoDevice *create(const QUrl &url, QObject *parent = nullptr)
     {
         auto creatorFunc = m_creatorFuncs.value(url.scheme());
         if (!creatorFunc)

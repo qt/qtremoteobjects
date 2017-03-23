@@ -68,10 +68,10 @@ bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::co
 
 QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     : QObjectPrivate()
-    , registry(Q_NULLPTR)
+    , registry(nullptr)
     , retryInterval(250)
     , lastError(QRemoteObjectNode::NoError)
-    , persistedStore(Q_NULLPTR)
+    , persistedStore(nullptr)
     , persistedStoreOwnership(QRemoteObjectNode::DoNotPassOwnership)
 { }
 
@@ -125,7 +125,7 @@ void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const 
 {
     Q_D(QRemoteObjectNode);
     if (instance->inherits("QRemoteObjectDynamicReplica")) {
-        d->setReplicaPrivate(Q_NULLPTR, instance, name);
+        d->setReplicaPrivate(nullptr, instance, name);
     } else {
         const QMetaObject *meta = instance->metaObject();
         d->setReplicaPrivate(meta, instance, name.isEmpty() ? ::name(meta) : name);
@@ -1340,7 +1340,7 @@ QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name)
 
 QRemoteObjectHostBasePrivate::QRemoteObjectHostBasePrivate()
     : QRemoteObjectNodePrivate()
-    , remoteObjectIo(Q_NULLPTR)
+    , remoteObjectIo(nullptr)
 { }
 
 QRemoteObjectHostPrivate::QRemoteObjectHostPrivate()
@@ -1349,7 +1349,7 @@ QRemoteObjectHostPrivate::QRemoteObjectHostPrivate()
 
 QRemoteObjectRegistryHostPrivate::QRemoteObjectRegistryHostPrivate()
     : QRemoteObjectHostBasePrivate()
-    , registrySource(Q_NULLPTR)
+    , registrySource(nullptr)
 { }
 
 QT_END_NAMESPACE

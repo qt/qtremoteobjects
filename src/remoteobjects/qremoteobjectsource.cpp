@@ -146,7 +146,7 @@ bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index
         if (returnValue) {
             param[0] = returnValue->data();
         } else {
-            param[0] = Q_NULLPTR;
+            param[0] = nullptr;
         }
 
         for (int i = 0; i < args.size(); ++i) {

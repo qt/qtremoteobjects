@@ -120,7 +120,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
     int saved_id = id;
     id = QRemoteObjectReplica::qt_metacall(call, id, argv);
-    if (id < 0 || d->m_metaObject == Q_NULLPTR)
+    if (id < 0 || d->m_metaObject == nullptr)
         return id;
 
     if (call == QMetaObject::ReadProperty || call == QMetaObject::WriteProperty) {

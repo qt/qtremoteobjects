@@ -209,7 +209,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     int typeId = QMetaType::type(pp->m_api->typeName(index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
-                    QVariant returnValue(typeId, Q_NULLPTR);
+                    QVariant returnValue(typeId, nullptr);
                     pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->isAdapterMethod(index), resolvedIndex, m_rxArgs, &returnValue);
                     // send reply if wanted
                     if (serialId >= 0) {

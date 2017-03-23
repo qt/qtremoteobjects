@@ -38,7 +38,7 @@ class MinuteTimer : public MinuteTimerSimpleSource
 {
     Q_OBJECT
 public:
-    MinuteTimer(QObject *parent=Q_NULLPTR);
+    MinuteTimer(QObject *parent = nullptr);
     virtual ~MinuteTimer();
 
 public slots:

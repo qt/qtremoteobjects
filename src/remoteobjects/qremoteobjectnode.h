@@ -85,8 +85,8 @@ public:
         PassOwnershipToNode
     };
 
-    QRemoteObjectNode(QObject *parent = Q_NULLPTR);
-    QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = Q_NULLPTR);
+    QRemoteObjectNode(QObject *parent = nullptr);
+    QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = nullptr);
     virtual ~QRemoteObjectNode();
 
     Q_INVOKABLE bool connectToNode(const QUrl &address);
@@ -157,7 +157,7 @@ public:
         return enableRemoting(object, api);
     }
     bool enableRemoting(QObject *object, const QString &name = QString());
-    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = Q_NULLPTR);
+    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = nullptr);
     bool disableRemoting(QObject *remoteObject);
 
 protected:
@@ -166,7 +166,7 @@ protected:
     QRemoteObjectHostBase(QRemoteObjectHostBasePrivate &, QObject *);
 
 private:
-    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter = Q_NULLPTR);
+    bool enableRemoting(QObject *object, const SourceApiMap *, QObject *adapter = nullptr);
     Q_DECLARE_PRIVATE(QRemoteObjectHostBase)
 };
 
@@ -174,8 +174,8 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHost : public QRemoteObjectHostBase
 {
     Q_OBJECT
 public:
-    QRemoteObjectHost(QObject *parent = Q_NULLPTR);
-    QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = Q_NULLPTR);
+    QRemoteObjectHost(QObject *parent = nullptr);
+    QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
     QRemoteObjectHost(const QUrl &address, QObject *parent);
     virtual ~QRemoteObjectHost();
     QUrl hostUrl() const Q_DECL_OVERRIDE;
@@ -192,7 +192,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistryHost : public QRemoteObjectHos
 {
     Q_OBJECT
 public:
-    QRemoteObjectRegistryHost(const QUrl &registryAddress = QUrl(), QObject *parent = Q_NULLPTR);
+    QRemoteObjectRegistryHost(const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
     virtual ~QRemoteObjectRegistryHost();
     bool setRegistryUrl(const QUrl &registryUrl) Q_DECL_OVERRIDE;
 

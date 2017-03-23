@@ -42,7 +42,7 @@ class Engine : public EngineSimpleSource
     Q_PROPERTY(bool purchasedPart READ purchasedPart WRITE setpurchasedPart)
 
 public:
-    Engine(QObject *parent=Q_NULLPTR);
+    Engine(QObject *parent = nullptr);
     virtual ~Engine();
 
     bool start() Q_DECL_OVERRIDE;

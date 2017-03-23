@@ -39,7 +39,7 @@ class tester : public QObject
 {
     Q_OBJECT
 public:
-    tester() : QObject(Q_NULLPTR)
+    tester() : QObject(nullptr)
     {
         QRemoteObjectNode m_client(QUrl(QStringLiteral("local:registry")));
         ptr1.reset(m_client.acquire< MinuteTimerReplica >());

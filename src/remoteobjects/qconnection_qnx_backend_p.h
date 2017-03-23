@@ -92,7 +92,7 @@ class QnxClientIo : public ClientIoDevice
     Q_OBJECT
 
 public:
-    explicit QnxClientIo(QObject *parent = Q_NULLPTR);
+    explicit QnxClientIo(QObject *parent = nullptr);
     ~QnxClientIo();
 
     QIODevice *connection() Q_DECL_OVERRIDE;
@@ -112,7 +112,7 @@ private:
 class QnxServerIo : public ServerIoDevice
 {
 public:
-    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = Q_NULLPTR);
+    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = nullptr);
 
     QIODevice *connection() const Q_DECL_OVERRIDE;
 protected:

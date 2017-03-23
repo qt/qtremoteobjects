@@ -56,7 +56,7 @@ class TimeModel : public QObject
     Q_PROPERTY(bool isValid READ isValid NOTIFY isValidChanged)
 
 public:
-    TimeModel(QObject *parent=0) : QObject(parent), d_ptr(Q_NULLPTR)
+    TimeModel(QObject *parent = nullptr) : QObject(parent), d_ptr(nullptr)
     {
         d_ptr.reset(m_client.acquire< MinuteTimerReplica >());
         connect(d_ptr.data(), SIGNAL(hourChanged()), this, SIGNAL(timeChanged()));
