@@ -33,6 +33,8 @@
 
 #include "qconnection_qnx_backend_p.h"
 
+QT_BEGIN_NAMESPACE
+
 QnxClientIo::QnxClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
@@ -178,3 +180,5 @@ void QnxServerImpl::close()
 
 REGISTER_QTRO_CLIENT(QnxClientIo, "qnx");
 REGISTER_QTRO_SERVER(QnxServerImpl, "qnx");
+
+QT_END_NAMESPACE

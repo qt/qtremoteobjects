@@ -37,6 +37,8 @@
 #include "qconnection_qnx_server.h"
 #include "qconnection_qnx_server_p.h"
 
+QT_BEGIN_NAMESPACE
+
 QQnxNativeServer::QQnxNativeServer(QObject *parent)
     : QObject(*new QQnxNativeServerPrivate, parent)
 {
@@ -507,3 +509,5 @@ void QQnxNativeServerPrivate::closeHamResources()
     ham_disconnect(0);
 }
 #endif
+
+QT_END_NAMESPACE
