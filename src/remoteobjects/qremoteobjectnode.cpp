@@ -189,9 +189,9 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 */
 
 /*!
-    \fn virtual void QRemoteObjectPersistedStore::saveProperties(const QString &repName, const QVariantList &values)
+    \fn virtual void QRemoteObjectPersistedStore::saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values)
 
-    This method will be provided the replica class's \a repName and the list of
+    This method will be provided the replica class's \a repName, \a repSig and the list of
     \a values that PERSISTED properties have when the replica destructor was
     called. It is the responsibility of the inheriting class to store the
     information in a manner consistent for \l
@@ -201,9 +201,9 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 */
 
 /*!
-    \fn virtual QVariantList QRemoteObjectPersistedStore::restoreProperties(const QString &repName)
+    \fn virtual QVariantList QRemoteObjectPersistedStore::restoreProperties(const QString &repName, const QByteArray &repSig)
 
-    This method will be provided the replica class's \a repName when the
+    This method will be provided the replica class's \a repName and \a repSig when the
     replica is being initialized. It is the responsibility of the inheriting
     class to get the last values persisted by \l
     QRemoteObjectPersistedStore::saveProperties and return them. An empty

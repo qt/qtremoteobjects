@@ -482,9 +482,11 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 */
 
 /*!
-    \fn void QRemoteObjectReplica::stateChanged()
+    \fn void QRemoteObjectReplica::stateChanged(State state, State oldState)
 
     This signal is emitted whenever a replica's state toggles between \l QRemoteObjectReplica::State.
+
+    The change in state is represented with \a state and \a oldState.
 
     \sa state(), initialized()
 */
