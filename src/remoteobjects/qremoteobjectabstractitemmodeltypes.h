@@ -179,6 +179,8 @@ inline QString modelIndexToString(const ModelIndex &index)
 
 inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel *model, bool *ok = nullptr, bool ensureItem = false)
 {
+    if (ok)
+        *ok = true;
     QModelIndex result;
     for (int i = 0; i < list.count(); ++i) {
         const ModelIndex &index = list[i];
