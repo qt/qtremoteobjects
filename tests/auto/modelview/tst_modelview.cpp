@@ -1183,9 +1183,9 @@ void TestModelView::testSelectionFromReplica()
     for (int i = 0; i < 4; ++i)
         simpleModel.appendRow(new QStandardItem(QString("item %0").arg(i)));
     QItemSelectionModel selectionModel(&simpleModel);
-    m_basicServer.enableRemoting(&simpleModel, "simpleModel", roles, &selectionModel);
+    m_basicServer.enableRemoting(&simpleModel, "simpleModelFromReplica", roles, &selectionModel);
 
-    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("simpleModel"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("simpleModelFromReplica"));
     QItemSelectionModel *replicaSelectionModel = model->selectionModel();
 
     FetchData f(model.data());
@@ -1203,9 +1203,9 @@ void TestModelView::testSelectionFromSource()
     for (int i = 0; i < 4; ++i)
         simpleModel.appendRow(new QStandardItem(QString("item %0").arg(i)));
     QItemSelectionModel selectionModel(&simpleModel);
-    m_basicServer.enableRemoting(&simpleModel, "simpleModel", roles, &selectionModel);
+    m_basicServer.enableRemoting(&simpleModel, "simpleModelFromSource", roles, &selectionModel);
 
-    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("simpleModel"));
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("simpleModelFromSource"));
     QItemSelectionModel *replicaSelectionModel = model->selectionModel();
 
     FetchData f(model.data());
