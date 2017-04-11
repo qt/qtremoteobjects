@@ -33,7 +33,7 @@
 
 #include <QRemoteObjectNode>
 
-#include "pod_replica.h"
+#include "rep_pod_replica.h"
 
 int main(int argc, char **argv)
 {
