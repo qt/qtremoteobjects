@@ -83,7 +83,6 @@ protected:
     QRemoteObjectPendingCall sendWithReply(QMetaObject::Call call, int index, const QVariantList &args);
 
 protected:
-    void setProperty(int i, const QVariant &);
     void setProperties(const QVariantList &);
     const QVariant propAsVariant(int i) const;
     void persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props) const;

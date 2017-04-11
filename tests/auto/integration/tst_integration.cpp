@@ -71,6 +71,32 @@ Q_SIGNALS:
     void send(const QByteArray &data);
 };
 
+class TestDynamic : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int value READ value WRITE setValue NOTIFY valueChanged)
+public:
+    TestDynamic(QObject *parent=nullptr) :
+        QObject(parent),
+        m_value(0) {}
+
+    int value() const { return m_value; }
+    void setValue(int value)
+    {
+        if (m_value == value)
+            return;
+
+        m_value = value;
+        emit valueChanged();
+    }
+
+signals:
+    void valueChanged();
+
+private:
+    int m_value;
+};
+
 class Persist : public QRemoteObjectPersistedStore
 {
 public:
@@ -971,6 +997,40 @@ private slots:
 
         QCOMPARE(engine_r->rpm(), e.rpm());
         QCOMPARE(speedometer_r->mph(), s.mph());
+    }
+
+    void rawDynamicReplicaTest()
+    {
+        QRemoteObjectHost host(hostUrl);
+        SET_NODE_NAME(host);
+        TestDynamic source;
+        host.enableRemoting(&source, "TestDynamic");
+
+        QRemoteObjectNode client;
+        client.connectToNode(hostUrl);
+        Q_SET_OBJECT_NAME(client);
+
+        const QScopedPointer<QRemoteObjectDynamicReplica> replica(client.acquireDynamic(QStringLiteral("TestDynamic")));
+        replica->waitForSource();
+        QVERIFY(replica->isInitialized());
+
+        QSignalSpy spy(replica.data(), SIGNAL(valueChanged()));
+
+        const QMetaObject *metaObject = replica->metaObject();
+        const int propIndex = metaObject->indexOfProperty("value");
+        QVERIFY(propIndex != -1);
+        const int signalIndex = metaObject->indexOfSignal("valueChanged()");
+        QVERIFY(signalIndex != -1);
+
+        // replica gets source change
+        source.setValue(1);
+        QTRY_COMPARE(spy.count(), 1);
+        QCOMPARE(replica->property("value"), QVariant(1));
+
+        // source gets replica change
+        replica->setProperty("value", 2);
+        QTRY_COMPARE(replica->property("value"), QVariant(2));
+        QCOMPARE(source.value(), 2);
     }
 
     void dynamicReplicaTest()

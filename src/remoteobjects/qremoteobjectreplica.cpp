@@ -577,14 +577,6 @@ void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 }
 
 /*!
-    \internal
-*/
-void QRemoteObjectReplica::setProperty(int i, const QVariant &prop)
-{
-    d_ptr->setProperty(i, prop);
-}
-
-/*!
     Returns \c true if this replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
 
     \sa state()

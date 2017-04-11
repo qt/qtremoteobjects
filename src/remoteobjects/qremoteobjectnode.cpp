@@ -329,7 +329,7 @@ void QRemoteObjectNodePrivate::onRemoteObjectSourceAdded(const QRemoteObjectSour
         QRemoteObjectSourceLocations locs = registry->sourceLocations();
         locs[entry.first] = entry.second;
         //TODO Is there a way to extend QRemoteObjectSourceLocations in place?
-        registry->setProperty(0, QVariant::fromValue(locs));
+        registry->d_ptr->setProperty(0, QVariant::fromValue(locs));
         qROPrivDebug() << "onRemoteObjectSourceAdded, now locations =" << locs;
     }
     if (replicas.contains(entry.first)) //We have a replica waiting on this remoteObject
@@ -351,7 +351,7 @@ void QRemoteObjectNodePrivate::onRemoteObjectSourceRemoved(const QRemoteObjectSo
     if (!entry.first.isEmpty()) {
         QRemoteObjectSourceLocations locs = registry->sourceLocations();
         locs.remove(entry.first);
-        registry->setProperty(0, QVariant::fromValue(locs));
+        registry->d_ptr->setProperty(0, QVariant::fromValue(locs));
     }
 }
 
