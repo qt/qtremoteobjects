@@ -66,14 +66,27 @@ Q_SIGNALS:
     void send(const QByteArray &data);
 };
 
-class TestDynamic : public QObject
+class TestDynamicBase : public QObject
+{
+    Q_OBJECT
+public:
+    TestDynamicBase(QObject *parent=nullptr) : QObject(parent) {}
+
+signals:
+    void otherValueChanged();
+};
+
+
+class TestDynamic : public TestDynamicBase
 {
     Q_OBJECT
     Q_PROPERTY(int value READ value WRITE setValue NOTIFY valueChanged)
+    Q_PROPERTY(int otherValue READ otherValue WRITE setOtherValue NOTIFY otherValueChanged)
 public:
     TestDynamic(QObject *parent=nullptr) :
-        QObject(parent),
-        m_value(0) {}
+        TestDynamicBase(parent),
+        m_value(0),
+        m_otherValue(0) {}
 
     int value() const { return m_value; }
     void setValue(int value)
@@ -85,11 +98,22 @@ public:
         emit valueChanged();
     }
 
+    int otherValue() const { return m_otherValue; }
+    void setOtherValue(int otherValue)
+    {
+        if (m_otherValue == otherValue)
+            return;
+
+        m_otherValue = otherValue;
+        emit otherValueChanged();
+    }
+
 signals:
     void valueChanged();
 
 private:
     int m_value;
+    int m_otherValue;
 };
 
 class TestPersistedStore : public QRemoteObjectPersistedStore
@@ -1030,6 +1054,22 @@ private slots:
         replica->setProperty("value", 2);
         QTRY_COMPARE(replica->property("value"), QVariant(2));
         QCOMPARE(source.value(), 2);
+
+        // test parent NOTIFY
+        QSignalSpy otherSpy(replica.data(), SIGNAL(otherValueChanged()));
+
+        const int baseSignalIndex = metaObject->indexOfSignal("otherValueChanged()");
+        QVERIFY(baseSignalIndex != -1);
+
+        // replica gets source change
+        source.setOtherValue(1);
+        QTRY_COMPARE(otherSpy.count(), 1);
+        QCOMPARE(replica->property("otherValue"), QVariant(1));
+
+        // source gets replica change
+        replica->setProperty("otherValue", 2);
+        QTRY_COMPARE(replica->property("otherValue"), QVariant(2));
+        QCOMPARE(source.otherValue(), 2);
     }
 
     void dynamicReplicaTest()
