@@ -57,7 +57,7 @@ class SimpleSwitch : public SimpleSwitchSimpleSource
 {
     Q_OBJECT
 public:
-    SimpleSwitch(QObject *parent=Q_NULLPTR);
+    SimpleSwitch(QObject *parent = nullptr);
     ~SimpleSwitch();
     virtual void server_slot(bool clientState);
 public Q_SLOTS:
@@ -182,7 +182,7 @@ private:
 
 // constructor
 Client::Client(QSharedPointer<SimpleSwitchReplica> ptr) :
-    QObject(Q_NULLPTR),reptr(ptr)
+    QObject(nullptr),reptr(ptr)
 {
     initConnections();
     //We can connect to SimpleSwitchReplica Signals/Slots
@@ -281,7 +281,7 @@ private:
 
 // constructor
 DynamicClient::DynamicClient(QSharedPointer<QRemoteObjectDynamicReplica> ptr) :
-    QObject(Q_NULLPTR), reptr(ptr)
+    QObject(nullptr), reptr(ptr)
 {
 
     //connect signal for replica valid changed with signal slot initialization

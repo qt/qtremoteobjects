@@ -46,7 +46,7 @@ using namespace QtRemoteObjects;
 
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
     : QObject(parent)
-    , m_server(QtROServerFactory::create(address, this))
+    , m_server(QtROServerFactory::instance()->create(address, this))
 {
     if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;
@@ -207,7 +207,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     int typeId = QMetaType::type(pp->m_api->typeName(index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
-                    QVariant returnValue(typeId, Q_NULLPTR);
+                    QVariant returnValue(typeId, nullptr);
                     pp->invoke(QMetaObject::InvokeMetaMethod, pp->m_api->isAdapterMethod(index), resolvedIndex, m_rxArgs, &returnValue);
                     // send reply if wanted
                     if (serialId >= 0) {

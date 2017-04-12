@@ -78,7 +78,7 @@ public:
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
     void addListener(ServerIoDevice *io, bool dynamic = false);
     int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
-    bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = Q_NULLPTR);
+    bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = nullptr);
     QByteArray m_objectChecksum;
     static const int qobjectPropertyOffset;
     static const int qobjectMethodOffset;
@@ -89,52 +89,52 @@ class DynamicApiMap : public SourceApiMap
 public:
     DynamicApiMap(const QMetaObject *metaObject, const QString &name, const QString &typeName);
     ~DynamicApiMap() {}
-    QString name() const Q_DECL_OVERRIDE { return m_name; }
-    QString typeName() const Q_DECL_OVERRIDE { return m_typeName; }
-    int propertyCount() const Q_DECL_OVERRIDE { return m_properties.size(); }
-    int signalCount() const Q_DECL_OVERRIDE { return m_signals.size(); }
-    int methodCount() const Q_DECL_OVERRIDE { return m_methods.size(); }
-    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE
+    QString name() const override { return m_name; }
+    QString typeName() const override { return m_typeName; }
+    int propertyCount() const override { return m_properties.size(); }
+    int signalCount() const override { return m_signals.size(); }
+    int methodCount() const override { return m_methods.size(); }
+    int sourcePropertyIndex(int index) const override
     {
         if (index < 0 || index >= propertyCount())
             return -1;
         return m_properties.at(index);
     }
-    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE
+    int sourceSignalIndex(int index) const override
     {
         if (index < 0 || index >= signalCount())
             return -1;
         return m_signals.at(index);
     }
-    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE
+    int sourceMethodIndex(int index) const override
     {
         if (index < 0 || index >= methodCount())
             return -1;
         return m_methods.at(index);
     }
-    int signalParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(m_signals.at(index)); }
-    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(m_signals.at(sigIndex), paramIndex); }
-    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE { return signature(m_signals.at(index)); }
-    int methodParameterCount(int index) const Q_DECL_OVERRIDE { return parameterCount(m_methods.at(index)); }
-    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE { return parameterType(m_methods.at(methodIndex), paramIndex); }
-    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE { return signature(m_methods.at(index)); }
-    QMetaMethod::MethodType methodType(int index) const Q_DECL_OVERRIDE;
-    const QByteArray typeName(int index) const Q_DECL_OVERRIDE;
-    int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    int signalParameterCount(int index) const override { return parameterCount(m_signals.at(index)); }
+    int signalParameterType(int sigIndex, int paramIndex) const override { return parameterType(m_signals.at(sigIndex), paramIndex); }
+    const QByteArray signalSignature(int index) const override { return signature(m_signals.at(index)); }
+    int methodParameterCount(int index) const override { return parameterCount(m_methods.at(index)); }
+    int methodParameterType(int methodIndex, int paramIndex) const override { return parameterType(m_methods.at(methodIndex), paramIndex); }
+    const QByteArray methodSignature(int index) const override { return signature(m_methods.at(index)); }
+    QMetaMethod::MethodType methodType(int index) const override;
+    const QByteArray typeName(int index) const override;
+    int propertyIndexFromSignal(int index) const override
     {
         if (index >= 0 && index < m_propertyAssociatedWithSignal.size())
             return m_properties.at(m_propertyAssociatedWithSignal.at(index));
         return -1;
     }
-    int propertyRawIndexFromSignal(int index) const Q_DECL_OVERRIDE
+    int propertyRawIndexFromSignal(int index) const override
     {
         if (index >= 0 && index < m_propertyAssociatedWithSignal.size())
             return m_propertyAssociatedWithSignal.at(index);
         return -1;
     }
-    QByteArray objectSignature() const Q_DECL_OVERRIDE { return m_objectSignature; }
+    QByteArray objectSignature() const override { return m_objectSignature; }
 
-    bool isDynamic() const Q_DECL_OVERRIDE { return true; }
+    bool isDynamic() const override { return true; }
 private:
     int parameterCount(int objectIndex) const;
     int parameterType(int objectIndex, int paramIndex) const;

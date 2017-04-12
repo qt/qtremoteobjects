@@ -85,7 +85,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPendingCallWatcher: public QObject, pu
     Q_OBJECT
 
 public:
-    QRemoteObjectPendingCallWatcher(const QRemoteObjectPendingCall &call, QObject *parent = Q_NULLPTR);
+    QRemoteObjectPendingCallWatcher(const QRemoteObjectPendingCall &call, QObject *parent = nullptr);
     ~QRemoteObjectPendingCallWatcher();
 
     bool isFinished() const;

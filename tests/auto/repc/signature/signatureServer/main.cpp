@@ -43,14 +43,14 @@ public:
     bool shouldQuit = false;
     // TestClassSimpleSource interface
 public slots:
-    bool slot1() Q_DECL_OVERRIDE {return true;}
-    QString slot2() Q_DECL_OVERRIDE {return QLatin1String("Hello there");}
-    void ping(const QString &message) Q_DECL_OVERRIDE
+    bool slot1() override {return true;}
+    QString slot2() override {return QLatin1String("Hello there");}
+    void ping(const QString &message) override
     {
         emit pong(message);
     }
 
-    bool quit() Q_DECL_OVERRIDE
+    bool quit() override
     {
         qDebug() << "quit() called";
 

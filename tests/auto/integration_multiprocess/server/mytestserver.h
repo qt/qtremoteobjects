@@ -46,12 +46,12 @@ class MyTestServer : public MyInterfaceSimpleSource
     Q_OBJECT
 
 public:
-    MyTestServer(QObject *parent = Q_NULLPTR);
+    MyTestServer(QObject *parent = nullptr);
     ~MyTestServer();
 
 public Q_SLOTS:
-    bool start() Q_DECL_OVERRIDE;
-    bool stop() Q_DECL_OVERRIDE;
+    bool start() override;
+    bool stop() override;
 };
 
 #endif // MYTESTSERVER_H

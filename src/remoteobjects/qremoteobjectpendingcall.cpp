@@ -46,7 +46,7 @@ QRemoteObjectPendingCallData::QRemoteObjectPendingCallData(int serialId, QRemote
     : replica(replica)
     , serialId(serialId)
     , error(QRemoteObjectPendingCall::InvalidMessage)
-    , watcherHelper(Q_NULLPTR)
+    , watcherHelper(nullptr)
 {
 }
 

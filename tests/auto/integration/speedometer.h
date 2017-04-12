@@ -40,7 +40,7 @@ class Speedometer : public SpeedometerSimpleSource
 {
     Q_OBJECT
 public:
-    Speedometer(QObject *parent=Q_NULLPTR);
+    Speedometer(QObject *parent = nullptr);
     virtual ~Speedometer();
 
 private:

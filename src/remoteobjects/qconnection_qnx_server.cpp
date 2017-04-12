@@ -37,6 +37,8 @@
 #include "qconnection_qnx_server.h"
 #include "qconnection_qnx_server_p.h"
 
+QT_BEGIN_NAMESPACE
+
 QQnxNativeServer::QQnxNativeServer(QObject *parent)
     : QObject(*new QQnxNativeServerPrivate, parent)
 {
@@ -378,14 +380,14 @@ void QQnxNativeServerPrivate::thread_func()
         io->d_func()->m_serverClosing.ref();
     mutex.unlock();
     name_detach(attachStruct, 0);
-    attachStruct = Q_NULLPTR;
+    attachStruct = nullptr;
     qCDebug(QT_REMOTEOBJECT) << "Server thread_func stopped";
 }
 
 bool QQnxNativeServerPrivate::listen(const QString &name)
 {
     attachStruct = name_attach(NULL, qPrintable(name), 0);
-    if (attachStruct == Q_NULLPTR) {
+    if (attachStruct == nullptr) {
         qCDebug(QT_REMOTEOBJECT, "name_attach call failed");
         return false;
     }
@@ -413,7 +415,7 @@ void QQnxNativeServerPrivate::cleanupIOSource(QIOQnxSource *conn)
 
 void QQnxNativeServerPrivate::teardownServer()
 {
-    if (attachStruct == Q_NULLPTR)
+    if (attachStruct == nullptr)
         return;
 
     running.deref();
@@ -507,3 +509,5 @@ void QQnxNativeServerPrivate::closeHamResources()
     ham_disconnect(0);
 }
 #endif
+
+QT_END_NAMESPACE

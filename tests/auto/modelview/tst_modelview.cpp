@@ -360,8 +360,8 @@ class RolenamesListModel : public QAbstractListModel
 {
 public:
     explicit RolenamesListModel(QObject *parent = 0) : QAbstractListModel(parent) { }
-    int rowCount(const QModelIndex &) const Q_DECL_OVERRIDE{return m_list.length(); }
-    QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE
+    int rowCount(const QModelIndex &) const override{return m_list.length(); }
+    QVariant data(const QModelIndex &index, int role) const override
     {
        if (role == Qt::UserRole)
            return m_list.at(index.row()).second;
@@ -370,7 +370,7 @@ public:
        else
            return QVariant();
     }
-    QHash<int, QByteArray> roleNames() const Q_DECL_OVERRIDE
+    QHash<int, QByteArray> roleNames() const override
     {
         QHash<int, QByteArray> roles;
         roles[Qt::UserRole] = "name";
@@ -621,6 +621,9 @@ private slots:
 
     void testModelTest();
     void testSortFilterModel();
+
+    void testSelectionFromReplica();
+    void testSelectionFromSource();
 
     void cleanup();
 };
@@ -1171,6 +1174,46 @@ void TestModelView::testSetDataTree()
     WaitForDataChanged waiterReplica(pendingReplica, &dataChangedReplicaSpy);
     QVERIFY(waiterReplica.wait());
     compareData(&m_sourceModel, model.data());
+}
+
+void TestModelView::testSelectionFromReplica()
+{
+    QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole;
+    QStandardItemModel simpleModel;
+    for (int i = 0; i < 4; ++i)
+        simpleModel.appendRow(new QStandardItem(QString("item %0").arg(i)));
+    QItemSelectionModel selectionModel(&simpleModel);
+    m_basicServer.enableRemoting(&simpleModel, "simpleModelFromReplica", roles, &selectionModel);
+
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("simpleModelFromReplica"));
+    QItemSelectionModel *replicaSelectionModel = model->selectionModel();
+
+    FetchData f(model.data());
+    f.addAll();
+    QVERIFY(f.fetchAndWait());
+
+    replicaSelectionModel->setCurrentIndex(model->index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
+    QTRY_COMPARE(selectionModel.currentIndex().row(), 1);
+}
+
+void TestModelView::testSelectionFromSource()
+{
+    QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole;
+    QStandardItemModel simpleModel;
+    for (int i = 0; i < 4; ++i)
+        simpleModel.appendRow(new QStandardItem(QString("item %0").arg(i)));
+    QItemSelectionModel selectionModel(&simpleModel);
+    m_basicServer.enableRemoting(&simpleModel, "simpleModelFromSource", roles, &selectionModel);
+
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("simpleModelFromSource"));
+    QItemSelectionModel *replicaSelectionModel = model->selectionModel();
+
+    FetchData f(model.data());
+    f.addAll();
+    QVERIFY(f.fetchAndWait());
+
+    selectionModel.setCurrentIndex(simpleModel.index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
+    QTRY_COMPARE(replicaSelectionModel->currentIndex().row(), 1);
 }
 
 void TestModelView::cleanup()

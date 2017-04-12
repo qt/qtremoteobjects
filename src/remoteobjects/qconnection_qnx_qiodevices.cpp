@@ -36,6 +36,8 @@
 #include "qconnection_qnx_server.h"
 #include "qconnection_qnx_qiodevices_p.h"
 
+QT_BEGIN_NAMESPACE
+
 QQnxNativeIoPrivate::QQnxNativeIoPrivate()
     : QIODevicePrivate()
     , serverId(-1)
@@ -619,3 +621,4 @@ qint64 QIOQnxSource::writeData(const char *data, qint64 size)
     return size;
 }
 
+QT_END_NAMESPACE

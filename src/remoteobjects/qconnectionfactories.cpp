@@ -34,9 +34,26 @@
 #include "qconnectionfactories.h"
 #include "qconnectionfactories_p.h"
 
+// BEGIN: Backends
+#if defined(Q_OS_QNX)
+#include "qconnection_qnx_backend_p.h"
+#endif
+#include "qconnection_local_backend_p.h"
+#include "qconnection_tcpip_backend_p.h"
+// END: Backends
+
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
+
+class FactoryLoader
+{
+public:
+    QtROClientFactory clientFactory;
+    QtROServerFactory serverFactory;
+};
+
+Q_GLOBAL_STATIC(FactoryLoader, loader)
 
 inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, QString &name)
 {
@@ -210,5 +227,97 @@ ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
     iodevice->initializeDataStream();
     return iodevice;
 }
+
+/*!
+    \class QtROServerFactory
+    \inmodule QtRemoteObjects
+    \brief A class holding information about server backends available on the Qt Remote Objects network
+*/
+QtROServerFactory::QtROServerFactory()
+{
+#if defined(Q_OS_QNX)
+    registerType<QnxServerImpl>(QStringLiteral("qnx"));
+#endif
+    registerType<LocalServerImpl>(QStringLiteral("local"));
+    registerType<TcpServerImpl>(QStringLiteral("tcp"));
+}
+
+QtROServerFactory *QtROServerFactory::instance()
+{
+    return &loader->serverFactory;
+}
+
+/*!
+    \class QtROClientFactory
+    \inmodule QtRemoteObjects
+    \brief A class holding information about client backends available on the Qt Remote Objects network
+*/
+QtROClientFactory::QtROClientFactory()
+{
+#if defined(Q_OS_QNX)
+    registerType<QnxClientIo>(QStringLiteral("qnx"));
+#endif
+    registerType<LocalClientIo>(QStringLiteral("local"));
+    registerType<TcpClientIo>(QStringLiteral("tcp"));
+}
+
+QtROClientFactory *QtROClientFactory::instance()
+{
+    return &loader->clientFactory;
+}
+
+/*!
+    \fn void qRegisterRemoteObjectsClient(const QString &id)
+    \relates QtROClientFactory
+
+    Registers the Remote Objects client \a id for the type \c{T}.
+
+    If you need a custom transport protocol for Qt Remote Objects, you need to
+    register the client & server implementation here.
+
+    \note This function requires that \c{T} is a fully defined type at the point
+    where the function is called.
+
+    This example registers the class \c{CustomClientIo} as \c{"myprotocol"}:
+
+    \code
+        qRegisterRemoteObjectsClient<CustomClientIo>(QStringLiteral("myprotocol"));
+    \endcode
+
+    With this in place, you can now instantiate nodes using this new custom protocol:
+
+    \code
+        QRemoteObjectNode client(QUrl(QStringLiteral("myprotocol:registry")));
+    \endcode
+
+    \sa {qRegisterRemoteObjectsServer}
+*/
+
+/*!
+    \fn void qRegisterRemoteObjectsServer(const QString &id)
+    \relates QtROServerFactory
+
+    Registers the Remote Objects server \a id for the type \c{T}.
+
+    If you need a custom transport protocol for Qt Remote Objects, you need to
+    register the client & server implementation here.
+
+    \note This function requires that \c{T} is a fully defined type at the point
+    where the function is called.
+
+    This example registers the class \c{CustomServerImpl} as \c{"myprotocol"}:
+
+    \code
+        qRegisterRemoteObjectsServer<CustomServerImpl>(QStringLiteral("myprotocol"));
+    \endcode
+
+    With this in place, you can now instantiate nodes using this new custom protocol:
+
+    \code
+        QRemoteObjectNode client(QUrl(QStringLiteral("myprotocol:registry")));
+    \endcode
+
+    \sa {qRegisterRemoteObjectsServer}
+*/
 
 QT_END_NAMESPACE

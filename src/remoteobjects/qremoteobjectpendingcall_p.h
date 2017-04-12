@@ -59,7 +59,7 @@ class QRemoteObjectPendingCallData : public QSharedData
 public:
     typedef QExplicitlySharedDataPointer<QRemoteObjectPendingCallData> Ptr;
 
-    explicit QRemoteObjectPendingCallData(int serialId = -1, QRemoteObjectReplicaPrivate *replica = Q_NULLPTR);
+    explicit QRemoteObjectPendingCallData(int serialId = -1, QRemoteObjectReplicaPrivate *replica = nullptr);
     ~QRemoteObjectPendingCallData();
 
     QRemoteObjectReplicaPrivate *replica;

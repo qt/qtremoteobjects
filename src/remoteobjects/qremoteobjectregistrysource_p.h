@@ -57,7 +57,7 @@ class QRegistrySource : public QObject
     Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
 
 public:
-    explicit QRegistrySource(QObject *parent = Q_NULLPTR);
+    explicit QRegistrySource(QObject *parent = nullptr);
     ~QRegistrySource();
 
     QRemoteObjectSourceLocations sourceLocations() const;

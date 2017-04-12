@@ -92,19 +92,19 @@ class QnxClientIo : public ClientIoDevice
     Q_OBJECT
 
 public:
-    explicit QnxClientIo(QObject *parent = Q_NULLPTR);
+    explicit QnxClientIo(QObject *parent = nullptr);
     ~QnxClientIo();
 
-    QIODevice *connection() Q_DECL_OVERRIDE;
-    void connectToServer() Q_DECL_OVERRIDE;
-    bool isOpen() Q_DECL_OVERRIDE;
+    QIODevice *connection() override;
+    void connectToServer() override;
+    bool isOpen() override;
 
 public Q_SLOTS:
     void onError(QAbstractSocket::SocketError error);
     void onStateChanged(QAbstractSocket::SocketState state);
 
 protected:
-    void doClose() Q_DECL_OVERRIDE;
+    void doClose() override;
 private:
     QQnxNativeIo m_socket;
 };
@@ -112,11 +112,11 @@ private:
 class QnxServerIo : public ServerIoDevice
 {
 public:
-    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = Q_NULLPTR);
+    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = nullptr);
 
-    QIODevice *connection() const Q_DECL_OVERRIDE;
+    QIODevice *connection() const override;
 protected:
-    void doClose() Q_DECL_OVERRIDE;
+    void doClose() override;
 
 private:
     //TODO Source or Replica
@@ -131,12 +131,12 @@ public:
     explicit QnxServerImpl(QObject *parent);
     ~QnxServerImpl();
 
-    bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *configureNewConnection() Q_DECL_OVERRIDE;
-    QUrl address() const Q_DECL_OVERRIDE;
-    bool listen(const QUrl &address) Q_DECL_OVERRIDE;
-    QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
+    bool hasPendingConnections() const override;
+    ServerIoDevice *configureNewConnection() override;
+    QUrl address() const override;
+    bool listen(const QUrl &address) override;
+    QAbstractSocket::SocketError serverError() const override;
+    void close() override;
 
 private:
     QQnxNativeServer m_server;

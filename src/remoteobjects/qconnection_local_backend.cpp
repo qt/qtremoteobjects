@@ -140,7 +140,7 @@ LocalServerImpl::~LocalServerImpl()
 ServerIoDevice *LocalServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
-        return Q_NULLPTR;
+        return nullptr;
 
     return new LocalServerIo(m_server.nextPendingConnection(), this);
 }
@@ -182,8 +182,5 @@ void LocalServerImpl::close()
 {
     m_server.close();
 }
-
-REGISTER_QTRO_SERVER(LocalServerImpl, "local");
-REGISTER_QTRO_CLIENT(LocalClientIo, "local");
 
 QT_END_NAMESPACE

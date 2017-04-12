@@ -46,5 +46,6 @@
     Use the following include in you source files:
     \snippet doc_src_remoteobjects.h qtremoteobject_include
 
-    See the \l{Qt Remote Objects Getting Started} page for an introduction to the module.
+    See \l{Getting Started with Qt Remote Objects} page for
+    an introduction to the module.
 */

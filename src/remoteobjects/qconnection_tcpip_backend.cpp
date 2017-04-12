@@ -149,7 +149,7 @@ TcpServerImpl::~TcpServerImpl()
 ServerIoDevice *TcpServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
-        return Q_NULLPTR;
+        return nullptr;
 
     return new TcpServerIo(m_server.nextPendingConnection());
 }
@@ -198,8 +198,5 @@ void TcpServerImpl::close()
 {
     m_server.close();
 }
-
-REGISTER_QTRO_CLIENT(TcpClientIo, "tcp");
-REGISTER_QTRO_SERVER(TcpServerImpl, "tcp");
 
 QT_END_NAMESPACE

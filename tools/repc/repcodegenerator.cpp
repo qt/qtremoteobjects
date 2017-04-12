@@ -589,7 +589,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "" << endl;
         out << "    void initialize()" << endl;
     } else {
-        out << "    explicit " << className << "(QObject *parent = Q_NULLPTR) : QObject(parent)" << endl;
+        out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
 
         if (mode == SIMPLE_SOURCE) {
             Q_FOREACH (const ASTProperty &property, astClass.properties) {
@@ -865,67 +865,67 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
 
     out << QStringLiteral("    }") << endl;
     out << QStringLiteral("") << endl;
-    out << QString::fromLatin1("    QString name() const Q_DECL_OVERRIDE { return QStringLiteral(\"%1\"); }").arg(astClass.name) << endl;
-    out << QString::fromLatin1("    QString typeName() const Q_DECL_OVERRIDE { return QStringLiteral(\"%1\"); }").arg(astClass.name) << endl;
-    out << QStringLiteral("    int propertyCount() const Q_DECL_OVERRIDE { return _properties[0]; }") << endl;
-    out << QStringLiteral("    int signalCount() const Q_DECL_OVERRIDE { return _signals[0]; }") << endl;
-    out << QStringLiteral("    int methodCount() const Q_DECL_OVERRIDE { return _methods[0]; }") << endl;
-    out << QStringLiteral("    int sourcePropertyIndex(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QString::fromLatin1("    QString name() const override { return QStringLiteral(\"%1\"); }").arg(astClass.name) << endl;
+    out << QString::fromLatin1("    QString typeName() const override { return QStringLiteral(\"%1\"); }").arg(astClass.name) << endl;
+    out << QStringLiteral("    int propertyCount() const override { return _properties[0]; }") << endl;
+    out << QStringLiteral("    int signalCount() const override { return _signals[0]; }") << endl;
+    out << QStringLiteral("    int methodCount() const override { return _methods[0]; }") << endl;
+    out << QStringLiteral("    int sourcePropertyIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= _properties[0])") << endl;
     out << QStringLiteral("            return -1;") << endl;
     out << QStringLiteral("        return _properties[index+1];") << endl;
     out << QStringLiteral("    }") << endl;
-    out << QStringLiteral("    int sourceSignalIndex(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    int sourceSignalIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= _signals[0])") << endl;
     out << QStringLiteral("            return -1;") << endl;
     out << QStringLiteral("        return _signals[index+1];") << endl;
     out << QStringLiteral("    }") << endl;
-    out << QStringLiteral("    int sourceMethodIndex(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    int sourceMethodIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= _methods[0])") << endl;
     out << QStringLiteral("            return -1;") << endl;
     out << QStringLiteral("        return _methods[index+1];") << endl;
     out << QStringLiteral("    }") << endl;
     if (signalCount+changedCount > 0) {
-        out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE") << endl;
+        out << QStringLiteral("    int signalParameterCount(int index) const override") << endl;
         out << QStringLiteral("    {") << endl;
         out << QStringLiteral("        if (index < 0 || index >= _signals[0])") << endl;
         out << QStringLiteral("            return -1;") << endl;
         out << QStringLiteral("        return signalArgCount[index];") << endl;
         out << QStringLiteral("    }") << endl;
-        out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE") << endl;
+        out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const override") << endl;
         out << QStringLiteral("    {") << endl;
         out << QStringLiteral("        if (sigIndex < 0 || sigIndex >= _signals[0] || paramIndex < 0 || paramIndex >= signalArgCount[sigIndex])") << endl;
         out << QStringLiteral("            return -1;") << endl;
         out << QStringLiteral("        return signalArgTypes[sigIndex][paramIndex];") << endl;
         out << QStringLiteral("    }") << endl;
     } else {
-        out << QStringLiteral("    int signalParameterCount(int index) const Q_DECL_OVERRIDE { Q_UNUSED(index); return -1; }") << endl;
-        out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const Q_DECL_OVERRIDE") << endl;
+        out << QStringLiteral("    int signalParameterCount(int index) const override { Q_UNUSED(index); return -1; }") << endl;
+        out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const override") << endl;
         out << QStringLiteral("    { Q_UNUSED(sigIndex); Q_UNUSED(paramIndex); return -1; }") << endl;
     }
     if (methodCount > 0) {
-        out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE") << endl;
+        out << QStringLiteral("    int methodParameterCount(int index) const override") << endl;
         out << QStringLiteral("    {") << endl;
         out << QStringLiteral("        if (index < 0 || index >= _methods[0])") << endl;
         out << QStringLiteral("            return -1;") << endl;
         out << QStringLiteral("        return methodArgCount[index];") << endl;
         out << QStringLiteral("    }") << endl;
-        out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE") << endl;
+        out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const override") << endl;
         out << QStringLiteral("    {") << endl;
         out << QStringLiteral("        if (methodIndex < 0 || methodIndex >= _methods[0] || paramIndex < 0 || paramIndex >= methodArgCount[methodIndex])") << endl;
         out << QStringLiteral("            return -1;") << endl;
         out << QStringLiteral("        return methodArgTypes[methodIndex][paramIndex];") << endl;
         out << QStringLiteral("    }") << endl;
     } else {
-        out << QStringLiteral("    int methodParameterCount(int index) const Q_DECL_OVERRIDE { Q_UNUSED(index); return -1; }") << endl;
-        out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const Q_DECL_OVERRIDE") << endl;
+        out << QStringLiteral("    int methodParameterCount(int index) const override { Q_UNUSED(index); return -1; }") << endl;
+        out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const override") << endl;
         out << QStringLiteral("    { Q_UNUSED(methodIndex); Q_UNUSED(paramIndex); return -1; }") << endl;
     }
     //propertyIndexFromSignal method
-    out << QStringLiteral("    int propertyIndexFromSignal(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    int propertyIndexFromSignal(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     if (!propertyChangeIndex.isEmpty()) {
         out << QStringLiteral("        switch (index) {") << endl;
@@ -937,7 +937,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("        return -1;") << endl;
     out << QStringLiteral("    }") << endl;
     //propertyRawIndexFromSignal method
-    out << QStringLiteral("    int propertyRawIndexFromSignal(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    int propertyRawIndexFromSignal(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     if (!propertyChangeIndex.isEmpty()) {
         out << QStringLiteral("        switch (index) {") << endl;
@@ -950,7 +950,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    }") << endl;
 
     //signalSignature method
-    out << QStringLiteral("    const QByteArray signalSignature(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    const QByteArray signalSignature(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     if (signalCount+changedCount > 0) {
         out << QStringLiteral("        switch (index) {") << endl;
@@ -969,7 +969,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    }") << endl;
 
     //methodSignature method
-    out << QStringLiteral("    const QByteArray methodSignature(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    const QByteArray methodSignature(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     if (methodCount > 0) {
         out << QStringLiteral("        switch (index) {") << endl;
@@ -992,13 +992,13 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    }") << endl;
 
     //methodType method
-    out << QStringLiteral("    QMetaMethod::MethodType methodType(int) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    QMetaMethod::MethodType methodType(int) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        return QMetaMethod::Slot;") << endl;
     out << QStringLiteral("    }") << endl;
 
     //typeName method
-    out << QStringLiteral("    const QByteArray typeName(int index) const Q_DECL_OVERRIDE") << endl;
+    out << QStringLiteral("    const QByteArray typeName(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     if (methodCount > 0) {
         out << QStringLiteral("        switch (index) {") << endl;
@@ -1020,7 +1020,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    }") << endl;
 
     //objectSignature method
-    out << QStringLiteral("    QByteArray objectSignature() const Q_DECL_OVERRIDE { return QByteArray{\"")
+    out << QStringLiteral("    QByteArray objectSignature() const override { return QByteArray{\"")
         << QLatin1String(classSignature(astClass))
         << QStringLiteral("\"}; }") << endl;
 

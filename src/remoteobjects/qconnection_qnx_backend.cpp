@@ -33,6 +33,8 @@
 
 #include "qconnection_qnx_backend_p.h"
 
+QT_BEGIN_NAMESPACE
+
 QnxClientIo::QnxClientIo(QObject *parent)
     : ClientIoDevice(parent)
 {
@@ -140,7 +142,7 @@ QnxServerImpl::~QnxServerImpl()
 ServerIoDevice *QnxServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
-        return Q_NULLPTR;
+        return nullptr;
 
     return new QnxServerIo(m_server.nextPendingConnection(), this);
 }
@@ -176,5 +178,4 @@ void QnxServerImpl::close()
     close();
 }
 
-REGISTER_QTRO_CLIENT(QnxClientIo, "qnx");
-REGISTER_QTRO_SERVER(QnxServerImpl, "qnx");
+QT_END_NAMESPACE

@@ -57,19 +57,19 @@ class TcpClientIo : public ClientIoDevice
     Q_OBJECT
 
 public:
-    explicit TcpClientIo(QObject *parent = Q_NULLPTR);
+    explicit TcpClientIo(QObject *parent = nullptr);
     ~TcpClientIo();
 
-    QIODevice *connection() Q_DECL_OVERRIDE;
-    void connectToServer() Q_DECL_OVERRIDE;
-    bool isOpen() Q_DECL_OVERRIDE;
+    QIODevice *connection() override;
+    void connectToServer() override;
+    bool isOpen() override;
 
 public Q_SLOTS:
     void onError(QAbstractSocket::SocketError error);
     void onStateChanged(QAbstractSocket::SocketState state);
 
 protected:
-    void doClose() Q_DECL_OVERRIDE;
+    void doClose() override;
 
 private:
     QTcpSocket m_socket;
@@ -79,11 +79,11 @@ class TcpServerIo : public ServerIoDevice
 {
     Q_OBJECT
 public:
-    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = Q_NULLPTR);
+    explicit TcpServerIo(QTcpSocket *conn, QObject *parent = nullptr);
 
-    QIODevice *connection() const Q_DECL_OVERRIDE;
+    QIODevice *connection() const override;
 protected:
-    void doClose() Q_DECL_OVERRIDE;
+    void doClose() override;
 
 private:
     QTcpSocket *m_connection;
@@ -98,12 +98,12 @@ public:
     explicit TcpServerImpl(QObject *parent);
     ~TcpServerImpl();
 
-    bool hasPendingConnections() const Q_DECL_OVERRIDE;
-    ServerIoDevice *configureNewConnection() Q_DECL_OVERRIDE;
-    QUrl address() const Q_DECL_OVERRIDE;
-    bool listen(const QUrl &address) Q_DECL_OVERRIDE;
-    QAbstractSocket::SocketError serverError() const Q_DECL_OVERRIDE;
-    void close() Q_DECL_OVERRIDE;
+    bool hasPendingConnections() const override;
+    ServerIoDevice *configureNewConnection() override;
+    QUrl address() const override;
+    bool listen(const QUrl &address) override;
+    QAbstractSocket::SocketError serverError() const override;
+    void close() override;
 
 private:
     QTcpServer m_server;
