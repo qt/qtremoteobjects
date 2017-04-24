@@ -6,9 +6,6 @@ CONFIG += header_module
 
 load(qt_module)
 
-# Fixup DLLDESTDIR from qt_module.pri
-win32:!wince: DLLDESTDIR = $$MODULE_BASE_OUTDIR/bin
-
 def_build = debug
 contains(QT_CONFIG, release, debug|release): def_build = release
 !debug_and_release|!build_all|CONFIG($$def_build, debug|release) {

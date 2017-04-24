@@ -13,9 +13,6 @@ OTHER_FILES += $$PWD/doc/qtremoteobjects.qdocconf \
 
 load(qt_module)
 
-# Fixup DLLDESTDIR from qt_module.pri
-win32:!wince: DLLDESTDIR = $$MODULE_BASE_OUTDIR/bin
-
 DEFINES += QT_NO_CAST_TO_ASCII QT_NO_CAST_FROM_ASCII QT_NO_CAST_FROM_BYTEARRAY QT_NO_URL_CAST_FROM_STRING
 
 INCLUDEPATH *= .
