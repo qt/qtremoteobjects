@@ -12,14 +12,6 @@ CONFIG += qlalr
 QLALRSOURCES += $$QTRO_SOURCE_TREE/src/repparser/parser.g
 INCLUDEPATH += $$QTRO_SOURCE_TREE/src/repparser
 
-# fix includes when Qt5 was installed as framework (see qt_functions.prf, keyword FRAMEWORK_INCLUDE)
-osx:contains(QT_CONFIG, qt_framework) {
-    QMAKE_FRAMEWORKPATH += $$QT.core.libs
-    INCLUDEPATH += $$QT.core.libs/QtCore.framework/Headers \
-        $$QT.core.libs/QtCore.framework/Headers/$$QT.core.VERSION \
-        $$QT.core.libs/QtCore.framework/Headers/$$QT.core.VERSION/QtCore
-}
-
 SOURCES += \
     main.cpp \
     repcodegenerator.cpp \
