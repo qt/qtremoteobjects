@@ -155,7 +155,7 @@ class QtROServerFactory
 public:
     QtROServerFactory();
 
-    static QtROServerFactory *instance();
+    Q_REMOTEOBJECTS_EXPORT static QtROServerFactory *instance();
 
     QConnectionAbstractServer *create(const QUrl &url, QObject *parent = nullptr)
     {
@@ -181,7 +181,7 @@ class QtROClientFactory
 public:
     QtROClientFactory();
 
-    static QtROClientFactory *instance();
+    Q_REMOTEOBJECTS_EXPORT static QtROClientFactory *instance();
 
     /// creates an object from a string
     ClientIoDevice *create(const QUrl &url, QObject *parent = nullptr)
