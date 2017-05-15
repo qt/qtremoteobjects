@@ -157,25 +157,27 @@ void tst_Parser::testSlots_data()
 {
     QTest::addColumn<QString>("slotDeclaration");
     QTest::addColumn<QString>("expectedSlot");
-    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "void test()";
-    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "void test()";
-    QTest::newRow("slotwitharguments") << "SLOT(void test(QString value, int number))" << "void test(QString value, int number)";
-    QTest::newRow("slotwithunnamedarguments") << "SLOT(void test(QString, int))" << "void test(QString __repc_variable_1, int __repc_variable_2)";
-    QTest::newRow("slotwithspaces") << "SLOT(   void test  (QString value, int number)  )" << "void test(QString value, int number)";
-    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "void test(QMap<QString,int> foo)";
-    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "void test(QMap<QString,int> foo, QMap<QString,int> bla)";
-    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "void test(QMap<QList<QString>,int> foo)";
-    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "void test(QMap<QString , int> foo)";
-    QTest::newRow("slotWithConstRefArgument") << "SLOT (test(const QString &val))" << "void test(const QString & val)";
-    QTest::newRow("slotWithRefArgument") << "SLOT (test(QString &val))" << "void test(QString & val)";
-    QTest::newRow("slotwithtemplatetemplatesAndConstRef") << "SLOT(test(const QMap<QList<QString>,int> &foo))" << "void test(const QMap<QList<QString>,int> & foo)";
-    QTest::newRow("slotWithConstRefArgumentAndWithout") << "SLOT (test(const QString &val, int value))" << "void test(const QString & val, int value)";
+    QTest::addColumn<bool>("voidWarning");
+    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "void test()" << true;
+    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "void test()" << true;
+    QTest::newRow("slotwitharguments") << "SLOT(void test(QString value, int number))" << "void test(QString value, int number)" << false;
+    QTest::newRow("slotwithunnamedarguments") << "SLOT(void test(QString, int))" << "void test(QString __repc_variable_1, int __repc_variable_2)" << false;
+    QTest::newRow("slotwithspaces") << "SLOT(   void test  (QString value, int number)  )" << "void test(QString value, int number)" << false;
+    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "void test(QMap<QString,int> foo)" << true;
+    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "void test(QMap<QString,int> foo, QMap<QString,int> bla)" << true;
+    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "void test(QMap<QList<QString>,int> foo)" << true;
+    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "void test(QMap<QString , int> foo)" << true;
+    QTest::newRow("slotWithConstRefArgument") << "SLOT (test(const QString &val))" << "void test(const QString & val)" << true;
+    QTest::newRow("slotWithRefArgument") << "SLOT (test(QString &val))" << "void test(QString & val)" << true;
+    QTest::newRow("slotwithtemplatetemplatesAndConstRef") << "SLOT(test(const QMap<QList<QString>,int> &foo))" << "void test(const QMap<QList<QString>,int> & foo)" << true;
+    QTest::newRow("slotWithConstRefArgumentAndWithout") << "SLOT (test(const QString &val, int value))" << "void test(const QString & val, int value)" << true;
 }
 
 void tst_Parser::testSlots()
 {
     QFETCH(QString, slotDeclaration);
     QFETCH(QString, expectedSlot);
+    QFETCH(bool, voidWarning);
 
     QTemporaryFile file;
     file.open();
@@ -186,6 +188,8 @@ void tst_Parser::testSlots()
     stream << "};" << endl;
     file.seek(0);
 
+    if (voidWarning)
+        QTest::ignoreMessage(QtWarningMsg, "[repc] - Adding 'void' for unspecified return type on test");
     RepParser parser(file);
     QVERIFY(parser.parse());
 
@@ -349,28 +353,31 @@ void tst_Parser::testEnums()
 void tst_Parser::testInvalid_data()
 {
     QTest::addColumn<QString>("content");
+    QTest::addColumn<QString>("warning");
 
-    QTest::newRow("pod_invalid") << "POD (int foo)";
-    QTest::newRow("pod_unbalancedparens") << "POD foo(int foo";
-    QTest::newRow("pod_inclass") << "class Foo\n{\nPOD foo(int)\n}";
-    QTest::newRow("class_noidentifier") << "class\n{\n}";
-    QTest::newRow("class_nested") << "class Foo\n{\nclass Bar\n}";
-    QTest::newRow("prop_outsideclass") << "PROP(int foo)";
-    QTest::newRow("prop_toomanyargs") << "class Foo\n{\nPROP(int int foo)\n}";
-    QTest::newRow("prop_toomanymodifiers") << "class Foo\n{\nPROP(int foo READWRITE, READONLY)\n}";
-    QTest::newRow("prop_noargs") << "class Foo\n{\nPROP()\n}";
-    QTest::newRow("prop_unbalancedparens") << "class Foo\n{\nPROP(int foo\n}";
-    QTest::newRow("signal_outsideclass") << "SIGNAL(foo())";
-    QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}";
-    QTest::newRow("slot_outsideclass") << "SLOT(void foo())";
-    QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}";
-    QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}";
+    QTest::newRow("pod_invalid") << "POD (int foo)" << ".?Unknown token encountered";
+    QTest::newRow("pod_unbalancedparens") << "POD foo(int foo" << ".?Unknown token encountered";
+    QTest::newRow("pod_inclass") << "class Foo\n{\nPOD foo(int)\n}" << ".?POD: Can only be used in global scope";
+    QTest::newRow("class_noidentifier") << "class\n{\n}" << ".?Unknown token encountered";
+    QTest::newRow("class_nested") << "class Foo\n{\nclass Bar\n}" << ".?class: Cannot be nested";
+    QTest::newRow("prop_outsideclass") << "PROP(int foo)" << ".?PROP: Can only be used in class scope";
+    QTest::newRow("prop_toomanyargs") << "class Foo\n{\nPROP(int int foo)\n}" << ".?Invalid property declaration: flag foo is unknown";
+    QTest::newRow("prop_toomanymodifiers") << "class Foo\n{\nPROP(int foo READWRITE, READONLY)\n}" << ".?Invalid property declaration: combination not allowed .READWRITE, READONLY.";
+    QTest::newRow("prop_noargs") << "class Foo\n{\nPROP()\n}" << ".?Unknown token encountered";
+    QTest::newRow("prop_unbalancedparens") << "class Foo\n{\nPROP(int foo\n}" << ".?Unknown token encountered";
+    QTest::newRow("signal_outsideclass") << "SIGNAL(foo())" << ".?SIGNAL: Can only be used in class scope";
+    QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}" << ".?Unknown token encountered";
+    QTest::newRow("slot_outsideclass") << "SLOT(void foo())" << ".?SLOT: Can only be used in class scope";
+    QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}" << ".?Unknown token encountered";
+    QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}" << ".?Unknown token encountered";
 }
 
 void tst_Parser::testInvalid()
 {
     QFETCH(QString, content);
+    QFETCH(QString, warning);
 
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(warning));
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
