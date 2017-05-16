@@ -79,7 +79,7 @@ QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate()
     , m_lastRequested(-1)
 {
     m_rootItem.children.setCacheSize(DefaultRootCacheSize);
-    registerTypes();
+    QAbstractItemModelReplicaPrivate::registerMetatypes();
     initializeModelConnections();
     connect(this, &QAbstractItemModelReplicaPrivate::availableRolesChanged, this, [this]{
         m_availableRoles.clear();
@@ -93,7 +93,7 @@ QAbstractItemModelReplicaPrivate::QAbstractItemModelReplicaPrivate(QRemoteObject
     , m_lastRequested(-1)
 {
     m_rootItem.children.setCacheSize(DefaultRootCacheSize);
-    registerTypes();
+    QAbstractItemModelReplicaPrivate::registerMetatypes();
     initializeModelConnections();
     initializeNode(node, name);
     connect(this, &QAbstractItemModelReplicaPrivate::availableRolesChanged, this, [this]{
@@ -115,7 +115,7 @@ void QAbstractItemModelReplicaPrivate::initialize()
     setProperties(properties);
 }
 
-void QAbstractItemModelReplicaPrivate::registerTypes()
+void QAbstractItemModelReplicaPrivate::registerMetatypes()
 {
     static bool alreadyRegistered = false;
     if (!alreadyRegistered) {

@@ -574,6 +574,17 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
 
     if (mode == REPLICA) {
         out << "    " << className << "() : QRemoteObjectReplica() { initialize(); }" << endl;
+        out << "    static void registerMetatypes()" << endl;
+        out << "    {" << endl;
+        out << "        static bool initialized = false;" << endl;
+        out << "        if (initialized)" << endl;
+        out << "            return;" << endl;
+        out << "        initialized = true;" << endl;
+
+        if (!metaTypeRegistrationCode.isEmpty())
+            out << metaTypeRegistrationCode << endl;
+
+        out << "    }" << endl;
 
         out << "" << endl;
         out << "private:" << endl;
@@ -582,23 +593,10 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "        { initializeNode(node, name); }" << endl;
 
         out << "" << endl;
+
         out << "    void initialize()" << endl;
-    } else {
-        out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
-
-        if (mode == SIMPLE_SOURCE) {
-            Q_FOREACH (const ASTProperty &property, astClass.properties) {
-                out << "        , _" << property.name << "(" << property.defaultValue << ")" << endl;
-            }
-        }
-    }
-
-    out << "    {" << endl;
-
-    if (!metaTypeRegistrationCode.isEmpty())
-        out << metaTypeRegistrationCode << endl;
-
-    if (mode == REPLICA) {
+        out << "    {" << endl;
+        out << "        " << className << "::registerMetatypes();" << endl;
         out << "        QVariantList properties;" << endl;
         out << "        properties.reserve(" << astClass.properties.size() << ");" << endl;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
@@ -617,9 +615,21 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << "        }" << endl;
         }
         out << "        setProperties(properties);" << endl;
-    }
+        out << "    }" << endl;
+    } else {
+        out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
 
-    out << "    }" << endl;
+        if (mode == SIMPLE_SOURCE) {
+            Q_FOREACH (const ASTProperty &property, astClass.properties) {
+                out << "        , _" << property.name << "(" << property.defaultValue << ")" << endl;
+            }
+        }
+
+        out << "    {" << endl;
+        if (!metaTypeRegistrationCode.isEmpty())
+            out << metaTypeRegistrationCode << endl;
+        out << "    }" << endl;
+    }
 
     out << "" << endl;
     out << "public:" << endl;

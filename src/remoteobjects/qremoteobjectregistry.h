@@ -51,10 +51,9 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
 
     Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
 
-    friend class QRemoteObjectNode;
-
 public:
     ~QRemoteObjectRegistry();
+    static void registerMetatypes();
 
     QRemoteObjectSourceLocations sourceLocations() const;
 
@@ -72,7 +71,7 @@ private:
     explicit QRemoteObjectRegistry();
     explicit QRemoteObjectRegistry(QRemoteObjectNode *node, const QString &name);
     QRemoteObjectSourceLocations hostedSources;
-    friend class QRemoteObjectNodePrivate;
+    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);
 };
 
 QT_END_NAMESPACE

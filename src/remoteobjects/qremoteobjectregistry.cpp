@@ -101,12 +101,21 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
 QRemoteObjectRegistry::~QRemoteObjectRegistry()
 {}
 
-void QRemoteObjectRegistry::initialize()
+void QRemoteObjectRegistry::registerMetatypes()
 {
+    static bool initialized = false;
+    if (initialized)
+        return;
+    initialized = true;
     qRegisterMetaType<QRemoteObjectSourceLocation>();
     qRegisterMetaTypeStreamOperators<QRemoteObjectSourceLocation>();
     qRegisterMetaType<QRemoteObjectSourceLocations>();
     qRegisterMetaTypeStreamOperators<QRemoteObjectSourceLocations>();
+}
+
+void QRemoteObjectRegistry::initialize()
+{
+    QRemoteObjectRegistry::registerMetatypes();
     QVariantList properties;
     properties.reserve(3);
     properties << QVariant::fromValue(QRemoteObjectSourceLocations());
