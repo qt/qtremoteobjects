@@ -159,7 +159,7 @@ public:
     template <template <typename> class ApiDefinition, typename ObjectType>
     bool enableRemoting(ObjectType *object)
     {
-        ApiDefinition<ObjectType> *api = new ApiDefinition<ObjectType>;
+        ApiDefinition<ObjectType> *api = new ApiDefinition<ObjectType>(object);
         return enableRemoting(object, api);
     }
     bool enableRemoting(QObject *object, const QString &name = QString());

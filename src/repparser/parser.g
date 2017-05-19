@@ -45,6 +45,7 @@
 %token use_enum "[use_enum]USE_ENUM[ \\t]*\\((?<name>[^\\)]*)\\);?[ \\t]*"
 %token signal "[signal][ \\t]*SIGNAL[ \\t]*\\([ \\t]*(?<name>\\S+)[ \\t]*\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token slot "[slot][ \\t]*SLOT[ \\t]*\\((?<type>[^\\(]*)\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
+%token model "[model][ \\t]*MODEL[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<args>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
 %token start "[start]\\{[ \\t]*"
 %token stop "[stop]\\};?[ \\t]*"
 %token comma "[comma],"
@@ -157,6 +158,26 @@ struct ASTEnum
 };
 Q_DECLARE_TYPEINFO(ASTEnum, Q_MOVABLE_TYPE);
 
+struct ASTModelRole
+{
+    ASTModelRole(const QString &roleName = QString())
+        : name(roleName)
+    {
+    }
+
+    QString name;
+};
+Q_DECLARE_TYPEINFO(ASTModelRole, Q_MOVABLE_TYPE);
+
+struct ASTModel
+{
+    explicit ASTModel(const QString &name = QString());
+
+    QVector<ASTModelRole> roles;
+    QString name;
+};
+Q_DECLARE_TYPEINFO(ASTModel, Q_MOVABLE_TYPE);
+
 /// A Class declaration
 struct ASTClass
 {
@@ -170,6 +191,7 @@ struct ASTClass
     QVector<ASTFunction> slotsList;
     QVector<ASTEnum> enums;
     bool hasPersisted;
+    QVector<ASTModel> models;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -232,6 +254,8 @@ private:
     bool parseProperty(ASTClass &astClass, const QString &propertyDeclaration);
     /// A helper function to parse modifier flag of property declaration
     bool parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier, bool &persisted);
+
+    bool parseRoles(ASTModel &astModel, const QString &modelRoles);
 
     AST m_ast;
 
@@ -342,6 +366,11 @@ QStringList ASTFunction::paramNames() const
 
 ASTEnum::ASTEnum(const QString &name)
     : name(name), isSigned(false), max(0)
+{
+}
+
+ASTModel::ASTModel(const QString &name)
+    : name(name)
 {
 }
 
@@ -484,6 +513,19 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
     astClass.properties << ASTProperty(propertyType, propertyName, propertyDefaultValue, propertyModifier, persisted);
     if (persisted)
         astClass.hasPersisted = true;
+    return true;
+}
+
+bool RepParser::parseRoles(ASTModel &astModel, const QString &modelRoles)
+{
+    const QString input = modelRoles.trimmed();
+
+    if (input.isEmpty())
+        return true;
+
+    const QStringList roleStrings = input.split(QChar(QLatin1Char(',')));
+    for (auto role : roleStrings)
+        astModel.roles << ASTModelRole(role.trimmed());
     return true;
 }
 
@@ -653,7 +695,7 @@ Class: ClassStart Start Stop;
 ./
 
 ClassTypes: ClassType | ClassType ClassTypes;
-ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot;
+ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel;
 ClassType: Enum;
 /.
     case $rule_number:
@@ -666,6 +708,7 @@ ClassType: Enum;
 DecoratedSlot: Slot | Comments Slot | Slot Newlines | Comments Slot Newlines;
 DecoratedSignal: Signal | Comments Signal | Signal Newlines | Comments Signal Newlines;
 DecoratedProp: Prop | Comments Prop | Prop Newlines | Comments Prop Newlines;
+DecoratedModel: Model | Comments Model | Model Newlines | Comments Model Newlines;
 DecoratedEnumParam: EnumParam | Comments EnumParam | EnumParam Newlines | Comments EnumParam Newlines;
 
 Start: start | Comments start | start Newlines | Comments start Newlines;
@@ -770,6 +813,22 @@ Slot: slot;
     break;
 ./
 
+Model: model;
+/.
+    case $rule_number:
+    {
+        ASTModel model;
+        model.name = captured().value(QLatin1String("name")).trimmed();
+        const QString argString = captured().value(QLatin1String("args")).trimmed();
+
+        if (!parseRoles(model, argString))
+            return false;
+
+        m_astClass.models << model;
+    }
+    break;
+./
+
 ClassStart: class Newlines;
 /.
     case $rule_number:
@@ -848,6 +907,15 @@ Type: Prop;
     case $rule_number:
     {
         setErrorString(QStringLiteral("PROP: Can only be used in class scope"));
+        return false;
+    }
+    break;
+./
+Type: Model;
+/.
+    case $rule_number:
+    {
+        setErrorString(QStringLiteral("MODEL: Can only be used in class scope"));
         return false;
     }
     break;

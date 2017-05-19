@@ -33,6 +33,7 @@
 #include <QTextStream>
 
 Q_DECLARE_METATYPE(ASTProperty::Modifier)
+Q_DECLARE_METATYPE(ASTModelRole)
 
 class tst_Parser : public QObject {
     Q_OBJECT
@@ -50,6 +51,8 @@ private Q_SLOTS:
     void testPods();
     void testEnums_data();
     void testEnums();
+    void testModels_data();
+    void testModels();
     void testInvalid_data();
     void testInvalid();
 };
@@ -350,6 +353,46 @@ void tst_Parser::testEnums()
     QCOMPARE(enums.isSigned, expectedsigned);
 }
 
+void tst_Parser::testModels_data()
+{
+    QTest::addColumn<QString>("modelDeclaration");
+    QTest::addColumn<QString>("expectedModel");
+    QTest::addColumn<QVector<ASTModelRole>>("expectedRoles");
+    QTest::newRow("basicmodel") << "MODEL test(display)" << "test" << QVector<ASTModelRole>({{"display"}});
+    QTest::newRow("basicmodelsemicolon") << "MODEL test(display);" << "test" << QVector<ASTModelRole>({{"display"}});
+}
+
+void tst_Parser::testModels()
+{
+    QFETCH(QString, modelDeclaration);
+    QFETCH(QString, expectedModel);
+    QFETCH(QVector<ASTModelRole>, expectedRoles);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << "class TestClass" << endl;
+    stream << "{" << endl;
+    stream << modelDeclaration << endl;
+    stream << "};" << endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    const ASTClass astClass = ast.classes.first();
+    ASTModel model = astClass.models.first();
+    QCOMPARE(model.name, expectedModel);
+    int i = 0;
+    for (auto role : model.roles) {
+        QCOMPARE(role.name, expectedRoles.at(i).name);
+        i++;
+    }
+}
+
 void tst_Parser::testInvalid_data()
 {
     QTest::addColumn<QString>("content");
@@ -369,6 +412,7 @@ void tst_Parser::testInvalid_data()
     QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}" << ".?Unknown token encountered";
     QTest::newRow("slot_outsideclass") << "SLOT(void foo())" << ".?SLOT: Can only be used in class scope";
     QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}" << ".?Unknown token encountered";
+    QTest::newRow("model_outsideclass") << "MODEL foo" << ".?Unknown token encountered";
     QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}" << ".?Unknown token encountered";
 }
 

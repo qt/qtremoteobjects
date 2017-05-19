@@ -226,17 +226,32 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
            "#include <QtCore/qobject.h>\n"
            "#include <QtCore/qdatastream.h>\n"
            "#include <QtCore/qvariant.h>\n"
-           "#include <QtCore/qmetatype.h>\n"
-           "\n"
-           "#include <QtRemoteObjects/qremoteobjectnode.h>\n"
-           ;
+           "#include <QtCore/qmetatype.h>\n";
+    bool hasModel = false;
+    for (auto c : ast.classes)
+    {
+        if (c.models.count() > 0)
+        {
+            hasModel = true;
+            break;
+        }
+    }
+    if (hasModel)
+        out << "#include <QtCore/qabstractitemmodel.h>\n";
+    out << "\n"
+           "#include <QtRemoteObjects/qremoteobjectnode.h>\n";
+
     if (mode == MERGED) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
+        if (hasModel)
+            out << "#include <QtRemoteObjects/qremoteobjectabstractitemmodelreplica.h>\n";
     } else if (mode == REPLICA) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
+        if (hasModel)
+            out << "#include <QtRemoteObjects/qremoteobjectabstractitemmodelreplica.h>\n";
     } else
         out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
     out << "\n";
@@ -562,6 +577,12 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
         out << ")" << endl;
     }
+    for (auto model : astClass.models) {
+        if (mode == REPLICA)
+            out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModelReplica *%1 READ %1 CONSTANT)").arg(model.name) << endl;
+        else
+            out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModel *%1 READ %1 CONSTANT)").arg(model.name) << endl;
+    }
 
     if (!astClass.enums.isEmpty()) {
         out << "" << endl;
@@ -590,6 +611,9 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "private:" << endl;
         out << "    " << className << "(QRemoteObjectNode *node, const QString &name = QString())" << endl;
         out << "        : QRemoteObjectReplica(ConstructWithNode)" << endl;
+        for (auto model : astClass.models)
+            out << QString::fromLatin1("        , m_%1(node->acquireModel(\"%2::%1\"))")
+                                       .arg(model.name, astClass.name) << endl;
         out << "        { initializeNode(node, name); }" << endl;
 
         out << "" << endl;
@@ -617,7 +641,22 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "        setProperties(properties);" << endl;
         out << "    }" << endl;
     } else {
-        out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
+        if (astClass.models.isEmpty() || mode == SOURCE)
+            out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
+        else {
+            const QString modelParameterString = QStringLiteral("model%1");
+            QStringList parametersForModels;
+            for (int i = 0; i < astClass.models.count(); i++)
+                parametersForModels << modelParameterString.arg(i+1);
+            out << "    explicit " << className << "(QAbstractItemModel *"
+                << parametersForModels.join(QString::fromLatin1(", QAbstractItemModel *"))
+                << ", QObject *parent = nullptr) : QObject(parent)" << endl;
+            for (int i = 0; i < astClass.models.count(); i++)
+            {
+                out << "        , m_" << astClass.models[i].name
+                    << "(" << parametersForModels.at(i) << ")" << endl;
+            }
+        }
 
         if (mode == SIMPLE_SOURCE) {
             Q_FOREACH (const ASTProperty &property, astClass.properties) {
@@ -702,6 +741,22 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
     }
 
+    if (!astClass.models.isEmpty()) {
+        Q_FOREACH (const ASTModel &model, astClass.models) {
+            if (mode != SOURCE) {
+                if (mode == REPLICA)
+                    out << "    QAbstractItemModelReplica *" << model.name << "()" << endl;
+                else
+                    out << "    QAbstractItemModel *" << model.name << "()" << endl;
+                out << "    {" << endl;
+                out << "        return m_" << model.name << ".data();" << endl;
+                out << "    }" << endl;
+            } else {
+                out << "    virtual QAbstractItemModel *" << model.name << "() = 0;" << endl;
+            }
+        }
+    }
+
     //Next output property signals
     if (!astClass.properties.isEmpty() || !astClass.signalsList.isEmpty()) {
         out << "" << endl;
@@ -779,10 +834,16 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << "    " << property.type << " " << "_" << property.name << ";" << endl;
             }
         }
+        Q_FOREACH (const ASTModel &model, astClass.models)
+            out << "    QScopedPointer<QAbstractItemModel> m_" << model.name << ";" << endl;
     }
 
     out << "" << endl;
     out << "private:" << endl;
+    if (mode == REPLICA) {
+        Q_FOREACH (const ASTModel &model, astClass.models)
+            out << "    QScopedPointer<QAbstractItemModelReplica> m_" << model.name << ";" << endl;
+    }
     out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << endl;
 
     out << "};" << endl;
@@ -809,9 +870,11 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         // Include enum definition in SourceAPI
         generateDeclarationsForEnums(out, astClass.enums, false);
     }
-    out << QString::fromLatin1("    %1()").arg(className) << endl;
+    out << QString::fromLatin1("    %1(ObjectType *object)").arg(className) << endl;
     out << QStringLiteral("        : SourceApiMap()") << endl;
     out << QStringLiteral("    {") << endl;
+    if (astClass.models.isEmpty())
+        out << QStringLiteral("        Q_UNUSED(object);") << endl;
     const int propCount = astClass.properties.count();
     out << QString::fromLatin1("        _properties[0] = %1;").arg(propCount) << endl;
     QStringList changeSignals;
@@ -867,6 +930,12 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                               "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",methodArgCount+%4,&methodArgTypes[%4]);")
                              .arg(QString::number(i+pushCount+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i+pushCount)) << endl;
     }
+    const int modelCount = astClass.models.count();
+    out << QString::fromLatin1("        _modelCount = %1;").arg(modelCount) << endl;
+    for (int i = 0; i < modelCount; ++i) {
+        const ASTModel &model = astClass.models.at(i);
+        out << QString::fromLatin1("        _models[%1] = object->%2();").arg(QString::number(i), model.name) << endl;
+    }
 
     out << QStringLiteral("    }") << endl;
     out << QStringLiteral("") << endl;
@@ -875,6 +944,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    int propertyCount() const override { return _properties[0]; }") << endl;
     out << QStringLiteral("    int signalCount() const override { return _signals[0]; }") << endl;
     out << QStringLiteral("    int methodCount() const override { return _methods[0]; }") << endl;
+    out << QStringLiteral("    int modelCount() const override { return _modelCount; }") << endl;
     out << QStringLiteral("    int sourcePropertyIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= _properties[0])") << endl;
@@ -1040,6 +1110,34 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     if (methodCount > 0) {
         out << QString::fromLatin1("    int methodArgCount[%1];").arg(methodCount) << endl;
         out << QString::fromLatin1("    const int* methodArgTypes[%1];").arg(methodCount) << endl;
+    }
+    out << QString::fromLatin1("    int _modelCount;") << endl;
+    if (modelCount > 0)
+    {
+        out << QString::fromLatin1("    QAbstractItemModel *_models[%1];").arg(modelCount) << endl;
+        out << "    void modelSetup(QRemoteObjectHostBase *node) const override" << endl;
+        out << "    {" << endl;
+        out << "        QVector<int> roles;" << endl;
+        out << "        int roleIndex;" << endl;
+        out << "        QHash<int, QByteArray> knownRoles;" << endl;
+        for (int i = 0; i < astClass.models.count(); i++)
+        {
+            out << endl;
+            const ASTModel model = astClass.models.at(i);
+            out << "        // Handle model #" << i+1 << " " << model.name << endl;
+            out << "        roles.clear();" << endl;
+            out << "        knownRoles = _models[" << i << "]->roleNames();" << endl;
+            for (auto role : model.roles)
+            {
+                out << "        roleIndex = knownRoles.key(\"" << role.name << "\", -1);" << endl;
+                out << "        if (roleIndex == -1)" << endl;
+                out << "            qWarning() << " << QString::fromLatin1("\"Invalid role %1 for model %2\";").arg(role.name, model.name) << endl;
+                out << "        else" << endl;
+                out << "            roles << roleIndex;" << endl;
+            }
+            out << "        node->enableRemoting(" << QString::fromLatin1("_models[%1], \"%2::%3\", roles, nullptr);").arg(QString::number(i), astClass.name, model.name) << endl;
+        }
+        out << "    }" << endl;
     }
     out << QStringLiteral("};") << endl;
 }

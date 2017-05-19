@@ -117,6 +117,7 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
 
 QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
 
+class QRemoteObjectHostBase;
 class SourceApiMap
 {
 protected:
@@ -128,6 +129,7 @@ public:
     virtual int propertyCount() const = 0;
     virtual int signalCount() const = 0;
     virtual int methodCount() const = 0;
+    virtual int modelCount() const { return 0; }
     virtual int sourcePropertyIndex(int index) const = 0;
     virtual int sourceSignalIndex(int index) const = 0;
     virtual int sourceMethodIndex(int index) const = 0;
@@ -146,6 +148,7 @@ public:
     virtual bool isAdapterSignal(int) const { return false; }
     virtual bool isAdapterMethod(int) const { return false; }
     virtual bool isAdapterProperty(int) const { return false; }
+    virtual void modelSetup(QRemoteObjectHostBase *) const { }
 };
 
 QT_END_NAMESPACE

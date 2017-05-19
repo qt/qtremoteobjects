@@ -1302,6 +1302,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 bool QRemoteObjectHostBase::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     Q_D(QRemoteObjectHostBase);
+    api->modelSetup(this);
     return d->remoteObjectIo->enableRemoting(object, api, adapter);
 }
 
