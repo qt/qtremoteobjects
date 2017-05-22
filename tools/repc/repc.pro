@@ -1,5 +1,5 @@
 option(host_build)
-include(3rdparty/moc/moc.pri)
+include(moc_copy/moc.pri)
 QT = core-private
 
 force_bootstrap:isEqual(QT_MAJOR_VERSION, 5):lessThan(QT_MINOR_VERSION, 5): error("compiling repc for bootstrap requires Qt 5.5 or higher, due to missing libraries.")
