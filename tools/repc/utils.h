@@ -30,13 +30,14 @@
 #define UTILS_H
 
 #include <QByteArray>
+#include <QVector>
 
 QT_BEGIN_NAMESPACE
 struct ClassDef;
 struct AST;
 
 QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass = false);
-AST classList2AST(const QList<ClassDef> &classList);
+AST classList2AST(const QVector<ClassDef> &classList);
 QT_END_NAMESPACE
 
 #endif // UTILS_H

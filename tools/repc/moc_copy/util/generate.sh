@@ -1,7 +1,7 @@
 #!/bin/sh
 #############################################################################
 ##
-## Copyright (C) 2017 The Qt Company Ltd.
+## Copyright (C) 2016 The Qt Company Ltd.
 ## Contact: https://www.qt.io/licensing/
 ##
 ## This file is the build configuration utility of the Qt Toolkit.
