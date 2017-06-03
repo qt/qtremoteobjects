@@ -315,7 +315,7 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
                         ++data;
                     }
                     token = WHITESPACE; // one comment, one whitespace
-                    // fall through;
+                    Q_FALLTHROUGH(); // fall through;
                 case WHITESPACE:
                     if (column == 1)
                         column = 0;
@@ -476,7 +476,7 @@ Symbols Preprocessor::tokenize(const QByteArray& input, int lineNum, Preprocesso
                     ++data;
                 }
                 token = PP_WHITESPACE; // one comment, one whitespace
-                // fall through;
+                Q_FALLTHROUGH(); // fall through;
             case PP_WHITESPACE:
                 while (*data && (*data == ' ' || *data == '\t'))
                     ++data;
