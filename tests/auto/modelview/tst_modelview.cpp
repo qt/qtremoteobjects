@@ -1064,6 +1064,12 @@ void TestModelView::testServerInsertDataTree()
     compareData(&testTreeModel, model.data());
 }
 
+#ifdef SLOW_MODELTEST
+#define MODELTEST_WAIT_TIME 10000
+#else
+#define MODELTEST_WAIT_TIME
+#endif
+
 void TestModelView::testModelTest()
 {
     QScopedPointer<QAbstractItemModelReplica> repModel( m_client.acquireModel(QStringLiteral("test")));
@@ -1071,7 +1077,7 @@ void TestModelView::testModelTest()
 
     FetchData f(repModel.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
     Q_UNUSED(test);
 }
 
