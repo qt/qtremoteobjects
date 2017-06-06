@@ -1,31 +1,26 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2017 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL21$
+** $QT_BEGIN_LICENSE:GPL-EXCEPT$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see http://www.qt.io/terms-conditions. For further
-** information use the contact form at http://www.qt.io/contact-us.
+** and conditions see https://www.qt.io/terms-conditions. For further
+** information use the contact form at https://www.qt.io/contact-us.
 **
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 or version 3 as published by the Free
-** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file. Please review the
-** following information to ensure the GNU Lesser General Public License
-** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
-**
-** As a special exception, The Qt Company gives you certain additional
-** rights. These rights are described in The Qt Company LGPL Exception
-** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3 as published by the Free Software
+** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
+** included in the packaging of this file. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-3.0.html.
 **
 ** $QT_END_LICENSE$
 **
@@ -38,6 +33,7 @@
 #include <QTextStream>
 
 Q_DECLARE_METATYPE(ASTProperty::Modifier)
+Q_DECLARE_METATYPE(ASTModelRole)
 
 class tst_Parser : public QObject {
     Q_OBJECT
@@ -55,6 +51,8 @@ private Q_SLOTS:
     void testPods();
     void testEnums_data();
     void testEnums();
+    void testModels_data();
+    void testModels();
     void testInvalid_data();
     void testInvalid();
 };
@@ -162,25 +160,27 @@ void tst_Parser::testSlots_data()
 {
     QTest::addColumn<QString>("slotDeclaration");
     QTest::addColumn<QString>("expectedSlot");
-    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "void test()";
-    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "void test()";
-    QTest::newRow("slotwitharguments") << "SLOT(void test(QString value, int number))" << "void test(QString value, int number)";
-    QTest::newRow("slotwithunnamedarguments") << "SLOT(void test(QString, int))" << "void test(QString __repc_variable_1, int __repc_variable_2)";
-    QTest::newRow("slotwithspaces") << "SLOT(   void test  (QString value, int number)  )" << "void test(QString value, int number)";
-    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "void test(QMap<QString,int> foo)";
-    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "void test(QMap<QString,int> foo, QMap<QString,int> bla)";
-    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "void test(QMap<QList<QString>,int> foo)";
-    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "void test(QMap<QString , int> foo)";
-    QTest::newRow("slotWithConstRefArgument") << "SLOT (test(const QString &val))" << "void test(const QString & val)";
-    QTest::newRow("slotWithRefArgument") << "SLOT (test(QString &val))" << "void test(QString & val)";
-    QTest::newRow("slotwithtemplatetemplatesAndConstRef") << "SLOT(test(const QMap<QList<QString>,int> &foo))" << "void test(const QMap<QList<QString>,int> & foo)";
-    QTest::newRow("slotWithConstRefArgumentAndWithout") << "SLOT (test(const QString &val, int value))" << "void test(const QString & val, int value)";
+    QTest::addColumn<bool>("voidWarning");
+    QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "void test()" << true;
+    QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "void test()" << true;
+    QTest::newRow("slotwitharguments") << "SLOT(void test(QString value, int number))" << "void test(QString value, int number)" << false;
+    QTest::newRow("slotwithunnamedarguments") << "SLOT(void test(QString, int))" << "void test(QString __repc_variable_1, int __repc_variable_2)" << false;
+    QTest::newRow("slotwithspaces") << "SLOT(   void test  (QString value, int number)  )" << "void test(QString value, int number)" << false;
+    QTest::newRow("slotwithtemplates") << "SLOT(test(QMap<QString,int> foo))" << "void test(QMap<QString,int> foo)" << true;
+    QTest::newRow("slotwithmultitemplates") << "SLOT(test(QMap<QString,int> foo, QMap<QString,int> bla))" << "void test(QMap<QString,int> foo, QMap<QString,int> bla)" << true;
+    QTest::newRow("slotwithtemplatetemplates") << "SLOT(test(QMap<QList<QString>,int> foo))" << "void test(QMap<QList<QString>,int> foo)" << true;
+    QTest::newRow("slotwithtemplateswithspace") << "SLOT ( test (QMap<QString , int>  foo ) )" << "void test(QMap<QString , int> foo)" << true;
+    QTest::newRow("slotWithConstRefArgument") << "SLOT (test(const QString &val))" << "void test(const QString & val)" << true;
+    QTest::newRow("slotWithRefArgument") << "SLOT (test(QString &val))" << "void test(QString & val)" << true;
+    QTest::newRow("slotwithtemplatetemplatesAndConstRef") << "SLOT(test(const QMap<QList<QString>,int> &foo))" << "void test(const QMap<QList<QString>,int> & foo)" << true;
+    QTest::newRow("slotWithConstRefArgumentAndWithout") << "SLOT (test(const QString &val, int value))" << "void test(const QString & val, int value)" << true;
 }
 
 void tst_Parser::testSlots()
 {
     QFETCH(QString, slotDeclaration);
     QFETCH(QString, expectedSlot);
+    QFETCH(bool, voidWarning);
 
     QTemporaryFile file;
     file.open();
@@ -191,6 +191,8 @@ void tst_Parser::testSlots()
     stream << "};" << endl;
     file.seek(0);
 
+    if (voidWarning)
+        QTest::ignoreMessage(QtWarningMsg, "[repc] - Adding 'void' for unspecified return type on test");
     RepParser parser(file);
     QVERIFY(parser.parse());
 
@@ -351,31 +353,75 @@ void tst_Parser::testEnums()
     QCOMPARE(enums.isSigned, expectedsigned);
 }
 
+void tst_Parser::testModels_data()
+{
+    QTest::addColumn<QString>("modelDeclaration");
+    QTest::addColumn<QString>("expectedModel");
+    QTest::addColumn<QVector<ASTModelRole>>("expectedRoles");
+    QTest::newRow("basicmodel") << "MODEL test(display)" << "test" << QVector<ASTModelRole>({{"display"}});
+    QTest::newRow("basicmodelsemicolon") << "MODEL test(display);" << "test" << QVector<ASTModelRole>({{"display"}});
+}
+
+void tst_Parser::testModels()
+{
+    QFETCH(QString, modelDeclaration);
+    QFETCH(QString, expectedModel);
+    QFETCH(QVector<ASTModelRole>, expectedRoles);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << "class TestClass" << endl;
+    stream << "{" << endl;
+    stream << modelDeclaration << endl;
+    stream << "};" << endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    const ASTClass astClass = ast.classes.first();
+    ASTModel model = astClass.models.first();
+    QCOMPARE(model.name, expectedModel);
+    int i = 0;
+    for (auto role : model.roles) {
+        QCOMPARE(role.name, expectedRoles.at(i).name);
+        i++;
+    }
+}
+
 void tst_Parser::testInvalid_data()
 {
     QTest::addColumn<QString>("content");
+    QTest::addColumn<QString>("warning");
 
-    QTest::newRow("pod_invalid") << "POD (int foo)";
-    QTest::newRow("pod_unbalancedparens") << "POD foo(int foo";
-    QTest::newRow("pod_inclass") << "class Foo\n{\nPOD foo(int)\n}";
-    QTest::newRow("class_noidentifier") << "class\n{\n}";
-    QTest::newRow("class_nested") << "class Foo\n{\nclass Bar\n}";
-    QTest::newRow("prop_outsideclass") << "PROP(int foo)";
-    QTest::newRow("prop_toomanyargs") << "class Foo\n{\nPROP(int int foo)\n}";
-    QTest::newRow("prop_toomanymodifiers") << "class Foo\n{\nPROP(int foo READWRITE, READONLY)\n}";
-    QTest::newRow("prop_noargs") << "class Foo\n{\nPROP()\n}";
-    QTest::newRow("prop_unbalancedparens") << "class Foo\n{\nPROP(int foo\n}";
-    QTest::newRow("signal_outsideclass") << "SIGNAL(foo())";
-    QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}";
-    QTest::newRow("slot_outsideclass") << "SLOT(void foo())";
-    QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}";
-    QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}";
+    QTest::newRow("pod_invalid") << "POD (int foo)" << ".?Unknown token encountered";
+    QTest::newRow("pod_unbalancedparens") << "POD foo(int foo" << ".?Unknown token encountered";
+    QTest::newRow("pod_inclass") << "class Foo\n{\nPOD foo(int)\n}" << ".?POD: Can only be used in global scope";
+    QTest::newRow("class_noidentifier") << "class\n{\n}" << ".?Unknown token encountered";
+    QTest::newRow("class_nested") << "class Foo\n{\nclass Bar\n}" << ".?class: Cannot be nested";
+    QTest::newRow("prop_outsideclass") << "PROP(int foo)" << ".?PROP: Can only be used in class scope";
+    QTest::newRow("prop_toomanyargs") << "class Foo\n{\nPROP(int int foo)\n}" << ".?Invalid property declaration: flag foo is unknown";
+    QTest::newRow("prop_toomanymodifiers") << "class Foo\n{\nPROP(int foo READWRITE, READONLY)\n}" << ".?Invalid property declaration: combination not allowed .READWRITE, READONLY.";
+    QTest::newRow("prop_noargs") << "class Foo\n{\nPROP()\n}" << ".?Unknown token encountered";
+    QTest::newRow("prop_unbalancedparens") << "class Foo\n{\nPROP(int foo\n}" << ".?Unknown token encountered";
+    QTest::newRow("signal_outsideclass") << "SIGNAL(foo())" << ".?SIGNAL: Can only be used in class scope";
+    QTest::newRow("signal_noargs") << "class Foo\n{\nSIGNAL()\n}" << ".?Unknown token encountered";
+    QTest::newRow("slot_outsideclass") << "SLOT(void foo())" << ".?SLOT: Can only be used in class scope";
+    QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}" << ".?Unknown token encountered";
+    QTest::newRow("model_outsideclass") << "MODEL foo" << ".?Unknown token encountered";
+    QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}" << ".?Unknown token encountered";
 }
 
 void tst_Parser::testInvalid()
 {
     QFETCH(QString, content);
+    QFETCH(QString, warning);
 
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(warning));
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);

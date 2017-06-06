@@ -1,31 +1,26 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Ford Motor Company
+** Copyright (C) 2017 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL21$
+** $QT_BEGIN_LICENSE:GPL-EXCEPT$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see http://www.qt.io/terms-conditions. For further
-** information use the contact form at http://www.qt.io/contact-us.
+** and conditions see https://www.qt.io/terms-conditions. For further
+** information use the contact form at https://www.qt.io/contact-us.
 **
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 or version 3 as published by the Free
-** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file. Please review the
-** following information to ensure the GNU Lesser General Public License
-** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
-**
-** As a special exception, The Qt Company gives you certain additional
-** rights. These rights are described in The Qt Company LGPL Exception
-** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3 as published by the Free Software
+** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
+** included in the packaging of this file. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-3.0.html.
 **
 ** $QT_END_LICENSE$
 **
@@ -231,17 +226,32 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
            "#include <QtCore/qobject.h>\n"
            "#include <QtCore/qdatastream.h>\n"
            "#include <QtCore/qvariant.h>\n"
-           "#include <QtCore/qmetatype.h>\n"
-           "\n"
-           "#include <QtRemoteObjects/qremoteobjectnode.h>\n"
-           ;
+           "#include <QtCore/qmetatype.h>\n";
+    bool hasModel = false;
+    for (auto c : ast.classes)
+    {
+        if (c.models.count() > 0)
+        {
+            hasModel = true;
+            break;
+        }
+    }
+    if (hasModel)
+        out << "#include <QtCore/qabstractitemmodel.h>\n";
+    out << "\n"
+           "#include <QtRemoteObjects/qremoteobjectnode.h>\n";
+
     if (mode == MERGED) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
+        if (hasModel)
+            out << "#include <QtRemoteObjects/qremoteobjectabstractitemmodelreplica.h>\n";
     } else if (mode == REPLICA) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
+        if (hasModel)
+            out << "#include <QtRemoteObjects/qremoteobjectabstractitemmodelreplica.h>\n";
     } else
         out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
     out << "\n";
@@ -567,6 +577,12 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
         out << ")" << endl;
     }
+    for (auto model : astClass.models) {
+        if (mode == REPLICA)
+            out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModelReplica *%1 READ %1 CONSTANT)").arg(model.name) << endl;
+        else
+            out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModel *%1 READ %1 CONSTANT)").arg(model.name) << endl;
+    }
 
     if (!astClass.enums.isEmpty()) {
         out << "" << endl;
@@ -579,31 +595,32 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
 
     if (mode == REPLICA) {
         out << "    " << className << "() : QRemoteObjectReplica() { initialize(); }" << endl;
+        out << "    static void registerMetatypes()" << endl;
+        out << "    {" << endl;
+        out << "        static bool initialized = false;" << endl;
+        out << "        if (initialized)" << endl;
+        out << "            return;" << endl;
+        out << "        initialized = true;" << endl;
+
+        if (!metaTypeRegistrationCode.isEmpty())
+            out << metaTypeRegistrationCode << endl;
+
+        out << "    }" << endl;
 
         out << "" << endl;
         out << "private:" << endl;
         out << "    " << className << "(QRemoteObjectNode *node, const QString &name = QString())" << endl;
         out << "        : QRemoteObjectReplica(ConstructWithNode)" << endl;
+        for (auto model : astClass.models)
+            out << QString::fromLatin1("        , m_%1(node->acquireModel(\"%2::%1\"))")
+                                       .arg(model.name, astClass.name) << endl;
         out << "        { initializeNode(node, name); }" << endl;
 
         out << "" << endl;
+
         out << "    void initialize()" << endl;
-    } else {
-        out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
-
-        if (mode == SIMPLE_SOURCE) {
-            Q_FOREACH (const ASTProperty &property, astClass.properties) {
-                out << "        , _" << property.name << "(" << property.defaultValue << ")" << endl;
-            }
-        }
-    }
-
-    out << "    {" << endl;
-
-    if (!metaTypeRegistrationCode.isEmpty())
-        out << metaTypeRegistrationCode << endl;
-
-    if (mode == REPLICA) {
+        out << "    {" << endl;
+        out << "        " << className << "::registerMetatypes();" << endl;
         out << "        QVariantList properties;" << endl;
         out << "        properties.reserve(" << astClass.properties.size() << ");" << endl;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
@@ -622,9 +639,36 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << "        }" << endl;
         }
         out << "        setProperties(properties);" << endl;
-    }
+        out << "    }" << endl;
+    } else {
+        if (astClass.models.isEmpty() || mode == SOURCE)
+            out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
+        else {
+            const QString modelParameterString = QStringLiteral("model%1");
+            QStringList parametersForModels;
+            for (int i = 0; i < astClass.models.count(); i++)
+                parametersForModels << modelParameterString.arg(i+1);
+            out << "    explicit " << className << "(QAbstractItemModel *"
+                << parametersForModels.join(QString::fromLatin1(", QAbstractItemModel *"))
+                << ", QObject *parent = nullptr) : QObject(parent)" << endl;
+            for (int i = 0; i < astClass.models.count(); i++)
+            {
+                out << "        , m_" << astClass.models[i].name
+                    << "(" << parametersForModels.at(i) << ")" << endl;
+            }
+        }
 
-    out << "    }" << endl;
+        if (mode == SIMPLE_SOURCE) {
+            Q_FOREACH (const ASTProperty &property, astClass.properties) {
+                out << "        , _" << property.name << "(" << property.defaultValue << ")" << endl;
+            }
+        }
+
+        out << "    {" << endl;
+        if (!metaTypeRegistrationCode.isEmpty())
+            out << metaTypeRegistrationCode << endl;
+        out << "    }" << endl;
+    }
 
     out << "" << endl;
     out << "public:" << endl;
@@ -693,6 +737,22 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << "            Q_EMIT " << property.name << "Changed(_" << property.name << ");" << endl;
                 out << "        }" << endl;
                 out << "    }" << endl;
+            }
+        }
+    }
+
+    if (!astClass.models.isEmpty()) {
+        Q_FOREACH (const ASTModel &model, astClass.models) {
+            if (mode != SOURCE) {
+                if (mode == REPLICA)
+                    out << "    QAbstractItemModelReplica *" << model.name << "()" << endl;
+                else
+                    out << "    QAbstractItemModel *" << model.name << "()" << endl;
+                out << "    {" << endl;
+                out << "        return m_" << model.name << ".data();" << endl;
+                out << "    }" << endl;
+            } else {
+                out << "    virtual QAbstractItemModel *" << model.name << "() = 0;" << endl;
             }
         }
     }
@@ -774,10 +834,16 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << "    " << property.type << " " << "_" << property.name << ";" << endl;
             }
         }
+        Q_FOREACH (const ASTModel &model, astClass.models)
+            out << "    QScopedPointer<QAbstractItemModel> m_" << model.name << ";" << endl;
     }
 
     out << "" << endl;
     out << "private:" << endl;
+    if (mode == REPLICA) {
+        Q_FOREACH (const ASTModel &model, astClass.models)
+            out << "    QScopedPointer<QAbstractItemModelReplica> m_" << model.name << ";" << endl;
+    }
     out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << endl;
 
     out << "};" << endl;
@@ -804,9 +870,11 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         // Include enum definition in SourceAPI
         generateDeclarationsForEnums(out, astClass.enums, false);
     }
-    out << QString::fromLatin1("    %1()").arg(className) << endl;
+    out << QString::fromLatin1("    %1(ObjectType *object)").arg(className) << endl;
     out << QStringLiteral("        : SourceApiMap()") << endl;
     out << QStringLiteral("    {") << endl;
+    if (astClass.models.isEmpty())
+        out << QStringLiteral("        Q_UNUSED(object);") << endl;
     const int propCount = astClass.properties.count();
     out << QString::fromLatin1("        _properties[0] = %1;").arg(propCount) << endl;
     QStringList changeSignals;
@@ -862,6 +930,12 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                               "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",methodArgCount+%4,&methodArgTypes[%4]);")
                              .arg(QString::number(i+pushCount+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i+pushCount)) << endl;
     }
+    const int modelCount = astClass.models.count();
+    out << QString::fromLatin1("        _modelCount = %1;").arg(modelCount) << endl;
+    for (int i = 0; i < modelCount; ++i) {
+        const ASTModel &model = astClass.models.at(i);
+        out << QString::fromLatin1("        _models[%1] = object->%2();").arg(QString::number(i), model.name) << endl;
+    }
 
     out << QStringLiteral("    }") << endl;
     out << QStringLiteral("") << endl;
@@ -870,6 +944,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    int propertyCount() const override { return _properties[0]; }") << endl;
     out << QStringLiteral("    int signalCount() const override { return _signals[0]; }") << endl;
     out << QStringLiteral("    int methodCount() const override { return _methods[0]; }") << endl;
+    out << QStringLiteral("    int modelCount() const override { return _modelCount; }") << endl;
     out << QStringLiteral("    int sourcePropertyIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= _properties[0])") << endl;
@@ -1035,6 +1110,34 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     if (methodCount > 0) {
         out << QString::fromLatin1("    int methodArgCount[%1];").arg(methodCount) << endl;
         out << QString::fromLatin1("    const int* methodArgTypes[%1];").arg(methodCount) << endl;
+    }
+    out << QString::fromLatin1("    int _modelCount;") << endl;
+    if (modelCount > 0)
+    {
+        out << QString::fromLatin1("    QAbstractItemModel *_models[%1];").arg(modelCount) << endl;
+        out << "    void modelSetup(QRemoteObjectHostBase *node) const override" << endl;
+        out << "    {" << endl;
+        out << "        QVector<int> roles;" << endl;
+        out << "        int roleIndex;" << endl;
+        out << "        QHash<int, QByteArray> knownRoles;" << endl;
+        for (int i = 0; i < astClass.models.count(); i++)
+        {
+            out << endl;
+            const ASTModel model = astClass.models.at(i);
+            out << "        // Handle model #" << i+1 << " " << model.name << endl;
+            out << "        roles.clear();" << endl;
+            out << "        knownRoles = _models[" << i << "]->roleNames();" << endl;
+            for (auto role : model.roles)
+            {
+                out << "        roleIndex = knownRoles.key(\"" << role.name << "\", -1);" << endl;
+                out << "        if (roleIndex == -1)" << endl;
+                out << "            qWarning() << " << QString::fromLatin1("\"Invalid role %1 for model %2\";").arg(role.name, model.name) << endl;
+                out << "        else" << endl;
+                out << "            roles << roleIndex;" << endl;
+            }
+            out << "        node->enableRemoting(" << QString::fromLatin1("_models[%1], \"%2::%3\", roles, nullptr);").arg(QString::number(i), astClass.name, model.name) << endl;
+        }
+        out << "    }" << endl;
     }
     out << QStringLiteral("};") << endl;
 }
