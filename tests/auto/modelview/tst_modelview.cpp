@@ -36,8 +36,7 @@
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
 #include <QEventLoop>
-
-#include <cstdlib>
+#include <QRandomGenerator>
 
 namespace {
 
@@ -401,7 +400,7 @@ QList<QStandardItem*> addChild(int numChilds, int nestingLevel)
 
 int getRandomNumber(int min, int max)
 {
-    int res = std::rand();
+    int res = QRandomGenerator::get32() & INT_MAX;
     const int diff = (max - min);
     res = res % diff;
     res += min;
@@ -650,7 +649,6 @@ void TestModelView::initTestCase()
     hHeaderList << QStringLiteral("First Column with spacing") << QStringLiteral("Second Column with spacing");
     m_sourceModel.setHorizontalHeaderLabels(hHeaderList);
 
-    std::srand(0);
     for (int i = 0; i < modelSize; ++i) {
         QStandardItem *firstItem = new QStandardItem(QStringLiteral("FancyTextNumber %1").arg(i));
         QStandardItem *secondItem = new QStandardItem(QStringLiteral("FancyRow2TextNumber %1").arg(i));
