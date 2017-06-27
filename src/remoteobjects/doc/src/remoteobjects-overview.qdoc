@@ -39,14 +39,15 @@
 
 /*!
 \page qtremoteobjects-gettingstarted.html
-\title Getting Started with Qt Remote Objects
+\title Overview Qt Remote Objects
 \brief Introduction to using Qt Remote Objects.
 \ingroup overviews
+
 
 \section1 Introduction
 
 The \e {Qt Remote Objects} (QtRO) module provides an easy way to share Qt APIs
-between processes and devices. A data conduit between processes and devices is
+between processes and devices. A data channel between processes and devices is
 required for this to work. Therefore, the first thing you need in QtRO is a
 QRemoteObjectNode. In QtRO, a node is an endpoint for communication. Each
 participant in a remote objects network, be it a process or a device, needs
@@ -89,7 +90,7 @@ node} with a URL other nodes can connect to. You can also use the QtRO \l
 See the \l {Qt Remote Objects} {Overview} for a more detailed description, or
 use the following examples to get started with QtRO.
 
-\section1 Getting Started
+\section1 Implementation
 
 To illustrate the use of remote objects, on the source side we need to:
 

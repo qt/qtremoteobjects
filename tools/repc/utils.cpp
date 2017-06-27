@@ -36,7 +36,8 @@
 
 QT_BEGIN_NAMESPACE
 
-static QByteArray join(const QList<QByteArray> &array, const QByteArray &separator) {
+static QByteArray join(const QVector<QByteArray> &array, const QByteArray &separator)
+{
     QByteArray res;
     const int sz = array.size();
     if (!sz)
@@ -47,10 +48,10 @@ static QByteArray join(const QList<QByteArray> &array, const QByteArray &separat
     return res;
 }
 
-static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties, bool isPod=false)
+static QVector<QByteArray> generateProperties(const QVector<PropertyDef> &properties, bool isPod=false)
 {
-    QList<QByteArray> ret;
-    foreach (const PropertyDef& property, properties) {
+    QVector<QByteArray> ret;
+    for (const PropertyDef& property : properties) {
         if (!isPod && property.notifyId == -1 && !property.constant) {
             qWarning() << "Skipping property" << property.name << "because is non-notifiable & non-constant";
             continue; // skip non-notifiable properties
@@ -65,10 +66,10 @@ static QList<QByteArray> generateProperties(const QList<PropertyDef> &properties
     return ret;
 }
 
-static QByteArray generateFunctions(const QByteArray &type, const QList<FunctionDef> &functionList)
+static QByteArray generateFunctions(const QByteArray &type, const QVector<FunctionDef> &functionList)
 {
     QByteArray ret;
-    foreach (const FunctionDef &func, functionList) {
+    for (const FunctionDef &func : functionList) {
         if (func.access != FunctionDef::Public)
             continue;
 
@@ -93,28 +94,28 @@ static bool highToLowSort(int a, int b)
     return a > b;
 }
 
-static QList<FunctionDef> cleanedSignalList(const ClassDef &cdef)
+static QVector<FunctionDef> cleanedSignalList(const ClassDef &cdef)
 {
-    QList<FunctionDef> ret = cdef.signalList;
+    auto ret = cdef.signalList;
     QVector<int> positions;
-    foreach (const PropertyDef &prop, cdef.propertyList) {
+    for (const PropertyDef &prop :  qAsConst(cdef.propertyList)) {
         if (prop.notifyId != -1) {
             Q_ASSERT(prop.notify == ret.at(prop.notifyId).name);
             positions.push_back(prop.notifyId);
         }
     }
     std::sort(positions.begin(), positions.end(), highToLowSort);
-    foreach (int pos, positions)
+    for (int pos : qAsConst(positions))
         ret.removeAt(pos);
     return ret;
 }
 
-static QList<FunctionDef> cleanedSlotList(const ClassDef &cdef)
+static QVector<FunctionDef> cleanedSlotList(const ClassDef &cdef)
 {
-    QList<FunctionDef> ret = cdef.slotList;
-    foreach (const PropertyDef &prop, cdef.propertyList) {
+    auto ret = cdef.slotList;
+    for (const PropertyDef &prop : qAsConst(cdef.propertyList)) {
         if (!prop.write.isEmpty()) {
-            QList<FunctionDef>::Iterator it = ret.begin();
+            auto it = ret.begin();
             while (it != ret.end()) {
                 const FunctionDef& fdef = *it;
                 if (fdef.name == prop.write &&
@@ -131,7 +132,7 @@ static QList<FunctionDef> cleanedSlotList(const ClassDef &cdef)
 
 QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass /* = false */)
 {
-    QList<FunctionDef> signalList = cleanedSignalList(cdef);
+    const auto signalList = cleanedSignalList(cdef);
     if (signalList.isEmpty() && cdef.slotList.isEmpty() && !alwaysGenerateClass)
         return "POD " + cdef.classname + "(" + join(generateProperties(cdef.propertyList, true), ", ") + ")\n";
 
@@ -144,18 +145,18 @@ QByteArray generateClass(const ClassDef &cdef, bool alwaysGenerateClass /* = fal
     return ret;
 }
 
-static QVector<PODAttribute> propertyList2PODAttributes(const QList<PropertyDef> &list)
+static QVector<PODAttribute> propertyList2PODAttributes(const QVector<PropertyDef> &list)
 {
     QVector<PODAttribute> ret;
-    foreach (const PropertyDef &prop, list)
+    for (const PropertyDef &prop : list)
         ret.push_back(PODAttribute(_(prop.type), _(prop.name)));
     return ret;
 }
 
-QVector<ASTProperty> propertyList2AstProperties(const QList<PropertyDef> &list)
+QVector<ASTProperty> propertyList2AstProperties(const QVector<PropertyDef> &list)
 {
     QVector<ASTProperty> ret;
-    foreach (const PropertyDef &property, list) {
+    for (const PropertyDef &property : list) {
         if (property.notifyId == -1 && !property.constant) {
             qWarning() << "Skipping property" << property.name << "because is non-notifiable & non-constant";
             continue; // skip non-notifiable properties
@@ -173,28 +174,28 @@ QVector<ASTProperty> propertyList2AstProperties(const QList<PropertyDef> &list)
     return ret;
 }
 
-QVector<ASTFunction> functionList2AstFunctionList(const QList<FunctionDef> &list)
+QVector<ASTFunction> functionList2AstFunctionList(const QVector<FunctionDef> &list)
 {
     QVector<ASTFunction> ret;
-    foreach (const FunctionDef &fdef, list) {
+    for (const FunctionDef &fdef : list) {
         if (fdef.access != FunctionDef::Public)
             continue;
 
         ASTFunction func;
         func.name = _(fdef.name);
         func.returnType = _(fdef.type.name);
-        foreach (const ArgumentDef &arg, fdef.arguments)
+        for (const ArgumentDef &arg : fdef.arguments)
             func.params.push_back(ASTDeclaration(_(arg.type.name), _(arg.name)));
         ret.push_back(func);
     }
     return ret;
 }
 
-AST classList2AST(const QList<ClassDef> &classList)
+AST classList2AST(const QVector<ClassDef> &classList)
 {
     AST ret;
-    foreach (const ClassDef &cdef, classList) {
-        QList<FunctionDef> signalList = cleanedSignalList(cdef);
+    for (const ClassDef &cdef : classList) {
+        const auto signalList = cleanedSignalList(cdef);
         if (signalList.isEmpty() && cdef.slotList.isEmpty()) {
             POD pod;
             pod.name = _(cdef.classname);

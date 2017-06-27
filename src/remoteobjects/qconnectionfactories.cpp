@@ -52,14 +52,14 @@ QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
 
-class FactoryLoader
+class QtROFactoryLoader
 {
 public:
     QtROClientFactory clientFactory;
     QtROServerFactory serverFactory;
 };
 
-Q_GLOBAL_STATIC(FactoryLoader, loader)
+Q_GLOBAL_STATIC(QtROFactoryLoader, loader)
 
 inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, QString &name)
 {

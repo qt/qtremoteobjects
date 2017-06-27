@@ -49,7 +49,7 @@ QT_BEGIN_NAMESPACE
 //The Qt servers create QIODevice derived classes from handleConnection.
 //The problem is that they behave differently, so this class adds some
 //consistency.
-class ServerIoDevice : public QObject
+class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(ServerIoDevice)
@@ -81,7 +81,7 @@ private:
     QDataStream m_dataStream;
 };
 
-class QConnectionAbstractServer : public QObject
+class Q_REMOTEOBJECTS_EXPORT QConnectionAbstractServer : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(QConnectionAbstractServer)
@@ -104,7 +104,7 @@ Q_SIGNALS:
     void newConnection();
 };
 
-class ClientIoDevice : public QObject
+class Q_REMOTEOBJECTS_EXPORT ClientIoDevice : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(ClientIoDevice)
@@ -153,8 +153,6 @@ private:
 class QtROServerFactory
 {
 public:
-    QtROServerFactory();
-
     Q_REMOTEOBJECTS_EXPORT static QtROServerFactory *instance();
 
     QConnectionAbstractServer *create(const QUrl &url, QObject *parent = nullptr)
@@ -172,6 +170,9 @@ public:
     }
 
 private:
+    friend class QtROFactoryLoader;
+    QtROServerFactory();
+
     using CreatorFunc = QConnectionAbstractServer * (*)(QObject *);
     QHash<QString, CreatorFunc> m_creatorFuncs;
 };
@@ -179,8 +180,6 @@ private:
 class QtROClientFactory
 {
 public:
-    QtROClientFactory();
-
     Q_REMOTEOBJECTS_EXPORT static QtROClientFactory *instance();
 
     /// creates an object from a string
@@ -205,6 +204,9 @@ public:
     }
 
 private:
+    friend class QtROFactoryLoader;
+    QtROClientFactory();
+
     using CreatorFunc = ClientIoDevice * (*)(QObject *);
     QHash<QString, CreatorFunc> m_creatorFuncs;
 };

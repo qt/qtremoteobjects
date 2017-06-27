@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 The Qt Company Ltd.
+** Copyright (C) 2016 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
@@ -29,8 +29,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <qstack.h>
 #include "symbols.h"
+
+#include <stack>
 
 QT_BEGIN_NAMESPACE
 
@@ -52,7 +53,7 @@ public:
     };
     QList<IncludePath> includes;
 
-    QStack<QByteArray> currentFilenames;
+    std::stack<QByteArray, QByteArrayList> currentFilenames;
 
     inline bool hasNext() const { return (index < symbols.size()); }
     inline Token next() { if (index >= symbols.size()) return NOTOKEN; return symbols.at(index++).token; }
@@ -67,8 +68,8 @@ public:
     inline QByteArray unquotedLexem() { return symbols.at(index-1).unquotedLexem();}
     inline const Symbol &symbol() { return symbols.at(index-1);}
 
-    void error(int rollback);
-    void error(const char *msg = 0);
+    Q_NORETURN void error(int rollback);
+    Q_NORETURN void error(const char *msg = 0);
     void warning(const char * = 0);
     void note(const char * = 0);
 

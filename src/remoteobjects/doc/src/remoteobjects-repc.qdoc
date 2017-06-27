@@ -43,7 +43,7 @@
 */
 
 /*!
-\page remoteobjects-repc.html
+\page qtremoteobjects-repc.html
 \title Qt Remote Objects Compiler
 \brief The Qt Remote Objects Compiler creates \l {Source} and \l {Replica} header files
 \ingroup overviews

@@ -38,11 +38,9 @@
 ****************************************************************************/
 
 /*!
-
 \module QtRemoteObjects
-
 \title Qt Remote Objects C++ Classes
-\brief The Qt Remote Objects module provides an easy to use mechanism for sharing a QObject's API (Properties/Signals/Slots) between processes.
+\brief The Qt Remote Objects module provides an easy to use mechanism for sharing a QObject (Properties/Signals/Slots) between processes.
 \ingroup modules
 \qtvariable remoteobjects
 

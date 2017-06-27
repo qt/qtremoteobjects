@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 The Qt Company Ltd.
+** Copyright (C) 2016 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
@@ -61,7 +61,9 @@ public:
     static bool preprocessOnly;
     QList<QByteArray> frameworks;
     QSet<QByteArray> preprocessedIncludes;
+    QHash<QByteArray, QByteArray> nonlocalIncludePathResolutionCache;
     Macros macros;
+    QByteArray resolveInclude(const QByteArray &filename, const QByteArray &relativeTo);
     Symbols preprocessed(const QByteArray &filename, QFile *device);
 
     void parseDefineArguments(Macro *m);
