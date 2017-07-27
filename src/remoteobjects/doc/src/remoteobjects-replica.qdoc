@@ -35,7 +35,7 @@
 \title Qt Remote Objects Replica
 \brief Describes how the remote object replica works as a proxy object.
 \target Replica
-\section1 Replica objects
+\section1 Replica Objects
 
 A remote object replica is a proxy object that has (approximately) the same API
 as the \l {Source} QObject it is replicating. There are a few additional

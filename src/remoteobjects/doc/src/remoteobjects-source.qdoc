@@ -35,7 +35,7 @@
 \title Qt Remote Objects Source
 \brief Introduction to using Source
 \target Source
-\section1 Source objects
+\section1 Source Objects
 
 A Remote Object Source is the QObject that is responsible for the
 implementation of the exposed API.
