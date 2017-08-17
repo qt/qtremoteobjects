@@ -50,6 +50,5 @@
     Use the following include in you source files:
     \snippet doc_src_remoteobjects.h qtremoteobject_include
 
-    See \l{Getting Started with Qt Remote Objects} page for
-    an introduction to the module.
+    See \l{Overview Qt Remote Objects} for an introduction to the module.
 */

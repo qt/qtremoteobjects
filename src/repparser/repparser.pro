@@ -3,7 +3,7 @@ MODULE = repparser
 
 # Dont produce a library
 CONFIG += header_module
-
+QT = core
 load(qt_module)
 
 def_build = debug

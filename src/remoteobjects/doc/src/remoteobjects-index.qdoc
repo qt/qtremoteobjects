@@ -95,11 +95,10 @@ QT += remoteobjects
 \section2 Guides
  \list
     \li \l {Overview Qt Remote Objects}
-    \li \l {Getting Started with Qt Remote Objects}
-    \li \l {Qt Remote Objects C++ classes}
+    \li \l {Qt Remote Objects C++ Classes}
     \li \l {Qt Remote Objects Nodes}
-    \li \l {Qt Remote Objects Source Objects}
-    \li \l {Qt Remote Objects Replica Objects}
+    \li \l {Source Objects}{Qt Remote Objects Source Objects}
+    \li \l {Replica Objects}{Qt Remote Objects Replica Objects}
     \li \l {Qt Remote Objects Registry}
     \li \l {Qt Remote Objects Compiler}
     \li \l {Remote Object Interaction}
