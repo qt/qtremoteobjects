@@ -232,9 +232,9 @@ public:
     explicit RepParser(QIODevice &outputDevice);
     virtual ~RepParser() {}
 
-    bool parse() Q_DECL_OVERRIDE { return QRegexParser<RepParser, $table>::parse(); }
+    bool parse() override { return QRegexParser<RepParser, $table>::parse(); }
 
-    void reset() Q_DECL_OVERRIDE;
+    void reset() override;
     int nextToken();
     bool consumeRule(int ruleno);
 
