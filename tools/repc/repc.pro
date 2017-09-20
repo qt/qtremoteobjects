@@ -23,4 +23,5 @@ HEADERS += \
     cppcodegenerator.h \
     utils.h
 
+QMAKE_TARGET_DESCRIPTION = "Qt Remote Objects Compiler"
 load(qt_tool)
