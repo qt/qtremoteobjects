@@ -330,8 +330,8 @@ class QAbstractItemModelReplicaPrivate : public QRemoteObjectReplica
 public:
     QAbstractItemModelReplicaPrivate();
     QAbstractItemModelReplicaPrivate(QRemoteObjectNode *node, const QString &name);
-    ~QAbstractItemModelReplicaPrivate();
-    void initialize();
+    ~QAbstractItemModelReplicaPrivate() override;
+    void initialize() override;
     static void registerMetatypes();
 
     inline const QVector<int> &availableRoles() const

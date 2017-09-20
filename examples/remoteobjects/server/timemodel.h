@@ -56,13 +56,13 @@ class MinuteTimer : public MinuteTimerSimpleSource
     Q_OBJECT
 public:
     MinuteTimer(QObject *parent = nullptr);
-    virtual ~MinuteTimer();
+    ~MinuteTimer() override;
 
 public slots:
-    virtual void SetTimeZone(const int &zn);
+    void SetTimeZone(const int &zn) override;
 
 protected:
-    void timerEvent(QTimerEvent *);
+    void timerEvent(QTimerEvent *) override;
 
 private:
     QTime time;

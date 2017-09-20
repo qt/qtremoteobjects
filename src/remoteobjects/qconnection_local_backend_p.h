@@ -64,7 +64,7 @@ class LocalClientIo : public ClientIoDevice
 
 public:
     explicit LocalClientIo(QObject *parent = nullptr);
-    ~LocalClientIo();
+    ~LocalClientIo() override;
 
     QIODevice *connection() override;
     void connectToServer() override;
@@ -101,7 +101,7 @@ class LocalServerImpl : public QConnectionAbstractServer
 
 public:
     explicit LocalServerImpl(QObject *parent);
-    ~LocalServerImpl();
+    ~LocalServerImpl() override;
 
     bool hasPendingConnections() const override;
     ServerIoDevice *configureNewConnection() override;

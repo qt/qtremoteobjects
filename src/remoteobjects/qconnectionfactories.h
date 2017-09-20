@@ -56,7 +56,7 @@ class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public QObject
 
 public:
     explicit ServerIoDevice(QObject *parent = nullptr);
-    virtual ~ServerIoDevice();
+    ~ServerIoDevice() override;
 
     bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
 
@@ -88,7 +88,7 @@ class Q_REMOTEOBJECTS_EXPORT QConnectionAbstractServer : public QObject
 
 public:
     explicit QConnectionAbstractServer(QObject *parent = nullptr);
-    virtual ~QConnectionAbstractServer();
+    ~QConnectionAbstractServer() override;
 
     virtual bool hasPendingConnections() const = 0;
     ServerIoDevice* nextPendingConnection();
@@ -111,7 +111,7 @@ class Q_REMOTEOBJECTS_EXPORT ClientIoDevice : public QObject
 
 public:
     explicit ClientIoDevice(QObject *parent = nullptr);
-    virtual ~ClientIoDevice();
+    ~ClientIoDevice() override;
 
     bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
 

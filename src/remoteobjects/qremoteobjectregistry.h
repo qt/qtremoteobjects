@@ -52,7 +52,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
     Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
 
 public:
-    ~QRemoteObjectRegistry();
+    ~QRemoteObjectRegistry() override;
     static void registerMetatypes();
 
     QRemoteObjectSourceLocations sourceLocations() const;

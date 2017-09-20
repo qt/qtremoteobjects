@@ -53,7 +53,7 @@ class Q_REMOTEOBJECTS_EXPORT QAbstractItemModelReplica : public QAbstractItemMod
 {
     Q_OBJECT
 public:
-    ~QAbstractItemModelReplica();
+    ~QAbstractItemModelReplica() override;
 
     QItemSelectionModel* selectionModel() const;
 

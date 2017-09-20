@@ -95,7 +95,7 @@ class QStubReplicaPrivate : public QReplicaPrivateInterface
 {
 public:
     explicit QStubReplicaPrivate();
-    virtual ~QStubReplicaPrivate();
+    ~QStubReplicaPrivate() override;
 
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;
@@ -114,26 +114,26 @@ class QRemoteObjectReplicaPrivate : public QObject, public QReplicaPrivateInterf
 {
 public:
     explicit QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
-    virtual ~QRemoteObjectReplicaPrivate();
+    ~QRemoteObjectReplicaPrivate() override;
 
     bool needsDynamicInitialization() const;
 
-    virtual const QVariant getProperty(int i) const override = 0;
-    virtual void setProperties(const QVariantList &) override = 0;
-    virtual void setProperty(int i, const QVariant &) override = 0;
+    const QVariant getProperty(int i) const override = 0;
+    void setProperties(const QVariantList &) override = 0;
+    void setProperty(int i, const QVariant &) override = 0;
     virtual bool isShortCircuit() const = 0;
-    virtual bool isInitialized() const override { return true; }
+    bool isInitialized() const override { return true; }
     QRemoteObjectReplica::State state() const override { return QRemoteObjectReplica::State(m_state.load()); }
     void setState(QRemoteObjectReplica::State state);
-    virtual bool waitForSource(int) override { return true; }
+    bool waitForSource(int) override { return true; }
     virtual bool waitForFinished(const QRemoteObjectPendingCall &, int) { return true; }
     virtual void notifyAboutReply(int, const QVariant &) {}
     virtual void configurePrivate(QRemoteObjectReplica *);
     void emitInitialized();
     QRemoteObjectNode *node() const override { return m_node; }
 
-    virtual void _q_send(QMetaObject::Call call, int index, const QVariantList &args) override = 0;
-    virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) override = 0;
+    void _q_send(QMetaObject::Call call, int index, const QVariantList &args) override = 0;
+    QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) override = 0;
 
     //Dynamic replica functions
     virtual void initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values);
@@ -155,7 +155,7 @@ class QConnectedReplicaPrivate : public QRemoteObjectReplicaPrivate
 {
 public:
     explicit QConnectedReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
-    virtual ~QConnectedReplicaPrivate();
+    ~QConnectedReplicaPrivate() override;
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;
     void setProperty(int i, const QVariant &) override;
@@ -190,7 +190,7 @@ class QInProcessReplicaPrivate : public QRemoteObjectReplicaPrivate
 {
 public:
     explicit QInProcessReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
-    virtual ~QInProcessReplicaPrivate();
+    ~QInProcessReplicaPrivate() override;
 
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;

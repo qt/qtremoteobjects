@@ -93,7 +93,7 @@ public:
 
     QRemoteObjectNode(QObject *parent = nullptr);
     QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = nullptr);
-    virtual ~QRemoteObjectNode();
+    ~QRemoteObjectNode() override;
 
     Q_INVOKABLE bool connectToNode(const QUrl &address);
     virtual void setName(const QString &name);
@@ -126,7 +126,7 @@ public:
 
     ErrorCode lastError() const;
 
-    void timerEvent(QTimerEvent*);
+    void timerEvent(QTimerEvent*) override;
 
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
@@ -183,7 +183,7 @@ public:
     QRemoteObjectHost(QObject *parent = nullptr);
     QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
     QRemoteObjectHost(const QUrl &address, QObject *parent);
-    virtual ~QRemoteObjectHost();
+    ~QRemoteObjectHost() override;
     QUrl hostUrl() const override;
     bool setHostUrl(const QUrl &hostAddress) override;
 
@@ -199,7 +199,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistryHost : public QRemoteObjectHos
     Q_OBJECT
 public:
     QRemoteObjectRegistryHost(const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
-    virtual ~QRemoteObjectRegistryHost();
+    ~QRemoteObjectRegistryHost() override;
     bool setRegistryUrl(const QUrl &registryUrl) override;
 
 protected:

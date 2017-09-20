@@ -68,7 +68,7 @@ class QRemoteObjectSourceIo : public QObject
     Q_OBJECT
 public:
     explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = nullptr);
-    ~QRemoteObjectSourceIo();
+    ~QRemoteObjectSourceIo() override;
 
     bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName);
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = nullptr);

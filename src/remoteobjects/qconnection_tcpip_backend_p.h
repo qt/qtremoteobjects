@@ -64,7 +64,7 @@ class TcpClientIo : public ClientIoDevice
 
 public:
     explicit TcpClientIo(QObject *parent = nullptr);
-    ~TcpClientIo();
+    ~TcpClientIo() override;
 
     QIODevice *connection() override;
     void connectToServer() override;
@@ -102,7 +102,7 @@ class TcpServerImpl : public QConnectionAbstractServer
 
 public:
     explicit TcpServerImpl(QObject *parent);
-    ~TcpServerImpl();
+    ~TcpServerImpl() override;
 
     bool hasPendingConnections() const override;
     ServerIoDevice *configureNewConnection() override;

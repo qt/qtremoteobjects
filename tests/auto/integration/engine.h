@@ -38,7 +38,7 @@ class Engine : public EngineSimpleSource
 
 public:
     Engine(QObject *parent = nullptr);
-    virtual ~Engine();
+    ~Engine() override;
 
     bool start() override;
     void increaseRpm(int deltaRpm) override;

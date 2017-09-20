@@ -49,7 +49,7 @@ class QtQmlRemoteObjectsPlugin : public QQmlExtensionPlugin
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QtQml.RemoteObjects/1.0")
 
 public:
-    void registerTypes(const char *uri)
+    void registerTypes(const char *uri) override
     {
         qmlRegisterType<QRemoteObjectNode>(uri, 1, 0, "Node");
         qmlProtectModule(uri, 1);

@@ -67,7 +67,7 @@ public:
     Q_ENUM(State)
 
 public:
-    virtual ~QRemoteObjectReplica();
+    ~QRemoteObjectReplica() override;
 
     bool isReplicaValid() const;
     bool waitForSource(int timeout = 30000);

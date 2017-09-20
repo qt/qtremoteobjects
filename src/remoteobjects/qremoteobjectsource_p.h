@@ -69,9 +69,9 @@ public:
     explicit QRemoteObjectSource(QObject *object, const SourceApiMap *,
                                  QObject *adapter, QRemoteObjectSourceIo *sourceIo);
 
-    ~QRemoteObjectSource();
+    ~QRemoteObjectSource() override;
 
-    int qt_metacall(QMetaObject::Call call, int methodId, void **a);
+    int qt_metacall(QMetaObject::Call call, int methodId, void **a) override;
     QVector<ServerIoDevice*> listeners;
     QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;
@@ -94,7 +94,7 @@ class DynamicApiMap : public SourceApiMap
 {
 public:
     DynamicApiMap(const QMetaObject *metaObject, const QString &name, const QString &typeName);
-    ~DynamicApiMap() {}
+    ~DynamicApiMap() override {}
     QString name() const override { return m_name; }
     QString typeName() const override { return m_typeName; }
     int propertyCount() const override { return m_properties.size(); }
