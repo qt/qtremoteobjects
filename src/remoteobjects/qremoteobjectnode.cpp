@@ -78,13 +78,10 @@ QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     , retryInterval(250)
     , lastError(QRemoteObjectNode::NoError)
     , persistedStore(nullptr)
-    , persistedStoreOwnership(QRemoteObjectNode::DoNotPassOwnership)
 { }
 
 QRemoteObjectNodePrivate::~QRemoteObjectNodePrivate()
 {
-    if (persistedStore && persistedStoreOwnership == QRemoteObjectNode::PassOwnershipToNode)
-        delete persistedStore;
 }
 
 QRemoteObjectSourceLocations QRemoteObjectNodePrivate::remoteObjectAddresses() const
@@ -178,9 +175,8 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 /*!
     \class QRemoteObjectPersistedStore
     \inmodule QtRemoteObjects
-    \brief The QRemoteObjectPersistedStore virtual class provides the methods
-    for setting PROP values of a replica to value they had the last time the
-    replica was used.
+    \brief A class which provides the methods for setting PROP values of a
+    replica to value they had the last time the replica was used.
 
     This can be used to provide a "reasonable" value to be displayed until the
     connection to the source is established and current values are available.
@@ -193,6 +189,19 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
     destructor is called, and retrieve the values when the replica is
     instantiated.
 */
+
+/*!
+    Constructs a QRemoteObjectPersistedStore with the given \a parent.
+    The default value of \a parent is \c nullptr.
+*/
+QRemoteObjectPersistedStore::QRemoteObjectPersistedStore(QObject *parent)
+    : QObject(parent)
+{
+}
+
+QRemoteObjectPersistedStore::~QRemoteObjectPersistedStore()
+{
+}
 
 /*!
     \fn virtual void QRemoteObjectPersistedStore::saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values)
@@ -219,30 +228,47 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 */
 
 /*!
-    \enum QRemoteObjectNode::StorageOwnership
+    \property QRemoteObjectNode::persistedStore
+    \brief Provides a \l QRemoteObjectPersistedStore instance for the node, allowing
+    replica \l PROP members with the PERSISTED trait of \l PROP to save their
+    current value when the replica is deleted and restore a stored value the
+    next time the replica is started.
 
-    Used to tell a node whether it should take ownership of a passed pointer or not:
-
-    \value DoNotPassOwnership The ownership of the object is not passed.
-    \value PassOwnershipToNode The ownership of the object is passed, and the node destructor will call delete.
+    Requires a \l QRemoteObjectPersistedStore
+    class implementation to control where and how persistence is handled.
 */
 
 /*!
-    Provides a \l QRemoteObjectPersistedStore \a store for the node, allowing
-    replica \l PROP members with the PERSISTED trait of \l PROP to save their
-    current value when the replica is deleted and restore a stored value the
-    next time the replica is started. Requires a \l QRemoteObjectPersistedStore
-    class implementation to control where and how persistence is handled. Use
-    the \l QRemoteObjectNode::StorageOwnership enum passed by \a ownership to
-    determine whether the Node will delete the provided pointer or not.
-
-    \sa QRemoteObjectPersistedStore, QRemoteObjectNode::StorageOwnership
+    Returns the \l QRemoteObjectPersistedStore instance, if set
 */
-void QRemoteObjectNode::setPersistedStore(QRemoteObjectPersistedStore *store, StorageOwnership ownership)
+QRemoteObjectPersistedStore * QRemoteObjectNode::persistedStore() const
+{
+    Q_D(const QRemoteObjectNode);
+    return d->persistedStore;
+}
+
+/*!
+    Sets the \l QRemoteObjectPersistedStore instance
+
+    \sa QRemoteObjectPersistedStore
+*/
+void QRemoteObjectNode::setPersistedStore(QRemoteObjectPersistedStore *store)
 {
     Q_D(QRemoteObjectNode);
     d->persistedStore = store;
-    d->persistedStoreOwnership = ownership;
+}
+
+QRemoteObjectPersistedStore::QRemoteObjectPersistedStore(QRemoteObjectPersistedStorePrivate &dptr, QObject *parent)
+    : QObject(dptr, parent)
+{
+}
+
+QRemoteObjectPersistedStorePrivate::QRemoteObjectPersistedStorePrivate()
+{
+}
+
+QRemoteObjectPersistedStorePrivate::~QRemoteObjectPersistedStorePrivate()
+{
 }
 
 void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectReplica *instance)

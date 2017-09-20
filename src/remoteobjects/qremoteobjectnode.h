@@ -53,24 +53,34 @@ class SourceApiMap;
 class QAbstractItemModel;
 class QAbstractItemModelReplica;
 class QItemSelectionModel;
+class QRemoteObjectPersistedStorePrivate;
 class QRemoteObjectNodePrivate;
 class QRemoteObjectHostBasePrivate;
 class QRemoteObjectHostPrivate;
 class QRemoteObjectRegistryHostPrivate;
 class ClientIoDevice;
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPersistedStore
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPersistedStore : public QObject
 {
+    Q_OBJECT
+
 public:
-    virtual ~QRemoteObjectPersistedStore() {}
+    QRemoteObjectPersistedStore(QObject *parent = nullptr);
+    virtual ~QRemoteObjectPersistedStore();
+
     virtual void saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values) = 0;
     virtual QVariantList restoreProperties(const QString &repName, const QByteArray &repSig) = 0;
+
+protected:
+    QRemoteObjectPersistedStore(QRemoteObjectPersistedStorePrivate &, QObject *parent);
+    Q_DECLARE_PRIVATE(QRemoteObjectPersistedStore)
 };
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QUrl registryUrl READ registryUrl WRITE setRegistryUrl)
+    Q_PROPERTY(QRemoteObjectPersistedStore* persistedStore READ persistedStore WRITE setPersistedStore)
 
 public:
     enum ErrorCode{
@@ -86,10 +96,6 @@ public:
         HostUrlInvalid
     };
     Q_ENUM(ErrorCode)
-    enum StorageOwnership {
-        DoNotPassOwnership,
-        PassOwnershipToNode
-    };
 
     QRemoteObjectNode(QObject *parent = nullptr);
     QRemoteObjectNode(const QUrl &registryAddress, QObject *parent = nullptr);
@@ -122,7 +128,9 @@ public:
     virtual bool setRegistryUrl(const QUrl &registryAddress);
     bool waitForRegistry(int timeout = 30000);
     const QRemoteObjectRegistry *registry() const;
-    void setPersistedStore(QRemoteObjectPersistedStore *store, StorageOwnership ownership=DoNotPassOwnership);
+
+    QRemoteObjectPersistedStore *persistedStore() const;
+    void setPersistedStore(QRemoteObjectPersistedStore *store);
 
     ErrorCode lastError() const;
 

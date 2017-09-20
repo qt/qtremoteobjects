@@ -92,10 +92,12 @@ private:
     int m_value;
 };
 
-class Persist : public QRemoteObjectPersistedStore
+class TestPersistedStore : public QRemoteObjectPersistedStore
 {
+    Q_OBJECT
+
 public:
-    Persist() : type(EngineReplica::HYBRID) {}
+    TestPersistedStore() : type(EngineReplica::HYBRID) {}
     void saveProperties(const QString &, const QByteArray &, const QVariantList &values) override
     {
         type = values.at(0).value<EngineReplica::EngineType>();
@@ -104,6 +106,7 @@ public:
     {
         return QVariantList() << QVariant::fromValue(type);
     }
+private:
     EngineReplica::EngineType type;
 };
 
@@ -150,7 +153,8 @@ private slots:
         QRemoteObjectNode client;
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
-        client.setPersistedStore(new Persist, QRemoteObjectNode::PassOwnershipToNode);
+        TestPersistedStore store;
+        client.setPersistedStore(&store);
 
         const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         QCOMPARE(engine_r->engineType(), EngineReplica::HYBRID);
@@ -158,7 +162,7 @@ private slots:
 
     void persistTest()
     {
-        Persist persist;
+        TestPersistedStore store;
 
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
@@ -169,7 +173,7 @@ private slots:
         QRemoteObjectNode client;
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
-        client.setPersistedStore(&persist);
+        client.setPersistedStore(&store);
 
         QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
         engine_r->waitForSource();
