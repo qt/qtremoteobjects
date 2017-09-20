@@ -285,7 +285,7 @@ void BenchmarksTest::benchModelLinearAccess()
                 loop.quit();
         });
 
-        auto beginBenchmark = [&model, &loop, &dataToWait] {
+        auto beginBenchmark = [&model, &dataToWait] {
             for (int row = 0; row < 1000; ++row) {
                 if (row >= 950)
                     dataToWait.insert(row, QPair<QString, QString>());
@@ -357,7 +357,7 @@ void BenchmarksTest::benchModelRandomAccess()
                 loop.quit();
         });
 
-        auto beginBenchmark = [&model, &loop, &dataToWait] {
+        auto beginBenchmark = [&model, &dataToWait] {
             for (int chunck = 0; chunck < 100; ++chunck) {
                 int row = chunck * 950;
                 for (int r = 0; r < 50; ++r) {
