@@ -333,11 +333,13 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
 
     qROPrivDebug() << "Opening connection to" << address.toString();
     qROPrivDebug() << "Replica Connection isValid" << connection->isOpen();
-    QObject::connect(connection, SIGNAL(shouldReconnect(ClientIoDevice*)), q, SLOT(onShouldReconnect(ClientIoDevice*)));
-    connection->connectToServer();
+    QObject::connect(connection, &ClientIoDevice::shouldReconnect, q, [this, connection]() {
+        onShouldReconnect(connection);
+    });
     QObject::connect(connection, &ClientIoDevice::readyRead, q, [this, connection]() {
         onClientRead(connection);
     });
+    connection->connectToServer();
     return true;
 }
 
@@ -1085,10 +1087,18 @@ void QRemoteObjectNodePrivate::setRegistry(QRemoteObjectRegistry *reg)
     registry = reg;
     reg->setParent(q);
     //Make sure when we get the registry initialized, we update our replicas
-    QObject::connect(reg, SIGNAL(initialized()), q, SLOT(onRegistryInitialized()));
+    QObject::connect(reg, &QRemoteObjectRegistry::initialized, q, [this]() {
+        onRegistryInitialized();
+    });
     //Make sure we handle new RemoteObjectSources on Registry...
-    QObject::connect(reg, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), q, SLOT(onRemoteObjectSourceAdded(QRemoteObjectSourceLocation)));
-    QObject::connect(reg, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), q, SLOT(onRemoteObjectSourceRemoved(QRemoteObjectSourceLocation)));
+    QObject::connect(reg, &QRemoteObjectRegistry::remoteObjectAdded,
+                     q, [this](const QRemoteObjectSourceLocation &location) {
+        onRemoteObjectSourceAdded(location);
+    });
+    QObject::connect(reg, &QRemoteObjectRegistry::remoteObjectRemoved,
+                     q, [this](const QRemoteObjectSourceLocation &location) {
+        onRemoteObjectSourceRemoved(location);
+    });
 }
 
 /*!

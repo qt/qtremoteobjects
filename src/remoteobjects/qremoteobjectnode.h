@@ -58,7 +58,6 @@ class QRemoteObjectNodePrivate;
 class QRemoteObjectHostBasePrivate;
 class QRemoteObjectHostPrivate;
 class QRemoteObjectRegistryHostPrivate;
-class ClientIoDevice;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPersistedStore : public QObject
 {
@@ -149,12 +148,8 @@ private:
     void initializeReplica(QRemoteObjectReplica *instance, const QString &name = QString());
     void persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props);
     QVariantList retrieveProperties(const QString &repName, const QByteArray &repSig);
+
     Q_DECLARE_PRIVATE(QRemoteObjectNode)
-    Q_PRIVATE_SLOT(d_func(), void onClientRead(QObject *obj))
-    Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry))
-    Q_PRIVATE_SLOT(d_func(), void onRemoteObjectSourceRemoved(const QRemoteObjectSourceLocation &entry))
-    Q_PRIVATE_SLOT(d_func(), void onRegistryInitialized())
-    Q_PRIVATE_SLOT(d_func(), void onShouldReconnect(ClientIoDevice *ioDevice))
     friend class QRemoteObjectReplica;
 };
 

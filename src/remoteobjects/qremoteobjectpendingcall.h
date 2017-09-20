@@ -103,7 +103,6 @@ Q_SIGNALS:
 
 private:
     Q_DECLARE_PRIVATE(QRemoteObjectPendingCallWatcher)
-    Q_PRIVATE_SLOT(d_func(), void _q_finished())
 };
 
 template<typename T>
