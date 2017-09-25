@@ -77,3 +77,7 @@ rep_*_replica.h
 /tools/repc/rep_grammar_p.h
 /tools/repc/repparser.cpp
 /tools/repc/repparser.h
+
+# Compiled QML/JS code
+*.qmlc
+*.jsc
