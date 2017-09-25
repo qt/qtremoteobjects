@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017-2015 Ford Motor Company
+** Copyright (C) 2017 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -37,29 +37,58 @@
 **
 ****************************************************************************/
 
-#include <QtRemoteObjects/qremoteobjectnode.h>
-#include <QtRemoteObjects/qremoteobjectsettingsstore.h>
-#include <QQmlExtensionPlugin>
-#include <qqml.h>
+#include "qremoteobjectsettingsstore.h"
+
+#include "qremoteobjectnode_p.h"
+
+#include <QtCore/private/qobject_p.h>
+#include <QSettings>
 
 QT_BEGIN_NAMESPACE
 
-class QtQmlRemoteObjectsPlugin : public QQmlExtensionPlugin
+class QRemoteObjectSettingsStorePrivate : public QRemoteObjectPersistedStorePrivate
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QtQml.RemoteObjects/1.0")
-
 public:
-    void registerTypes(const char *uri) override
-    {
-        qmlRegisterUncreatableType<QRemoteObjectPersistedStore>(uri, 1, 0, "PersistedStore", "Cannot create PersistedStore");
+    QRemoteObjectSettingsStorePrivate();
+    virtual ~QRemoteObjectSettingsStorePrivate();
 
-        qmlRegisterType<QRemoteObjectNode>(uri, 1, 0, "Node");
-        qmlRegisterType<QRemoteObjectSettingsStore>(uri, 1, 0, "SettingsStore");
-        qmlProtectModule(uri, 1);
-    }
+    QSettings settings;
+    Q_DECLARE_PUBLIC(QRemoteObjectSettingsStore)
 };
 
-QT_END_NAMESPACE
+QRemoteObjectSettingsStorePrivate::QRemoteObjectSettingsStorePrivate()
+{
+}
 
-#include "plugin.moc"
+QRemoteObjectSettingsStorePrivate::~QRemoteObjectSettingsStorePrivate()
+{
+}
+
+QRemoteObjectSettingsStore::QRemoteObjectSettingsStore(QObject *parent)
+    : QRemoteObjectPersistedStore(*new QRemoteObjectSettingsStorePrivate, parent)
+{
+}
+
+QRemoteObjectSettingsStore::~QRemoteObjectSettingsStore()
+{
+}
+
+QVariantList QRemoteObjectSettingsStore::restoreProperties(const QString &repName, const QByteArray &repSig)
+{
+    Q_D(QRemoteObjectSettingsStore);
+    d->settings.beginGroup(repName + QLatin1Char('/') + QString::fromLatin1(repSig));
+    const QVariantList values = d->settings.value(QStringLiteral("values")).toList();
+    d->settings.endGroup();
+    return values;
+}
+
+void QRemoteObjectSettingsStore::saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values)
+{
+    Q_D(QRemoteObjectSettingsStore);
+    d->settings.beginGroup(repName + QLatin1Char('/') + QString::fromLatin1(repSig));
+    d->settings.setValue(QStringLiteral("values"), values);
+    d->settings.endGroup();
+    d->settings.sync();
+}
+
+QT_END_NAMESPACE

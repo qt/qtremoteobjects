@@ -30,8 +30,11 @@
 #include <QMetaType>
 #include <QProcess>
 #include <QFileInfo>
-#include <qremoteobjectreplica.h>
+
+#include <QRemoteObjectReplica>
 #include <QRemoteObjectNode>
+#include <QRemoteObjectSettingsStore>
+
 #include "engine.h"
 #include "speedometer.h"
 #include "rep_engine_replica.h"
@@ -146,6 +149,10 @@ private slots:
     {
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
 
+        // use different paths in QRemoteObjectSettingsStore
+        QCoreApplication::setOrganizationName(QLatin1String("QtProject"));
+        QStandardPaths::setTestModeEnabled(true);
+
         qDebug() << "Running tst_Integration for backend:" << BACKEND;
     }
 
@@ -186,7 +193,7 @@ private slots:
 
     void persistTest()
     {
-        TestPersistedStore store;
+        QRemoteObjectSettingsStore store;
 
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);

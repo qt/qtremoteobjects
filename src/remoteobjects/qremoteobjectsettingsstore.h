@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017-2015 Ford Motor Company
+** Copyright (C) 2017 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -37,29 +37,30 @@
 **
 ****************************************************************************/
 
-#include <QtRemoteObjects/qremoteobjectnode.h>
-#include <QtRemoteObjects/qremoteobjectsettingsstore.h>
-#include <QQmlExtensionPlugin>
-#include <qqml.h>
+#ifndef QREMOTEOBJECTSETTINGSSTORE_H
+#define QREMOTEOBJECTSETTINGSSTORE_H
+
+#include "qremoteobjectnode.h"
 
 QT_BEGIN_NAMESPACE
 
-class QtQmlRemoteObjectsPlugin : public QQmlExtensionPlugin
+class QRemoteObjectSettingsStorePrivate;
+
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSettingsStore : public QRemoteObjectPersistedStore
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QtQml.RemoteObjects/1.0")
 
 public:
-    void registerTypes(const char *uri) override
-    {
-        qmlRegisterUncreatableType<QRemoteObjectPersistedStore>(uri, 1, 0, "PersistedStore", "Cannot create PersistedStore");
+    QRemoteObjectSettingsStore(QObject *parent = nullptr);
+    ~QRemoteObjectSettingsStore() override;
 
-        qmlRegisterType<QRemoteObjectNode>(uri, 1, 0, "Node");
-        qmlRegisterType<QRemoteObjectSettingsStore>(uri, 1, 0, "SettingsStore");
-        qmlProtectModule(uri, 1);
-    }
+    void saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values) override;
+    QVariantList restoreProperties(const QString &repName, const QByteArray &repSig) override;
+
+private:
+    Q_DECLARE_PRIVATE(QRemoteObjectSettingsStore)
 };
 
 QT_END_NAMESPACE
 
-#include "plugin.moc"
+#endif // QREMOTEOBJECTSETTINGSSTORE_H
