@@ -824,26 +824,24 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
     }
 
-    if (mode == SIMPLE_SOURCE)
-    {
-        //Next output data members
+    out << "" << endl;
+    out << "private:" << endl;
+
+    //Next output data members
+    if (mode == SIMPLE_SOURCE) {
+        Q_FOREACH (const ASTModel &model, astClass.models)
+            out << "    QScopedPointer<QAbstractItemModel> m_" << model.name << ";" << endl;
+
         if (!astClass.properties.isEmpty()) {
-            out << "" << endl;
-            out << "private:" << endl;
             Q_FOREACH (const ASTProperty &property, astClass.properties) {
                 out << "    " << property.type << " " << "_" << property.name << ";" << endl;
             }
         }
-        Q_FOREACH (const ASTModel &model, astClass.models)
-            out << "    QScopedPointer<QAbstractItemModel> m_" << model.name << ";" << endl;
-    }
-
-    out << "" << endl;
-    out << "private:" << endl;
-    if (mode == REPLICA) {
+    } else if (mode == REPLICA) {
         Q_FOREACH (const ASTModel &model, astClass.models)
             out << "    QScopedPointer<QAbstractItemModelReplica> m_" << model.name << ";" << endl;
     }
+
     out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << endl;
 
     out << "};" << endl;
