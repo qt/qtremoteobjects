@@ -7,6 +7,15 @@ sub_integration.subdir = integration
 sub_integration.target = sub-integration
 sub_integration.depends = sub-localsockettestserver
 
-SUBDIRS += benchmarks repc sub_integration integration_multiprocess modelview cmake pods repcodegenerator repparser \
-           sub_localsockettestserver \
-           modelreplica
+SUBDIRS += \
+    benchmarks \
+    cmake \
+    integration_multiprocess \
+    modelreplica \
+    modelview \
+    pods \
+    repc \
+    repcodegenerator \
+    repparser \
+    sub_integration \
+    sub_localsockettestserver \
