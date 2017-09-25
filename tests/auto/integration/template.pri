@@ -19,4 +19,8 @@ SOURCES += $$PWD/engine.cpp \
            $$PWD/speedometer.cpp \
            $$PWD/tst_integration.cpp
 
+CONFIG += testcase
+QT += testlib remoteobjects
+QT -= gui
+
 contains(QT_CONFIG, c++11): CONFIG += c++11
