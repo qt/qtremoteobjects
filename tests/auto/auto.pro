@@ -19,3 +19,5 @@ SUBDIRS += \
     repparser \
     sub_integration \
     sub_localsockettestserver \
+
+qtHaveModule(qml): SUBDIRS += qml
