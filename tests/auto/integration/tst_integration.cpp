@@ -26,6 +26,8 @@
 **
 ****************************************************************************/
 
+#include "../../shared/testutils.h"
+
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QProcess>
@@ -1211,8 +1213,10 @@ private slots:
 #ifdef Q_OS_LINUX
     void localServerConnectionTest()
     {
-        QProcess testServer;
-        const QString progName = QStringLiteral("../../localsockettestserver/localsockettestserver");
+        const auto progName = TestUtils::findExecutable("localsockettestserver", {
+            QCoreApplication::applicationDirPath() + "/../../localsockettestserver"
+        });
+
         //create a fake socket as killing doesn't produce a necessarily unusable socket
         QFile fake(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
         fake.remove();
@@ -1228,6 +1232,7 @@ private slots:
         QScopedPointer<QRemoteObjectDynamicReplica> replica;
         replica.reset(localSocketTestClient.acquireDynamic(objectname));
 
+        QProcess testServer;
         testServer.start(progName);
         QVERIFY(testServer.waitForStarted());
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
@@ -1239,9 +1244,11 @@ private slots:
     // Tests to take over an existing socket if its still valid
     void localServerConnectionTest2()
     {
-        QProcess testServer;
-        const QString progName = QStringLiteral("../../localsockettestserver/localsockettestserver");
+        const auto progName = TestUtils::findExecutable("localsockettestserver", {
+            QCoreApplication::applicationDirPath() + "/../../localsockettestserver"
+        });
 
+        QProcess testServer;
         testServer.start(progName);
         QVERIFY(testServer.waitForStarted());
         QFileInfo info(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
