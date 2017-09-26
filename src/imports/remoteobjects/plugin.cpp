@@ -51,6 +51,8 @@ class QtQmlRemoteObjectsPlugin : public QQmlExtensionPlugin
 public:
     void registerTypes(const char *uri) override
     {
+        qmlRegisterUncreatableType<QRemoteObjectPersistedStore>(uri, 1, 0, "PersistedStore", "Cannot create PersistedStore");
+
         qmlRegisterType<QRemoteObjectNode>(uri, 1, 0, "Node");
         qmlProtectModule(uri, 1);
     }
