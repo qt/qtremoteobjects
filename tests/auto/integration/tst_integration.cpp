@@ -119,7 +119,7 @@ private:
     int m_otherValue;
 };
 
-class TestPersistedStore : public QRemoteObjectPersistedStore
+class TestPersistedStore : public QRemoteObjectAbstractPersistedStore
 {
     Q_OBJECT
 

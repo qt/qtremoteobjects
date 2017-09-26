@@ -218,10 +218,10 @@
     property value has to be allowed to change during initialization. For
     READONLY, the Source will have neither a setter nor a push slot, and the
     replica side will not have a push slot generated. Adding the PERSISTED
-    trait to a PROP will have the PROP use the \l QRemoteObjectPersistedStore
+    trait to a PROP will have the PROP use the \l QRemoteObjectAbstractPersistedStore
     instance set on a Node (if any) to save/restore PROP values.
 
-    \sa QRemoteObjectPersistedStore
+    \sa QRemoteObjectAbstractPersistedStore
 
     \section3 SIGNAL
 

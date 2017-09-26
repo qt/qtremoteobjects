@@ -173,7 +173,7 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 }
 
 /*!
-    \class QRemoteObjectPersistedStore
+    \class QRemoteObjectAbstractPersistedStore
     \inmodule QtRemoteObjects
     \brief A class which provides the methods for setting PROP values of a
     replica to value they had the last time the replica was used.
@@ -182,8 +182,8 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
     connection to the source is established and current values are available.
 
     This class must be overridden to provide an implementation for saving (\l
-    QRemoteObjectPersistedStore::saveProperties) and restoring (\l
-    QRemoteObjectPersistedStore::restoreProperties) PROP values. The derived
+    QRemoteObjectAbstractPersistedStore::saveProperties) and restoring (\l
+    QRemoteObjectAbstractPersistedStore::restoreProperties) PROP values. The derived
     type can then be set for a node, and any replica acquired from that node
     will then automatically store PERSISTED properties when the replica
     destructor is called, and retrieve the values when the replica is
@@ -191,83 +191,83 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 */
 
 /*!
-    Constructs a QRemoteObjectPersistedStore with the given \a parent.
+    Constructs a QRemoteObjectAbstractPersistedStore with the given \a parent.
     The default value of \a parent is \c nullptr.
 */
-QRemoteObjectPersistedStore::QRemoteObjectPersistedStore(QObject *parent)
+QRemoteObjectAbstractPersistedStore::QRemoteObjectAbstractPersistedStore(QObject *parent)
     : QObject(parent)
 {
 }
 
-QRemoteObjectPersistedStore::~QRemoteObjectPersistedStore()
+QRemoteObjectAbstractPersistedStore::~QRemoteObjectAbstractPersistedStore()
 {
 }
 
 /*!
-    \fn virtual void QRemoteObjectPersistedStore::saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values)
+    \fn virtual void QRemoteObjectAbstractPersistedStore::saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values)
 
     This method will be provided the replica class's \a repName, \a repSig and the list of
     \a values that PERSISTED properties have when the replica destructor was
     called. It is the responsibility of the inheriting class to store the
     information in a manner consistent for \l
-    QRemoteObjectPersistedStore::restoreProperties to retrieve.
+    QRemoteObjectAbstractPersistedStore::restoreProperties to retrieve.
 
-    \sa QRemoteObjectPersistedStore::restoreProperties
+    \sa QRemoteObjectAbstractPersistedStore::restoreProperties
 */
 
 /*!
-    \fn virtual QVariantList QRemoteObjectPersistedStore::restoreProperties(const QString &repName, const QByteArray &repSig)
+    \fn virtual QVariantList QRemoteObjectAbstractPersistedStore::restoreProperties(const QString &repName, const QByteArray &repSig)
 
     This method will be provided the replica class's \a repName and \a repSig when the
     replica is being initialized. It is the responsibility of the inheriting
     class to get the last values persisted by \l
-    QRemoteObjectPersistedStore::saveProperties and return them. An empty
+    QRemoteObjectAbstractPersistedStore::saveProperties and return them. An empty
     QVariantList should be returned if no values are available.
 
-    \sa QRemoteObjectPersistedStore::saveProperties
+    \sa QRemoteObjectAbstractPersistedStore::saveProperties
 */
 
 /*!
     \property QRemoteObjectNode::persistedStore
-    \brief Provides a \l QRemoteObjectPersistedStore instance for the node, allowing
+    \brief Provides a \l QRemoteObjectAbstractPersistedStore instance for the node, allowing
     replica \l PROP members with the PERSISTED trait of \l PROP to save their
     current value when the replica is deleted and restore a stored value the
     next time the replica is started.
 
-    Requires a \l QRemoteObjectPersistedStore
+    Requires a \l QRemoteObjectAbstractPersistedStore
     class implementation to control where and how persistence is handled.
 */
 
 /*!
-    Returns the \l QRemoteObjectPersistedStore instance, if set
+    Returns the \l QRemoteObjectAbstractPersistedStore instance, if set
 */
-QRemoteObjectPersistedStore * QRemoteObjectNode::persistedStore() const
+QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
 {
     Q_D(const QRemoteObjectNode);
     return d->persistedStore;
 }
 
 /*!
-    Sets the \l QRemoteObjectPersistedStore instance
+    Sets the \l QRemoteObjectAbstractPersistedStore instance
 
-    \sa QRemoteObjectPersistedStore
+    \sa QRemoteObjectAbstractPersistedStore
 */
-void QRemoteObjectNode::setPersistedStore(QRemoteObjectPersistedStore *store)
+void QRemoteObjectNode::setPersistedStore(QRemoteObjectAbstractPersistedStore *persistedStore)
 {
     Q_D(QRemoteObjectNode);
-    d->persistedStore = store;
+    d->persistedStore = persistedStore;
 }
 
-QRemoteObjectPersistedStore::QRemoteObjectPersistedStore(QRemoteObjectPersistedStorePrivate &dptr, QObject *parent)
+QRemoteObjectAbstractPersistedStore::QRemoteObjectAbstractPersistedStore(QRemoteObjectAbstractPersistedStorePrivate &dptr, QObject *parent)
     : QObject(dptr, parent)
 {
 }
 
-QRemoteObjectPersistedStorePrivate::QRemoteObjectPersistedStorePrivate()
+QRemoteObjectAbstractPersistedStorePrivate::QRemoteObjectAbstractPersistedStorePrivate()
 {
 }
 
-QRemoteObjectPersistedStorePrivate::~QRemoteObjectPersistedStorePrivate()
+QRemoteObjectAbstractPersistedStorePrivate::~QRemoteObjectAbstractPersistedStorePrivate()
 {
 }
 

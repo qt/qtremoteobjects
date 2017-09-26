@@ -46,7 +46,7 @@ QT_BEGIN_NAMESPACE
 
 class QRemoteObjectSettingsStorePrivate;
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSettingsStore : public QRemoteObjectPersistedStore
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectSettingsStore : public QRemoteObjectAbstractPersistedStore
 {
     Q_OBJECT
 

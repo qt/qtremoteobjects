@@ -53,33 +53,33 @@ class SourceApiMap;
 class QAbstractItemModel;
 class QAbstractItemModelReplica;
 class QItemSelectionModel;
-class QRemoteObjectPersistedStorePrivate;
+class QRemoteObjectAbstractPersistedStorePrivate;
 class QRemoteObjectNodePrivate;
 class QRemoteObjectHostBasePrivate;
 class QRemoteObjectHostPrivate;
 class QRemoteObjectRegistryHostPrivate;
 
-class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPersistedStore : public QObject
+class Q_REMOTEOBJECTS_EXPORT QRemoteObjectAbstractPersistedStore : public QObject
 {
     Q_OBJECT
 
 public:
-    QRemoteObjectPersistedStore(QObject *parent = nullptr);
-    virtual ~QRemoteObjectPersistedStore();
+    QRemoteObjectAbstractPersistedStore (QObject *parent = nullptr);
+    virtual ~QRemoteObjectAbstractPersistedStore();
 
     virtual void saveProperties(const QString &repName, const QByteArray &repSig, const QVariantList &values) = 0;
     virtual QVariantList restoreProperties(const QString &repName, const QByteArray &repSig) = 0;
 
 protected:
-    QRemoteObjectPersistedStore(QRemoteObjectPersistedStorePrivate &, QObject *parent);
-    Q_DECLARE_PRIVATE(QRemoteObjectPersistedStore)
+    QRemoteObjectAbstractPersistedStore(QRemoteObjectAbstractPersistedStorePrivate &, QObject *parent);
+    Q_DECLARE_PRIVATE(QRemoteObjectAbstractPersistedStore)
 };
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QUrl registryUrl READ registryUrl WRITE setRegistryUrl)
-    Q_PROPERTY(QRemoteObjectPersistedStore* persistedStore READ persistedStore WRITE setPersistedStore)
+    Q_PROPERTY(QRemoteObjectAbstractPersistedStore* persistedStore READ persistedStore WRITE setPersistedStore)
 
 public:
     enum ErrorCode{
@@ -128,8 +128,8 @@ public:
     bool waitForRegistry(int timeout = 30000);
     const QRemoteObjectRegistry *registry() const;
 
-    QRemoteObjectPersistedStore *persistedStore() const;
-    void setPersistedStore(QRemoteObjectPersistedStore *store);
+    QRemoteObjectAbstractPersistedStore *persistedStore() const;
+    void setPersistedStore(QRemoteObjectAbstractPersistedStore *persistedStore);
 
     ErrorCode lastError() const;
 

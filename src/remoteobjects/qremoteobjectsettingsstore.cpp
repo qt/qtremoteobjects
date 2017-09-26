@@ -46,7 +46,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QRemoteObjectSettingsStorePrivate : public QRemoteObjectPersistedStorePrivate
+class QRemoteObjectSettingsStorePrivate : public QRemoteObjectAbstractPersistedStorePrivate
 {
 public:
     QRemoteObjectSettingsStorePrivate();
@@ -65,7 +65,7 @@ QRemoteObjectSettingsStorePrivate::~QRemoteObjectSettingsStorePrivate()
 }
 
 QRemoteObjectSettingsStore::QRemoteObjectSettingsStore(QObject *parent)
-    : QRemoteObjectPersistedStore(*new QRemoteObjectSettingsStorePrivate, parent)
+    : QRemoteObjectAbstractPersistedStore(*new QRemoteObjectSettingsStorePrivate, parent)
 {
 }
 

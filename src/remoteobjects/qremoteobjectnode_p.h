@@ -73,13 +73,13 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectRegistry;
 class QRegistrySource;
 
-class QRemoteObjectPersistedStorePrivate : public QObjectPrivate
+class QRemoteObjectAbstractPersistedStorePrivate : public QObjectPrivate
 {
 public:
-    QRemoteObjectPersistedStorePrivate();
-    virtual ~QRemoteObjectPersistedStorePrivate();
+    QRemoteObjectAbstractPersistedStorePrivate();
+    virtual ~QRemoteObjectAbstractPersistedStorePrivate();
 
-    Q_DECLARE_PUBLIC(QRemoteObjectPersistedStore)
+    Q_DECLARE_PUBLIC(QRemoteObjectAbstractPersistedStore)
 };
 
 class QRemoteObjectNodePrivate : public QObjectPrivate
@@ -135,7 +135,7 @@ public:
     QRemoteObjectPackets::ObjectInfoList rxObjects;
     QVariantList rxArgs;
     QVariant rxValue;
-    QRemoteObjectPersistedStore *persistedStore;
+    QRemoteObjectAbstractPersistedStore *persistedStore;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 
