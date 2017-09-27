@@ -134,7 +134,7 @@ void ClientIoDevice::write(const QByteArray &data, qint64 size)
     connection()->write(data.data(), size);
 }
 
-qint64 ClientIoDevice::bytesAvailable()
+qint64 ClientIoDevice::bytesAvailable() const
 {
     return connection()->bytesAvailable();
 }

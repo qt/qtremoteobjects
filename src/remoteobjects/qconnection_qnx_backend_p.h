@@ -101,9 +101,9 @@ public:
     explicit QnxClientIo(QObject *parent = nullptr);
     ~QnxClientIo();
 
-    QIODevice *connection() override;
+    QIODevice *connection() const override;
     void connectToServer() override;
-    bool isOpen() override;
+    bool isOpen() const override;
 
 public Q_SLOTS:
     void onError(QAbstractSocket::SocketError error);
@@ -112,7 +112,7 @@ public Q_SLOTS:
 protected:
     void doClose() override;
 private:
-    QQnxNativeIo m_socket;
+    QQnxNativeIo *m_socket;
 };
 
 class QnxServerIo : public ServerIoDevice

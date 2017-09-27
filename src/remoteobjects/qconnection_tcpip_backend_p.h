@@ -66,9 +66,9 @@ public:
     explicit TcpClientIo(QObject *parent = nullptr);
     ~TcpClientIo() override;
 
-    QIODevice *connection() override;
+    QIODevice *connection() const override;
     void connectToServer() override;
-    bool isOpen() override;
+    bool isOpen() const override;
 
 public Q_SLOTS:
     void onError(QAbstractSocket::SocketError error);
@@ -78,7 +78,7 @@ protected:
     void doClose() override;
 
 private:
-    QTcpSocket m_socket;
+    QTcpSocket *m_socket;
 };
 
 class TcpServerIo : public ServerIoDevice

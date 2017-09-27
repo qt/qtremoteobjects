@@ -66,9 +66,9 @@ public:
     explicit LocalClientIo(QObject *parent = nullptr);
     ~LocalClientIo() override;
 
-    QIODevice *connection() override;
+    QIODevice *connection() const override;
     void connectToServer() override;
-    bool isOpen() override;
+    bool isOpen() const override;
 
 public Q_SLOTS:
     void onError(QLocalSocket::LocalSocketError error);
@@ -77,7 +77,7 @@ public Q_SLOTS:
 protected:
     void doClose() override;
 private:
-    QLocalSocket m_socket;
+    QLocalSocket* m_socket;
 };
 
 class LocalServerIo : public ServerIoDevice

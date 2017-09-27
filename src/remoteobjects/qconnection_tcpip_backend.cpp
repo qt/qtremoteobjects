@@ -45,10 +45,11 @@ QT_BEGIN_NAMESPACE
 
 TcpClientIo::TcpClientIo(QObject *parent)
     : ClientIoDevice(parent)
+    , m_socket(new QTcpSocket(this))
 {
-    connect(&m_socket, &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
-    connect(&m_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
-    connect(&m_socket, &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
+    connect(m_socket, &QTcpSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &TcpClientIo::onError);
+    connect(m_socket, &QTcpSocket::stateChanged, this, &TcpClientIo::onStateChanged);
 }
 
 TcpClientIo::~TcpClientIo()
@@ -56,16 +57,16 @@ TcpClientIo::~TcpClientIo()
     close();
 }
 
-QIODevice *TcpClientIo::connection()
+QIODevice *TcpClientIo::connection() const
 {
-    return &m_socket;
+    return m_socket;
 }
 
 void TcpClientIo::doClose()
 {
-    if (m_socket.isOpen()) {
-        connect(&m_socket, &QTcpSocket::disconnected, this, &QObject::deleteLater);
-        m_socket.disconnectFromHost();
+    if (m_socket->isOpen()) {
+        connect(m_socket, &QTcpSocket::disconnected, this, &QObject::deleteLater);
+        m_socket->disconnectFromHost();
     } else {
         this->deleteLater();
     }
@@ -82,13 +83,13 @@ void TcpClientIo::connectToServer()
         address = addresses.first();
     }
 
-    m_socket.connectToHost(address, url().port());
+    m_socket->connectToHost(address, url().port());
 }
 
-bool TcpClientIo::isOpen()
+bool TcpClientIo::isOpen() const
 {
-    return (!isClosing() && (m_socket.state() == QAbstractSocket::ConnectedState
-                             || m_socket.state() == QAbstractSocket::ConnectingState));
+    return (!isClosing() && (m_socket->state() == QAbstractSocket::ConnectedState
+                             || m_socket->state() == QAbstractSocket::ConnectingState));
 }
 
 void TcpClientIo::onError(QAbstractSocket::SocketError error)
@@ -111,7 +112,7 @@ void TcpClientIo::onError(QAbstractSocket::SocketError error)
 void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
 {
     if (state == QAbstractSocket::ClosingState && !isClosing()) {
-        m_socket.abort();
+        m_socket->abort();
         emit shouldReconnect(this);
     }
     if (state == QAbstractSocket::ConnectedState) {

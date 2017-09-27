@@ -119,15 +119,15 @@ public:
     virtual void write(const QByteArray &data, qint64);
     void close();
     virtual void connectToServer() = 0;
-    virtual qint64 bytesAvailable();
+    virtual qint64 bytesAvailable() const;
 
     QUrl url() const;
     void addSource(const QString &);
     void removeSource(const QString &);
     QSet<QString> remoteObjects() const;
 
-    virtual bool isOpen() = 0;
-    virtual QIODevice *connection() = 0;
+    virtual bool isOpen() const = 0;
+    virtual QIODevice *connection() const = 0;
     inline QDataStream& stream() { return m_dataStream; }
 
 Q_SIGNALS:
@@ -136,7 +136,7 @@ Q_SIGNALS:
     void shouldReconnect(ClientIoDevice*);
 protected:
     virtual void doClose() = 0;
-    inline bool isClosing() { return m_isClosing; }
+    inline bool isClosing() const { return m_isClosing; }
     QDataStream m_dataStream;
 
 private:
