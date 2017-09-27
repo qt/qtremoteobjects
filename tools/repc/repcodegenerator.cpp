@@ -882,14 +882,14 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     for (int i = 0; i < propCount; ++i) {
         const ASTProperty &prop = astClass.properties.at(i);
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
-        out << QString::fromLatin1("        m_properties[%1] = qtro_prop_index<ObjectType>(&ObjectType::%2, "
+        out << QString::fromLatin1("        m_properties[%1] = QtPrivate::qtro_property_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<%3 (QObject::*)()>(0),\"%2\");")
                              .arg(QString::number(i+1), prop.name, propTypeName) << endl;
         if (prop.modifier == prop.ReadWrite) //Make sure we have a setter function
-            out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::set%1, static_cast<void (QObject::*)(%2)>(0));")
+            out << QStringLiteral("        QtPrivate::qtro_method_test<ObjectType>(&ObjectType::set%1, static_cast<void (QObject::*)(%2)>(0));")
                                  .arg(cap(prop.name), propTypeName) << endl;
         if (prop.modifier != prop.Constant) { //Make sure we have an onChange signal
-            out << QStringLiteral("        qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(0));")
+            out << QStringLiteral("        QtPrivate::qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(0));")
                                  .arg(prop.name) << endl;
             changeSignals << QString::fromLatin1("%1Changed").arg(prop.name);
             propertyChangeIndex << i + 1; //m_properties[0] is the count, so index is one higher
@@ -899,12 +899,12 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     const int changedCount = changeSignals.size();
     out << QString::fromLatin1("        m_signals[0] = %1;").arg(signalCount+changeSignals.size()) << endl;
     for (int i = 0; i < changedCount; ++i)
-        out << QString::fromLatin1("        m_signals[%1] = qtro_signal_index<ObjectType>(&ObjectType::%2, "
+        out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)()>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(i+1).arg(changeSignals.at(i)).arg(i) << endl;
     for (int i = 0; i < signalCount; ++i) {
         const ASTFunction &sig = astClass.signalsList.at(i);
-        out << QString::fromLatin1("        m_signals[%1] = qtro_signal_index<ObjectType>(&ObjectType::%2, "
+        out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
     }
@@ -920,13 +920,13 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     for (int i = 0; i < pushCount; ++i) {
         const ASTProperty &prop = pushProps.at(i);
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
-        out << QString::fromLatin1("        m_methods[%1] = qtro_method_index<ObjectType>(&ObjectType::push%2, "
+        out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::push%2, "
                               "static_cast<void (QObject::*)(%3)>(0),\"push%2(%3)\",m_methodArgCount+%4,&m_methodArgTypes[%4]);")
                              .arg(QString::number(i+1), cap(prop.name), propTypeName, QString::number(i)) << endl;
     }
     for (int i = 0; i < slotCount; ++i) {
         const ASTFunction &slot = astClass.slotsList.at(i);
-        out << QString::fromLatin1("        m_methods[%1] = qtro_method_index<ObjectType>(&ObjectType::%2, "
+        out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",m_methodArgCount+%4,&m_methodArgTypes[%4]);")
                              .arg(QString::number(i+pushCount+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i+pushCount)) << endl;
     }

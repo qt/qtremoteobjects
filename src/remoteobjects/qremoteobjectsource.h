@@ -46,9 +46,11 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace QtPrivate {
+
 //Based on compile time checks for static connect() from qobjectdefs_impl.h
 template <class ObjectType, typename Func1, typename Func2>
-static inline int qtro_prop_index(Func1, Func2, const char *propName)
+static inline int qtro_property_index(Func1, Func2, const char *propName)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
@@ -116,6 +118,8 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
 }
 
 QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
+
+}
 
 class QRemoteObjectHostBase;
 class SourceApiMap

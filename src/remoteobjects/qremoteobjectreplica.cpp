@@ -77,7 +77,7 @@ QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, co
     , m_signalOffset(QRemoteObjectReplica::staticMetaObject.methodCount())
     , m_propertyOffset(QRemoteObjectReplica::staticMetaObject.propertyCount())
     , m_node(_node)
-    , m_objectSignature(qtro_classinfo_signature(m_metaObject))
+    , m_objectSignature(QtPrivate::qtro_classinfo_signature(m_metaObject))
     , m_state(meta ? QRemoteObjectReplica::Default : QRemoteObjectReplica::Uninitialized)
 {
 }
