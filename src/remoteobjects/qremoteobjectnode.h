@@ -133,8 +133,6 @@ public:
 
     ErrorCode lastError() const;
 
-    void timerEvent(QTimerEvent*) override;
-
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
     void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
@@ -143,6 +141,8 @@ Q_SIGNALS:
 
 protected:
     QRemoteObjectNode(QRemoteObjectNodePrivate &, QObject *parent);
+
+    void timerEvent(QTimerEvent*) override;
 
 private:
     void initializeReplica(QRemoteObjectReplica *instance, const QString &name = QString());
