@@ -17,5 +17,6 @@ SUBDIRS = \
     differentSignalParamCount \
     differentSignalParamType \
     scrambledSignals \
-    state \
-    signatureTests
+    state
+
+qtConfig(process): SUBDIRS += signatureTests
