@@ -38,6 +38,7 @@ struct AST;
 struct ASTClass;
 struct POD;
 struct ASTEnum;
+struct ASTProperty;
 
 class QIODevice;
 class QStringList;
@@ -65,6 +66,7 @@ private:
     QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
     void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
 
+    void generateSimpleSetter(QTextStream &out, const ASTProperty &property);
     void generatePOD(QTextStream &out, const POD &pod);
     void generateENUMs(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className);
     void generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, bool generateQENUM=true);

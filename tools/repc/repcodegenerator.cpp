@@ -344,6 +344,17 @@ QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
            ;
 }
 
+void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty &property)
+{
+    out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+    out << "    {" << endl;
+    out << "        if (" << property.name << " != _" << property.name << ") {" << endl;
+    out << "            _" << property.name << " = " << property.name << ";" << endl;
+    out << "            Q_EMIT " << property.name << "Changed(_" << property.name << ");" << endl;
+    out << "        }" << endl;
+    out << "    }" << endl;
+}
+
 void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
 {
     QByteArray podData = pod.name.toLatin1();
@@ -730,13 +741,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier == ASTProperty::ReadWrite ||
                     property.modifier == ASTProperty::ReadPush) {
-                out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
-                out << "    {" << endl;
-                out << "        if (" << property.name << " != _" << property.name << ") { " << endl;
-                out << "            _" << property.name << " = " << property.name << ";" << endl;
-                out << "            Q_EMIT " << property.name << "Changed(_" << property.name << ");" << endl;
-                out << "        }" << endl;
-                out << "    }" << endl;
+                generateSimpleSetter(out, property);
             }
         }
     }
@@ -820,6 +825,23 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 else
                     out << "        return QRemoteObjectPendingReply<" << slot.returnType << ">(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));" << endl;
                 out << "    }" << endl;
+            }
+        }
+    }
+
+    if (mode == SIMPLE_SOURCE)
+    {
+        if (!astClass.properties.isEmpty()) {
+            bool addProtected = true;
+            Q_FOREACH (const ASTProperty &property, astClass.properties) {
+                if (property.modifier == ASTProperty::ReadOnly) {
+                    if (addProtected) {
+                        out << "" << endl;
+                        out << "protected:" << endl;
+                        addProtected = false;
+                    }
+                    generateSimpleSetter(out, property);
+                }
             }
         }
     }
