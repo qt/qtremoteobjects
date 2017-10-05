@@ -51,7 +51,7 @@
 // We mean it.
 //
 
-#include <QtRemoteObjects/qconnectionfactories.h>
+#include "qconnectionfactories_p.h"
 #include "qconnection_qnx_qiodevices.h"
 #include "qconnection_qnx_server.h"
 

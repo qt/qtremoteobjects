@@ -51,7 +51,7 @@
 // We mean it.
 //
 
-#include "qconnectionfactories.h"
+#include "qconnectionfactories_p.h"
 #include "qtremoteobjectglobal.h"
 #include "qremoteobjectpacket_p.h"
 

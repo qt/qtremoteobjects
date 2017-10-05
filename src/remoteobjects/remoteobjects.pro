@@ -19,7 +19,6 @@ DEFINES += QT_NO_CAST_TO_ASCII QT_NO_CAST_FROM_ASCII QT_NO_CAST_FROM_BYTEARRAY Q
 INCLUDEPATH *= .
 
 PUBLIC_HEADERS += \
-    $$PWD/qconnectionfactories.h \
     $$PWD/qremoteobjectabstractitemmodelreplica.h \
     $$PWD/qremoteobjectabstractitemmodeltypes.h \
     $$PWD/qremoteobjectdynamicreplica.h \

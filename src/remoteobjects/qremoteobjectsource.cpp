@@ -40,7 +40,7 @@
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 
-#include "qconnectionfactories.h"
+#include "qconnectionfactories_p.h"
 #include "qremoteobjectsourceio_p.h"
 
 #include <QMetaProperty>

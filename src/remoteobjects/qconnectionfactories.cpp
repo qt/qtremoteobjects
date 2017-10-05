@@ -37,7 +37,7 @@
 **
 ****************************************************************************/
 
-#include "qconnectionfactories.h"
+#include "qconnectionfactories_p.h"
 #include "qconnectionfactories_p.h"
 
 // BEGIN: Backends

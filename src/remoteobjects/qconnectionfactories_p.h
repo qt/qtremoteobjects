@@ -51,7 +51,10 @@
 // We mean it.
 //
 
+#include <QAbstractSocket>
 #include <QDataStream>
+
+#include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -59,6 +62,183 @@ namespace QtRemoteObjects {
 
 const int dataStreamVersion = QDataStream::Qt_5_1;
 
+}
+
+//The Qt servers create QIODevice derived classes from handleConnection.
+//The problem is that they behave differently, so this class adds some
+//consistency.
+class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY(ServerIoDevice)
+
+public:
+    explicit ServerIoDevice(QObject *parent = nullptr);
+    ~ServerIoDevice() override;
+
+    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
+
+    virtual void write(const QByteArray &data);
+    virtual void write(const QByteArray &data, qint64);
+    void close();
+    virtual qint64 bytesAvailable();
+    virtual QIODevice *connection() const = 0;
+    void initializeDataStream();
+    QDataStream& stream() { return m_dataStream; }
+
+Q_SIGNALS:
+    void disconnected();
+    void readyRead();
+
+protected:
+    virtual void doClose() = 0;
+
+private:
+    bool m_isClosing;
+    quint32 m_curReadSize;
+    QDataStream m_dataStream;
+};
+
+class Q_REMOTEOBJECTS_EXPORT QConnectionAbstractServer : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY(QConnectionAbstractServer)
+
+public:
+    explicit QConnectionAbstractServer(QObject *parent = nullptr);
+    ~QConnectionAbstractServer() override;
+
+    virtual bool hasPendingConnections() const = 0;
+    ServerIoDevice* nextPendingConnection();
+    virtual QUrl address() const = 0;
+    virtual bool listen(const QUrl &address) = 0;
+    virtual QAbstractSocket::SocketError serverError() const = 0;
+    virtual void close() = 0;
+
+protected:
+    virtual ServerIoDevice* configureNewConnection() = 0;
+
+Q_SIGNALS:
+    void newConnection();
+};
+
+class Q_REMOTEOBJECTS_EXPORT ClientIoDevice : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY(ClientIoDevice)
+
+public:
+    explicit ClientIoDevice(QObject *parent = nullptr);
+    ~ClientIoDevice() override;
+
+    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
+
+    virtual void write(const QByteArray &data);
+    virtual void write(const QByteArray &data, qint64);
+    void close();
+    virtual void connectToServer() = 0;
+    virtual qint64 bytesAvailable() const;
+
+    QUrl url() const;
+    void addSource(const QString &);
+    void removeSource(const QString &);
+    QSet<QString> remoteObjects() const;
+
+    virtual bool isOpen() const = 0;
+    virtual QIODevice *connection() const = 0;
+    inline QDataStream& stream() { return m_dataStream; }
+
+Q_SIGNALS:
+    void disconnected();
+    void readyRead();
+    void shouldReconnect(ClientIoDevice*);
+protected:
+    virtual void doClose() = 0;
+    inline bool isClosing() const { return m_isClosing; }
+    QDataStream m_dataStream;
+
+private:
+    bool m_isClosing;
+    QUrl m_url;
+
+private:
+    friend class QtROClientFactory;
+
+    quint32 m_curReadSize;
+    QSet<QString> m_remoteObjects;
+};
+
+class QtROServerFactory
+{
+public:
+    Q_REMOTEOBJECTS_EXPORT static QtROServerFactory *instance();
+
+    QConnectionAbstractServer *create(const QUrl &url, QObject *parent = nullptr)
+    {
+        auto creatorFunc = m_creatorFuncs.value(url.scheme());
+        return creatorFunc ? (*creatorFunc)(parent) : nullptr;
+    }
+
+    template<typename T>
+    void registerType(const QString &id)
+    {
+        m_creatorFuncs[id] = [](QObject *parent) -> QConnectionAbstractServer * {
+            return new T(parent);
+        };
+    }
+
+private:
+    friend class QtROFactoryLoader;
+    QtROServerFactory();
+
+    using CreatorFunc = QConnectionAbstractServer * (*)(QObject *);
+    QHash<QString, CreatorFunc> m_creatorFuncs;
+};
+
+class QtROClientFactory
+{
+public:
+    Q_REMOTEOBJECTS_EXPORT static QtROClientFactory *instance();
+
+    /// creates an object from a string
+    ClientIoDevice *create(const QUrl &url, QObject *parent = nullptr)
+    {
+        auto creatorFunc = m_creatorFuncs.value(url.scheme());
+        if (!creatorFunc)
+            return nullptr;
+
+        ClientIoDevice *res = (*creatorFunc)(parent);
+        if (res)
+            res->m_url = url;
+        return res;
+    }
+
+    template<typename T>
+    void registerType(const QString &id)
+    {
+        m_creatorFuncs[id] = [](QObject *parent) -> ClientIoDevice * {
+            return new T(parent);
+        };
+    }
+
+private:
+    friend class QtROFactoryLoader;
+    QtROClientFactory();
+
+    using CreatorFunc = ClientIoDevice * (*)(QObject *);
+    QHash<QString, CreatorFunc> m_creatorFuncs;
+};
+
+template <typename T>
+inline void qRegisterRemoteObjectsClient(const QString &id)
+{
+    QtROClientFactory::instance()->registerType<T>(id);
+}
+
+template <typename T>
+inline void qRegisterRemoteObjectsServer(const QString &id)
+{
+    QtROServerFactory::instance()->registerType<T>(id);
 }
 
 QT_END_NAMESPACE
