@@ -227,20 +227,7 @@ QRemoteObjectAbstractPersistedStore::~QRemoteObjectAbstractPersistedStore()
     \sa QRemoteObjectAbstractPersistedStore::saveProperties
 */
 
-/*!
-    \property QRemoteObjectNode::persistedStore
-    \brief Provides a \l QRemoteObjectAbstractPersistedStore instance for the node, allowing
-    replica \l PROP members with the PERSISTED trait of \l PROP to save their
-    current value when the replica is deleted and restore a stored value the
-    next time the replica is started.
 
-    Requires a \l QRemoteObjectAbstractPersistedStore
-    class implementation to control where and how persistence is handled.
-*/
-
-/*!
-    Returns the \l QRemoteObjectAbstractPersistedStore instance, if set
-*/
 QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
 {
     Q_D(const QRemoteObjectNode);
@@ -248,9 +235,15 @@ QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
 }
 
 /*!
-    Sets the \l QRemoteObjectAbstractPersistedStore instance
+    \since 5.11
+    \property QRemoteObjectNode::persistedStore
+    \brief Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node
 
-    \sa QRemoteObjectAbstractPersistedStore
+    Allows replica \l PROP members with the PERSISTED trait to save their current value when the
+    replica is deleted and restore a stored value the next time the replica is started.
+
+    Requires a \l QRemoteObjectAbstractPersistedStore class implementation to control where and how
+    persistence is handled.
 */
 void QRemoteObjectNode::setPersistedStore(QRemoteObjectAbstractPersistedStore *persistedStore)
 {
