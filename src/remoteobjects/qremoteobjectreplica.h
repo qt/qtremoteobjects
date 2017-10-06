@@ -47,8 +47,8 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectPendingCall;
-class QRemoteObjectReplicaPrivate;
-class QReplicaPrivateInterface;
+class QRemoteObjectReplicaImplementation;
+class QReplicaImplementationInterface;
 class QRemoteObjectNode;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectReplica : public QObject
@@ -94,7 +94,7 @@ protected:
     void persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props) const;
     QVariantList retrieveProperties(const QString &repName, const QByteArray &repSig) const;
     void initializeNode(QRemoteObjectNode *node, const QString &name = QString());
-    QSharedPointer<QReplicaPrivateInterface> d_ptr;
+    QSharedPointer<QReplicaImplementationInterface> d_impl;
 private:
     friend class QRemoteObjectNodePrivate;
 };

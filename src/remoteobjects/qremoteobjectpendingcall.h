@@ -79,7 +79,7 @@ protected:
     QExplicitlySharedDataPointer<QRemoteObjectPendingCallData> d;
 
 private:
-    friend class QConnectedReplicaPrivate;
+    friend class QConnectedReplicaImplementation;
 };
 
 QT_END_NAMESPACE

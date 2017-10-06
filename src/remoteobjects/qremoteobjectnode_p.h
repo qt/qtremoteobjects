@@ -90,7 +90,7 @@ public:
 
     virtual QRemoteObjectSourceLocations remoteObjectAddresses() const;
 
-    void setReplicaPrivate(const QMetaObject *, QRemoteObjectReplica *, const QString &);
+    void setReplicaImplementation(const QMetaObject *, QRemoteObjectReplica *, const QString &);
 
     void setLastError(QRemoteObjectNode::ErrorCode errorCode);
 
@@ -107,7 +107,7 @@ public:
     void onRegistryInitialized();
     void onShouldReconnect(ClientIoDevice *ioDevice);
 
-    virtual QReplicaPrivateInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
+    virtual QReplicaImplementationInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
     void initialize();
 private:
     bool checkSignatures(const QByteArray &a, const QByteArray &b);
@@ -123,7 +123,7 @@ public:
     QAtomicInt isInitialized;
     QMutex mutex;
     QUrl registryAddress;
-    QHash<QString, QWeakPointer<QReplicaPrivateInterface> > replicas;
+    QHash<QString, QWeakPointer<QReplicaImplementationInterface> > replicas;
     QMap<QString, SourceInfo> connectedSources;
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
@@ -144,7 +144,7 @@ class QRemoteObjectHostBasePrivate : public QRemoteObjectNodePrivate
 public:
     QRemoteObjectHostBasePrivate();
     ~QRemoteObjectHostBasePrivate() override {}
-    QReplicaPrivateInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) override;
+    QReplicaImplementationInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) override;
 
 public:
     QRemoteObjectSourceIo *remoteObjectIo;

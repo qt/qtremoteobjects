@@ -69,7 +69,7 @@ Q_STATIC_ASSERT_X(&QRemoteObjectReplica::staticMetaObject == &QRemoteObjectDynam
 // used.  It was changed to avoid a Coverity complaint.  We use the above static assert to detect if this changes
 // in the future.  See FIX #1, #2, #3 in this file.
 
-QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *_node)
+QRemoteObjectReplicaImplementation::QRemoteObjectReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode *_node)
     : QObject(nullptr), m_objectName(name), m_metaObject(meta), m_numSignals(0), m_methodOffset(0)
     // Uncomment the following two lines if QRemoteObjectDynamicReplica gets a unique staticMetaObject (FIX #1, #2)
     //, m_signalOffset(meta ? QRemoteObjectReplica::staticMetaObject.methodCount() : QRemoteObjectDynamicReplica::staticMetaObject.methodCount())
@@ -82,18 +82,18 @@ QRemoteObjectReplicaPrivate::QRemoteObjectReplicaPrivate(const QString &name, co
 {
 }
 
-QRemoteObjectReplicaPrivate::~QRemoteObjectReplicaPrivate()
+QRemoteObjectReplicaImplementation::~QRemoteObjectReplicaImplementation()
 {
     if (m_metaObject && qstrcmp(m_metaObject->className(), "QRemoteObjectDynamicReplica") == 0)
         free(const_cast<QMetaObject*>(m_metaObject));
 }
 
-QConnectedReplicaPrivate::QConnectedReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
-    : QRemoteObjectReplicaPrivate(name, meta, node), connectionToSource(nullptr), m_curSerialId(0)
+QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
+    : QRemoteObjectReplicaImplementation(name, meta, node), connectionToSource(nullptr), m_curSerialId(0)
 {
 }
 
-QConnectedReplicaPrivate::~QConnectedReplicaPrivate()
+QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
 {
     if (!connectionToSource.isNull()) {
         qCDebug(QT_REMOTEOBJECT) << "Replica deleted: sending RemoveObject to RemoteObjectSource" << m_objectName;
@@ -102,12 +102,12 @@ QConnectedReplicaPrivate::~QConnectedReplicaPrivate()
     }
 }
 
-bool QRemoteObjectReplicaPrivate::needsDynamicInitialization() const
+bool QRemoteObjectReplicaImplementation::needsDynamicInitialization() const
 {
     return m_metaObject == nullptr;
 }
 
-void QRemoteObjectReplicaPrivate::setState(QRemoteObjectReplica::State state)
+void QRemoteObjectReplicaImplementation::setState(QRemoteObjectReplica::State state)
 {
     if (m_state != QRemoteObjectReplica::Suspect && m_state >= state)
         return;
@@ -128,7 +128,7 @@ void QRemoteObjectReplicaPrivate::setState(QRemoteObjectReplica::State state)
     QMetaObject::activate(this, metaObject(), stateChangedIndex, args);
 }
 
-bool QConnectedReplicaPrivate::sendCommand()
+bool QConnectedReplicaImplementation::sendCommand()
 {
     if (connectionToSource.isNull() || !connectionToSource->isOpen()) {
         if (connectionToSource.isNull())
@@ -140,7 +140,7 @@ bool QConnectedReplicaPrivate::sendCommand()
     return true;
 }
 
-void QConnectedReplicaPrivate::initialize(const QVariantList &values)
+void QConnectedReplicaImplementation::initialize(const QVariantList &values)
 {
     qCDebug(QT_REMOTEOBJECT) << "initialize()" << m_propertyStorage.size();
     const int nParam = values.size();
@@ -175,7 +175,7 @@ void QConnectedReplicaPrivate::initialize(const QVariantList &values)
     qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
 }
 
-void QRemoteObjectReplicaPrivate::emitInitialized()
+void QRemoteObjectReplicaImplementation::emitInitialized()
 {
     const static int initializedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("initialized()");
     Q_ASSERT(initializedIndex != -1);
@@ -207,7 +207,7 @@ QVariantList QRemoteObjectReplica::retrieveProperties(const QString &repName, co
     return node()->retrieveProperties(repName, repSig);
 }
 
-void QRemoteObjectReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
+void QRemoteObjectReplicaImplementation::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
 {
     Q_ASSERT(!m_metaObject);
 
@@ -216,9 +216,9 @@ void QRemoteObjectReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder 
     setProperties(values);
 }
 
-void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
+void QConnectedReplicaImplementation::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
 {
-    QRemoteObjectReplicaPrivate::initializeMetaObject(builder, values);
+    QRemoteObjectReplicaImplementation::initializeMetaObject(builder, values);
     foreach (QRemoteObjectReplica *obj, m_parentsNeedingConnect)
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();
@@ -239,12 +239,12 @@ void QConnectedReplicaPrivate::initializeMetaObject(const QMetaObjectBuilder &bu
     qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
 }
 
-bool QConnectedReplicaPrivate::isInitialized() const
+bool QConnectedReplicaImplementation::isInitialized() const
 {
     return  m_state > QRemoteObjectReplica::Default && m_state != QRemoteObjectReplica::SignatureMismatch;
 }
 
-bool QConnectedReplicaPrivate::waitForSource(int timeout)
+bool QConnectedReplicaImplementation::waitForSource(int timeout)
 {
     switch (state()) {
     case QRemoteObjectReplica::State::Valid:
@@ -273,7 +273,7 @@ bool QConnectedReplicaPrivate::waitForSource(int timeout)
     return state() == QRemoteObjectReplica::State::Valid;
 }
 
-void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
+void QConnectedReplicaImplementation::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
 {
     static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
 
@@ -302,7 +302,7 @@ void QConnectedReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
     }
 }
 
-QRemoteObjectPendingCall QConnectedReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+QRemoteObjectPendingCall QConnectedReplicaImplementation::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
@@ -312,7 +312,7 @@ QRemoteObjectPendingCall QConnectedReplicaPrivate::_q_sendWithReply(QMetaObject:
     return sendCommandWithReply(serialId);
 }
 
-QRemoteObjectPendingCall QConnectedReplicaPrivate::sendCommandWithReply(int serialId)
+QRemoteObjectPendingCall QConnectedReplicaImplementation::sendCommandWithReply(int serialId)
 {
     bool success = sendCommand();
     if (!success) {
@@ -326,7 +326,7 @@ QRemoteObjectPendingCall QConnectedReplicaPrivate::sendCommandWithReply(int seri
     return pendingCall;
 }
 
-void QConnectedReplicaPrivate::notifyAboutReply(int ackedSerialId, const QVariant &value)
+void QConnectedReplicaImplementation::notifyAboutReply(int ackedSerialId, const QVariant &value)
 {
     QRemoteObjectPendingCall call = m_pendingCalls.take(ackedSerialId);
 
@@ -341,7 +341,7 @@ void QConnectedReplicaPrivate::notifyAboutReply(int ackedSerialId, const QVarian
         call.d->watcherHelper->emitSignals();
 }
 
-bool QConnectedReplicaPrivate::waitForFinished(const QRemoteObjectPendingCall& call, int timeout)
+bool QConnectedReplicaImplementation::waitForFinished(const QRemoteObjectPendingCall& call, int timeout)
 {
     if (!call.d->watcherHelper)
         call.d->watcherHelper.reset(new QRemoteObjectPendingCallWatcherHelper);
@@ -360,25 +360,25 @@ bool QConnectedReplicaPrivate::waitForFinished(const QRemoteObjectPendingCall& c
     return call.d->error != QRemoteObjectPendingCall::InvalidMessage;
 }
 
-const QVariant QConnectedReplicaPrivate::getProperty(int i) const
+const QVariant QConnectedReplicaImplementation::getProperty(int i) const
 {
     Q_ASSERT_X(i >= 0 && i < m_propertyStorage.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(i).arg(m_propertyStorage.size())));
     return m_propertyStorage[i];
 }
 
-void QConnectedReplicaPrivate::setProperties(const QVariantList &properties)
+void QConnectedReplicaImplementation::setProperties(const QVariantList &properties)
 {
     Q_ASSERT(m_propertyStorage.isEmpty());
     m_propertyStorage.reserve(properties.length());
     m_propertyStorage = properties;
 }
 
-void QConnectedReplicaPrivate::setProperty(int i, const QVariant &prop)
+void QConnectedReplicaImplementation::setProperty(int i, const QVariant &prop)
 {
     m_propertyStorage[i] = prop;
 }
 
-void QConnectedReplicaPrivate::setConnection(ClientIoDevice *conn)
+void QConnectedReplicaImplementation::setConnection(ClientIoDevice *conn)
 {
     if (connectionToSource.isNull()) {
         connectionToSource = conn;
@@ -387,19 +387,19 @@ void QConnectedReplicaPrivate::setConnection(ClientIoDevice *conn)
     requestRemoteObjectSource();
 }
 
-void QConnectedReplicaPrivate::setDisconnected()
+void QConnectedReplicaImplementation::setDisconnected()
 {
     connectionToSource.clear();
     setState(QRemoteObjectReplica::State::Suspect);
 }
 
-void QConnectedReplicaPrivate::requestRemoteObjectSource()
+void QConnectedReplicaImplementation::requestRemoteObjectSource()
 {
     serializeAddObjectPacket(m_packet, m_objectName, needsDynamicInitialization());
     sendCommand();
 }
 
-void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
+void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep)
 {
     qCDebug(QT_REMOTEOBJECT) << "configurePrivate starting for" << this->m_objectName;
     //We need to connect the Replicant only signals too
@@ -436,22 +436,22 @@ void QRemoteObjectReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
             Q_UNUSED(res);
         }
         if (isInitialized()) {
-            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate initialized, emitting signal on replica");
+            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaImplementation initialized, emitting signal on replica");
             emit rep->initialized(); //Emit from new replica only
         }
         if (state() != QRemoteObjectReplica::Valid) {
-            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaPrivate not currently valid, emitting signal on replica");
+            qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaImplementation not currently valid, emitting signal on replica");
             emit rep->stateChanged(state(), m_metaObject ? QRemoteObjectReplica::Default : QRemoteObjectReplica::Uninitialized);
         }
 
-        qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, added replica to existing ReplicaPrivate");
+        qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, added replica to existing ReplicaImplementation");
     }
 }
 
-void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
+void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep)
 {
     if (m_metaObject)
-        QRemoteObjectReplicaPrivate::configurePrivate(rep);
+        QRemoteObjectReplicaImplementation::configurePrivate(rep);
     else
         m_parentsNeedingConnect.append(rep);
 }
@@ -528,7 +528,7 @@ void QConnectedReplicaPrivate::configurePrivate(QRemoteObjectReplica *rep)
 */
 QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
     : QObject(nullptr)
-    , d_ptr(t == DefaultConstructor ? new QStubReplicaPrivate : 0)
+    , d_impl(t == DefaultConstructor ? new QStubReplicaImplementation : 0)
 {
     qRegisterMetaType<State>("State");
 }
@@ -547,7 +547,7 @@ void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVarian
 {
     Q_ASSERT(index != -1);
 
-    d_ptr->_q_send(call, index, args);
+    d_impl->_q_send(call, index, args);
 }
 
 /*!
@@ -555,7 +555,7 @@ void QRemoteObjectReplica::send(QMetaObject::Call call, int index, const QVarian
 */
 QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
-    return d_ptr->_q_sendWithReply(call, index, args);
+    return d_impl->_q_sendWithReply(call, index, args);
 }
 
 /*!
@@ -563,7 +563,7 @@ QRemoteObjectPendingCall QRemoteObjectReplica::sendWithReply(QMetaObject::Call c
 */
 const QVariant QRemoteObjectReplica::propAsVariant(int i) const
 {
-    return d_ptr->getProperty(i);
+    return d_impl->getProperty(i);
 }
 
 /*!
@@ -579,7 +579,7 @@ void QRemoteObjectReplica::initializeNode(QRemoteObjectNode *node, const QString
 */
 void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 {
-    d_ptr->setProperties(properties);
+    d_impl->setProperties(properties);
 }
 
 /*!
@@ -589,7 +589,7 @@ void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 */
 bool QRemoteObjectReplica::isInitialized() const
 {
-    return d_ptr->isInitialized();
+    return d_impl->isInitialized();
 }
 
 /*!
@@ -599,12 +599,12 @@ bool QRemoteObjectReplica::isInitialized() const
 */
 QRemoteObjectReplica::State QRemoteObjectReplica::state() const
 {
-    return d_ptr->state();
+    return d_impl->state();
 }
 
 QRemoteObjectNode *QRemoteObjectReplica::node() const
 {
-    return d_ptr->node();
+    return d_impl->node();
 }
 
 void QRemoteObjectReplica::setNode(QRemoteObjectNode *_node)
@@ -614,7 +614,7 @@ void QRemoteObjectReplica::setNode(QRemoteObjectNode *_node)
         qCWarning(QT_REMOTEOBJECT) << "Ignoring call to setNode as the node has already been set";
         return;
     }
-    d_ptr.clear();
+    d_impl.clear();
     _node->initializeReplica(this);
 }
 
@@ -644,19 +644,19 @@ bool QRemoteObjectReplica::isReplicaValid() const
 */
 bool QRemoteObjectReplica::waitForSource(int timeout)
 {
-    return d_ptr->waitForSource(timeout);
+    return d_impl->waitForSource(timeout);
 }
 
-QInProcessReplicaPrivate::QInProcessReplicaPrivate(const QString &name, const QMetaObject *meta, QRemoteObjectNode * node)
-    : QRemoteObjectReplicaPrivate(name, meta, node)
+QInProcessReplicaImplementation::QInProcessReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode * node)
+    : QRemoteObjectReplicaImplementation(name, meta, node)
 {
 }
 
-QInProcessReplicaPrivate::~QInProcessReplicaPrivate()
+QInProcessReplicaImplementation::~QInProcessReplicaImplementation()
 {
 }
 
-const QVariant QInProcessReplicaPrivate::getProperty(int i) const
+const QVariant QInProcessReplicaImplementation::getProperty(int i) const
 {
     Q_ASSERT(connectionToSource);
     Q_ASSERT(connectionToSource->m_object);
@@ -665,12 +665,12 @@ const QVariant QInProcessReplicaPrivate::getProperty(int i) const
     return connectionToSource->m_object->metaObject()->property(index).read(connectionToSource->m_object);
 }
 
-void QInProcessReplicaPrivate::setProperties(const QVariantList &)
+void QInProcessReplicaImplementation::setProperties(const QVariantList &)
 {
     //TODO some verification here maybe?
 }
 
-void QInProcessReplicaPrivate::setProperty(int i, const QVariant &property)
+void QInProcessReplicaImplementation::setProperty(int i, const QVariant &property)
 {
     Q_ASSERT(connectionToSource);
     Q_ASSERT(connectionToSource->m_object);
@@ -679,7 +679,7 @@ void QInProcessReplicaPrivate::setProperty(int i, const QVariant &property)
     connectionToSource->m_object->metaObject()->property(index).write(connectionToSource->m_object, property);
 }
 
-void QInProcessReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
+void QInProcessReplicaImplementation::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod || call == QMetaObject::WriteProperty);
 
@@ -699,7 +699,7 @@ void QInProcessReplicaPrivate::_q_send(QMetaObject::Call call, int index, const 
     }
 }
 
-QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+QRemoteObjectPendingCall QInProcessReplicaImplementation::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
@@ -719,29 +719,29 @@ QRemoteObjectPendingCall QInProcessReplicaPrivate::_q_sendWithReply(QMetaObject:
     return QRemoteObjectPendingCall::fromCompletedCall(returnValue);
 }
 
-QStubReplicaPrivate::QStubReplicaPrivate() {}
+QStubReplicaImplementation::QStubReplicaImplementation() {}
 
-QStubReplicaPrivate::~QStubReplicaPrivate() {}
+QStubReplicaImplementation::~QStubReplicaImplementation() {}
 
-const QVariant QStubReplicaPrivate::getProperty(int i) const
+const QVariant QStubReplicaImplementation::getProperty(int i) const
 {
     Q_ASSERT_X(i >= 0 && i < m_propertyStorage.size(), __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(i).arg(m_propertyStorage.size())));
     return m_propertyStorage[i];
 }
 
-void QStubReplicaPrivate::setProperties(const QVariantList &properties)
+void QStubReplicaImplementation::setProperties(const QVariantList &properties)
 {
     Q_ASSERT(m_propertyStorage.isEmpty());
     m_propertyStorage.reserve(properties.length());
     m_propertyStorage = properties;
 }
 
-void QStubReplicaPrivate::setProperty(int i, const QVariant &prop)
+void QStubReplicaImplementation::setProperty(int i, const QVariant &prop)
 {
     m_propertyStorage[i] = prop;
 }
 
-void QStubReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
+void QStubReplicaImplementation::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_UNUSED(call);
     Q_UNUSED(index);
@@ -749,7 +749,7 @@ void QStubReplicaPrivate::_q_send(QMetaObject::Call call, int index, const QVari
     qWarning("Tried calling a slot or setting a property on a replica that hasn't been initialized with a node");
 }
 
-QRemoteObjectPendingCall QStubReplicaPrivate::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
+QRemoteObjectPendingCall QStubReplicaImplementation::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_UNUSED(call);
     Q_UNUSED(index);

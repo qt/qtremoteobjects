@@ -219,10 +219,10 @@ struct LRUCache
     }
 };
 
-class QAbstractItemModelReplicaPrivate;
+class QAbstractItemModelReplicaImplementation;
 struct CacheData
 {
-    QAbstractItemModelReplicaPrivate *replicaModel;
+    QAbstractItemModelReplicaImplementation *replicaModel;
     CacheData *parent;
     CachedRowEntry cachedRowEntry;
 
@@ -231,7 +231,7 @@ struct CacheData
     int columnCount;
     int rowCount;
 
-    explicit CacheData(QAbstractItemModelReplicaPrivate *model, CacheData *parentItem = nullptr);
+    explicit CacheData(QAbstractItemModelReplicaImplementation *model, CacheData *parentItem = nullptr);
 
     ~CacheData();
 
@@ -320,7 +320,7 @@ public:
     QVector<int> sections, roles;
 };
 
-class QAbstractItemModelReplicaPrivate : public QRemoteObjectReplica
+class QAbstractItemModelReplicaImplementation : public QRemoteObjectReplica
 {
     Q_OBJECT
     //TODO Use an input name for the model on the Replica side
@@ -328,9 +328,9 @@ class QAbstractItemModelReplicaPrivate : public QRemoteObjectReplica
     Q_PROPERTY(QVector<int> availableRoles READ availableRoles NOTIFY availableRolesChanged)
     Q_PROPERTY(QIntHash roleNames READ roleNames)
 public:
-    QAbstractItemModelReplicaPrivate();
-    QAbstractItemModelReplicaPrivate(QRemoteObjectNode *node, const QString &name);
-    ~QAbstractItemModelReplicaPrivate() override;
+    QAbstractItemModelReplicaImplementation();
+    QAbstractItemModelReplicaImplementation(QRemoteObjectNode *node, const QString &name);
+    ~QAbstractItemModelReplicaImplementation() override;
     void initialize() override;
     static void registerMetatypes();
 
@@ -364,35 +364,35 @@ Q_SIGNALS:
 public Q_SLOTS:
     QRemoteObjectPendingReply<QSize> replicaSizeRequest(IndexList parentList)
     {
-        static int __repc_index = QAbstractItemModelReplicaPrivate::staticMetaObject.indexOfSlot("replicaSizeRequest(IndexList)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaSizeRequest(IndexList)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(parentList);
         return QRemoteObjectPendingReply<QSize>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
     QRemoteObjectPendingReply<DataEntries> replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
     {
-        static int __repc_index = QAbstractItemModelReplicaPrivate::staticMetaObject.indexOfSlot("replicaRowRequest(IndexList,IndexList,QVector<int>)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaRowRequest(IndexList,IndexList,QVector<int>)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(start) << QVariant::fromValue(end) << QVariant::fromValue(roles);
         return QRemoteObjectPendingReply<DataEntries>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
     QRemoteObjectPendingReply<QVariantList> replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles)
     {
-        static int __repc_index = QAbstractItemModelReplicaPrivate::staticMetaObject.indexOfSlot("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(orientations) << QVariant::fromValue(sections) << QVariant::fromValue(roles);
         return QRemoteObjectPendingReply<QVariantList>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
     void replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command)
     {
-        static int __repc_index = QAbstractItemModelReplicaPrivate::staticMetaObject.indexOfSlot("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(index) << QVariant::fromValue(command);
         send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);
     }
     void replicaSetData(IndexList index, const QVariant &value, int role)
     {
-        static int __repc_index = QAbstractItemModelReplicaPrivate::staticMetaObject.indexOfSlot("replicaSetData(IndexList,QVariant,int)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaSetData(IndexList,QVariant,int)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(index) << QVariant::fromValue(value) << QVariant::fromValue(role);
         send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);

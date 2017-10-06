@@ -48,7 +48,7 @@
 
 QT_BEGIN_NAMESPACE
 
-QRemoteObjectPendingCallData::QRemoteObjectPendingCallData(int serialId, QRemoteObjectReplicaPrivate *replica)
+QRemoteObjectPendingCallData::QRemoteObjectPendingCallData(int serialId, QRemoteObjectReplicaImplementation *replica)
     : replica(replica)
     , serialId(serialId)
     , error(QRemoteObjectPendingCall::InvalidMessage)

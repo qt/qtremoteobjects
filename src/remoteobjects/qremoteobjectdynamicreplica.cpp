@@ -84,9 +84,9 @@ QRemoteObjectDynamicReplica::~QRemoteObjectDynamicReplica()
 */
 const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 {
-    QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
+    auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
 
-    return d->m_metaObject ? d->m_metaObject : QRemoteObjectReplica::metaObject();
+    return impl->m_metaObject ? impl->m_metaObject : QRemoteObjectReplica::metaObject();
 }
 
 /*!
@@ -97,8 +97,6 @@ const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 */
 void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
 {
-    QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
-
     if (!name)
         return 0;
 
@@ -106,7 +104,8 @@ void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
         return static_cast<void*>(const_cast<QRemoteObjectDynamicReplica*>(this));
 
     // not entirely sure that one is needed... TODO: check
-    if (QString::fromLatin1(name) == d->m_objectName)
+    auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
+    if (QString::fromLatin1(name) == impl->m_objectName)
         return static_cast<void*>(const_cast<QRemoteObjectDynamicReplica*>(this));
 
     return QObject::qt_metacast(name);
@@ -122,11 +121,11 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 {
     static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
 
-    QSharedPointer<QRemoteObjectReplicaPrivate> d = qSharedPointerCast<QRemoteObjectReplicaPrivate>(d_ptr);
+    auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
 
     int saved_id = id;
     id = QRemoteObjectReplica::qt_metacall(call, id, argv);
-    if (id < 0 || d->m_metaObject == nullptr)
+    if (id < 0 || impl->m_metaObject == nullptr)
         return id;
 
     if (call == QMetaObject::ReadProperty || call == QMetaObject::WriteProperty) {
@@ -152,13 +151,13 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
         id = -1;
     } else if (call == QMetaObject::InvokeMetaMethod) {
-        if (id < d->m_numSignals) {
+        if (id < impl->m_numSignals) {
             // signal relay from Source world to Replica
-            QMetaObject::activate(this, d->m_metaObject, id, argv);
+            QMetaObject::activate(this, impl->m_metaObject, id, argv);
 
         } else {
             // method relay from Replica to Source
-            const QMetaMethod mm = d->m_metaObject->method(saved_id);
+            const QMetaMethod mm = impl->m_metaObject->method(saved_id);
             const QList<QByteArray> types = mm.parameterTypes();
 
             const int typeSize = types.size();

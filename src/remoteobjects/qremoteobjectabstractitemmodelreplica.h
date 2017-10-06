@@ -47,7 +47,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAbstractItemModelReplicaPrivate;
+class QAbstractItemModelReplicaImplementation;
 
 class Q_REMOTEOBJECTS_EXPORT QAbstractItemModelReplica : public QAbstractItemModel
 {
@@ -79,9 +79,9 @@ Q_SIGNALS:
     void initialized();
 
 private:
-    explicit QAbstractItemModelReplica(QAbstractItemModelReplicaPrivate *rep);
-    QScopedPointer<QAbstractItemModelReplicaPrivate> d;
-    friend class QAbstractItemModelReplicaPrivate;
+    explicit QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep);
+    QScopedPointer<QAbstractItemModelReplicaImplementation> d;
+    friend class QAbstractItemModelReplicaImplementation;
     friend class QRemoteObjectNode;
 };
 

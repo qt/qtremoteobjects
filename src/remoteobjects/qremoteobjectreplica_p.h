@@ -75,10 +75,10 @@ class QInvokeReplyPacket;
 class QRemoteObjectPacket;
 }
 
-class QReplicaPrivateInterface
+class QReplicaImplementationInterface
 {
 public:
-    virtual ~QReplicaPrivateInterface() {}
+    virtual ~QReplicaImplementationInterface() {}
     virtual const QVariant getProperty(int i) const = 0;
     virtual void setProperties(const QVariantList &) = 0;
     virtual void setProperty(int i, const QVariant &) = 0;
@@ -91,11 +91,11 @@ public:
     virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
 };
 
-class QStubReplicaPrivate : public QReplicaPrivateInterface
+class QStubReplicaImplementation : public QReplicaImplementationInterface
 {
 public:
-    explicit QStubReplicaPrivate();
-    ~QStubReplicaPrivate() override;
+    explicit QStubReplicaImplementation();
+    ~QStubReplicaImplementation() override;
 
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;
@@ -110,11 +110,11 @@ public:
     QVariantList m_propertyStorage;
 };
 
-class QRemoteObjectReplicaPrivate : public QObject, public QReplicaPrivateInterface
+class QRemoteObjectReplicaImplementation : public QObject, public QReplicaImplementationInterface
 {
 public:
-    explicit QRemoteObjectReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
-    ~QRemoteObjectReplicaPrivate() override;
+    explicit QRemoteObjectReplicaImplementation(const QString &name, const QMetaObject *, QRemoteObjectNode *);
+    ~QRemoteObjectReplicaImplementation() override;
 
     bool needsDynamicInitialization() const;
 
@@ -151,11 +151,11 @@ public:
     QAtomicInt m_state;
 };
 
-class QConnectedReplicaPrivate : public QRemoteObjectReplicaPrivate
+class QConnectedReplicaImplementation : public QRemoteObjectReplicaImplementation
 {
 public:
-    explicit QConnectedReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
-    ~QConnectedReplicaPrivate() override;
+    explicit QConnectedReplicaImplementation(const QString &name, const QMetaObject *, QRemoteObjectNode *);
+    ~QConnectedReplicaImplementation() override;
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;
     void setProperty(int i, const QVariant &) override;
@@ -186,11 +186,11 @@ public:
     QRemoteObjectPackets::DataStreamPacket m_packet;
 };
 
-class QInProcessReplicaPrivate : public QRemoteObjectReplicaPrivate
+class QInProcessReplicaImplementation : public QRemoteObjectReplicaImplementation
 {
 public:
-    explicit QInProcessReplicaPrivate(const QString &name, const QMetaObject *, QRemoteObjectNode *);
-    ~QInProcessReplicaPrivate() override;
+    explicit QInProcessReplicaImplementation(const QString &name, const QMetaObject *, QRemoteObjectNode *);
+    ~QInProcessReplicaImplementation() override;
 
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;

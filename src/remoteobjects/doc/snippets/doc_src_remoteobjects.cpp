@@ -73,7 +73,7 @@ hostNode.enableRemoting<MinuteTimerSourceAPI>(&timer);
 
 //! [create_replica]
 #include "rep_TimeModel_replica.h"
-QScopedPointer<MinuteTimerReplica> d_ptr;
+QScopedPointer<MinuteTimerReplica> d_impl;
 //! [create_replica]
 
 //! [dynamic_replica]
@@ -81,7 +81,7 @@ QRemoteObjectDynamicReplica *dynamicRep;
 //! [dynamic_replica]
 
 //! [acquire_replica]
-d_ptr->reset(clientNode.acquire("MinuteTimer"));
+d_impl->reset(clientNode.acquire("MinuteTimer"));
 *dynamicRep = clientNode.acquire("MinuteTimer");
 //! [acquire_replica]
 
