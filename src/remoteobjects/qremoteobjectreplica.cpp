@@ -533,6 +533,12 @@ QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
     qRegisterMetaType<State>("State");
 }
 
+QRemoteObjectReplica::QRemoteObjectReplica(QObjectPrivate &dptr, QObject *parent)
+    : QObject(dptr, parent)
+    , d_impl(new QStubReplicaImplementation)
+{
+}
+
 /*!
     \internal
 */

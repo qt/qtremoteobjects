@@ -46,6 +46,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QObjectPrivate;
 class QRemoteObjectPendingCall;
 class QRemoteObjectReplicaImplementation;
 class QReplicaImplementationInterface;
@@ -83,6 +84,7 @@ Q_SIGNALS:
 protected:
     enum ConstructorType {DefaultConstructor, ConstructWithNode};
     explicit QRemoteObjectReplica(ConstructorType t = DefaultConstructor);
+    QRemoteObjectReplica(QObjectPrivate &dptr, QObject *parent);
 
     virtual void initialize();
     void send(QMetaObject::Call call, int index, const QVariantList &args);
