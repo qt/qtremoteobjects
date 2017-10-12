@@ -418,8 +418,20 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
     }
     if (m_methodOffset == 0) //We haven't initialized the offsets yet
     {
-        for (int i = m_signalOffset; i < m_metaObject->methodCount(); ++i) {
-            const QMetaMethod mm = m_metaObject->method(i);
+        const int index = m_metaObject->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+        const QMetaObject *metaObject = m_metaObject;
+        if (index != -1) { //We have an object created from repc or at least with QCLASSINFO defined
+            while (true) {
+                Q_ASSERT(metaObject->superClass()); //This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
+                if (index != metaObject->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE)) //At the point we don't find the same QCLASSINFO_REMOTEOBJECT_TYPE,
+                                //we have the metaobject we should work from
+                    break;
+                metaObject = metaObject->superClass();
+            }
+        }
+
+        for (int i = m_signalOffset; i < metaObject->methodCount(); ++i) {
+            const QMetaMethod mm = metaObject->method(i);
             if (mm.methodType() == QMetaMethod::Signal) {
                 ++m_numSignals;
                 const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);

@@ -1,0 +1,7 @@
+#include <QtCore>
+
+class SimpleClock
+{
+    PROP(int hour);
+    PROP(int minute);
+};
