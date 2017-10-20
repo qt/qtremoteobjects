@@ -247,6 +247,9 @@ DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name,
       m_metaObject(metaObject),
       m_cachedMetamethodIndex(-1)
 {
+    m_enumOffset = metaObject->enumeratorOffset();
+    m_enumCount = metaObject->enumeratorCount() - m_enumOffset;
+
     const int propCount = metaObject->propertyCount();
     const int propOffset = metaObject->propertyOffset();
     m_properties.reserve(propCount-propOffset);

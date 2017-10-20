@@ -145,9 +145,14 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
 
     QString name() const override { return m_name; }
     QString typeName() const override { return QStringLiteral("QAbstractItemModelAdapter"); }
+    int enumCount() const override { return 0; }
     int propertyCount() const override { return _properties[0]; }
     int signalCount() const override { return _signals[0]; }
     int methodCount() const override { return _methods[0]; }
+    int sourceEnumIndex(int /*index*/) const override
+    {
+        return -1;
+    }
     int sourcePropertyIndex(int index) const override
     {
         if (index < 0 || index >= _properties[0])

@@ -47,6 +47,10 @@ public:
 public Q_SLOTS:
     bool start() override;
     bool stop() override;
+    bool quit() override;
+
+Q_SIGNALS:
+    void quitApp();
 };
 
 #endif // MYTESTSERVER_H

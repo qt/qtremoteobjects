@@ -53,3 +53,9 @@ bool MyTestServer::stop()
     setStarted(false);
     return true;
 }
+
+bool MyTestServer::quit()
+{
+    emit quitApp();
+    return true;
+}

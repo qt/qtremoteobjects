@@ -97,9 +97,16 @@ public:
     ~DynamicApiMap() {}
     QString name() const override { return m_name; }
     QString typeName() const override { return m_typeName; }
+    int enumCount() const override { return m_enumCount; }
     int propertyCount() const override { return m_properties.size(); }
     int signalCount() const override { return m_signals.size(); }
     int methodCount() const override { return m_methods.size(); }
+    int sourceEnumIndex(int index) const override
+    {
+        if (index < 0 || index >= enumCount())
+            return -1;
+        return m_enumOffset + index;
+    }
     int sourcePropertyIndex(int index) const override
     {
         if (index < 0 || index >= propertyCount())
@@ -155,6 +162,8 @@ private:
 
     QString m_name;
     QString m_typeName;
+    int m_enumCount;
+    int m_enumOffset;
     QVector<int> m_properties;
     QVector<int> m_signals;
     QVector<int> m_methods;

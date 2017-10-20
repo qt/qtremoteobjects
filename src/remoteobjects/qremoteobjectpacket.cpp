@@ -150,11 +150,25 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
     ds << api->name();
 
     //Now copy the property data
+    const int numEnums = api->enumCount();
+    const auto metaObject = object->m_object->metaObject();
+    ds << quint32(numEnums);  //Number of Enums
+    for (int i = 0; i < numEnums; ++i) {
+        auto enumerator = metaObject->enumerator(api->sourceEnumIndex(i));
+        Q_ASSERT(enumerator.isValid());
+        ds << enumerator.name();
+        ds << enumerator.isFlag();
+        ds << enumerator.scope();
+        const int keyCount = enumerator.keyCount();
+        ds << keyCount;
+        for (int k = 0; k < keyCount; ++k) {
+            ds << enumerator.key(k);
+            ds << enumerator.value(k);
+        }
+    }
+
     const int numSignals = api->signalCount();
     ds << quint32(numSignals);  //Number of signals
-    const int numMethods = api->methodCount();
-    ds << quint32(numMethods);  //Number of methods
-
     for (int i = 0; i < numSignals; ++i) {
         const int index = api->sourceSignalIndex(i);
         if (index < 0) {
@@ -165,6 +179,8 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
         ds << api->signalSignature(i);
     }
 
+    const int numMethods = api->methodCount();
+    ds << quint32(numMethods);  //Number of methods
     for (int i = 0; i < numMethods; ++i) {
         const int index = api->sourceMethodIndex(i);
         if (index < 0) {
@@ -178,7 +194,6 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
 
     const int numProperties = api->propertyCount();
     ds << quint32(numProperties);  //Number of properties
-
     for (int i = 0; i < numProperties; ++i) {
         const int index = api->sourcePropertyIndex(i);
         if (index < 0) {
@@ -202,15 +217,39 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
 
 void deserializeInitDynamicPacket(QDataStream &in, QMetaObjectBuilder &builder, QVariantList &values)
 {
+    quint32 numEnums = 0;
     quint32 numSignals = 0;
     quint32 numMethods = 0;
     quint32 numProperties = 0;
 
-    in >> numSignals;
-    in >> numMethods;
+    in >> numEnums;
+    for (quint32 i = 0; i < numEnums; ++i) {
+        QByteArray name;
+        in >> name;
+        auto enumBuilder = builder.addEnumerator(name);
+        bool isFlag;
+        in >> isFlag;
+        enumBuilder.setIsFlag(isFlag);
+
+        QByteArray scopeName;
+        in >> scopeName; // scope
+        // TODO uncomment this line after https://bugreports.qt.io/browse/QTBUG-64081 is implemented
+        //enumBuilder.setScope(scopeName);
+
+        int keyCount;
+        in >> keyCount;
+        for (int k = 0; k < keyCount; ++k) {
+            QByteArray key;
+            int value;
+            in >> key;
+            in >> value;
+            enumBuilder.addKey(key, value);
+        }
+    }
 
     int curIndex = 0;
 
+    in >> numSignals;
     for (quint32 i = 0; i < numSignals; ++i) {
         QByteArray signature;
         in >> signature;
@@ -218,6 +257,7 @@ void deserializeInitDynamicPacket(QDataStream &in, QMetaObjectBuilder &builder, 
         builder.addSignal(signature);
     }
 
+    in >> numMethods;
     for (quint32 i = 0; i < numMethods; ++i) {
         QByteArray signature, returnType;
 

@@ -893,8 +893,16 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QString::fromLatin1("    %1(ObjectType *object)").arg(className) << endl;
     out << QStringLiteral("        : SourceApiMap()") << endl;
     out << QStringLiteral("    {") << endl;
-    if (astClass.models.isEmpty())
+    if (astClass.models.isEmpty() && astClass.enums.isEmpty())
         out << QStringLiteral("        Q_UNUSED(object);") << endl;
+
+    const int enumCount = astClass.enums.count();
+    out << QString::fromLatin1("        _enums[0] = %1;").arg(enumCount) << endl;
+    for (int i = 0; i < enumCount; ++i) {
+        const auto enumerator = astClass.enums.at(i);
+        out << QString::fromLatin1("        _enums[%1] = ObjectType::staticMetaObject.indexOfEnumerator(\"%2\");")
+                             .arg(i+1).arg(enumerator.name) << endl;
+    }
     const int propCount = astClass.properties.count();
     out << QString::fromLatin1("        _properties[0] = %1;").arg(propCount) << endl;
     QStringList changeSignals;
@@ -961,10 +969,17 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("") << endl;
     out << QString::fromLatin1("    QString name() const override { return QStringLiteral(\"%1\"); }").arg(astClass.name) << endl;
     out << QString::fromLatin1("    QString typeName() const override { return QStringLiteral(\"%1\"); }").arg(astClass.name) << endl;
+    out << QStringLiteral("    int enumCount() const override { return _enums[0]; }") << endl;
     out << QStringLiteral("    int propertyCount() const override { return _properties[0]; }") << endl;
     out << QStringLiteral("    int signalCount() const override { return _signals[0]; }") << endl;
     out << QStringLiteral("    int methodCount() const override { return _methods[0]; }") << endl;
     out << QStringLiteral("    int modelCount() const override { return _modelCount; }") << endl;
+    out << QStringLiteral("    int sourceEnumIndex(int index) const override") << endl;
+    out << QStringLiteral("    {") << endl;
+    out << QStringLiteral("        if (index < 0 || index >= _enums[0])") << endl;
+    out << QStringLiteral("            return -1;") << endl;
+    out << QStringLiteral("        return _enums[index+1];") << endl;
+    out << QStringLiteral("    }") << endl;
     out << QStringLiteral("    int sourcePropertyIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= _properties[0])") << endl;
@@ -1120,6 +1135,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         << QStringLiteral("\"}; }") << endl;
 
     out << QStringLiteral("") << endl;
+    out << QString::fromLatin1("    int _enums[%1];").arg(enumCount + 1) << endl;
     out << QString::fromLatin1("    int _properties[%1];").arg(propCount+1) << endl;
     out << QString::fromLatin1("    int _signals[%1];").arg(signalCount+changedCount+1) << endl;
     out << QString::fromLatin1("    int _methods[%1];").arg(methodCount+1) << endl;

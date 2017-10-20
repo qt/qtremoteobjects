@@ -3,12 +3,13 @@
 class MyInterface
 {
     ENUM Enum1 { First, Second, Third }
-    PROP(Enum1 enum1 = First)
+    PROP(Enum1 enum1 = First READWRITE)
 
     PROP(bool started = false)
 
     SLOT(bool start())
     SLOT(bool stop())
+    SLOT(bool quit())
 
     SIGNAL(advance())
 };

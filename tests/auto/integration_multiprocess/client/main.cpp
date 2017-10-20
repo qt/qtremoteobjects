@@ -37,34 +37,69 @@ class tst_Client_Process : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        m_repNode.connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
+        m_rep.reset(m_repNode.acquire<MyInterfaceReplica>());
+        QVERIFY(m_rep->waitForSource());
+    }
+
     void testRun()
     {
-        QRemoteObjectNode repNode;
-        repNode.connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
 
-        QSharedPointer<MyInterfaceReplica> rep(repNode.acquire<MyInterfaceReplica>());
-        QVERIFY(rep->waitForSource());
-
-        auto reply = rep->start();
+        auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
 
         // BEGIN: Testing
-        QSignalSpy advanceSpy(rep.data(), SIGNAL(advance()));
+        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
 
-        QSignalSpy spy(rep.data(), SIGNAL(enum1Changed(MyInterfaceReplica::Enum1)));
+        QSignalSpy spy(m_rep.data(), SIGNAL(enum1Changed(MyInterfaceReplica::Enum1)));
         QVERIFY(advanceSpy.wait());
 
         QCOMPARE(spy.count(), 2);
         // END: Testing
 
-        reply = rep->stop();
+        reply = m_rep->stop();
         QVERIFY(reply.waitForFinished());
-
-        qDebug() << "Done. Shutting down.";
-
-        // wait for delivery of events
-        QTest::qWait(200);
     }
+
+    void testEnumDetails()
+    {
+        QHash<QByteArray, int> kvs = {{"First", 0}, {"Second", 1}, {"Third", 2}};
+        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_repNode.acquireDynamic("MyInterface"));
+        QVERIFY(rep->waitForSource());
+
+        auto mo = rep->metaObject();
+        int enumIdx = mo->indexOfEnumerator("Enum1");
+        QVERIFY(enumIdx != -1);
+        auto enumerator = mo->enumerator(enumIdx);
+        QCOMPARE(enumerator.name(), "Enum1");
+        QCOMPARE(enumerator.keyCount(), 3);
+        for (int i = 0; i < 3; ++i) {
+            auto key = enumerator.key(i);
+            auto val = enumerator.value(i);
+            auto it = kvs.find(key);
+            QVERIFY(it != kvs.end());
+            QCOMPARE(*it, val);
+            kvs.erase(it);
+        }
+
+        int propIdx = mo->indexOfProperty("enum1");
+        QVERIFY(propIdx != -1);
+        auto property = mo->property(propIdx);
+        property.write(rep.data(), 1);
+        QTRY_COMPARE(property.read(rep.data()).toInt(), 1);
+    }
+
+    void cleanupTestCase()
+    {
+        auto reply = m_rep->quit();
+        QVERIFY(reply.waitForFinished());
+    }
+
+private:
+    QRemoteObjectNode m_repNode;
+    QScopedPointer<MyInterfaceReplica> m_rep;
 };
 
 QTEST_MAIN(tst_Client_Process)

@@ -126,10 +126,12 @@ public:
     virtual ~SourceApiMap() {}
     virtual QString name() const = 0;
     virtual QString typeName() const = 0;
+    virtual int enumCount() const = 0;
     virtual int propertyCount() const = 0;
     virtual int signalCount() const = 0;
     virtual int methodCount() const = 0;
     virtual int modelCount() const { return 0; }
+    virtual int sourceEnumIndex(int index) const = 0;
     virtual int sourcePropertyIndex(int index) const = 0;
     virtual int sourceSignalIndex(int index) const = 0;
     virtual int sourceMethodIndex(int index) const = 0;
