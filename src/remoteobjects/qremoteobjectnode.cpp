@@ -455,11 +455,27 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     Q_ASSERT(connection);
 
     do {
-
         if (!connection->read(packetType, rxName))
             return;
 
+        if (packetType != Handshake && !m_handshakeReceived) {
+            qROPrivWarning() << "Expected Handshake, got " << packetType;
+            setLastError(QRemoteObjectNode::ProtocolMismatch);
+            connection->close();
+            break;
+        }
+
         switch (packetType) {
+        case Handshake:
+            if (rxName != QtRemoteObjects::protocolVersion) {
+                qROPrivWarning() << "Protocol Mismatch, closing connection. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
+                setLastError(QRemoteObjectNode::ProtocolMismatch);
+                connection->close();
+            } else {
+                m_handshakeReceived = true;
+            }
+            break;
+
         case ObjectList:
         {
             deserializeObjectListPacket(connection->stream(), rxObjects);
@@ -702,6 +718,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     \value SourceNotRegistered The given QRemoteObjectSource is not registered on this node.
     \value MissingObjectName The given QObject does not have objectName() set.
     \value HostUrlInvalid The given url has an invalid or unrecognized scheme.
+    \value ProtocolMismatch The client and the server have different protocol versions.
 */
 
 /*!

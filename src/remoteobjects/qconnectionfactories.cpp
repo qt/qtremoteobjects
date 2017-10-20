@@ -67,6 +67,7 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
     in >> _type;
     type = Invalid;
     switch (_type) {
+    case Handshake: type = Handshake; break;
     case InitPacket: type = InitPacket; break;
     case InitDynamicPacket: type = InitDynamicPacket; break;
     case AddObject: type = AddObject; break;

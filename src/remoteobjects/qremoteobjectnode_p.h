@@ -128,6 +128,7 @@ public:
     QVariant rxValue;
     QRemoteObjectPersistedStore *persistedStore;
     QRemoteObjectNode::StorageOwnership persistedStoreOwnership;
+    bool m_handshakeReceived = false;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 

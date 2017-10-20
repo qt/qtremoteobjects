@@ -138,6 +138,7 @@ private:
 QVariant serializedProperty(const QMetaProperty &property, const QObject *object);
 QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property);
 
+void serializeHandshakePacket(DataStreamPacket &ds);
 void serializeInitPacket(DataStreamPacket&, const QRemoteObjectSource*);
 void deserializeInitPacket(QDataStream&, QVariantList&);
 

@@ -71,6 +71,13 @@ QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property)
     }
 }
 
+void serializeHandshakePacket(DataStreamPacket &ds)
+{
+    ds.setId(Handshake);
+    ds << QString(protocolVersion);
+    ds.finishPacket();
+}
+
 void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
 {
     const SourceApiMap *api = object->m_api;

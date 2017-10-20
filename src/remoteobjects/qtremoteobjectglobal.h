@@ -155,6 +155,7 @@ void copyStoredProperties(QDataStream &src, T *dst)
 enum QRemoteObjectPacketTypeEnum
 {
     Invalid = 0,
+    Handshake,
     InitPacket,
     InitDynamicPacket,
     AddObject,
