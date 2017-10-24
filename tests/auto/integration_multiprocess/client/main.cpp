@@ -91,6 +91,50 @@ private Q_SLOTS:
         QTRY_COMPARE(property.read(rep.data()).toInt(), 1);
     }
 
+    void testMethodSignalParamDetails()
+    {
+        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_repNode.acquireDynamic("MyInterface"));
+        QVERIFY(rep->waitForSource());
+
+        auto mo = rep->metaObject();
+        int signalIdx = mo->indexOfSignal("testEnumParamsInSignals(Enum1,bool,QString)");
+        QVERIFY(signalIdx != -1);
+        auto simm = mo->method(signalIdx);
+        {
+            QCOMPARE(simm.parameterCount(), 3);
+            auto paramNames = simm.parameterNames();
+            QCOMPARE(paramNames.size(), 3);
+            QCOMPARE(paramNames.at(0), "enumSignalParam");
+            QCOMPARE(paramNames.at(1), "signalParam2");
+            QCOMPARE(paramNames.at(2), "__repc_variable_1");
+        }
+
+        int slotIdx = mo->indexOfSlot("testEnumParamsInSlots(Enum1,bool,int)");
+        QVERIFY(slotIdx != -1);
+        auto slmm = mo->method(slotIdx);
+        {
+            QCOMPARE(slmm .parameterCount(), 3);
+            auto paramNames = slmm .parameterNames();
+            QCOMPARE(paramNames.size(), 3);
+            QCOMPARE(paramNames.at(0), "enumSlotParam");
+            QCOMPARE(paramNames.at(1), "slotParam2");
+            QCOMPARE(paramNames.at(2), "__repc_variable_1");
+        }
+
+        int enumVal = 0;
+        mo->invokeMethod(rep.data(), "testEnumParamsInSlots",
+                                    QGenericArgument("Enum1", &enumVal),
+                                    Q_ARG(bool, true), Q_ARG(int, 1234));
+
+        int enumIdx = mo->indexOfProperty("enum1");
+        QVERIFY(enumIdx != -1);
+        QTRY_COMPARE(mo->property(enumIdx).read(rep.data()).toInt(), 0);
+
+        int startedIdx = mo->indexOfProperty("started");
+        QVERIFY(startedIdx != -1);
+        QTRY_COMPARE(mo->property(startedIdx).read(rep.data()).toBool(), true);
+    }
+
     void cleanupTestCase()
     {
         auto reply = m_rep->quit();

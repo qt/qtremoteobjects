@@ -59,3 +59,10 @@ bool MyTestServer::quit()
     emit quitApp();
     return true;
 }
+
+void MyTestServer::testEnumParamsInSlots(Enum1 enumSlotParam, bool slotParam2, int number)
+{
+    setEnum1(enumSlotParam);
+    setStarted(slotParam2);
+    emit testEnumParamsInSignals(enum1(), started(), QString::number(number));
+}

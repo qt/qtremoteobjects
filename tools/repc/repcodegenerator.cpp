@@ -768,7 +768,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "Q_SIGNALS:" << endl;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier != ASTProperty::Constant)
-                out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, property.type) << ");" << endl;
+                out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, property.type) << " " << property.name << ");" << endl;
         }
 
         Q_FOREACH (const ASTFunction &signal, astClass.signalsList)
@@ -1078,6 +1078,14 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("        return QByteArrayLiteral(\"\");") << endl;
     out << QStringLiteral("    }") << endl;
 
+    //signalParameterNames method
+    out << QStringLiteral("    QList<QByteArray> signalParameterNames(int index) const override") << endl;
+    out << QStringLiteral("    {") << endl;
+    out << QStringLiteral("        if (index < 0 || index >= _signals[0])") << endl;
+    out << QStringLiteral("            return QList<QByteArray>();") << endl;
+    out << QStringLiteral("        return ObjectType::staticMetaObject.method(_signals[index + 1]).parameterNames();") << endl;
+    out << QStringLiteral("    }") << endl;
+
     //methodSignature method
     out << QStringLiteral("    const QByteArray methodSignature(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
@@ -1105,6 +1113,14 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    QMetaMethod::MethodType methodType(int) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        return QMetaMethod::Slot;") << endl;
+    out << QStringLiteral("    }") << endl;
+
+    //methodParameterNames method
+    out << QStringLiteral("    QList<QByteArray> methodParameterNames(int index) const override") << endl;
+    out << QStringLiteral("    {") << endl;
+    out << QStringLiteral("        if (index < 0 || index >= _methods[0])") << endl;
+    out << QStringLiteral("            return QList<QByteArray>();") << endl;
+    out << QStringLiteral("        return ObjectType::staticMetaObject.method(_methods[index + 1]).parameterNames();") << endl;
     out << QStringLiteral("    }") << endl;
 
     //typeName method

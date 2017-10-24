@@ -128,11 +128,15 @@ public:
     int signalParameterCount(int index) const override { return parameterCount(m_signals.at(index)); }
     int signalParameterType(int sigIndex, int paramIndex) const override { return parameterType(m_signals.at(sigIndex), paramIndex); }
     const QByteArray signalSignature(int index) const override { return signature(m_signals.at(index)); }
+    QList<QByteArray> signalParameterNames(int index) const override;
+
     int methodParameterCount(int index) const override { return parameterCount(m_methods.at(index)); }
     int methodParameterType(int methodIndex, int paramIndex) const override { return parameterType(m_methods.at(methodIndex), paramIndex); }
     const QByteArray methodSignature(int index) const override { return signature(m_methods.at(index)); }
     QMetaMethod::MethodType methodType(int index) const override;
     const QByteArray typeName(int index) const override;
+    QList<QByteArray> methodParameterNames(int index) const override;
+
     int propertyIndexFromSignal(int index) const override
     {
         if (index >= 0 && index < m_propertyAssociatedWithSignal.size())

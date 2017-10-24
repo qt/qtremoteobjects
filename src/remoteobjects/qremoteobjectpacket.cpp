@@ -177,6 +177,7 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
             return;
         }
         ds << api->signalSignature(i);
+        ds << api->signalParameterNames(i);
     }
 
     const int numMethods = api->methodCount();
@@ -190,6 +191,7 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource 
         }
         ds << api->methodSignature(i);
         ds << api->typeName(i);
+        ds << api->methodParameterNames(i);
     }
 
     const int numProperties = api->propertyCount();
@@ -252,23 +254,29 @@ void deserializeInitDynamicPacket(QDataStream &in, QMetaObjectBuilder &builder, 
     in >> numSignals;
     for (quint32 i = 0; i < numSignals; ++i) {
         QByteArray signature;
+        QList<QByteArray> paramNames;
         in >> signature;
+        in >> paramNames;
         ++curIndex;
-        builder.addSignal(signature);
+        auto mmb = builder.addSignal(signature);
+        mmb.setParameterNames(paramNames);
     }
 
     in >> numMethods;
     for (quint32 i = 0; i < numMethods; ++i) {
         QByteArray signature, returnType;
-
+        QList<QByteArray> paramNames;
         in >> signature;
         in >> returnType;
+        in >> paramNames;
         ++curIndex;
         const bool isVoid = returnType.isEmpty() || returnType == QByteArrayLiteral("void");
+        QMetaMethodBuilder mmb;
         if (isVoid)
-            builder.addMethod(signature);
+            mmb = builder.addMethod(signature);
         else
-            builder.addMethod(signature, QByteArrayLiteral("QRemoteObjectPendingCall"));
+            mmb = builder.addMethod(signature, QByteArrayLiteral("QRemoteObjectPendingCall"));
+        mmb.setParameterNames(paramNames);
     }
 
     in >> numProperties;

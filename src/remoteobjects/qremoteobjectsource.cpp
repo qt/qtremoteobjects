@@ -281,6 +281,13 @@ DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name,
     m_objectSignature = qtro_classinfo_signature(metaObject);
 }
 
+QList<QByteArray> DynamicApiMap::signalParameterNames(int index) const
+{
+    const int objectIndex = m_signals.at(index);
+    checkCache(objectIndex);
+    return m_cachedMetamethod.parameterNames();
+}
+
 int DynamicApiMap::parameterCount(int objectIndex) const
 {
     checkCache(objectIndex);
@@ -311,6 +318,13 @@ const QByteArray DynamicApiMap::typeName(int index) const
     const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);
     return m_cachedMetamethod.typeName();
+}
+
+QList<QByteArray> DynamicApiMap::methodParameterNames(int index) const
+{
+    const int objectIndex = m_methods.at(index);
+    checkCache(objectIndex);
+    return m_cachedMetamethod.parameterNames();
 }
 
 QT_END_NAMESPACE
