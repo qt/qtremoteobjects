@@ -618,6 +618,9 @@ private slots:
 
     void testSelectionFromReplica();
     void testSelectionFromSource();
+    void testChildSelection();
+
+    void testCacheData();
 
     void cleanup();
 };
@@ -1213,6 +1216,44 @@ void TestModelView::testSelectionFromSource()
 
     selectionModel.setCurrentIndex(simpleModel.index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
     QTRY_COMPARE(replicaSelectionModel->currentIndex().row(), 1);
+}
+
+void TestModelView::testCacheData()
+{
+    QVector<int> roles = QVector<int>() << Qt::UserRole << Qt::UserRole + 1;
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("testRoleNames", QtRemoteObjects::PrefetchData, roles));
+    model->setRootCacheSize(1000);
+
+    QEventLoop l;
+    connect(model.data(), SIGNAL(initialized()), &l, SLOT(quit()));
+    l.exec();
+
+    compareData(&m_listModel, model.data());
+}
+
+void TestModelView::testChildSelection()
+{
+    QVector<int> roles = {Qt::DisplayRole, Qt::BackgroundRole};
+    QStandardItemModel simpleModel;
+    QStandardItem *parentItem = simpleModel.invisibleRootItem();
+    for (int i = 0; i < 4; ++i) {
+        QStandardItem *item = new QStandardItem(QString("item %0").arg(i));
+        parentItem->appendRow(item);
+        parentItem = item;
+    }
+    QItemSelectionModel selectionModel(&simpleModel);
+    m_basicServer.enableRemoting(&simpleModel, "treeModelFromSource", roles, &selectionModel);
+
+    QScopedPointer<QAbstractItemModelReplica> model(m_client.acquireModel("treeModelFromSource", QtRemoteObjects::PrefetchData, roles));
+    QItemSelectionModel *replicaSelectionModel = model->selectionModel();
+
+    QTRY_COMPARE(simpleModel.rowCount(), model->rowCount());
+    QTRY_COMPARE(model->data(model->index(0, 0)), QVariant(QString("item 0")));
+
+    // select an item not yet "seen" by the replica
+    selectionModel.setCurrentIndex(simpleModel.index(0, 0, simpleModel.index(0,0)), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
+    QTRY_COMPARE(replicaSelectionModel->currentIndex().row(), 0);
+    QVERIFY(replicaSelectionModel->currentIndex().parent().isValid());
 }
 
 void TestModelView::cleanup()

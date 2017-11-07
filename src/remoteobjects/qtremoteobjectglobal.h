@@ -130,6 +130,8 @@ Q_DECLARE_LOGGING_CATEGORY(QT_REMOTEOBJECT_IO)
 
 namespace QtRemoteObjects {
 
+Q_NAMESPACE
+
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst);
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &dst);
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst);
@@ -165,6 +167,12 @@ enum QRemoteObjectPacketTypeEnum
     PropertyChangePacket,
     ObjectList
 };
+
+enum InitialAction {
+    FetchRootSize,
+    PrefetchData
+};
+Q_ENUM_NS(InitialAction)
 
 }
 

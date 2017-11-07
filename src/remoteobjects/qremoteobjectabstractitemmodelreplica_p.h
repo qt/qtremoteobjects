@@ -62,7 +62,7 @@
 QT_BEGIN_NAMESPACE
 
 namespace {
-    const int DefaultNodesCacheSize = 50;
+    const int DefaultNodesCacheSize = 1000;
 }
 
 struct CacheEntry
@@ -104,7 +104,7 @@ struct LRUCache
         Q_ASSERT(cachedItems.size() == cachedItemsMap.size());
 
         auto it = cachedItems.rbegin();
-        while (cachedItemsMap.size() >= cacheSize) {
+        while (cachedItemsMap.size() > cacheSize) {
             // Do not trash elements with children
             // Workaround QTreeView bugs which caches the children indexes for very long time
             while (it->second->hasChildren && it != cachedItems.rend())
@@ -397,6 +397,13 @@ public Q_SLOTS:
         __repc_args << QVariant::fromValue(index) << QVariant::fromValue(value) << QVariant::fromValue(role);
         send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);
     }
+    QRemoteObjectPendingReply<MetaAndDataEntries> replicaCacheRequest(size_t size, QVector<int> roles)
+    {
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaCacheRequest(size_t,QVector<int>)");
+        QVariantList __repc_args;
+        __repc_args << QVariant::fromValue(size) << QVariant::fromValue(roles);
+        return QRemoteObjectPendingReply<MetaAndDataEntries>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
+    }
     void onHeaderDataChanged(Qt::Orientation orientation, int first, int last);
     void onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles);
     void onRowsInserted(const IndexList &parent, int start, int end);
@@ -414,6 +421,7 @@ public Q_SLOTS:
     void handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher);
     void handleSizeDone(QRemoteObjectPendingCallWatcher *watcher);
     void onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
+    void fillCache(const IndexValuePair &pair,const QVector<int> &roles);
 
 public:
     QScopedPointer<QItemSelectionModel> m_selectionModel;
@@ -449,7 +457,7 @@ public:
         return cacheEntry(toQModelIndex(index, q));
     }
 
-    SizeWatcher* doModelReset();
+    QRemoteObjectPendingCallWatcher *doModelReset();
     void initializeModelConnections();
 
     int m_lastRequested;
@@ -459,6 +467,8 @@ public:
     QAbstractItemModelReplica *q;
     mutable QVector<int> m_availableRoles;
     std::unordered_set<CacheData*> m_activeParents;
+    QtRemoteObjects::InitialAction m_initialAction;
+    QVector<int> m_initialFetchRolesHint;
 };
 
 QT_END_NAMESPACE

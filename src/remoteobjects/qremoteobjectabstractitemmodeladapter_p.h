@@ -89,6 +89,7 @@ public Q_SLOTS:
     QVariantList replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles);
     void replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command);
     void replicaSetData(const IndexList &index, const QVariant &value, int role);
+    MetaAndDataEntries replicaCacheRequest(size_t size, const QVector<int> &roles);
 
     void sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QVector<int> & roles = QVector<int> ()) const;
     void sourceRowsInserted(const QModelIndex & parent, int start, int end);
@@ -108,6 +109,8 @@ Q_SIGNALS:
 
 private:
     QAbstractItemModelSourceAdapter();
+    QVector<IndexValuePair> fetchTree(const QModelIndex &parent, size_t &size, const QVector<int> &roles);
+
     QAbstractItemModel *m_model;
     QItemSelectionModel *m_selectionModel;
     QVector<int> m_availableRoles;
@@ -135,12 +138,13 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         m_signals[7] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(0),m_signalArgCount+6,&m_signalArgTypes[6]);
         m_signals[8] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(0),m_signalArgCount+7,&m_signalArgTypes[7]);
         m_signals[9] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),m_signalArgCount+8,&m_signalArgTypes[8]);
-        m_methods[0] = 5;
+        m_methods[0] = 6;
         m_methods[1] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(0),"replicaSizeRequest(IndexList)",m_methodArgCount+0,&m_methodArgTypes[0]);
         m_methods[2] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",m_methodArgCount+1,&m_methodArgTypes[1]);
         m_methods[3] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QVector<Qt::Orientation>,QVector<int>,QVector<int>)>(0),"replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)",m_methodArgCount+2,&m_methodArgTypes[2]);
         m_methods[4] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(0),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",m_methodArgCount+3,&m_methodArgTypes[3]);
         m_methods[5] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(IndexList,QVariant,int)>(0),"replicaSetData(IndexList,QVariant,int)",m_methodArgCount+4,&m_methodArgTypes[4]);
+        m_methods[6] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaCacheRequest, static_cast<void (QObject::*)(size_t,QVector<int>)>(0),"replicaCacheRequest(size_t,QVector<int>)",m_methodArgCount+5,&m_methodArgTypes[5]);
     }
 
     QString name() const override { return m_name; }
@@ -222,6 +226,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 2: return QByteArrayLiteral("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
         case 3: return QByteArrayLiteral("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
         case 4: return QByteArrayLiteral("replicaSetData(IndexList,QVariant,int)");
+        case 5: return QByteArrayLiteral("replicaCacheRequest(size_t,QVector<int>)");
         }
         return QByteArrayLiteral("");
     }
@@ -236,6 +241,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 1: return QByteArrayLiteral("DataEntries");
         case 2: return QByteArrayLiteral("QVariantList");
         case 3: return QByteArrayLiteral("");
+        case 5: return QByteArrayLiteral("MetaAndDataEntries");
         }
         return QByteArrayLiteral("");
     }
@@ -272,6 +278,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 2:
         case 3:
         case 4:
+        case 5:
             return true;
         }
         return false;
@@ -288,11 +295,11 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
 
     int m_properties[3];
     int m_signals[10];
-    int m_methods[6];
+    int m_methods[7];
     int m_signalArgCount[9];
     const int* m_signalArgTypes[9];
-    int m_methodArgCount[5];
-    const int* m_methodArgTypes[5];
+    int m_methodArgCount[6];
+    const int* m_methodArgTypes[6];
     QString m_name;
 };
 

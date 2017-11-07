@@ -79,7 +79,7 @@ Q_SIGNALS:
     void initialized();
 
 private:
-    explicit QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep);
+    explicit QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep, QtRemoteObjects::InitialAction action, const QVector<int> &rolesHint);
     QScopedPointer<QAbstractItemModelReplicaImplementation> d;
     friend class QAbstractItemModelReplicaImplementation;
     friend class QRemoteObjectNode;

@@ -1389,10 +1389,10 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
  the Model on the network. The returned \c model will be empty until it is
  initialized with the \l Source.
  */
-QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name)
+QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name, QtRemoteObjects::InitialAction action, const QVector<int> &rolesHint)
 {
     QAbstractItemModelReplicaImplementation *rep = acquire<QAbstractItemModelReplicaImplementation>(name);
-    return new QAbstractItemModelReplica(rep);
+    return new QAbstractItemModelReplica(rep, action, rolesHint);
 }
 
 QRemoteObjectHostBasePrivate::QRemoteObjectHostBasePrivate()

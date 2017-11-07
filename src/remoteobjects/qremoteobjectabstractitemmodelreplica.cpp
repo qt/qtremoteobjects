@@ -47,9 +47,6 @@
 #include <QPoint>
 
 QT_BEGIN_NAMESPACE
-enum {
-    DefaultRootCacheSize = 1000
-};
 
 inline QDebug operator<<(QDebug stream, const RequestedData &data)
 {
@@ -78,7 +75,6 @@ QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation
     , m_rootItem(this)
     , m_lastRequested(-1)
 {
-    m_rootItem.children.setCacheSize(DefaultRootCacheSize);
     QAbstractItemModelReplicaImplementation::registerMetatypes();
     initializeModelConnections();
     connect(this, &QAbstractItemModelReplicaImplementation::availableRolesChanged, this, [this]{
@@ -92,7 +88,6 @@ QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation
     , m_rootItem(this)
     , m_lastRequested(-1)
 {
-    m_rootItem.children.setCacheSize(DefaultRootCacheSize);
     QAbstractItemModelReplicaImplementation::registerMetatypes();
     initializeModelConnections();
     initializeNode(node, name);
@@ -361,13 +356,19 @@ void QAbstractItemModelReplicaImplementation::handleInitDone(QRemoteObjectPendin
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
 
     handleModelResetDone(watcher);
-
     emit q->initialized();
 }
 
 void QAbstractItemModelReplicaImplementation::handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher)
 {
-    const QSize size = watcher->returnValue().toSize();
+    QSize size;
+    if (m_initialAction == QtRemoteObjects::FetchRootSize)
+        size = watcher->returnValue().toSize();
+    else {
+        Q_ASSERT(watcher->returnValue().canConvert<MetaAndDataEntries>());
+        size = watcher->returnValue().value<MetaAndDataEntries>().size;
+    }
+
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "size=" << size;
 
     q->beginResetModel();
@@ -380,6 +381,11 @@ void QAbstractItemModelReplicaImplementation::handleModelResetDone(QRemoteObject
     m_rootItem.columnCount = size.width();
     m_headerData[0].resize(size.width());
     m_headerData[1].resize(size.height());
+    if (m_initialAction == QtRemoteObjects::PrefetchData) {
+        auto entries = watcher->returnValue().value<MetaAndDataEntries>();
+        for (int i = 0; i < entries.data.size(); ++i)
+            fillCache(entries.data[i], entries.roles);
+    }
     q->endResetModel();
     m_pendingRequests.removeAll(watcher);
     delete watcher;
@@ -422,17 +428,23 @@ void QAbstractItemModelReplicaImplementation::handleSizeDone(QRemoteObjectPendin
 void QAbstractItemModelReplicaImplementation::init()
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
-    SizeWatcher *watcher = doModelReset();
-    connect(watcher, &SizeWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleInitDone);
+    QRemoteObjectPendingCallWatcher *watcher = doModelReset();
+    connect(watcher, &QRemoteObjectPendingCallWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleInitDone);
 }
 
-SizeWatcher* QAbstractItemModelReplicaImplementation::doModelReset()
+QRemoteObjectPendingCallWatcher* QAbstractItemModelReplicaImplementation::doModelReset()
 {
     qDeleteAll(m_pendingRequests);
     m_pendingRequests.clear();
     IndexList parentList;
-    QRemoteObjectPendingReply<QSize> reply = replicaSizeRequest(parentList);
-    SizeWatcher *watcher = new SizeWatcher(parentList, reply);
+    QRemoteObjectPendingCallWatcher *watcher;
+    if (m_initialAction == QtRemoteObjects::FetchRootSize) {
+        auto call = replicaSizeRequest(parentList);
+        watcher = new SizeWatcher(parentList, call);
+    } else {
+        auto call = replicaCacheRequest(m_rootItem.children.cacheSize, m_initialFetchRolesHint);
+        watcher = new QRemoteObjectPendingCallWatcher(call);
+    }
     m_pendingRequests.push_back(watcher);
     return watcher;
 }
@@ -491,6 +503,17 @@ int collectEntriesForRow(DataEntries* filteredEntries, int row, const DataEntrie
             return i;
     }
     return size;
+}
+
+void QAbstractItemModelReplicaImplementation::fillCache(const IndexValuePair &pair, const QVector<int> &roles)
+{
+    if (auto item = createCacheData(pair.index)) {
+        fillRow(item, pair, q, roles);
+        item->rowCount = pair.size.height();
+        item->columnCount = pair.size.width();
+    }
+    for (const auto &it : pair.children)
+        fillCache(it, roles);
 }
 
 void QAbstractItemModelReplicaImplementation::requestedData(QRemoteObjectPendingCallWatcher *qobject)
@@ -623,8 +646,8 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
 void QAbstractItemModelReplicaImplementation::onModelReset()
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
-    SizeWatcher *watcher = doModelReset();
-    connect(watcher, &SizeWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleModelResetDone);
+    QRemoteObjectPendingCallWatcher *watcher = doModelReset();
+    connect(watcher, &QRemoteObjectPendingCallWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleModelResetDone);
 }
 
 void QAbstractItemModelReplicaImplementation::onHeaderDataChanged(Qt::Orientation orientation, int first, int last)
@@ -711,12 +734,14 @@ void QAbstractItemModelReplicaImplementation::requestedHeaderData(QRemoteObjectP
     delete watcher;
 }
 
-QAbstractItemModelReplica::QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep)
+QAbstractItemModelReplica::QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep, QtRemoteObjects::InitialAction action, const QVector<int> &rolesHint)
     : QAbstractItemModel()
     , d(rep)
 {
-    rep->setModel(this);
+    d->m_initialAction = action;
+    d->m_initialFetchRolesHint = rolesHint;
 
+    rep->setModel(this);
     connect(rep, &QAbstractItemModelReplicaImplementation::initialized, d.data(), &QAbstractItemModelReplicaImplementation::init);
 }
 

@@ -123,7 +123,7 @@ public:
     QStringList instances(const QString &typeName) const;
 
     QRemoteObjectDynamicReplica *acquireDynamic(const QString &name);
-    QAbstractItemModelReplica *acquireModel(const QString &name);
+    QAbstractItemModelReplica *acquireModel(const QString &name, QtRemoteObjects::InitialAction action = QtRemoteObjects::FetchRootSize, const QVector<int> &rolesHint = {});
     QUrl registryUrl() const;
     virtual bool setRegistryUrl(const QUrl &registryAddress);
     bool waitForRegistry(int timeout = 30000);
