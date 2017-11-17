@@ -76,6 +76,8 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
     case InvokeReplyPacket: type = InvokeReplyPacket; break;
     case PropertyChangePacket: type = PropertyChangePacket; break;
     case ObjectList: type = ObjectList; break;
+    case Ping: type = Ping; break;
+    case Pong: type = Pong; break;
     default:
         qCWarning(QT_REMOTEOBJECT_IO) << "Invalid packet received" << type;
     }
@@ -103,6 +105,12 @@ void ClientIoDevice::close()
 {
     m_isClosing = true;
     doClose();
+}
+
+void ClientIoDevice::disconnectFromServer()
+{
+    doDisconnectFromServer();
+    emit shouldReconnect(this);
 }
 
 bool ClientIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)

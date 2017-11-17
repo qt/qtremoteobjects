@@ -137,6 +137,7 @@ public:
     QVariant rxValue;
     QRemoteObjectAbstractPersistedStore *persistedStore;
     bool m_handshakeReceived = false;
+    int m_heartbeatInterval = 0;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 

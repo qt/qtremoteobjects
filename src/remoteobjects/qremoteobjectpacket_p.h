@@ -161,6 +161,11 @@ void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant 
 void serializePropertyChangePacket(DataStreamPacket&, const QString &name, int index, const QVariant &value);
 void deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &value);
 
+// Heartbeat packets
+void serializePingPacket(DataStreamPacket &ds, const QString &name);
+void serializePongPacket(DataStreamPacket &ds, const QString &name);
+
+
 } // namespace QRemoteObjectPackets
 
 QT_END_NAMESPACE

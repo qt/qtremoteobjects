@@ -165,7 +165,9 @@ enum QRemoteObjectPacketTypeEnum
     InvokePacket,
     InvokeReplyPacket,
     PropertyChangePacket,
-    ObjectList
+    ObjectList,
+    Ping,
+    Pong
 };
 
 enum InitialAction {

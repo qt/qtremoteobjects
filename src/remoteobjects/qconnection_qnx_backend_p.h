@@ -111,6 +111,7 @@ public Q_SLOTS:
 
 protected:
     void doClose() override;
+    void doDisconnectFromServer() override;
 private:
     QQnxNativeIo *m_socket;
 };

@@ -70,6 +70,11 @@ void LocalClientIo::doClose()
     }
 }
 
+void LocalClientIo::doDisconnectFromServer()
+{
+    m_socket->disconnectFromServer();
+}
+
 void LocalClientIo::connectToServer()
 {
     if (!isOpen())
@@ -78,7 +83,8 @@ void LocalClientIo::connectToServer()
 
 bool LocalClientIo::isOpen() const
 {
-    return !isClosing() && m_socket->isOpen();
+    return !isClosing() && (m_socket->state() == QLocalSocket::ConnectedState
+                            || m_socket->state() == QLocalSocket::ConnectingState);
 }
 
 void LocalClientIo::onError(QLocalSocket::LocalSocketError error)

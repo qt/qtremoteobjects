@@ -80,6 +80,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectNode : public QObject
     Q_OBJECT
     Q_PROPERTY(QUrl registryUrl READ registryUrl WRITE setRegistryUrl)
     Q_PROPERTY(QRemoteObjectAbstractPersistedStore* persistedStore READ persistedStore WRITE setPersistedStore)
+    Q_PROPERTY(int heartbeatInterval READ heartbeatInterval WRITE setHeartbeatInterval NOTIFY heartbeatIntervalChanged)
 
 public:
     enum ErrorCode{
@@ -134,11 +135,15 @@ public:
 
     ErrorCode lastError() const;
 
+    int heartbeatInterval() const;
+    void setHeartbeatInterval(int interval);
+
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
     void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
 
     void error(QRemoteObjectNode::ErrorCode errorCode);
+    void heartbeatIntervalChanged(int heartbeatInterval);
 
 protected:
     QRemoteObjectNode(QRemoteObjectNodePrivate &, QObject *parent);

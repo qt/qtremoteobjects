@@ -53,7 +53,6 @@
 #include <QElapsedTimer>
 #include <QVariant>
 #include <QThread>
-#include <QTimer>
 
 #include <limits>
 
@@ -89,8 +88,32 @@ QRemoteObjectReplicaImplementation::~QRemoteObjectReplicaImplementation()
 }
 
 QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
-    : QRemoteObjectReplicaImplementation(name, meta, node), connectionToSource(nullptr), m_curSerialId(0)
+    : QRemoteObjectReplicaImplementation(name, meta, node), connectionToSource(nullptr)
 {
+    m_heartbeatTimer.setTimerType(Qt::CoarseTimer);
+    m_heartbeatTimer.setSingleShot(true);
+    m_heartbeatTimer.setInterval(node->heartbeatInterval());
+
+    connect(node, &QRemoteObjectNode::heartbeatIntervalChanged, this, [this](int interval) {
+        m_heartbeatTimer.stop();
+        m_heartbeatTimer.setInterval(interval);
+        if (interval)
+            m_heartbeatTimer.start();
+    });
+    connect(&m_heartbeatTimer, &QTimer::timeout, this, [this] {
+        if (m_pendingCalls.contains(0)) {
+            // The source didn't respond in time, disconnect the connection
+            if (connectionToSource)
+                connectionToSource->disconnectFromServer();
+        } else {
+            serializePingPacket(m_packet, m_objectName);
+            if (sendCommandWithReply(0).d->serialId == -1) {
+                m_heartbeatTimer.stop();
+                if (connectionToSource)
+                    connectionToSource->disconnectFromServer();
+            }
+        }
+    });
 }
 
 QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
@@ -117,7 +140,7 @@ void QRemoteObjectReplicaImplementation::setState(QRemoteObjectReplica::State st
 
     // We should emit initialized before emitting any changed signals in case connections are made in a
     // Slot responding to initialized/validChanged.
-    if (oldState < QRemoteObjectReplica::Valid && m_state == QRemoteObjectReplica::Valid) {
+    if (m_state == QRemoteObjectReplica::Valid) {
         // we're initialized now, emit signal
         emitInitialized();
     }
@@ -137,6 +160,8 @@ bool QConnectedReplicaImplementation::sendCommand()
     }
 
     connectionToSource->write(m_packet.array, m_packet.size);
+    if (m_heartbeatTimer.interval())
+        m_heartbeatTimer.start();
     return true;
 }
 
@@ -157,7 +182,7 @@ void QConnectedReplicaImplementation::initialize(const QVariantList &values)
         qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name() << values.at(i).typeName() << values.at(i).toString();
     }
 
-    Q_ASSERT(m_state < QRemoteObjectReplica::Valid);
+    Q_ASSERT(m_state < QRemoteObjectReplica::Valid || m_state == QRemoteObjectReplica::Suspect);
     setState(QRemoteObjectReplica::Valid);
 
     void *args[] = {nullptr, nullptr};
@@ -173,6 +198,8 @@ void QConnectedReplicaImplementation::initialize(const QVariantList &values)
     }
 
     qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
+    if (node()->heartbeatInterval())
+        m_heartbeatTimer.start();
 }
 
 void QRemoteObjectReplicaImplementation::emitInitialized()
@@ -307,7 +334,7 @@ QRemoteObjectPendingCall QConnectedReplicaImplementation::_q_sendWithReply(QMeta
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
     qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
-    int serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 0 : m_curSerialId++);
+    int serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 1 : m_curSerialId++);
     serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, args, serialId);
     return sendCommandWithReply(serialId);
 }
@@ -329,6 +356,12 @@ QRemoteObjectPendingCall QConnectedReplicaImplementation::sendCommandWithReply(i
 void QConnectedReplicaImplementation::notifyAboutReply(int ackedSerialId, const QVariant &value)
 {
     QRemoteObjectPendingCall call = m_pendingCalls.take(ackedSerialId);
+    if (ackedSerialId == 0) {
+        m_heartbeatTimer.stop();
+        if (m_heartbeatTimer.interval())
+            m_heartbeatTimer.start();
+        return;
+    }
 
     QMutexLocker mutex(&call.d->mutex);
 

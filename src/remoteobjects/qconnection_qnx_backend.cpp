@@ -73,6 +73,11 @@ void QnxClientIo::doClose()
     }
 }
 
+void QnxClientIo::doDisconnectFromServer()
+{
+    m_socket->disconnectFromServer();
+}
+
 void QnxClientIo::connectToServer()
 {
     if (!isOpen())
@@ -81,7 +86,8 @@ void QnxClientIo::connectToServer()
 
 bool QnxClientIo::isOpen() const
 {
-    return !isClosing() && m_socket->isOpen();
+    return !isClosing() && (m_socket->state() == QAbstractSocket::ConnectedState
+                            || m_socket->state() == QAbstractSocket::ConnectingState);
 }
 
 void QnxClientIo::onError(QAbstractSocket::SocketError error)

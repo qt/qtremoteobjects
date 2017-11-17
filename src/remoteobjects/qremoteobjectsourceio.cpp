@@ -162,6 +162,10 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         using namespace QRemoteObjectPackets;
 
         switch (packetType) {
+        case Ping:
+            serializePongPacket(m_packet, m_rxName);
+            connection->write(m_packet.array, m_packet.size);
+            break;
         case AddObject:
         {
             bool isDynamic;

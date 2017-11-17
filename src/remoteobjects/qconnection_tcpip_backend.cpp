@@ -72,6 +72,11 @@ void TcpClientIo::doClose()
     }
 }
 
+void TcpClientIo::doDisconnectFromServer()
+{
+    m_socket->disconnectFromHost();
+}
+
 void TcpClientIo::connectToServer()
 {
     if (isOpen())

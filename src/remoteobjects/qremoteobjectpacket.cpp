@@ -400,6 +400,20 @@ void deserializeObjectListPacket(QDataStream &in, ObjectInfoList &objects)
     in >> objects;
 }
 
+void serializePingPacket(DataStreamPacket &ds, const QString &name)
+{
+    ds.setId(Ping);
+    ds << name;
+    ds.finishPacket();
+}
+
+void serializePongPacket(DataStreamPacket &ds, const QString &name)
+{
+    ds.setId(Pong);
+    ds << name;
+    ds.finishPacket();
+}
+
 } // namespace QRemoteObjectPackets
 
 QT_END_NAMESPACE

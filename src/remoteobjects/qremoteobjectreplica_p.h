@@ -61,6 +61,7 @@
 #include <QVector>
 #include <QDataStream>
 #include <qcompilerdetection.h>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 
@@ -181,9 +182,10 @@ public:
     QPointer<ClientIoDevice> connectionToSource;
 
     // pending call data
-    int m_curSerialId;
+    int m_curSerialId = 1; // 0 is reserved for heartbeat signals
     QHash<int, QRemoteObjectPendingCall> m_pendingCalls;
     QRemoteObjectPackets::DataStreamPacket m_packet;
+    QTimer m_heartbeatTimer;
 };
 
 class QInProcessReplicaImplementation : public QRemoteObjectReplicaImplementation

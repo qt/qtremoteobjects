@@ -118,6 +118,33 @@ void QRemoteObjectNode::timerEvent(QTimerEvent*)
 }
 
 /*!
+    \property QRemoteObjectNode::heartbeatInterval
+    \brief Heartbeat interval in ms.
+
+    The heartbeat (only helpful for socket connections) will periodically send a
+    message to connected nodes to detect whether the connection was disrupted.
+    Qt Remote Objects will try to reconnect automatically if it detects a dropped
+    connection, this function can help with that detection since the client will
+    only detect the server is unavailable when it tries to send data.
+
+    Setting to 0 (the default) will disable the heartbeat.
+*/
+int QRemoteObjectNode::heartbeatInterval() const
+{
+    Q_D(const QRemoteObjectNode);
+    return d->m_heartbeatInterval;
+}
+
+void QRemoteObjectNode::setHeartbeatInterval(int interval)
+{
+    Q_D(QRemoteObjectNode);
+    if (d->m_heartbeatInterval == interval)
+        return;
+    d->m_heartbeatInterval = interval;
+    emit heartbeatIntervalChanged(interval);
+}
+
+/*!
     \internal The replica needs to have a default constructor to be able
     to create a replica from QML.  In order for it to be properly
     constructed, there needs to be a way to associate the replica with a
@@ -492,6 +519,15 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
 
         switch (packetType) {
+        case Pong:
+        {
+            QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
+            if (rep)
+                rep->notifyAboutReply(0, {});
+            else //replica has been deleted, remove from list
+                replicas.remove(rxName);
+            break;
+        }
         case Handshake:
             if (rxName != QtRemoteObjects::protocolVersion) {
                 qROPrivWarning() << "Protocol Mismatch, closing connection. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
@@ -501,7 +537,6 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 m_handshakeReceived = true;
             }
             break;
-
         case ObjectList:
         {
             deserializeObjectListPacket(connection->stream(), rxObjects);
@@ -633,6 +668,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case AddObject:
         case Invalid:
+        case Ping:
             qROPrivWarning() << "Unexpected packet received";
         }
     } while (connection->bytesAvailable()); // have bytes left over, so do another iteration

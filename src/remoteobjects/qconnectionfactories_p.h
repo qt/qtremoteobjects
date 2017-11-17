@@ -137,6 +137,7 @@ public:
     virtual void write(const QByteArray &data);
     virtual void write(const QByteArray &data, qint64);
     void close();
+    void disconnectFromServer();
     virtual void connectToServer() = 0;
     virtual qint64 bytesAvailable() const;
 
@@ -155,6 +156,7 @@ Q_SIGNALS:
     void shouldReconnect(ClientIoDevice*);
 protected:
     virtual void doClose() = 0;
+    virtual void doDisconnectFromServer() = 0;
     inline bool isClosing() const { return m_isClosing; }
     QDataStream m_dataStream;
 

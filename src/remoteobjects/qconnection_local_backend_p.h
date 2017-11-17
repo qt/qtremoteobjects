@@ -76,6 +76,7 @@ public Q_SLOTS:
 
 protected:
     void doClose() override;
+    void doDisconnectFromServer() override;
 private:
     QLocalSocket* m_socket;
 };
