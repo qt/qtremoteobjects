@@ -255,6 +255,9 @@ void QRemoteObjectSourceIo::handleConnection()
         onServerRead(conn);
     });
 
+    serializeHandshakePacket(m_packet);
+    conn->write(m_packet.array, m_packet.size);
+
     QRemoteObjectPackets::ObjectInfoList infos;
     foreach (auto remoteObject, m_remoteObjects) {
         infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName(), remoteObject->m_api->objectSignature()};

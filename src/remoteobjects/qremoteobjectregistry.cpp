@@ -158,7 +158,7 @@ void QRemoteObjectRegistry::addSource(const QRemoteObjectSourceLocation &entry)
 
     if (sourceLocations().contains(entry.first)) {
         qCWarning(QT_REMOTEOBJECT) << "Node warning: ignoring source" << entry.first
-                                   << "as another source (" << sourceLocations()[entry.first]
+                                   << "as another source (" << sourceLocations().value(entry.first)
                                    << ") has already registered that name.";
         return;
     }
@@ -211,7 +211,7 @@ void QRemoteObjectRegistry::pushToRegistryIfNeeded()
     const QSet<QString> registryLocs = QSet<QString>::fromList(sourceLocations().keys());
     foreach (const QString &loc, myLocs & registryLocs) {
         qCWarning(QT_REMOTEOBJECT) << "Node warning: Ignoring Source" << loc << "as another source ("
-                                   << sourceLocations()[loc] << ") has already registered that name.";
+                                   << sourceLocations().value(loc) << ") has already registered that name.";
         d->hostedSources.remove(loc);
         return;
     }

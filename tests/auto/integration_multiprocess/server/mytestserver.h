@@ -47,6 +47,11 @@ public:
 public Q_SLOTS:
     bool start() override;
     bool stop() override;
+    bool quit() override;
+    void testEnumParamsInSlots(Enum1 enumSlotParam, bool slotParam2, int __repc_variable_1) override;
+
+Q_SIGNALS:
+    void quitApp();
 };
 
 #endif // MYTESTSERVER_H

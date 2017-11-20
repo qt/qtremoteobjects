@@ -136,6 +136,7 @@ public:
     QVariantList rxArgs;
     QVariant rxValue;
     QRemoteObjectAbstractPersistedStore *persistedStore;
+    bool m_handshakeReceived = false;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 

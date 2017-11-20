@@ -400,7 +400,7 @@ QList<QStandardItem*> addChild(int numChilds, int nestingLevel)
 
 int getRandomNumber(int min, int max)
 {
-    int res = QRandomGenerator::get32() & INT_MAX;
+    int res = QRandomGenerator::global()->generate() & INT_MAX;
     const int diff = (max - min);
     res = res % diff;
     res += min;

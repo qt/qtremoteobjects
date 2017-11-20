@@ -102,7 +102,7 @@ QT += remoteobjects
     \li \l {Qt Remote Objects Registry}
     \li \l {Qt Remote Objects Compiler}
     \li \l {Remote Object Interaction}
-    \li \l {Using Qt RemoteObjects}
+    \li \l {Using Qt Remote Objects}
     \li \l {Troubleshooting Qt Remote Objects}
 
  \endlist

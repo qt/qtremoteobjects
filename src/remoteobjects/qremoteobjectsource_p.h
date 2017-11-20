@@ -97,9 +97,16 @@ public:
     ~DynamicApiMap() override {}
     QString name() const override { return m_name; }
     QString typeName() const override { return m_typeName; }
+    int enumCount() const override { return m_enumCount; }
     int propertyCount() const override { return m_properties.size(); }
     int signalCount() const override { return m_signals.size(); }
     int methodCount() const override { return m_methods.size(); }
+    int sourceEnumIndex(int index) const override
+    {
+        if (index < 0 || index >= enumCount())
+            return -1;
+        return m_enumOffset + index;
+    }
     int sourcePropertyIndex(int index) const override
     {
         if (index < 0 || index >= propertyCount())
@@ -121,11 +128,15 @@ public:
     int signalParameterCount(int index) const override { return parameterCount(m_signals.at(index)); }
     int signalParameterType(int sigIndex, int paramIndex) const override { return parameterType(m_signals.at(sigIndex), paramIndex); }
     const QByteArray signalSignature(int index) const override { return signature(m_signals.at(index)); }
+    QList<QByteArray> signalParameterNames(int index) const override;
+
     int methodParameterCount(int index) const override { return parameterCount(m_methods.at(index)); }
     int methodParameterType(int methodIndex, int paramIndex) const override { return parameterType(m_methods.at(methodIndex), paramIndex); }
     const QByteArray methodSignature(int index) const override { return signature(m_methods.at(index)); }
     QMetaMethod::MethodType methodType(int index) const override;
     const QByteArray typeName(int index) const override;
+    QList<QByteArray> methodParameterNames(int index) const override;
+
     int propertyIndexFromSignal(int index) const override
     {
         if (index >= 0 && index < m_propertyAssociatedWithSignal.size())
@@ -155,6 +166,8 @@ private:
 
     QString m_name;
     QString m_typeName;
+    int m_enumCount;
+    int m_enumOffset;
     QVector<int> m_properties;
     QVector<int> m_signals;
     QVector<int> m_methods;

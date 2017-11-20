@@ -32,7 +32,7 @@
 #include <QtRemoteObjects/qremoteobjectnode.h>
 #include <QtTest/QtTest>
 
-class tst_Mismatch_Process : public QObject
+class tst_State_Process : public QObject
 {
     Q_OBJECT
 
@@ -66,6 +66,6 @@ private Q_SLOTS:
     }
 };
 
-QTEST_MAIN(tst_Mismatch_Process)
+QTEST_MAIN(tst_State_Process)
 
 #include "main.moc"

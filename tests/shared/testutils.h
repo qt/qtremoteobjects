@@ -26,43 +26,26 @@
 **
 ****************************************************************************/
 
-#include <qdebug.h>
+#ifndef TESTUTILS_H
+#define TESTUTILS_H
 
-#include "mytestserver.h"
-#include "rep_MyInterface_source.h"
+#include <QDebug>
+#include <QString>
+#include <QStandardPaths>
 
-MyTestServer::MyTestServer(QObject *parent)
-    : MyInterfaceSimpleSource(parent)
+namespace TestUtils {
+
+QString findExecutable(const QString &executableName, const QStringList &paths)
 {
-    qDebug() << "Server started";
+    const auto path = QStandardPaths::findExecutable(executableName, paths);
+    if (!path.isEmpty()) {
+        return path;
+    }
+
+    qWarning() << "Could not find executable:" << executableName << "in any of" << paths;
+    return QString();
 }
 
-MyTestServer::~MyTestServer()
-{
-    qDebug() << "Server stopped";
 }
 
-bool MyTestServer::start()
-{
-    setStarted(true);
-    return true;
-}
-
-bool MyTestServer::stop()
-{
-    setStarted(false);
-    return true;
-}
-
-bool MyTestServer::quit()
-{
-    emit quitApp();
-    return true;
-}
-
-void MyTestServer::testEnumParamsInSlots(Enum1 enumSlotParam, bool slotParam2, int number)
-{
-    setEnum1(enumSlotParam);
-    setStarted(slotParam2);
-    emit testEnumParamsInSignals(enum1(), started(), QString::number(number));
-}
+#endif // TESTUTILS_H

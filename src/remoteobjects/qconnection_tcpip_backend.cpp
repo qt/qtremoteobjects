@@ -183,7 +183,7 @@ bool TcpServerImpl::listen(const QUrl &address)
             if (info.addresses().isEmpty())
                 host = QHostAddress::Any;
             else
-                host = info.addresses().takeFirst();
+                host = info.addresses().constFirst();
         }
     }
 

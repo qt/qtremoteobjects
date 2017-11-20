@@ -304,7 +304,7 @@ void QRemoteObjectNodePrivate::openConnectionIfNeeded(const QString &name)
         return;
     }
 
-    if (!initConnection(remoteObjectAddresses()[name].hostUrl))
+    if (!initConnection(remoteObjectAddresses().value(name).hostUrl))
         qROPrivWarning() << "failed to open connection to" << name;
 }
 
@@ -445,9 +445,14 @@ QReplicaImplementationInterface *QRemoteObjectNodePrivate::handleNewAcquire(cons
             rp->setConnection(connectedSources[name].device);
         else
             rp->setState(QRemoteObjectReplica::SignatureMismatch);
-    } else if (remoteObjectAddresses().contains(name)) { //No existing connection, but we know we can connect via registry
-        initConnection(remoteObjectAddresses()[name].hostUrl); //This will try the connection, and if successful, the remoteObjects will be sent
-                                              //The link to the replica will be handled then
+    } else {
+        //No existing connection, but we know we can connect via registry
+        const auto &sourceLocations = remoteObjectAddresses();
+        const auto it = sourceLocations.constFind(name);
+        // This will try the connection, and if successful, the remoteObjects will be sent
+        // The link to the replica will be handled then
+        if (it != sourceLocations.constEnd())
+            initConnection(it.value().hostUrl);
     }
     return rp;
 }
@@ -476,11 +481,27 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     Q_ASSERT(connection);
 
     do {
-
         if (!connection->read(packetType, rxName))
             return;
 
+        if (packetType != Handshake && !m_handshakeReceived) {
+            qROPrivWarning() << "Expected Handshake, got " << packetType;
+            setLastError(QRemoteObjectNode::ProtocolMismatch);
+            connection->close();
+            break;
+        }
+
         switch (packetType) {
+        case Handshake:
+            if (rxName != QtRemoteObjects::protocolVersion) {
+                qROPrivWarning() << "Protocol Mismatch, closing connection. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
+                setLastError(QRemoteObjectNode::ProtocolMismatch);
+                connection->close();
+            } else {
+                m_handshakeReceived = true;
+            }
+            break;
+
         case ObjectList:
         {
             deserializeObjectListPacket(connection->stream(), rxObjects);
@@ -723,6 +744,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     \value SourceNotRegistered The given QRemoteObjectSource is not registered on this node.
     \value MissingObjectName The given QObject does not have objectName() set.
     \value HostUrlInvalid The given url has an invalid or unrecognized scheme.
+    \value ProtocolMismatch The client and the server have different protocol versions.
 */
 
 /*!

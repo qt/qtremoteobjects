@@ -26,25 +26,13 @@
 **
 ****************************************************************************/
 
+#include "../../../../shared/testutils.h"
+
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QProcess>
 #include <QStandardPaths>
 
-namespace {
-
-QString findExecutable(const QString &executableName, const QStringList &paths)
-{
-    const auto path = QStandardPaths::findExecutable(executableName, paths);
-    if (!path.isEmpty()) {
-        return path;
-    }
-
-    qWarning() << "Could not find executable:" << executableName << "in any of" << paths;
-    return QString();
-}
-
-}
 typedef QLatin1String _;
 class tst_Signature: public QObject
 {
@@ -67,7 +55,7 @@ private slots:
         qDebug() << "Starting signatureServer process";
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
-        serverProc.start(findExecutable("signatureServer", {
+        serverProc.start(TestUtils::findExecutable("signatureServer", {
             QCoreApplication::applicationDirPath() + "/../signatureServer/"
         }));
         QVERIFY(serverProc.waitForStarted());
@@ -97,7 +85,7 @@ private slots:
             qDebug() << "Starting" << test << "process";
             QProcess testProc;
             testProc.setProcessChannelMode(QProcess::ForwardedChannels);
-            testProc.start(findExecutable(test, {
+            testProc.start(TestUtils::findExecutable(test, {
                 QCoreApplication::applicationDirPath() + _("/../") + test + _("/")
             }));
             QVERIFY(testProc.waitForStarted());

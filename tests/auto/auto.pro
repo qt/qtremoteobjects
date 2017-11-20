@@ -10,7 +10,6 @@ sub_integration.depends = sub-localsockettestserver
 SUBDIRS += \
     benchmarks \
     cmake \
-    integration_multiprocess \
     modelreplica \
     modelview \
     pods \
@@ -18,6 +17,7 @@ SUBDIRS += \
     repcodegenerator \
     repparser \
     sub_integration \
-    sub_localsockettestserver \
+    sub_localsockettestserver
 
 qtHaveModule(qml): SUBDIRS += qml
+qtConfig(process): SUBDIRS += integration_multiprocess

@@ -40,7 +40,6 @@ private Q_SLOTS:
     {
         QRemoteObjectHost srcNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
         MyTestServer myTestServer;
-
         srcNode.enableRemoting(&myTestServer);
 
         qDebug() << "Waiting for incoming connections";
@@ -69,10 +68,15 @@ private Q_SLOTS:
         QVERIFY(waitForStartedSpy.wait());
         QCOMPARE(waitForStartedSpy.value(0).value(0).toBool(), false);
 
-        qDebug() << "Done. Shutting down.";
+        // wait for quit
+        bool quit = false;
+        connect(&myTestServer, &MyTestServer::quitApp, [&quit]{quit = true;});
+        QTRY_VERIFY_WITH_TIMEOUT(quit, 5000);
 
         // wait for delivery of events
         QTest::qWait(200);
+
+        qDebug() << "Done. Shutting down.";
     }
 };
 

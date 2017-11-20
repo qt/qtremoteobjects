@@ -92,7 +92,8 @@ public:
         OperationNotValidOnClientNode,
         SourceNotRegistered,
         MissingObjectName,
-        HostUrlInvalid
+        HostUrlInvalid,
+        ProtocolMismatch
     };
     Q_ENUM(ErrorCode)
 
