@@ -893,7 +893,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QString::fromLatin1("    %1(ObjectType *object)").arg(className) << endl;
     out << QStringLiteral("        : SourceApiMap()") << endl;
     out << QStringLiteral("    {") << endl;
-    if (astClass.models.isEmpty() && astClass.enums.isEmpty())
+    if (astClass.models.isEmpty())
         out << QStringLiteral("        Q_UNUSED(object);") << endl;
 
     const int enumCount = astClass.enums.count();
@@ -959,7 +959,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                              .arg(QString::number(i+pushCount+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i+pushCount)) << endl;
     }
     const int modelCount = astClass.models.count();
-    out << QString::fromLatin1("        _modelCount = %1;").arg(modelCount) << endl;
+    out << QString::fromLatin1("        m_modelCount = %1;").arg(modelCount) << endl;
     for (int i = 0; i < modelCount; ++i) {
         const ASTModel &model = astClass.models.at(i);
         out << QString::fromLatin1("        m_models[%1] = object->%2();").arg(QString::number(i), model.name) << endl;
@@ -973,7 +973,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    int propertyCount() const override { return m_properties[0]; }") << endl;
     out << QStringLiteral("    int signalCount() const override { return m_signals[0]; }") << endl;
     out << QStringLiteral("    int methodCount() const override { return m_methods[0]; }") << endl;
-    out << QStringLiteral("    int modelCount() const override { return _modelCount; }") << endl;
+    out << QStringLiteral("    int modelCount() const override { return m_modelCount; }") << endl;
     out << QStringLiteral("    int sourceEnumIndex(int index) const override") << endl;
     out << QStringLiteral("    {") << endl;
     out << QStringLiteral("        if (index < 0 || index >= m_enums[0])") << endl;
@@ -1163,7 +1163,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QString::fromLatin1("    int m_methodArgCount[%1];").arg(methodCount) << endl;
         out << QString::fromLatin1("    const int* m_methodArgTypes[%1];").arg(methodCount) << endl;
     }
-    out << QString::fromLatin1("    int _modelCount;") << endl;
+    out << QString::fromLatin1("    int m_modelCount;") << endl;
     if (modelCount > 0)
     {
         out << QString::fromLatin1("    QAbstractItemModel *m_models[%1];").arg(modelCount) << endl;
