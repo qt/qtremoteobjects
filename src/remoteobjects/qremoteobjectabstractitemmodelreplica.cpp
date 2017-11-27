@@ -423,7 +423,6 @@ void QAbstractItemModelReplicaImplementation::init()
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
     SizeWatcher *watcher = doModelReset();
-    m_pendingRequests.push_back(watcher);
     connect(watcher, &SizeWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleInitDone);
 }
 
