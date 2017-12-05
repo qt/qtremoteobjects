@@ -120,10 +120,12 @@ void QAbstractItemModelReplicaImplementation::registerMetatypes()
         qRegisterMetaTypeStreamOperators<ModelIndex>();
         qRegisterMetaTypeStreamOperators<IndexList>();
         qRegisterMetaTypeStreamOperators<DataEntries>();
+        qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
         qRegisterMetaTypeStreamOperators<Qt::Orientation>();
         qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
         qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
         qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
+        qRegisterMetaType<QSize>();
         qRegisterMetaType<QIntHash>();
         qRegisterMetaTypeStreamOperators<QIntHash>();
     }
