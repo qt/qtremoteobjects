@@ -39,12 +39,14 @@
 
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
+#include "qremoteobjectnode.h"
 
 #include "qconnectionfactories_p.h"
 #include "qremoteobjectsourceio_p.h"
 
 #include <QMetaProperty>
 #include <QVarLengthArray>
+#include <QAbstractItemModel>
 
 #include <algorithm>
 #include <iterator>
@@ -241,7 +243,7 @@ int QRemoteObjectSource::qt_metacall(QMetaObject::Call call, int methodId, void 
     return -1;
 }
 
-DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name, const QString &typeName)
+DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, const QString &name, const QString &typeName)
     : m_name(name),
       m_typeName(typeName),
       m_metaObject(metaObject),
@@ -255,6 +257,28 @@ DynamicApiMap::DynamicApiMap(const QMetaObject *metaObject, const QString &name,
     m_properties.reserve(propCount-propOffset);
     int i = 0;
     for (i = propOffset; i < propCount; ++i) {
+        const QMetaProperty property = metaObject->property(i);
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
+            auto propertyMeta = QMetaType::metaObjectForType(property.userType());
+            QObject *child = property.read(object).value<QObject *>();
+            if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
+                const QByteArray name = QByteArray::fromRawData(property.name(),
+                                                                qstrlen(property.name()));
+                const QByteArray infoName = name.toUpper() + QByteArrayLiteral("_ROLES");
+                const int infoIndex = metaObject->indexOfClassInfo(infoName.constData());
+                QByteArray roleInfo;
+                if (infoIndex >= 0) {
+                    auto ci = metaObject->classInfo(infoIndex);
+                    roleInfo = QByteArray::fromRawData(ci.value(), qstrlen(ci.value()));
+                }
+                m_models << ModelInfo({qobject_cast<QAbstractItemModel *>(child),
+                                       QString::fromLatin1(property.name()),
+                                       roleInfo});
+            } else {
+                m_subclasses << SubclassInfo({child, QString::fromLatin1(property.name())});
+            }
+            continue;
+        }
         m_properties << i;
         const int notifyIndex = metaObject->property(i).notifySignalIndex();
         if (notifyIndex != -1) {
@@ -325,6 +349,45 @@ QList<QByteArray> DynamicApiMap::methodParameterNames(int index) const
     const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);
     return m_cachedMetamethod.parameterNames();
+}
+
+void SourceApiMap::qobjectSetup(QRemoteObjectHostBase *node) const
+{
+    if (m_models.isEmpty() && m_subclasses.isEmpty())
+        return;
+
+    QVector<int> roles;
+
+    qCDebug(QT_REMOTEOBJECT) << "In qobjectSetup, model count =" << m_models.count() << "subclass count =" << m_subclasses.count();
+    for (int i = 0; i < m_models.count(); ++i) {
+        const auto model = m_models.at(i);
+        if (!model.ptr)
+            continue; // Pointer not initialized
+        roles.clear();
+        const auto knownRoles = model.ptr->roleNames();
+        for (auto role : model.roles.split('|')) {
+            const int roleIndex = knownRoles.key(role, -1);
+            if (roleIndex == -1) {
+                qCWarning(QT_REMOTEOBJECT) << "Invalid role" << role << "for model" << model.ptr->metaObject()->className();
+                qCWarning(QT_REMOTEOBJECT) << "  known roles:" << knownRoles;
+            } else
+                roles << roleIndex;
+        }
+        const auto reportedName = QString::fromLatin1("Model::%1").arg(model.name);
+        // TODO handle selection model
+        if (roles.isEmpty())
+            node->enableRemoting(model.ptr, reportedName, knownRoles.keys().toVector(), nullptr);
+        else
+            node->enableRemoting(model.ptr, reportedName, roles, nullptr);
+    }
+
+    for (int i = 0; i < m_subclasses.count(); ++i) {
+        const auto subclass = m_subclasses.at(i);
+        if (subclass.ptr) {
+            const auto reportedName = QString::fromLatin1("Class::%1").arg(subclass.name);
+            node->enableRemoting(subclass.ptr, reportedName);
+        }
+    }
 }
 
 QT_END_NAMESPACE

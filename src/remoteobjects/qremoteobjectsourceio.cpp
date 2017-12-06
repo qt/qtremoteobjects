@@ -73,23 +73,26 @@ QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
     qDeleteAll(m_remoteObjects.values());
 }
 
-bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName)
+bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name,
+                                           const QString &typeName, QRemoteObjectHostBase *node)
 {
     if (m_remoteObjects.contains(name)) {
         qROWarning(this) << "Tried to register QRemoteObjectSource twice" << name;
         return false;
     }
 
-    return enableRemoting(object, new DynamicApiMap(meta, name, typeName));
+    return enableRemoting(object, new DynamicApiMap(object, meta, name, typeName), node);
 }
 
-bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
+bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *api, QRemoteObjectHostBase *node, QObject *adapter)
 {
     const QString name = api->name();
     if (!api->isDynamic() && m_remoteObjects.contains(name)) {
         qROWarning(this) << "Tried to register QRemoteObjectSource twice" << name;
         return false;
     }
+
+    api->qobjectSetup(node);
 
     new QRemoteObjectSource(object, api, adapter, this);
     QRemoteObjectPackets::serializeObjectListPacket(m_packet, {QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName(), api->objectSignature()}});

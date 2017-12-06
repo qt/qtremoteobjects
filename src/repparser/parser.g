@@ -46,6 +46,7 @@
 %token signal "[signal][ \\t]*SIGNAL[ \\t]*\\([ \\t]*(?<name>\\S+)[ \\t]*\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token slot "[slot][ \\t]*SLOT[ \\t]*\\((?<type>[^\\(]*)\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token model "[model][ \\t]*MODEL[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<args>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
+%token childrep "[childrep][ \\t]*CLASS[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<type>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
 %token start "[start]\\{[ \\t]*"
 %token stop "[stop]\\};?[ \\t]*"
 %token comma "[comma],"
@@ -178,6 +179,16 @@ struct ASTModel
 };
 Q_DECLARE_TYPEINFO(ASTModel, Q_MOVABLE_TYPE);
 
+struct ASTChildRep
+{
+    explicit ASTChildRep(const QString &name = QString(),
+                         const QString &type = QString());
+
+    QString name;
+    QString type;
+};
+Q_DECLARE_TYPEINFO(ASTChildRep, Q_MOVABLE_TYPE);
+
 /// A Class declaration
 struct ASTClass
 {
@@ -192,6 +203,7 @@ struct ASTClass
     QVector<ASTEnum> enums;
     bool hasPersisted;
     QVector<ASTModel> models;
+    QVector<ASTChildRep> children;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -371,6 +383,11 @@ ASTEnum::ASTEnum(const QString &name)
 
 ASTModel::ASTModel(const QString &name)
     : name(name)
+{
+}
+
+ASTChildRep::ASTChildRep(const QString &name, const QString &type)
+    : name(name), type(type)
 {
 }
 
@@ -695,7 +712,7 @@ Class: ClassStart Start Stop;
 ./
 
 ClassTypes: ClassType | ClassType ClassTypes;
-ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel;
+ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass;
 ClassType: Enum;
 /.
     case $rule_number:
@@ -709,6 +726,7 @@ DecoratedSlot: Slot | Comments Slot | Slot Newlines | Comments Slot Newlines;
 DecoratedSignal: Signal | Comments Signal | Signal Newlines | Comments Signal Newlines;
 DecoratedProp: Prop | Comments Prop | Prop Newlines | Comments Prop Newlines;
 DecoratedModel: Model | Comments Model | Model Newlines | Comments Model Newlines;
+DecoratedClass: ChildRep | Comments ChildRep | ChildRep Newlines | Comments ChildRep Newlines;
 DecoratedEnumParam: EnumParam | Comments EnumParam | EnumParam Newlines | Comments EnumParam Newlines;
 
 Start: start | Comments start | start Newlines | Comments start Newlines;
@@ -829,6 +847,19 @@ Model: model;
     break;
 ./
 
+ChildRep: childrep;
+/.
+case $rule_number:
+{
+    ASTChildRep child;
+    child.name = captured().value(QLatin1String("name")).trimmed();
+    child.type = captured().value(QLatin1String("type")).trimmed();
+
+    m_astClass.children << child;
+}
+break;
+./
+
 ClassStart: class Newlines;
 /.
     case $rule_number:
@@ -916,6 +947,16 @@ Type: Model;
     case $rule_number:
     {
         setErrorString(QStringLiteral("MODEL: Can only be used in class scope"));
+        return false;
+    }
+    break;
+./
+
+Type: ChildRep;
+/.
+    case $rule_number:
+    {
+        setErrorString(QStringLiteral("CLASS: Can only be used in class scope"));
         return false;
     }
     break;

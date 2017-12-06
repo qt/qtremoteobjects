@@ -72,6 +72,7 @@ QT_BEGIN_NAMESPACE
 
 class QRemoteObjectRegistry;
 class QRegistrySource;
+class QConnectedReplicaImplementation;
 
 class QRemoteObjectAbstractPersistedStorePrivate : public QObjectPrivate
 {
@@ -108,6 +109,8 @@ public:
     void onShouldReconnect(ClientIoDevice *ioDevice);
 
     virtual QReplicaImplementationInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
+    void handleReplicaConnection(const QString &name);
+    void handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, ClientIoDevice *connection);
     void initialize();
 private:
     bool checkSignatures(const QByteArray &a, const QByteArray &b);

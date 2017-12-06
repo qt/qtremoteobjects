@@ -16,6 +16,7 @@ SUBDIRS += \
     repc \
     repcodegenerator \
     repparser \
+    subclassreplica \
     sub_integration \
     sub_localsockettestserver
 

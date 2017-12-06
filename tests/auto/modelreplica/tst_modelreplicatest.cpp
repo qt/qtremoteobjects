@@ -38,25 +38,38 @@ public:
     ModelreplicaTest();
 
 private Q_SLOTS:
-    void testCase1();
+    void basicFunctions();
+    void basicFunctions_data();
 };
 
 ModelreplicaTest::ModelreplicaTest()
 {
 }
 
-void ModelreplicaTest::testCase1()
+void ModelreplicaTest::basicFunctions_data()
 {
+    QTest::addColumn<bool>("templated");
+    QTest::newRow("non-templated enableRemoting") << false;
+    QTest::newRow("templated enableRemoting") << true;
+}
+
+void ModelreplicaTest::basicFunctions()
+{
+    QFETCH(bool, templated);
+
     QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
     QStringListModel *model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
     MediaSimpleSource source(model);
-    host.enableRemoting<MediaSourceAPI>(&source);
+    if (templated)
+        host.enableRemoting<MediaSourceAPI>(&source);
+    else
+        host.enableRemoting(&source);
 
     QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
     const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
     QSignalSpy tracksSpy(replica->tracks(), &QAbstractItemModelReplica::initialized);
-    QVERIFY2(replica->waitForSource(100), "Failure");
+    QVERIFY(replica->waitForSource(100));
     QVERIFY(tracksSpy.wait());
     // Rep file only uses display role
     QCOMPARE(QVector<int>{Qt::DisplayRole}, replica->tracks()->availableRoles());

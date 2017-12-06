@@ -41,6 +41,8 @@ public:
 
 private Q_SLOTS:
     void extraPropertyInQml();
+    void modelInQml();
+    void subObjectInQml();
 };
 
 void tst_usertypes::extraPropertyInQml()
@@ -57,6 +59,49 @@ void tst_usertypes::extraPropertyInQml()
     QVERIFY(obj);
 
     QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").value<int>(), 10, 300);
+}
+
+void tst_usertypes::modelInQml()
+{
+    qmlRegisterType<TypeWithModelReplica>("usertypes", 1, 0, "TypeWithModelReplica");
+
+    QRemoteObjectRegistryHost host(QUrl("local:testModel"));
+
+    QStringListModel *model = new QStringListModel();
+    model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
+    TypeWithModelSimpleSource source(model);
+    host.enableRemoting<TypeWithModelSourceAPI>(&source);
+
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/model.qml");
+    QObject *obj = c.create();
+    QVERIFY(obj);
+
+    QTRY_VERIFY_WITH_TIMEOUT(obj->property("tracks").value<QAbstractItemModelReplica*>() != nullptr, 300);
+    auto tracks = obj->property("tracks").value<QAbstractItemModelReplica*>();
+    QTRY_VERIFY_WITH_TIMEOUT(tracks->isInitialized(), 300);
+}
+
+void tst_usertypes::subObjectInQml()
+{
+    qmlRegisterType<TypeWithSubObjectReplica>("usertypes", 1, 0, "TypeWithSubObjectReplica");
+
+    QRemoteObjectRegistryHost host(QUrl("local:testSubObject"));
+
+    SimpleClockSimpleSource clock;
+    TypeWithSubObjectSimpleSource source(&clock);
+    host.enableRemoting(&source);
+
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/subObject.qml");
+    QObject *obj = c.create();
+    QVERIFY(obj);
+
+    TypeWithSubObjectReplica *replica = obj->property("replica").value<TypeWithSubObjectReplica*>();
+    QVERIFY(replica);
+
+    QTRY_VERIFY_WITH_TIMEOUT(replica->property("clock").value<SimpleClockReplica*>() != nullptr, 300);
+    QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").toInt(), 7, 300);
 }
 
 QTEST_MAIN(tst_usertypes)

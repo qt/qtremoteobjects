@@ -468,10 +468,7 @@ QReplicaImplementationInterface *QRemoteObjectNodePrivate::handleNewAcquire(cons
     QConnectedReplicaImplementation *rp = new QConnectedReplicaImplementation(name, meta, q);
     rp->configurePrivate(instance);
     if (connectedSources.contains(name)) { //Either we have a peer connections, or existing connection via registry
-        if (checkSignatures(rp->m_objectSignature, connectedSources[name].objectSignature))
-            rp->setConnection(connectedSources[name].device);
-        else
-            rp->setState(QRemoteObjectReplica::SignatureMismatch);
+        handleReplicaConnection(connectedSources[name].objectSignature, rp, connectedSources[name].device);
     } else {
         //No existing connection, but we know we can connect via registry
         const auto &sourceLocations = remoteObjectAddresses();
@@ -482,6 +479,52 @@ QReplicaImplementationInterface *QRemoteObjectNodePrivate::handleNewAcquire(cons
             initConnection(it.value().hostUrl);
     }
     return rp;
+}
+
+void QRemoteObjectNodePrivate::handleReplicaConnection(const QString &name)
+{
+    QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(name).toStrongRef());
+    if (!rep) { //replica has been deleted, remove from list
+        replicas.remove(name);
+        return;
+    }
+    if (rep->connectionToSource.isNull()) {
+        const auto sourceInfo = connectedSources.value(name);
+        handleReplicaConnection(sourceInfo.objectSignature, rep.data(), sourceInfo.device);
+    }
+}
+
+void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, ClientIoDevice *connection)
+{
+    if (!checkSignatures(rep->m_objectSignature, sourceSignature)) {
+        rep->setState(QRemoteObjectReplica::SignatureMismatch);
+        return;
+    }
+    if (!rep->m_metaObject) {
+        rep->setConnection(connection);
+        return;
+    }
+    for (int i = rep->m_metaObject->propertyOffset(); i < rep->m_metaObject->propertyCount(); ++i) {
+        const QMetaProperty property = rep->m_metaObject->property(i);
+        if (!QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+            continue;
+
+        const auto type = property.typeName();
+        const size_t len = strlen(type);
+        if (len > 8 && strncmp(&type[len-8], "Replica*", 8) == 0) {
+            auto propertyMeta = QMetaType::metaObjectForType(property.userType());
+            QString name;
+            if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject))
+                name = QStringLiteral("Model::%1").arg(QString::fromLatin1(property.name()));
+            else
+                name = QStringLiteral("Class::%1").arg(QString::fromLatin1(property.name()));
+            if (replicas.contains(name))
+                handleReplicaConnection(name);
+            else
+                qROPrivWarning() << "Child type" << name << "not available.  Objects:" << replicas.keys();
+        }
+    }
+    rep->setConnection(connection);
 }
 
 //Host Nodes can use the more efficient InProcess Replica if we (this Node) hold the Source for the
@@ -541,28 +584,22 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         {
             deserializeObjectListPacket(connection->stream(), rxObjects);
             qROPrivDebug() << "newObjects:" << rxObjects;
+            // We need to make sure all of the source objects are in connectedSources before we add connections,
+            // otherwise nested QObjects could fail (we want to acquire children before parents, and the object
+            // list is unordered)
             Q_FOREACH (const auto &remoteObject, rxObjects) {
                 qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
                 if (!connectedSources.contains(remoteObject.name)) {
                     connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName, remoteObject.signature};
                     connection->addSource(remoteObject.name);
-                    if (replicas.contains(remoteObject.name)) { //We have a replica waiting on this remoteObject
-                        QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(remoteObject.name).toStrongRef());
-                        if (!rep || checkSignatures(remoteObject.signature, rep->m_objectSignature)) {
-                            if (rep && rep->connectionToSource.isNull()) {
-                                qROPrivDebug() << "Test" << remoteObject<<replicas.keys();
-                                qROPrivDebug() << rep;
-                                rep->setConnection(connection);
-                            } else if (!rep) { //replica has been deleted, remove from list
-                                replicas.remove(remoteObject.name);
-                            }
-                        } else {
-                            if (rep)
-                                rep->setState(QRemoteObjectReplica::SignatureMismatch);
-                        }
-                        continue;
-                    }
+                    // Make sure we handle Registry first if it is available
+                    if (remoteObject.name == QStringLiteral("Registry") && replicas.contains(remoteObject.name))
+                        handleReplicaConnection(remoteObject.name);
                 }
+            }
+            Q_FOREACH (const auto &remoteObject, rxObjects) {
+                if (replicas.contains(remoteObject.name)) //We have a replica waiting on this remoteObject
+                    handleReplicaConnection(remoteObject.name);
             }
             break;
         }
@@ -1315,7 +1352,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
             }
         }
     }
-    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName);
+    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName, this);
 }
 
 /*!
@@ -1388,8 +1425,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 bool QRemoteObjectHostBase::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     Q_D(QRemoteObjectHostBase);
-    api->modelSetup(this);
-    return d->remoteObjectIo->enableRemoting(object, api, adapter);
+    return d->remoteObjectIo->enableRemoting(object, api, this, adapter);
 }
 
 /*!

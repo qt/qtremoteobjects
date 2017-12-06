@@ -75,7 +75,7 @@ public:
     bool isInitialized() const;
     State state() const;
     QRemoteObjectNode *node() const;
-    void setNode(QRemoteObjectNode *node);
+    virtual void setNode(QRemoteObjectNode *node);
 
 Q_SIGNALS:
     void initialized();

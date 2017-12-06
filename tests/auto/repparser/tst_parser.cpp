@@ -53,6 +53,8 @@ private Q_SLOTS:
     void testEnums();
     void testModels_data();
     void testModels();
+    void testClasses_data();
+    void testClasses();
     void testInvalid_data();
     void testInvalid();
 };
@@ -393,6 +395,46 @@ void tst_Parser::testModels()
     }
 }
 
+void tst_Parser::testClasses_data()
+{
+    QTest::addColumn<QString>("classDeclaration");
+    QTest::addColumn<QString>("expectedType");
+    QTest::addColumn<QString>("expectedName");
+    QTest::newRow("basicclass") << "CLASS sub(subObject)" << "subObject" << "sub";
+}
+
+void tst_Parser::testClasses()
+{
+    QFETCH(QString, classDeclaration);
+    QFETCH(QString, expectedType);
+    QFETCH(QString, expectedName);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << "class subObject" << endl;
+    stream << "{" << endl;
+    stream << "    PROP(int value)" << endl;
+    stream << "};" << endl;
+    stream << "class parentObject" << endl;
+    stream << "{" << endl;
+    stream << classDeclaration << endl;
+    stream << "};" << endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 2);
+
+    const ASTClass astSub = ast.classes.value(0);
+    const ASTClass astObj = ast.classes.value(1);
+    const ASTChildRep child = astObj.children.first();
+    QCOMPARE(child.name, expectedName);
+    QCOMPARE(child.type, expectedType);
+}
+
 void tst_Parser::testInvalid_data()
 {
     QTest::addColumn<QString>("content");
@@ -413,6 +455,7 @@ void tst_Parser::testInvalid_data()
     QTest::newRow("slot_outsideclass") << "SLOT(void foo())" << ".?SLOT: Can only be used in class scope";
     QTest::newRow("slot_noargs") << "class Foo\n{\nSLOT()\n}" << ".?Unknown token encountered";
     QTest::newRow("model_outsideclass") << "MODEL foo" << ".?Unknown token encountered";
+    QTest::newRow("class_outsideclass") << "CLASS foo" << ".?Unknown token encountered";
     QTest::newRow("preprecessor_line_inclass") << "class Foo\n{\n#define foo\n}" << ".?Unknown token encountered";
 }
 

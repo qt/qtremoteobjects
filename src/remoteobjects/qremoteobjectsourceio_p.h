@@ -62,6 +62,7 @@ QT_BEGIN_NAMESPACE
 
 class QRemoteObjectSource;
 class SourceApiMap;
+class QRemoteObjectHostBase;
 
 class QRemoteObjectSourceIo : public QObject
 {
@@ -70,8 +71,10 @@ public:
     explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = nullptr);
     ~QRemoteObjectSourceIo() override;
 
-    bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName);
-    bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = nullptr);
+    bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name,
+                        const QString &typeName, QRemoteObjectHostBase *node);
+    bool enableRemoting(QObject *object, const SourceApiMap *api, QRemoteObjectHostBase *node,
+                        QObject *adapter = nullptr);
     bool disableRemoting(QObject *object);
 
     QUrl serverAddress() const;

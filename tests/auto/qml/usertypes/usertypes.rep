@@ -5,3 +5,13 @@ class SimpleClock
     PROP(int hour);
     PROP(int minute);
 };
+
+class TypeWithModel
+{
+    MODEL tracks(display);
+};
+
+class TypeWithSubObject
+{
+    CLASS clock(SimpleClock);
+};
