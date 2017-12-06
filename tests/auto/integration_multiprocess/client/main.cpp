@@ -97,7 +97,7 @@ private Q_SLOTS:
         QVERIFY(rep->waitForSource());
 
         auto mo = rep->metaObject();
-        int signalIdx = mo->indexOfSignal("testEnumParamsInSignals(Enum1,bool,QString)");
+        int signalIdx = mo->indexOfSignal("testEnumParamsInSignals(MyInterfaceReplica::Enum1,bool,QString)");
         QVERIFY(signalIdx != -1);
         auto simm = mo->method(signalIdx);
         {
@@ -107,6 +107,9 @@ private Q_SLOTS:
             QCOMPARE(paramNames.at(0), "enumSignalParam");
             QCOMPARE(paramNames.at(1), "signalParam2");
             QCOMPARE(paramNames.at(2), "__repc_variable_1");
+            QCOMPARE(simm.parameterType(0), QMetaType::type("MyInterfaceReplica::Enum1"));
+            QCOMPARE(simm.parameterType(1), QMetaType::Bool);
+            QCOMPARE(simm.parameterType(2), QMetaType::QString);
         }
 
         int slotIdx = mo->indexOfSlot("testEnumParamsInSlots(Enum1,bool,int)");
@@ -133,6 +136,21 @@ private Q_SLOTS:
         int startedIdx = mo->indexOfProperty("started");
         QVERIFY(startedIdx != -1);
         QTRY_COMPARE(mo->property(startedIdx).read(rep.data()).toBool(), true);
+    }
+
+    void testMethodSignal()
+    {
+        QScopedPointer<MyInterfaceReplica> rep(new MyInterfaceReplica());
+        rep->setNode(&m_repNode);
+        QVERIFY(rep->waitForSource());
+
+        rep->testEnumParamsInSlots(MyInterfaceReplica::Second, false, 74);
+
+        connect(rep.data(), &MyInterfaceReplica::testEnumParamsInSignals,
+                [](MyInterfaceReplica::Enum1 enumSignalParam) { QCOMPARE(enumSignalParam, MyInterfaceReplica::Second); });
+
+        QTRY_COMPARE(rep->enum1(), MyInterfaceReplica::Second);
+        QTRY_COMPARE(rep->started(), false);
     }
 
     void cleanupTestCase()

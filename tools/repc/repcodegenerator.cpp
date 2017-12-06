@@ -83,6 +83,21 @@ static QString fullyQualifiedTypeName(const ASTClass& classContext, const QStrin
     return typeName;
 }
 
+// for enums we need to transform signal/slot arguments to include the class scope
+static QVector<ASTFunction> transformEnumParams(const ASTClass& classContext, const QVector<ASTFunction> &methodList, const QString &typeName) {
+    QVector<ASTFunction> localList = methodList;
+    for (ASTFunction &astFunction : localList) {
+        for (ASTDeclaration &astParam : astFunction.params) {
+            for (const ASTEnum &astEnum : classContext.enums) {
+                if (astEnum.name == astParam.type) {
+                    astParam.type = typeName + QStringLiteral("::") + astParam.type;
+                }
+            }
+        }
+    }
+    return localList;
+}
+
 /*
   Returns \c true if the type is a built-in type.
 */
@@ -771,7 +786,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, property.type) << " " << property.name << ");" << endl;
         }
 
-        Q_FOREACH (const ASTFunction &signal, astClass.signalsList)
+        QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, className);
+        Q_FOREACH (const ASTFunction &signal, signalsList)
             out << "    void " << signal.name << "(" << signal.paramsAsString() << ");" << endl;
     }
     bool hasWriteSlots = false;
@@ -930,11 +946,13 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)()>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(i+1).arg(changeSignals.at(i)).arg(i) << endl;
+
+    QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, QStringLiteral("typename ObjectType"));
     for (int i = 0; i < signalCount; ++i) {
-        const ASTFunction &sig = astClass.signalsList.at(i);
+        const ASTFunction &sig = signalsList.at(i);
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
-                             .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(i)) << endl;
+                             .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(changedCount+i)) << endl;
     }
     const int slotCount = astClass.slotsList.count();
     QVector<ASTProperty> pushProps;
@@ -952,11 +970,16 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                               "static_cast<void (QObject::*)(%3)>(0),\"push%2(%3)\",m_methodArgCount+%4,&m_methodArgTypes[%4]);")
                              .arg(QString::number(i+1), cap(prop.name), propTypeName, QString::number(i)) << endl;
     }
+
+    QVector<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, QStringLiteral("typename ObjectType"));
     for (int i = 0; i < slotCount; ++i) {
-        const ASTFunction &slot = astClass.slotsList.at(i);
+        const ASTFunction &slot = slotsList.at(i);
+        const QString params = slot.paramsAsString(ASTFunction::Normalized);
         out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<void (QObject::*)(%3)>(0),\"%2(%3)\",m_methodArgCount+%4,&m_methodArgTypes[%4]);")
-                             .arg(QString::number(i+pushCount+1), slot.name, slot.paramsAsString(ASTFunction::Normalized), QString::number(i+pushCount)) << endl;
+                              "static_cast<void (QObject::*)(%3)>(0),\"%2(%4)\",m_methodArgCount+%5,&m_methodArgTypes[%5]);")
+                             .arg(QString::number(i+pushCount+1), slot.name, params,
+                                  QString(params).remove(QStringLiteral("typename ObjectType::")), // we don't want this in the string signature
+                                  QString::number(i+pushCount)) << endl;
     }
     const int modelCount = astClass.models.count();
     out << QString::fromLatin1("        m_modelCount = %1;").arg(modelCount) << endl;
