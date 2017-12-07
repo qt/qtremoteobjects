@@ -1075,7 +1075,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     if (!propertyChangeIndex.isEmpty()) {
         out << QStringLiteral("        switch (index) {") << endl;
         for (int i = 0; i < propertyChangeIndex.size(); ++i)
-            out << QString::fromLatin1("        case %1: return %2;").arg(i).arg(propertyChangeIndex.at(i)) << endl;
+            out << QString::fromLatin1("        case %1: return %2;").arg(i).arg(propertyChangeIndex.at(i)-1) << endl;
         out << QStringLiteral("        }") << endl;
     } else
         out << QStringLiteral("        Q_UNUSED(index);") << endl;

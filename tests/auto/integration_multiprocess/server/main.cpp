@@ -40,7 +40,11 @@ private Q_SLOTS:
     {
         QRemoteObjectHost srcNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
         MyTestServer myTestServer;
-        srcNode.enableRemoting(&myTestServer);
+        bool templated = qEnvironmentVariableIsSet("TEMPLATED_REMOTING");
+        if (templated)
+            srcNode.enableRemoting<MyInterfaceSourceAPI>(&myTestServer);
+        else
+            srcNode.enableRemoting(&myTestServer);
 
         qDebug() << "Waiting for incoming connections";
 
