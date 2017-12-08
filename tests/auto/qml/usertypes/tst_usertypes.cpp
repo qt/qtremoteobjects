@@ -56,7 +56,7 @@ void tst_usertypes::extraPropertyInQml()
     QObject *obj = c.create();
     QVERIFY(obj);
 
-    QTRY_COMPARE_WITH_TIMEOUT(obj->property("result"), "10", 300);
+    QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").value<int>(), 10, 300);
 }
 
 QTEST_MAIN(tst_usertypes)

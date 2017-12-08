@@ -104,12 +104,12 @@ private Q_SLOTS:
             QCOMPARE(simm.parameterCount(), 3);
             auto paramNames = simm.parameterNames();
             QCOMPARE(paramNames.size(), 3);
-            QCOMPARE(paramNames.at(0), "enumSignalParam");
-            QCOMPARE(paramNames.at(1), "signalParam2");
-            QCOMPARE(paramNames.at(2), "__repc_variable_1");
+            QCOMPARE(paramNames.at(0), QByteArrayLiteral("enumSignalParam"));
+            QCOMPARE(paramNames.at(1), QByteArrayLiteral("signalParam2"));
+            QCOMPARE(paramNames.at(2), QByteArrayLiteral("__repc_variable_1"));
             QCOMPARE(simm.parameterType(0), QMetaType::type("MyInterfaceReplica::Enum1"));
-            QCOMPARE(simm.parameterType(1), QMetaType::Bool);
-            QCOMPARE(simm.parameterType(2), QMetaType::QString);
+            QCOMPARE(simm.parameterType(1), int(QMetaType::Bool));
+            QCOMPARE(simm.parameterType(2), int(QMetaType::QString));
         }
 
         int slotIdx = mo->indexOfSlot("testEnumParamsInSlots(Enum1,bool,int)");
@@ -119,9 +119,9 @@ private Q_SLOTS:
             QCOMPARE(slmm .parameterCount(), 3);
             auto paramNames = slmm .parameterNames();
             QCOMPARE(paramNames.size(), 3);
-            QCOMPARE(paramNames.at(0), "enumSlotParam");
-            QCOMPARE(paramNames.at(1), "slotParam2");
-            QCOMPARE(paramNames.at(2), "__repc_variable_1");
+            QCOMPARE(paramNames.at(0), QByteArrayLiteral("enumSlotParam"));
+            QCOMPARE(paramNames.at(1), QByteArrayLiteral("slotParam2"));
+            QCOMPARE(paramNames.at(2), QByteArrayLiteral("__repc_variable_1"));
         }
 
         int enumVal = 0;
