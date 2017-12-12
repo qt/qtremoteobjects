@@ -37,13 +37,20 @@ class tst_usertypes : public QObject
     Q_OBJECT
 
 public:
-    tst_usertypes() {}
+    tst_usertypes();
 
 private Q_SLOTS:
     void extraPropertyInQml();
     void modelInQml();
     void subObjectInQml();
+    void complexInQml_data();
+    void complexInQml();
 };
+
+tst_usertypes::tst_usertypes()
+{
+    qmlRegisterType<ComplexTypeReplica>("usertypes", 1, 0, "ComplexTypeReplica");
+}
 
 void tst_usertypes::extraPropertyInQml()
 {
@@ -102,6 +109,55 @@ void tst_usertypes::subObjectInQml()
 
     QTRY_VERIFY_WITH_TIMEOUT(replica->property("clock").value<SimpleClockReplica*>() != nullptr, 300);
     QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").toInt(), 7, 300);
+}
+
+void tst_usertypes::complexInQml_data()
+{
+    QTest::addColumn<bool>("templated");
+    QTest::addColumn<bool>("nullobject");
+    QTest::newRow("non-templated pointer") << false << false;
+    QTest::newRow("templated pointer") << true << false;
+    QTest::newRow("non-templated nullptr") << false << true;
+    QTest::newRow("templated nullptr") << true << true;
+}
+
+void tst_usertypes::complexInQml()
+{
+    QFETCH(bool, templated);
+    QFETCH(bool, nullobject);
+
+    QRemoteObjectRegistryHost host(QUrl("local:testModel"));
+
+    QStringListModel *model = new QStringListModel();
+    model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
+    QScopedPointer<SimpleClockSimpleSource> clock;
+    if (!nullobject)
+        clock.reset(new SimpleClockSimpleSource());
+    ComplexTypeSimpleSource source(model, clock.data());
+    if (templated)
+        host.enableRemoting<ComplexTypeSourceAPI>(&source);
+    else
+        host.enableRemoting(&source);
+
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/complex.qml");
+    QObject *obj = c.create();
+    QVERIFY(obj);
+
+    QTRY_VERIFY_WITH_TIMEOUT(obj->property("tracks").value<QAbstractItemModelReplica*>() != nullptr, 300);
+    auto tracks = obj->property("tracks").value<QAbstractItemModelReplica*>();
+    QTRY_VERIFY_WITH_TIMEOUT(tracks->isInitialized(), 300);
+    ComplexTypeReplica *rep = qobject_cast<ComplexTypeReplica *>(obj);
+    QVERIFY(rep->waitForSource(300));
+    QCOMPARE(rep->property("before").value<int>(), 0);
+    QCOMPARE(rep->property("after").value<int>(), 42);
+    if (nullobject) {
+        QCOMPARE(rep->clock(), nullptr);
+        QCOMPARE(source.clock(), nullptr);
+    } else {
+        QCOMPARE(source.clock()->hour(), 6);
+        QCOMPARE(rep->clock()->hour(), source.clock()->hour());
+    }
 }
 
 QTEST_MAIN(tst_usertypes)

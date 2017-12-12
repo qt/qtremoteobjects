@@ -361,7 +361,7 @@ QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
 
 void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty &property)
 {
-    out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+    out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ") override" << endl;
     out << "    {" << endl;
     out << "        if (" << property.name << " != m_" << property.name << ") {" << endl;
     out << "            m_" << property.name << " = " << property.name << ";" << endl;
@@ -578,58 +578,62 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : mode == SOURCE ? QStringLiteral("Source") : QStringLiteral("SimpleSource")));
     if (mode == REPLICA)
         out << "class " << className << " : public QRemoteObjectReplica" << endl;
+    else if (mode == SIMPLE_SOURCE)
+        out << "class " << className << " : public " << astClass.name << "Source" << endl;
     else
         out << "class " << className << " : public QObject" << endl;
 
     out << "{" << endl;
     out << "    Q_OBJECT" << endl;
-    out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << endl;
-    out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \"" << QLatin1String(classSignature(astClass)) << "\")" << endl;
-    for (int i = 0; i < astClass.models.count(); i++) {
-        const auto model = astClass.models.at(i);
-        if (!model.roles.isEmpty()) {
-            QStringList list;
-            for (auto role : model.roles)
-                list << role.name;
-            out << QString::fromLatin1("    Q_CLASSINFO(\"%1_ROLES\", \"%2\")").arg(model.name.toUpper(), list.join(QChar::fromLatin1('|'))) << endl;
+    if (mode != SIMPLE_SOURCE) {
+        out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << endl;
+        out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \"" << QLatin1String(classSignature(astClass)) << "\")" << endl;
+        for (int i = 0; i < astClass.models.count(); i++) {
+            const auto model = astClass.models.at(i);
+            if (!model.roles.isEmpty()) {
+                QStringList list;
+                for (auto role : model.roles)
+                    list << role.name;
+                out << QString::fromLatin1("    Q_CLASSINFO(\"%1_ROLES\", \"%2\")").arg(model.name.toUpper(), list.join(QChar::fromLatin1('|'))) << endl;
+            }
         }
-    }
 
 
-    //First output properties
-    Q_FOREACH (const ASTProperty &property, astClass.properties) {
-        out << "    Q_PROPERTY(" << property.type << " " << property.name << " READ " << property.name;
-        if (property.modifier == ASTProperty::Constant)
-            out << " CONSTANT";
-        else if (property.modifier == ASTProperty::ReadOnly)
-            out << " NOTIFY " << property.name << "Changed";
-        else if (property.modifier == ASTProperty::ReadWrite)
-            out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
-        else if (property.modifier == ASTProperty::ReadPush) {
-            if (mode == REPLICA) // The setter slot isn't known to the PROP
+        //First output properties
+        Q_FOREACH (const ASTProperty &property, astClass.properties) {
+            out << "    Q_PROPERTY(" << property.type << " " << property.name << " READ " << property.name;
+            if (property.modifier == ASTProperty::Constant)
+                out << " CONSTANT";
+            else if (property.modifier == ASTProperty::ReadOnly)
                 out << " NOTIFY " << property.name << "Changed";
-            else // The Source can use the setter, since non-asynchronous
+            else if (property.modifier == ASTProperty::ReadWrite)
                 out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
+            else if (property.modifier == ASTProperty::ReadPush) {
+                if (mode == REPLICA) // The setter slot isn't known to the PROP
+                    out << " NOTIFY " << property.name << "Changed";
+                else // The Source can use the setter, since non-asynchronous
+                    out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
+            }
+            out << ")" << endl;
         }
-        out << ")" << endl;
-    }
-    for (auto model : astClass.models) {
-        if (mode == REPLICA)
-            out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModelReplica *%1 READ %1 NOTIFY %1Changed)").arg(model.name) << endl;
-        else
-            out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModel *%1 READ %1 CONSTANT)").arg(model.name) << endl;
-    }
-    for (auto child : astClass.children) {
-        if (mode == REPLICA)
-            out << QString::fromLatin1("    Q_PROPERTY(%1Replica *%2 READ %2 NOTIFY %2Changed)").arg(child.type, child.name) << endl;
-        else
-            out << QString::fromLatin1("    Q_PROPERTY(QObject *%1 READ %1 CONSTANT)").arg(child.name) << endl;
-    }
+        for (auto model : astClass.models) {
+            if (mode == REPLICA)
+                out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModelReplica *%1 READ %1 NOTIFY %1Changed)").arg(model.name) << endl;
+            else
+                out << QString::fromLatin1("    Q_PROPERTY(QAbstractItemModel *%1 READ %1 CONSTANT)").arg(model.name) << endl;
+        }
+        for (auto child : astClass.children) {
+            if (mode == REPLICA)
+                out << QString::fromLatin1("    Q_PROPERTY(%1Replica *%2 READ %2 NOTIFY %2Changed)").arg(child.type, child.name) << endl;
+            else
+                out << QString::fromLatin1("    Q_PROPERTY(%1Source *%2 READ %2 CONSTANT)").arg(child.type, child.name) << endl;
+        }
 
-    if (!astClass.enums.isEmpty()) {
-        out << "" << endl;
-        out << "public:" << endl;
-        generateDeclarationsForEnums(out, astClass.enums);
+        if (!astClass.enums.isEmpty()) {
+            out << "" << endl;
+            out << "public:" << endl;
+            generateDeclarationsForEnums(out, astClass.enums);
+        }
     }
 
     out << "" << endl;
@@ -716,42 +720,44 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "        setProperties(properties);" << endl;
         out << "    }" << endl;
     } else {
-        if ( (astClass.models.isEmpty() && astClass.children.isEmpty())
-            || mode == SOURCE)
-            out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
-        else {
+        if ( (astClass.models.isEmpty() && astClass.children.isEmpty()) || mode == SOURCE) {
+            if (mode == SOURCE)
+                out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << endl;
+            else
+                out << "    explicit " << className << "(QObject *parent = nullptr) : " << astClass.name << "Source(parent)" << endl;
+        } else {
             int childIndex = 0;
             if (astClass.models.count())
                 out << "    explicit " << className << "(QAbstractItemModel *model0";
             else {
-                out << "    explicit " << className << "(QObject *sub0";
+                out << "    explicit " << className << "(" << astClass.children.at(0).type << "Source *sub0";
                 childIndex = 1;
             }
             for (int i = 1; i < astClass.models.count(); i++)
                 out << QString::fromLatin1(", QAbstractItemModel *model%1").arg(QString::number(i));
             for (int i = childIndex; i < astClass.children.count(); i++)
-                out << QString::fromLatin1(", QObject *sub%1").arg(QString::number(i));
-            out << ", QObject *parent = nullptr) : QObject(parent)" << endl;
+                out << QString::fromLatin1(", %1Source *sub%2").arg(astClass.children.at(childIndex).type, QString::number(i));
+            out << ", QObject *parent = nullptr) : " << astClass.name << "Source(parent)" << endl;
             for (int i = 0; i < astClass.models.count(); i++)
             {
-                out << "        , m_" << astClass.models[i].name
+                out << "    , m_" << astClass.models[i].name
                     << QString::fromLatin1("(model%1)").arg(QString::number(i)) << endl;
             }
             for (int i = 0; i < astClass.children.count(); i++)
             {
-                out << "        , m_" << astClass.children[i].name
+                out << "    , m_" << astClass.children[i].name
                     << QString::fromLatin1("(sub%1)").arg(QString::number(i)) << endl;
             }
         }
 
         if (mode == SIMPLE_SOURCE) {
             Q_FOREACH (const ASTProperty &property, astClass.properties) {
-                out << "        , m_" << property.name << "(" << property.defaultValue << ")" << endl;
+                out << "    , m_" << property.name << "(" << property.defaultValue << ")" << endl;
             }
         }
 
         out << "    {" << endl;
-        if (!metaTypeRegistrationCode.isEmpty())
+        if (mode != SIMPLE_SOURCE && !metaTypeRegistrationCode.isEmpty())
             out << metaTypeRegistrationCode << endl;
         out << "    }" << endl;
     }
@@ -774,7 +780,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     }
     out << "" << endl;
 
-    generateConversionFunctionsForEnums(out, astClass.enums);
+    if (mode != SIMPLE_SOURCE)
+        generateConversionFunctionsForEnums(out, astClass.enums);
 
     //Next output getter/setter
     if (mode == REPLICA) {
@@ -811,7 +818,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
     } else {
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
-            out << "    virtual " << property.type << " " << property.name << "() const { return m_" << property.name << "; }" << endl;
+            out << "    virtual " << property.type << " " << property.name << "() const override { return m_" << property.name << "; }" << endl;
         }
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier == ASTProperty::ReadWrite ||
@@ -827,7 +834,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 if (mode == REPLICA)
                     out << "    QAbstractItemModelReplica *" << model.name << "()" << endl;
                 else
-                    out << "    QAbstractItemModel *" << model.name << "()" << endl;
+                    out << "    QAbstractItemModel *" << model.name << "() override" << endl;
                 out << "    {" << endl;
                 out << "        return m_" << model.name << ".data();" << endl;
                 out << "    }" << endl;
@@ -846,98 +853,99 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                     out << "        return m_" << child.name << ".data();" << endl;
                     out << "    }" << endl;
                 } else {
-                    out << "    QObject *" << child.name << "()" << endl;
+                    out << "    " << child.type << "Source *" << child.name << "() override" << endl;
                     out << "    {" << endl;
                     out << "        return m_" << child.name << ";" << endl;
                     out << "    }" << endl;
                 }
             } else {
-                out << "    virtual QObject *" << child.name << "() = 0;" << endl;
+                out << "    virtual " << child.type << "Source *" << child.name << "() = 0;" << endl;
             }
         }
     }
 
-    //Next output property signals
-    if (!astClass.properties.isEmpty() || !astClass.signalsList.isEmpty()) {
-        out << "" << endl;
-        out << "Q_SIGNALS:" << endl;
-        Q_FOREACH (const ASTProperty &property, astClass.properties) {
-            if (property.modifier != ASTProperty::Constant)
-                out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, property.type) << " " << property.name << ");" << endl;
-        }
+    if (mode != SIMPLE_SOURCE) {
+        //Next output property signals
+        if (!astClass.properties.isEmpty() || !astClass.signalsList.isEmpty()) {
+            out << "" << endl;
+            out << "Q_SIGNALS:" << endl;
+            Q_FOREACH (const ASTProperty &property, astClass.properties) {
+                if (property.modifier != ASTProperty::Constant)
+                    out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, property.type) << " " << property.name << ");" << endl;
+            }
 
-        QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, className);
-        Q_FOREACH (const ASTFunction &signal, signalsList)
-            out << "    void " << signal.name << "(" << signal.paramsAsString() << ");" << endl;
-        for (auto model : astClass.models)
-            out << "    void " << model.name << "Changed();" << endl;
-        for (auto child : astClass.children)
-            out << "    void " << child.name << "Changed();" << endl;
-    } else if (!astClass.models.isEmpty() || !astClass.children.isEmpty()) {
-        out << "" << endl;
-        out << "Q_SIGNALS:" << endl;
-        for (auto model : astClass.models)
-            out << "    void " << model.name << "Changed();" << endl;
-        for (auto child : astClass.children)
-            out << "    void " << child.name << "Changed();" << endl;
-    }
-    bool hasWriteSlots = false;
-    Q_FOREACH (const ASTProperty &property, astClass.properties) {
-        if (property.modifier == ASTProperty::ReadPush)
-            hasWriteSlots = true;
-    }
-    if (hasWriteSlots || !astClass.slotsList.isEmpty()) {
-        out << "" << endl;
-        out << "public Q_SLOTS:" << endl;
+            QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, className);
+            Q_FOREACH (const ASTFunction &signal, signalsList)
+                out << "    void " << signal.name << "(" << signal.paramsAsString() << ");" << endl;
+            for (auto model : astClass.models)
+                out << "    void " << model.name << "Changed();" << endl;
+            for (auto child : astClass.children)
+                out << "    void " << child.name << "Changed();" << endl;
+        } else if (!astClass.models.isEmpty() || !astClass.children.isEmpty()) {
+            out << "" << endl;
+            out << "Q_SIGNALS:" << endl;
+            for (auto model : astClass.models)
+                out << "    void " << model.name << "Changed();" << endl;
+            for (auto child : astClass.children)
+                out << "    void " << child.name << "Changed();" << endl;
+        }
+        bool hasWriteSlots = false;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier == ASTProperty::ReadPush) {
+                hasWriteSlots = true;
+                break;
+            }
+        }
+        if (hasWriteSlots || !astClass.slotsList.isEmpty()) {
+            out << "" << endl;
+            out << "public Q_SLOTS:" << endl;
+            Q_FOREACH (const ASTProperty &property, astClass.properties) {
+                if (property.modifier == ASTProperty::ReadPush) {
+                    if (mode != REPLICA) {
+                        out << "    virtual void push" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+                        out << "    {" << endl;
+                        out << "        set" << cap(property.name) << "(" << property.name << ");" << endl;
+                        out << "    }" << endl;
+                    } else {
+                        out << "    void push" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+                        out << "    {" << endl;
+                        out << "        static int __repc_index = " << className << "::staticMetaObject.indexOfSlot(\"push" << cap(property.name) << "(" << property.type << ")\");" << endl;
+                        out << "        QVariantList __repc_args;" << endl;
+                        out << "        __repc_args << QVariant::fromValue(" << property.name << ");" << endl;
+                        out << "        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);" << endl;
+                        out << "    }" << endl;
+                    }
+                }
+            }
+            Q_FOREACH (const ASTFunction &slot, astClass.slotsList) {
                 if (mode != REPLICA) {
-                    out << "    virtual void push" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
-                    out << "    {" << endl;
-                    out << "        set" << cap(property.name) << "(" << property.name << ");" << endl;
-                    out << "    }" << endl;
+                    out << "    virtual " << slot.returnType << " " << slot.name << "(" << slot.paramsAsString() << ") = 0;" << endl;
                 } else {
-                    out << "    void push" << cap(property.name) << "(" << property.type << " " << property.name << ")" << endl;
+                    // TODO: Discuss whether it is a good idea to special-case for void here,
+                    const bool isVoid = slot.returnType == QStringLiteral("void");
+
+                    if (isVoid)
+                        out << "    void " << slot.name << "(" << slot.paramsAsString() << ")" << endl;
+                    else
+                        out << "    QRemoteObjectPendingReply<" << slot.returnType << "> " << slot.name << "(" << slot.paramsAsString()<< ")" << endl;
                     out << "    {" << endl;
-                    out << "        static int __repc_index = " << className << "::staticMetaObject.indexOfSlot(\"push" << cap(property.name) << "(" << property.type << ")\");" << endl;
+                    out << "        static int __repc_index = " << className << "::staticMetaObject.indexOfSlot(\"" << slot.name << "(" << slot.paramsAsString(ASTFunction::Normalized) << ")\");" << endl;
                     out << "        QVariantList __repc_args;" << endl;
-                    out << "        __repc_args << QVariant::fromValue(" << property.name << ");" << endl;
-                    out << "        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);" << endl;
+                    if (!slot.paramNames().isEmpty()) {
+                        out << "        __repc_args" << endl;
+                        Q_FOREACH (const QString &name, slot.paramNames())
+                            out << "            << " << "QVariant::fromValue(" << name << ")" << endl;
+                        out << "        ;" << endl;
+                    }
+                    if (isVoid)
+                        out << "        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);" << endl;
+                    else
+                        out << "        return QRemoteObjectPendingReply<" << slot.returnType << ">(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));" << endl;
                     out << "    }" << endl;
                 }
             }
         }
-        Q_FOREACH (const ASTFunction &slot, astClass.slotsList) {
-            if (mode != REPLICA) {
-                out << "    virtual " << slot.returnType << " " << slot.name << "(" << slot.paramsAsString() << ") = 0;" << endl;
-            } else {
-                // TODO: Discuss whether it is a good idea to special-case for void here,
-                const bool isVoid = slot.returnType == QStringLiteral("void");
-
-                if (isVoid)
-                    out << "    void " << slot.name << "(" << slot.paramsAsString() << ")" << endl;
-                else
-                    out << "    QRemoteObjectPendingReply<" << slot.returnType << "> " << slot.name << "(" << slot.paramsAsString()<< ")" << endl;
-                out << "    {" << endl;
-                out << "        static int __repc_index = " << className << "::staticMetaObject.indexOfSlot(\"" << slot.name << "(" << slot.paramsAsString(ASTFunction::Normalized) << ")\");" << endl;
-                out << "        QVariantList __repc_args;" << endl;
-                if (!slot.paramNames().isEmpty()) {
-                    out << "        __repc_args" << endl;
-                    Q_FOREACH (const QString &name, slot.paramNames())
-                        out << "            << " << "QVariant::fromValue(" << name << ")" << endl;
-                    out << "        ;" << endl;
-                }
-                if (isVoid)
-                    out << "        send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);" << endl;
-                else
-                    out << "        return QRemoteObjectPendingReply<" << slot.returnType << ">(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));" << endl;
-                out << "    }" << endl;
-            }
-        }
-    }
-
-    if (mode == SIMPLE_SOURCE)
-    {
+    } else {
         if (!astClass.properties.isEmpty()) {
             bool addProtected = true;
             Q_FOREACH (const ASTProperty &property, astClass.properties) {
@@ -961,7 +969,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         Q_FOREACH (const ASTModel &model, astClass.models)
             out << "    QScopedPointer<QAbstractItemModel> m_" << model.name << ";" << endl;
         Q_FOREACH (const ASTChildRep &child, astClass.children)
-            out << "    QObject *m_" << child.name << ";" << endl;
+            out << "    " << child.type << "Source *m_" << child.name << ";" << endl;
 
         if (!astClass.properties.isEmpty()) {
             Q_FOREACH (const ASTProperty &property, astClass.properties) {
@@ -986,18 +994,21 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << "    QScopedPointer<" << child.type << "Replica> m_" << child.name << ";" << endl;
     }
 
-    out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << endl;
+    if (mode != SIMPLE_SOURCE)
+        out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << endl;
 
     out << "};" << endl;
     out << "" << endl;
 
-    out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))" << endl;
-    Q_FOREACH (const ASTEnum &en, astClass.enums)
-        out << "    Q_DECLARE_METATYPE(" << className << "::" << en.name << ")" << endl;
-    out <<  "#endif" << endl;
-    out << "" << endl;
+    if (mode != SIMPLE_SOURCE) {
+        out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))" << endl;
+        Q_FOREACH (const ASTEnum &en, astClass.enums)
+            out << "    Q_DECLARE_METATYPE(" << className << "::" << en.name << ")" << endl;
+        out <<  "#endif" << endl;
+        out << "" << endl;
 
-    generateStreamOperatorsForEnums(out, astClass.enums, className);
+        generateStreamOperatorsForEnums(out, astClass.enums, className);
+    }
 
     out << "" << endl;
 }
