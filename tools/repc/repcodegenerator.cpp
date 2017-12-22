@@ -359,9 +359,12 @@ QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
            ;
 }
 
-void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty &property)
+void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride)
 {
-    out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ") override" << endl;
+    out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ")";
+    if (generateOverride)
+        out << " override";
+    out << endl;
     out << "    {" << endl;
     out << "        if (" << property.name << " != m_" << property.name << ") {" << endl;
     out << "            m_" << property.name << " = " << property.name << ";" << endl;
@@ -955,7 +958,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                         out << "protected:" << endl;
                         addProtected = false;
                     }
-                    generateSimpleSetter(out, property);
+                    generateSimpleSetter(out, property, false);
                 }
             }
         }

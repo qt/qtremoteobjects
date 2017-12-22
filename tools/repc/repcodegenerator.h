@@ -66,7 +66,7 @@ private:
     QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
     void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
 
-    void generateSimpleSetter(QTextStream &out, const ASTProperty &property);
+    void generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride = true);
     void generatePOD(QTextStream &out, const POD &pod);
     void generateENUMs(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className);
     void generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, bool generateQENUM=true);
