@@ -87,6 +87,9 @@ void tst_usertypes::modelInQml()
     QTRY_VERIFY_WITH_TIMEOUT(obj->property("tracks").value<QAbstractItemModelReplica*>() != nullptr, 300);
     auto tracks = obj->property("tracks").value<QAbstractItemModelReplica*>();
     QTRY_VERIFY_WITH_TIMEOUT(tracks->isInitialized(), 300);
+
+    TypeWithModelReplica *rep = qobject_cast<TypeWithModelReplica *>(obj);
+    QVERIFY(rep->isInitialized());
 }
 
 void tst_usertypes::subObjectInQml()

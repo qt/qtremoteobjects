@@ -671,8 +671,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << "        // This relies on finalize being called before any other slots connected to initialized to ensure" << endl;
                 out << "        // any child replicas that don't have sources are null instead of the replica defaults." << endl;
                 out << "        connect(this, &" << className << "::initialized, [this]() { finalize(); });" << endl;
-                out << "        QRemoteObjectReplica::setNode(node);" << endl;
             }
+            out << "        QRemoteObjectReplica::setNode(node);" << endl;
             out << "    }" << endl;
         }
         out << "" << endl;
