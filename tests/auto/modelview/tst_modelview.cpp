@@ -638,7 +638,8 @@ void TestModelView::initTestCase()
 
     static const int modelSize = 20;
 
-    QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole;
+    // QStandardItem::flags are stored as data with Qt::UserRole - 1
+    QVector<int> roles = QVector<int>() << Qt::DisplayRole << Qt::BackgroundRole << (Qt::UserRole - 1);
 
     QHash<int,QByteArray> roleNames;
     roleNames[Qt::DisplayRole] = "text";
