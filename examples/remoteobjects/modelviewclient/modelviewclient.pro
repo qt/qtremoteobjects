@@ -7,3 +7,4 @@ target.path = $$[QT_INSTALL_EXAMPLES]/remoteobjects/modelviewclient
 INSTALLS += target
 
 QT += widgets remoteobjects
+requires(qtConfig(treeview))
