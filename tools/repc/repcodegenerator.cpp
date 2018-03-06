@@ -195,8 +195,11 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
         generatePOD(stream, pod);
 
     QSet<QString> metaTypes;
-    Q_FOREACH (const POD &pod, ast.pods)
+    Q_FOREACH (const POD &pod, ast.pods) {
         metaTypes << pod.name;
+        Q_FOREACH (const PODAttribute &attribute, pod.attributes)
+            metaTypes << attribute.type;
+    }
     Q_FOREACH (const ASTClass &astClass, ast.classes) {
         Q_FOREACH (const ASTProperty &property, astClass.properties)
             metaTypes << property.type;
