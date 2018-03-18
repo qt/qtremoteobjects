@@ -163,6 +163,7 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode
 {
     Q_OBJECT
 public:
+    ~QRemoteObjectHostBase() override;
     void setName(const QString &name) override;
 
     template <template <typename> class ApiDefinition, typename ObjectType>

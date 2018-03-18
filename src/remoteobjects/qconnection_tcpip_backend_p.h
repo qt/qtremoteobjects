@@ -58,7 +58,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class TcpClientIo : public ClientIoDevice
+class TcpClientIo final : public ClientIoDevice
 {
     Q_OBJECT
 
@@ -82,7 +82,7 @@ private:
     QTcpSocket *m_socket;
 };
 
-class TcpServerIo : public ServerIoDevice
+class TcpServerIo final : public ServerIoDevice
 {
     Q_OBJECT
 public:
@@ -96,7 +96,7 @@ private:
     QTcpSocket *m_connection;
 };
 
-class TcpServerImpl : public QConnectionAbstractServer
+class TcpServerImpl final : public QConnectionAbstractServer
 {
     Q_OBJECT
     Q_DISABLE_COPY(TcpServerImpl)

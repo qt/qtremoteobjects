@@ -93,7 +93,7 @@ QT_BEGIN_NAMESPACE
     QLocalServer/QLocalSocket QPA for QNX.
 */
 
-class QnxClientIo : public ClientIoDevice
+class QnxClientIo final : public ClientIoDevice
 {
     Q_OBJECT
 
@@ -116,7 +116,7 @@ private:
     QQnxNativeIo *m_socket;
 };
 
-class QnxServerIo : public ServerIoDevice
+class QnxServerIo final : public ServerIoDevice
 {
 public:
     explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = nullptr);
@@ -130,7 +130,7 @@ private:
     QIOQnxSource *m_connection;
 };
 
-class QnxServerImpl : public QConnectionAbstractServer
+class QnxServerImpl final : public QConnectionAbstractServer
 {
     Q_OBJECT
 

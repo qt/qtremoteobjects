@@ -1000,6 +1000,9 @@ QRemoteObjectRegistryHost::~QRemoteObjectRegistryHost() {}
 QRemoteObjectNode::~QRemoteObjectNode()
 { }
 
+QRemoteObjectHostBase::~QRemoteObjectHostBase()
+{ }
+
 /*!
     Sets \a name as the internal name for this Node.  This
     is then output as part of the logging (if enabled).
@@ -1472,13 +1475,22 @@ QRemoteObjectHostBasePrivate::QRemoteObjectHostBasePrivate()
     , remoteObjectIo(nullptr)
 { }
 
+QRemoteObjectHostBasePrivate::~QRemoteObjectHostBasePrivate()
+{ }
+
 QRemoteObjectHostPrivate::QRemoteObjectHostPrivate()
     : QRemoteObjectHostBasePrivate()
+{ }
+
+QRemoteObjectHostPrivate::~QRemoteObjectHostPrivate()
 { }
 
 QRemoteObjectRegistryHostPrivate::QRemoteObjectRegistryHostPrivate()
     : QRemoteObjectHostBasePrivate()
     , registrySource(nullptr)
+{ }
+
+QRemoteObjectRegistryHostPrivate::~QRemoteObjectRegistryHostPrivate()
 { }
 
 QT_END_NAMESPACE

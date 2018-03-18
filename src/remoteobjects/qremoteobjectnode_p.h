@@ -148,7 +148,7 @@ class QRemoteObjectHostBasePrivate : public QRemoteObjectNodePrivate
 {
 public:
     QRemoteObjectHostBasePrivate();
-    ~QRemoteObjectHostBasePrivate() override {}
+    ~QRemoteObjectHostBasePrivate() override;
     QReplicaImplementationInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name) override;
 
 public:
@@ -160,7 +160,7 @@ class QRemoteObjectHostPrivate : public QRemoteObjectHostBasePrivate
 {
 public:
     QRemoteObjectHostPrivate();
-    ~QRemoteObjectHostPrivate() override {}
+    ~QRemoteObjectHostPrivate() override;
     Q_DECLARE_PUBLIC(QRemoteObjectHost);
 };
 
@@ -168,7 +168,7 @@ class QRemoteObjectRegistryHostPrivate : public QRemoteObjectHostBasePrivate
 {
 public:
     QRemoteObjectRegistryHostPrivate();
-    ~QRemoteObjectRegistryHostPrivate() override {}
+    ~QRemoteObjectRegistryHostPrivate() override;
     QRemoteObjectSourceLocations remoteObjectAddresses() const override;
     QRegistrySource *registrySource;
     Q_DECLARE_PUBLIC(QRemoteObjectRegistryHost);

@@ -92,7 +92,7 @@ public:
     virtual QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) = 0;
 };
 
-class QStubReplicaImplementation : public QReplicaImplementationInterface
+class QStubReplicaImplementation final : public QReplicaImplementationInterface
 {
 public:
     explicit QStubReplicaImplementation();
@@ -152,7 +152,7 @@ public:
     QAtomicInt m_state;
 };
 
-class QConnectedReplicaImplementation : public QRemoteObjectReplicaImplementation
+class QConnectedReplicaImplementation final : public QRemoteObjectReplicaImplementation
 {
 public:
     explicit QConnectedReplicaImplementation(const QString &name, const QMetaObject *, QRemoteObjectNode *);
@@ -188,7 +188,7 @@ public:
     QTimer m_heartbeatTimer;
 };
 
-class QInProcessReplicaImplementation : public QRemoteObjectReplicaImplementation
+class QInProcessReplicaImplementation final : public QRemoteObjectReplicaImplementation
 {
 public:
     explicit QInProcessReplicaImplementation(const QString &name, const QMetaObject *, QRemoteObjectNode *);

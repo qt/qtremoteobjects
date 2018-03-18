@@ -90,7 +90,7 @@ public:
     static const int qobjectMethodOffset;
 };
 
-class DynamicApiMap : public SourceApiMap
+class DynamicApiMap final : public SourceApiMap
 {
 public:
     DynamicApiMap(QObject *object, const QMetaObject *metaObject, const QString &name, const QString &typeName);
