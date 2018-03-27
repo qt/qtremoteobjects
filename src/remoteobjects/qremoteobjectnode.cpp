@@ -1388,7 +1388,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 }
 
 /*!
-    \fn bool QRemoteObjectHostBase::enableRemoting(ObjectType *object)
+    \fn template <template <typename> class ApiDefinition, typename ObjectType> bool QRemoteObjectHostBase::enableRemoting(ObjectType *object)
 
     This templated function overload enables a host node to provide remote
     access to a QObject \a object with a specified (and compile-time checked)
