@@ -136,6 +136,8 @@ Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const vo
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &dst);
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst);
 
+QString getTypeNameAndMetaobjectFromClassInfo(const QMetaObject *& meta);
+
 template <typename T>
 void copyStoredProperties(const T *src, T *dst)
 {

@@ -275,7 +275,12 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
                                        QString::fromLatin1(property.name()),
                                        roleInfo});
             } else {
-                m_subclasses << SubclassInfo({child, QString::fromLatin1(property.name())});
+                const QMetaObject *meta = child->metaObject();
+                QString typeName = QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(meta);
+                if (typeName.isNull())
+                    typeName = QString::fromLatin1(propertyMeta->className());
+
+                m_subclasses << SubclassInfo{child, QString::fromLatin1(property.name()), new DynamicApiMap(child, meta, QString::fromLatin1(property.name()), typeName)};
             }
             continue;
         }

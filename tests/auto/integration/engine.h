@@ -37,7 +37,7 @@ class Engine : public EngineSimpleSource
     Q_PROPERTY(bool purchasedPart READ purchasedPart WRITE setpurchasedPart)
 
 public:
-    Engine(QObject *parent = nullptr);
+    Engine(int cylinders = 4, QObject *parent = nullptr);
     ~Engine() override;
 
     bool start() override;

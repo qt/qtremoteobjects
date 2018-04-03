@@ -92,6 +92,7 @@ protected:
 
 protected:
     void setProperties(const QVariantList &);
+    void setChild(int i, const QVariant &);
     const QVariant propAsVariant(int i) const;
     void persistProperties(const QString &repName, const QByteArray &repSig, const QVariantList &props) const;
     QVariantList retrieveProperties(const QString &repName, const QByteArray &repSig) const;

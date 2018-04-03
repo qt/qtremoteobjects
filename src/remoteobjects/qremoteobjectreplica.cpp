@@ -129,6 +129,10 @@ QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
         serializeRemoveObjectPacket(m_packet, m_objectName);
         sendCommand();
     }
+    for (auto prop : m_propertyStorage) {
+        if (prop.canConvert<QObject*>())
+            prop.value<QObject *>()->deleteLater();
+    }
 }
 
 bool QRemoteObjectReplicaImplementation::needsDynamicInitialization() const
@@ -637,6 +641,14 @@ void QRemoteObjectReplica::initializeNode(QRemoteObjectNode *node, const QString
 void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 {
     d_impl->setProperties(properties);
+}
+
+/*!
+    \internal
+*/
+void QRemoteObjectReplica::setChild(int i, const QVariant &value)
+{
+    d_impl->setProperty(i, value);
 }
 
 /*!

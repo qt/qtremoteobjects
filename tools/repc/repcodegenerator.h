@@ -79,6 +79,7 @@ private:
     QString formatSignals(const POD &pod);
     QString formatDataMembers(const POD &pod);
     QString formatMarshallingOperators(const POD &pod);
+    QString typeForMode(const ASTProperty &property, Mode mode);
 
     void generateClass(Mode mode, QTextStream &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
     void generateSourceAPI(QTextStream &out, const ASTClass &astClass);

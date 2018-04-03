@@ -62,6 +62,23 @@ static QString name(const QMetaObject * const mobj)
     return ind >= 0 ? QString::fromLatin1(mobj->classInfo(ind).value()) : QString();
 }
 
+QString QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(const QMetaObject *& meta) {
+    QString typeName;
+    const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+    if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
+        typeName = QString::fromLatin1(meta->classInfo(ind).value());
+        while (true) {
+            Q_ASSERT(meta->superClass());//This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
+            //At the point superclass doesn't have the same QCLASSINFO_REMOTEOBJECT_TYPE,
+            //we have the metaobject we should work from
+            if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE))
+                break;
+            meta = meta->superClass();
+        }
+    }
+    return typeName;
+}
+
 template <typename K, typename V, typename Query>
 bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::const_iterator &result)
 {
@@ -1329,20 +1346,8 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
 
     const QMetaObject *meta = object->metaObject();
     QString _name = name;
-    QString typeName;
-    const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-    if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
-        typeName = QString::fromLatin1(meta->classInfo(ind).value());
-        if (_name.isEmpty())
-            _name = typeName;
-        while (true) {
-            Q_ASSERT(meta->superClass()); //This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
-            if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE)) //At the point we don't find the same QCLASSINFO_REMOTEOBJECT_TYPE,
-                            //we have the metaobject we should work from
-                break;
-            meta = meta->superClass();
-        }
-    } else { //This is a passed in QObject, use its API
+    QString typeName = getTypeNameAndMetaobjectFromClassInfo(meta);
+    if (typeName.isEmpty()) { //This is a passed in QObject, use its API
         if (_name.isEmpty()) {
             _name = object->objectName();
             if (_name.isEmpty()) {
@@ -1351,7 +1356,8 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
                 return false;
             }
         }
-    }
+    } else if (_name.isEmpty())
+        _name = typeName;
     return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName, this);
 }
 
