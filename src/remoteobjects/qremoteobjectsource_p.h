@@ -55,6 +55,7 @@
 #include <QMetaObject>
 #include <QMetaProperty>
 #include <QVector>
+#include <QPointer>
 #include "qremoteobjectsource.h"
 #include "qremoteobjectpacket_p.h"
 
@@ -63,31 +64,62 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectSourceIo;
 class ServerIoDevice;
 
-class QRemoteObjectSource : public QObject
+class QRemoteObjectSourceBase : public QObject
 {
 public:
-    explicit QRemoteObjectSource(QObject *object, const SourceApiMap *,
-                                 QObject *adapter, QRemoteObjectSourceIo *sourceIo);
+    ~QRemoteObjectSourceBase() override;
 
-    ~QRemoteObjectSource() override;
-
-    int qt_metacall(QMetaObject::Call call, int methodId, void **a) override;
-    QVector<ServerIoDevice*> listeners;
+    int qt_metacall(QMetaObject::Call call, int methodId, void **a) final;
     QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;
-    QRemoteObjectSourceIo *m_sourceIo;
-    QRemoteObjectPackets::DataStreamPacket m_packet;
     QVariantList m_marshalledArgs;
     bool hasAdapter() const { return m_adapter; }
+    virtual QString name() const = 0;
+    virtual bool isRoot() const = 0;
 
     QVariantList* marshalArgs(int index, void **a);
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
-    void addListener(ServerIoDevice *io, bool dynamic = false);
-    int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
     bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = nullptr);
     QByteArray m_objectChecksum;
+    QMap<int, QPointer<QRemoteObjectSourceBase>> m_children;
+    struct Private {
+        Private(QRemoteObjectSourceIo *io) : m_sourceIo(io) {}
+        QRemoteObjectSourceIo *m_sourceIo;
+        QVector<ServerIoDevice*> m_listeners;
+        QRemoteObjectPackets::DataStreamPacket m_packet;
+    };
+    Private *d;
     static const int qobjectPropertyOffset;
     static const int qobjectMethodOffset;
+protected:
+    explicit QRemoteObjectSourceBase(QObject *object, Private *d, const SourceApiMap *, QObject *adapter);
+};
+
+class QRemoteObjectSource : public QRemoteObjectSourceBase
+{
+public:
+    explicit QRemoteObjectSource(QObject *object, Private *d, const SourceApiMap *, QObject *adapter);
+    ~QRemoteObjectSource() override;
+
+    bool isRoot() const override { return false; }
+    QString name() const override { return m_name; }
+
+    QString m_name;
+};
+
+class QRemoteObjectRootSource : public QRemoteObjectSourceBase
+{
+public:
+    explicit QRemoteObjectRootSource(QObject *object, const SourceApiMap *,
+                                     QObject *adapter, QRemoteObjectSourceIo *sourceIo);
+    ~QRemoteObjectRootSource() override;
+
+    bool isRoot() const override { return true; }
+    QString name() const override { return m_name; }
+    void addListener(ServerIoDevice *io, bool dynamic = false);
+    int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
+
+    QString m_name;
 };
 
 class DynamicApiMap : public SourceApiMap

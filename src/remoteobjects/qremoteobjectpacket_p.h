@@ -67,7 +67,7 @@
 QT_BEGIN_NAMESPACE
 
 class QMetaObjectBuilder;
-class QRemoteObjectSource;
+class QRemoteObjectSourceBase;
 
 namespace QRemoteObjectPackets {
 
@@ -139,10 +139,10 @@ QVariant serializedProperty(const QMetaProperty &property, const QObject *object
 QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property);
 
 void serializeHandshakePacket(DataStreamPacket &ds);
-void serializeInitPacket(DataStreamPacket&, const QRemoteObjectSource*);
+void serializeInitPacket(DataStreamPacket&, const QRemoteObjectSourceBase*);
 void deserializeInitPacket(QDataStream&, QVariantList&);
 
-void serializeInitDynamicPacket(DataStreamPacket&, const QRemoteObjectSource*);
+void serializeInitDynamicPacket(DataStreamPacket&, const QRemoteObjectSourceBase*);
 void deserializeInitDynamicPacket(QDataStream&, QMetaObjectBuilder&, QVariantList&);
 
 void serializeAddObjectPacket(DataStreamPacket&, const QString &name, bool isDynamic);

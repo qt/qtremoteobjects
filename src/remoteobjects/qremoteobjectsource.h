@@ -173,7 +173,6 @@ public:
     virtual bool isAdapterSignal(int) const { return false; }
     virtual bool isAdapterMethod(int) const { return false; }
     virtual bool isAdapterProperty(int) const { return false; }
-    void qobjectSetup(QRemoteObjectHostBase *node) const;
     QVector<ModelInfo> m_models;
     QVector<SubclassInfo> m_subclasses;
 };

@@ -680,10 +680,10 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 if (!property.isPointer)
                     continue;
                 if (astClass.subClassPropertyIndices.contains(index))
-                    out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquire<%2Replica>(\"Class::%3\")));")
+                    out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquire<%2Replica>(QRemoteObjectStringLiterals::CLASS().arg(\"%3\"))));")
                                               .arg(QString::number(index), property.type, property.name) << endl;
                 else
-                    out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(\"Model::%2\")));")
+                    out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(QRemoteObjectStringLiterals::MODEL().arg(\"%2\"))));")
                                               .arg(QString::number(index), property.name) << endl;
             }
             out << "    }" << endl;
@@ -699,10 +699,10 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             if (!property.isPointer)
                 continue;
             if (astClass.subClassPropertyIndices.contains(index))
-                out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquire<%2Replica>(\"Class::%3\")));")
+                out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquire<%2Replica>(QRemoteObjectStringLiterals::CLASS().arg(\"%3\"))));")
                                           .arg(QString::number(index), property.type, property.name) << endl;
             else
-                out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(\"Model::%2\")));")
+                out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(QRemoteObjectStringLiterals::MODEL().arg(\"%2\"))));")
                                           .arg(QString::number(index), property.name) << endl;
         }
         out << "    }" << endl;

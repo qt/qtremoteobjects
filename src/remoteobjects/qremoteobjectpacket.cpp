@@ -78,7 +78,7 @@ void serializeHandshakePacket(DataStreamPacket &ds)
     ds.finishPacket();
 }
 
-void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
+void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectSourceBase *object)
 {
     const SourceApiMap *api = object->m_api;
 
@@ -142,7 +142,7 @@ void deserializeInitPacket(QDataStream &in, QVariantList &values)
     Q_UNUSED(success);
 }
 
-void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSource *object)
+void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectSourceBase *object)
 {
     const SourceApiMap *api = object->m_api;
 

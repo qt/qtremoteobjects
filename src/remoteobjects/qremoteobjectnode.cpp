@@ -55,6 +55,7 @@
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
+using namespace QRemoteObjectStringLiterals;
 
 static QString name(const QMetaObject * const mobj)
 {
@@ -532,9 +533,9 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceS
             auto propertyMeta = QMetaType::metaObjectForType(property.userType());
             QString name;
             if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject))
-                name = QStringLiteral("Model::%1").arg(QString::fromLatin1(property.name()));
+                name = MODEL().arg(QString::fromLatin1(property.name()));
             else
-                name = QStringLiteral("Class::%1").arg(QString::fromLatin1(property.name()));
+                name = CLASS().arg(QString::fromLatin1(property.name()));
             if (replicas.contains(name))
                 handleReplicaConnection(name);
             else
@@ -548,8 +549,8 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceS
 //requested Replica.  If not, fall back to the Connected Replica case.
 QReplicaImplementationInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
-    QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
-    if (remoteObjectIo && map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
+    QMap<QString, QRemoteObjectSourceBase*>::const_iterator mapIt;
+    if (remoteObjectIo && map_contains(remoteObjectIo->m_sourceObjects, name, mapIt)) {
         Q_Q(QRemoteObjectHostBase);
         QInProcessReplicaImplementation *rp = new QInProcessReplicaImplementation(name, meta, q);
         rp->configurePrivate(instance);
@@ -1358,7 +1359,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
         }
     } else if (_name.isEmpty())
         _name = typeName;
-    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName, this);
+    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName);
 }
 
 /*!
@@ -1431,7 +1432,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 bool QRemoteObjectHostBase::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     Q_D(QRemoteObjectHostBase);
-    return d->remoteObjectIo->enableRemoting(object, api, this, adapter);
+    return d->remoteObjectIo->enableRemoting(object, api, adapter);
 }
 
 /*!

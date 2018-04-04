@@ -202,7 +202,7 @@ public:
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) override;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) override;
 
-    QPointer<QRemoteObjectSource> connectionToSource;
+    QPointer<QRemoteObjectSourceBase> connectionToSource;
 };
 
 QT_END_NAMESPACE
