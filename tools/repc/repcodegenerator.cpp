@@ -709,7 +709,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
 
         out << "" << endl;
 
-        out << "    void initialize()" << endl;
+        out << "    void initialize() override" << endl;
         out << "    {" << endl;
         out << "        " << className << "::registerMetatypes();" << endl;
         out << "        QVariantList properties;" << endl;
