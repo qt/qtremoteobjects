@@ -137,7 +137,8 @@ public:
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args) override = 0;
 
     //Dynamic replica functions
-    virtual void initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values);
+    virtual void setDynamicMetaObject(const QMetaObject *meta);
+    virtual void setDynamicProperties(const QVariantList &values);
 
     QString m_objectName;
     const QMetaObject *m_metaObject;
@@ -160,9 +161,10 @@ public:
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;
     void setProperty(int i, const QVariant &) override;
-    bool isShortCircuit() const override { return false; }
+    bool isShortCircuit() const final { return false; }
     bool isInitialized() const override;
     bool waitForSource(int timeout) override;
+    QVector<int> childIndices() const;
     void initialize(const QVariantList &values);
     void configurePrivate(QRemoteObjectReplica *) override;
     void requestRemoteObjectSource();
@@ -176,9 +178,11 @@ public:
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) override;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) override;
 
-    void initializeMetaObject(const QMetaObjectBuilder&, const QVariantList&) override;
+    void setDynamicMetaObject(const QMetaObject *meta) override;
+    void setDynamicProperties(const QVariantList&) override;
     QVector<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
+    QVector<int> m_childIndices;
     QPointer<ClientIoDevice> connectionToSource;
 
     // pending call data
@@ -197,7 +201,7 @@ public:
     const QVariant getProperty(int i) const override;
     void setProperties(const QVariantList &) override;
     void setProperty(int i, const QVariant &) override;
-    bool isShortCircuit() const override { return true; }
+    bool isShortCircuit() const final { return true; }
 
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) override;
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) override;

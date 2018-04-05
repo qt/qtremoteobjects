@@ -89,8 +89,6 @@ QRemoteObjectReplicaImplementation::QRemoteObjectReplicaImplementation(const QSt
 
 QRemoteObjectReplicaImplementation::~QRemoteObjectReplicaImplementation()
 {
-    if (m_metaObject && qstrcmp(m_metaObject->className(), "QRemoteObjectDynamicReplica") == 0)
-        free(const_cast<QMetaObject*>(m_metaObject));
 }
 
 QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
@@ -120,6 +118,15 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
             }
         }
     });
+
+    if (!meta)
+        return;
+
+    for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
+        const QMetaProperty property = m_metaObject->property(index);
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+            m_childIndices << index - m_metaObject->propertyOffset();
+    }
 }
 
 QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
@@ -173,6 +180,11 @@ bool QConnectedReplicaImplementation::sendCommand()
     if (m_heartbeatTimer.interval())
         m_heartbeatTimer.start();
     return true;
+}
+
+QVector<int> QConnectedReplicaImplementation::childIndices() const
+{
+    return m_childIndices;
 }
 
 void QConnectedReplicaImplementation::initialize(const QVariantList &values)
@@ -244,18 +256,33 @@ QVariantList QRemoteObjectReplica::retrieveProperties(const QString &repName, co
     return node()->retrieveProperties(repName, repSig);
 }
 
-void QRemoteObjectReplicaImplementation::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
+void QRemoteObjectReplicaImplementation::setDynamicMetaObject(const QMetaObject *meta)
 {
     Q_ASSERT(!m_metaObject);
 
-    m_metaObject = builder.toMetaObject();
+    m_metaObject = meta;
+}
+
+void QConnectedReplicaImplementation::setDynamicMetaObject(const QMetaObject *meta)
+{
+    QRemoteObjectReplicaImplementation::setDynamicMetaObject(meta);
+
+    for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
+        const QMetaProperty property = m_metaObject->property(index);
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+            m_childIndices << index - m_metaObject->propertyOffset();
+    }
+}
+
+void QRemoteObjectReplicaImplementation::setDynamicProperties(const QVariantList &values)
+{
     //rely on order of properties;
     setProperties(values);
 }
 
-void QConnectedReplicaImplementation::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
+void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &values)
 {
-    QRemoteObjectReplicaImplementation::initializeMetaObject(builder, values);
+    QRemoteObjectReplicaImplementation::setDynamicProperties(values);
     foreach (QRemoteObjectReplica *obj, m_parentsNeedingConnect)
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();

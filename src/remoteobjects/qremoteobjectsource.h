@@ -121,7 +121,7 @@ QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
 
 }
 
-class QRemoteObjectHostBase;
+// TODO ModelInfo just needs roles, and no need for SubclassInfo
 class QAbstractItemModel;
 
 struct ModelInfo

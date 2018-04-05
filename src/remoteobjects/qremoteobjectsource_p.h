@@ -83,10 +83,14 @@ public:
     QByteArray m_objectChecksum;
     QMap<int, QPointer<QRemoteObjectSourceBase>> m_children;
     struct Private {
-        Private(QRemoteObjectSourceIo *io) : m_sourceIo(io) {}
+        Private(QRemoteObjectSourceIo *io) : m_sourceIo(io), isDynamic(false) {}
         QRemoteObjectSourceIo *m_sourceIo;
         QVector<ServerIoDevice*> m_listeners;
         QRemoteObjectPackets::DataStreamPacket m_packet;
+
+        // Types needed during recursively sending a root to a new listener
+        QSet<QString> sentTypes;
+        bool isDynamic;
     };
     Private *d;
     static const int qobjectPropertyOffset;

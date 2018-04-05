@@ -272,7 +272,7 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
         const auto target = m_api->isAdapterProperty(index) ? m_adapter : m_object;
         const QMetaProperty mp = target->metaObject()->property(propertyIndex);
         qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(index) ? "via adapter" : "") << rawIndex << propertyIndex << mp.name() << mp.read(target);
-        serializePropertyChangePacket(d->m_packet, m_api->name(), rawIndex, serializedProperty(mp, target));
+        serializePropertyChangePacket(this, index);
         d->m_packet.baseAddress = d->m_packet.size;
         propertyIndex = rawIndex;
     }
@@ -290,14 +290,21 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
 void QRemoteObjectRootSource::addListener(ServerIoDevice *io, bool dynamic)
 {
     d->m_listeners.append(io);
+    d->isDynamic = dynamic;
 
     if (dynamic) {
+        d->sentTypes.clear();
         serializeInitDynamicPacket(d->m_packet, this);
         io->write(d->m_packet.array, d->m_packet.size);
     } else {
         serializeInitPacket(d->m_packet, this);
         io->write(d->m_packet.array, d->m_packet.size);
     }
+
+    //Setting isDynamic == false will prevent class definitions from being sent if the
+    //QObject pointer is changed (setting a new subclass pointer).  I.e., class definitions
+    //are only sent by serializeInitDynamicPacket, not propertyChangePackets.
+    d->isDynamic = false;
 }
 
 int QRemoteObjectRootSource::removeListener(ServerIoDevice *io, bool shouldSendRemove)
