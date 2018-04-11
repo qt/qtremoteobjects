@@ -50,13 +50,6 @@
 
 #define SET_NODE_NAME(obj) (obj).setName(QLatin1String(#obj))
 
-#if !defined(BACKEND) || !defined(HOST_URL) || !defined(REGISTRY_URL)
-  #error "Integration test needs BACKEND, HOST_URL and REGISTRY_URL defined."
-#else
-  const QUrl hostUrl = QUrl(QLatin1String(HOST_URL));
-  const QUrl registryUrl = QUrl(QLatin1String(REGISTRY_URL));
-#endif
-
 //DUMMY impl for variant comparison
 bool operator<(const QVector<int> &lhs, const QVector<int> &rhs)
 {
@@ -147,6 +140,19 @@ signals:
     void forwardResult(int);
 
 private slots:
+    void initTestCase_data()
+    {
+        QTest::addColumn<QUrl>("hostUrl");
+        QTest::addColumn<QUrl>("registryUrl");
+#ifndef SKIP_LOCAL
+        QTest::newRow("local") << QUrl(QLatin1String("local:replica_local_integration")) << QUrl(QLatin1String("local:registry_local_integration"));
+#endif
+        QTest::newRow("tcp") << QUrl(QLatin1String("tcp://127.0.0.1:65511")) << QUrl(QLatin1String("tcp://127.0.0.1:65512"));
+#ifdef __QNXNTO__
+        QTest::newRow("qnx") << QUrl(QLatin1String("qnx:replica")) << QUrl(QLatin1String("qnx:registry"));
+#endif
+    }
+
     void initTestCase()
     {
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
@@ -154,8 +160,6 @@ private slots:
         // use different paths in QRemoteObjectSettingsStore
         QCoreApplication::setOrganizationName(QLatin1String("QtProject"));
         QStandardPaths::setTestModeEnabled(true);
-
-        qDebug() << "Running tst_Integration for backend:" << BACKEND;
     }
 
     void cleanup()
@@ -166,6 +170,7 @@ private slots:
 
     void basicTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -183,6 +188,7 @@ private slots:
 
     void persistRestoreTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectNode client;
         client.connectToNode(hostUrl);
         Q_SET_OBJECT_NAME(client);
@@ -195,6 +201,7 @@ private slots:
 
     void persistTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectSettingsStore store;
 
         QRemoteObjectHost host(hostUrl);
@@ -223,6 +230,7 @@ private slots:
 
     void enumTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
 
@@ -317,6 +325,7 @@ private slots:
 
     void namedObjectTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -351,6 +360,7 @@ private slots:
 
     void multipleInstancesTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -387,6 +397,8 @@ private slots:
 
     void registryAddedTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        QFETCH_GLOBAL(QUrl, registryUrl);
         QRemoteObjectRegistryHost registry(registryUrl);
         SET_NODE_NAME(registry);
 
@@ -455,6 +467,8 @@ private slots:
 
     void registryTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        QFETCH_GLOBAL(QUrl, registryUrl);
         QRemoteObjectRegistryHost registry(registryUrl);
         SET_NODE_NAME(registry);
         TcpDataCenterSimpleSource source1;
@@ -500,6 +514,8 @@ private slots:
 
     void invalidUrlsTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        QFETCH_GLOBAL(QUrl, registryUrl);
         const QUrl invalidUrl;
         {
             QRemoteObjectHost host(invalidUrl, registryUrl);
@@ -525,6 +541,8 @@ private slots:
 
     void noRegistryTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        QFETCH_GLOBAL(QUrl, registryUrl);
         QRemoteObjectHost host(hostUrl, registryUrl);
         SET_NODE_NAME(host);
         const bool res = host.waitForRegistry(3000);
@@ -537,6 +555,8 @@ private slots:
 
     void delayedRegistryTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        QFETCH_GLOBAL(QUrl, registryUrl);
         QRemoteObjectNode client(registryUrl);
         Q_SET_OBJECT_NAME(client);
 
@@ -578,6 +598,7 @@ private slots:
 
     void defaultValueTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -594,6 +615,7 @@ private slots:
 
     void notifyTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -619,6 +641,7 @@ private slots:
 
     void dynamicNotifyTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -650,6 +673,7 @@ private slots:
 
     void slotTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -680,6 +704,7 @@ private slots:
 
     void slotTestWithWatcher()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -713,6 +738,7 @@ private slots:
 
     void slotTestDynamicReplica()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -754,6 +780,7 @@ private slots:
 
     void slotTestDynamicReplicaWithArguments()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -801,6 +828,7 @@ private slots:
 
     void expapiTestDynamicReplica()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -820,6 +848,7 @@ private slots:
 
     void slotTestInProcess()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -841,6 +870,7 @@ private slots:
 
     void slotTestWithUnnormalizedSignature()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -858,6 +888,7 @@ private slots:
 
     void setterTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -878,6 +909,7 @@ private slots:
 
     void pushTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -899,6 +931,7 @@ private slots:
 
     void dynamicSetterTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -922,6 +955,7 @@ private slots:
 
     void slotWithParameterTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -944,6 +978,7 @@ private slots:
     }
 
     void slotWithUserReturnTypeTest() {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -965,6 +1000,7 @@ private slots:
 
     void sequentialReplicaTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -987,6 +1023,7 @@ private slots:
 
     void doubleReplicaTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -1008,6 +1045,7 @@ private slots:
     }
 
     void twoReplicaTest() {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -1033,6 +1071,7 @@ private slots:
 
     void rawDynamicReplicaTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         TestDynamic source;
@@ -1083,6 +1122,7 @@ private slots:
 
     void dynamicReplicaTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         TcpDataCenterSimpleSource t;
@@ -1141,6 +1181,7 @@ private slots:
 
     void apiTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -1159,6 +1200,7 @@ private slots:
 
     void apiInProcTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
         Engine e;
@@ -1184,6 +1226,7 @@ private slots:
     }
 
     void clientBeforeServerTest() {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectNode client;
         Q_SET_OBJECT_NAME(client);
         client.connectToNode(hostUrl);
@@ -1204,6 +1247,7 @@ private slots:
 
     void largeDataTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         TestLargeData t;
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
@@ -1231,6 +1275,7 @@ private slots:
 
     void PODTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
 
@@ -1252,6 +1297,7 @@ private slots:
 
     void SchemeTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost valid(hostUrl);
         QVERIFY(valid.lastError() == QRemoteObjectNode::NoError);
         QRemoteObjectHost invalid(QUrl(QLatin1String("invalid:invalid")));
@@ -1260,12 +1306,14 @@ private slots:
         QVERIFY(invalidRegistry.lastError() == QRemoteObjectNode::RegistryNotAcquired);
     }
 
-//TODO check Mac support
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_DARWIN) && !defined(SKIP_LOCAL)
     void localServerConnectionTest()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        if (hostUrl.scheme() != QRemoteObjectStringLiterals::local())
+            QSKIP("Skipping 'local' specific backend for non-local test.");
         const auto progName = TestUtils::findExecutable("localsockettestserver", {
-            QCoreApplication::applicationDirPath() + "/../../localsockettestserver"
+            QCoreApplication::applicationDirPath() + "/../localsockettestserver"
         });
 
         //create a fake socket as killing doesn't produce a necessarily unusable socket
@@ -1295,8 +1343,11 @@ private slots:
     // Tests to take over an existing socket if its still valid
     void localServerConnectionTest2()
     {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        if (hostUrl.scheme() != QRemoteObjectStringLiterals::local())
+            QSKIP("Skipping 'local' specific backend for non-local test.");
         const auto progName = TestUtils::findExecutable("localsockettestserver", {
-            QCoreApplication::applicationDirPath() + "/../../localsockettestserver"
+            QCoreApplication::applicationDirPath() + "/../localsockettestserver"
         });
 
         QProcess testServer;
