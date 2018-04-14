@@ -121,6 +121,8 @@ namespace QRemoteObjectStringLiterals {
 
 inline QString local() { return QStringLiteral("local"); }
 inline QString tcp() { return QStringLiteral("tcp"); }
+inline QString CLASS() { return QStringLiteral("Class::%1"); }
+inline QString MODEL() { return QStringLiteral("Model::%1"); }
 
 }
 
@@ -135,6 +137,8 @@ Q_NAMESPACE
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst);
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &dst);
 Q_REMOTEOBJECTS_EXPORT void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst);
+
+QString getTypeNameAndMetaobjectFromClassInfo(const QMetaObject *& meta);
 
 template <typename T>
 void copyStoredProperties(const T *src, T *dst)

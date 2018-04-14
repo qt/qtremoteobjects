@@ -87,13 +87,15 @@ struct ASTProperty
     };
 
     ASTProperty();
-    ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier, bool persisted);
+    ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier, bool persisted,
+                bool isPointer=false);
 
     QString type;
     QString name;
     QString defaultValue;
     Modifier modifier;
     bool persisted;
+    bool isPointer;
 };
 Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
 
@@ -178,22 +180,12 @@ Q_DECLARE_TYPEINFO(ASTModelRole, Q_MOVABLE_TYPE);
 
 struct ASTModel
 {
-    explicit ASTModel(const QString &name = QString());
+    ASTModel(int index = -1) : propertyIndex(index) {}
 
     QVector<ASTModelRole> roles;
-    QString name;
+    int propertyIndex;
 };
 Q_DECLARE_TYPEINFO(ASTModel, Q_MOVABLE_TYPE);
-
-struct ASTChildRep
-{
-    explicit ASTChildRep(const QString &name = QString(),
-                         const QString &type = QString());
-
-    QString name;
-    QString type;
-};
-Q_DECLARE_TYPEINFO(ASTChildRep, Q_MOVABLE_TYPE);
 
 /// A Class declaration
 struct ASTClass
@@ -201,6 +193,7 @@ struct ASTClass
     explicit ASTClass(const QString& name = QString());
 
     bool isValid() const;
+    bool hasPointerObjects() const;
 
     QString name;
     QVector<ASTProperty> properties;
@@ -208,8 +201,8 @@ struct ASTClass
     QVector<ASTFunction> slotsList;
     QVector<ASTEnum> enums;
     bool hasPersisted;
-    QVector<ASTModel> models;
-    QVector<ASTChildRep> children;
+    QVector<ASTModel> modelMetadata;
+    QVector<int> subClassPropertyIndices;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -328,12 +321,12 @@ static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
 }
 
 ASTProperty::ASTProperty()
-    : modifier(ReadPush), persisted(false)
+    : modifier(ReadPush), persisted(false), isPointer(false)
 {
 }
 
-ASTProperty::ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier, bool persisted)
-    : type(type), name(name), defaultValue(defaultValue), modifier(modifier), persisted(persisted)
+ASTProperty::ASTProperty(const QString &type, const QString &name, const QString &defaultValue, Modifier modifier, bool persisted, bool isPointer)
+    : type(type), name(name), defaultValue(defaultValue), modifier(modifier), persisted(persisted), isPointer(isPointer)
 {
 }
 
@@ -387,16 +380,6 @@ ASTEnum::ASTEnum(const QString &name)
 {
 }
 
-ASTModel::ASTModel(const QString &name)
-    : name(name)
-{
-}
-
-ASTChildRep::ASTChildRep(const QString &name, const QString &type)
-    : name(name), type(type)
-{
-}
-
 ASTClass::ASTClass(const QString &name)
     : name(name), hasPersisted(false)
 {
@@ -405,6 +388,12 @@ ASTClass::ASTClass(const QString &name)
 bool ASTClass::isValid() const
 {
     return !name.isEmpty();
+}
+
+bool ASTClass::hasPointerObjects() const
+{
+    int count = modelMetadata.size() + subClassPropertyIndices.size();
+    return count > 0;
 }
 
 RepParser::RepParser(QIODevice &outputDevice)
@@ -841,14 +830,15 @@ Model: model;
 /.
     case $rule_number:
     {
-        ASTModel model;
-        model.name = captured().value(QLatin1String("name")).trimmed();
+        ASTModel model(m_astClass.properties.size());
+        const QString name = captured().value(QLatin1String("name")).trimmed();
         const QString argString = captured().value(QLatin1String("args")).trimmed();
 
         if (!parseRoles(model, argString))
             return false;
 
-        m_astClass.models << model;
+        m_astClass.modelMetadata << model;
+        m_astClass.properties << ASTProperty(QStringLiteral("QAbstractItemModel"), name, QStringLiteral("nullptr"), ASTProperty::Constant, false, true);
     }
     break;
 ./
@@ -857,11 +847,11 @@ ChildRep: childrep;
 /.
 case $rule_number:
 {
-    ASTChildRep child;
-    child.name = captured().value(QLatin1String("name")).trimmed();
-    child.type = captured().value(QLatin1String("type")).trimmed();
+    const QString name = captured().value(QLatin1String("name")).trimmed();
+    const QString type = captured().value(QLatin1String("type")).trimmed();
 
-    m_astClass.children << child;
+    m_astClass.subClassPropertyIndices << m_astClass.properties.size();
+    m_astClass.properties << ASTProperty(type, name, QStringLiteral("nullptr"), ASTProperty::Constant, false, true);
 }
 break;
 ./

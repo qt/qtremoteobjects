@@ -55,11 +55,29 @@
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
+using namespace QRemoteObjectStringLiterals;
 
 static QString name(const QMetaObject * const mobj)
 {
     const int ind = mobj->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
     return ind >= 0 ? QString::fromLatin1(mobj->classInfo(ind).value()) : QString();
+}
+
+QString QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(const QMetaObject *& meta) {
+    QString typeName;
+    const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+    if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
+        typeName = QString::fromLatin1(meta->classInfo(ind).value());
+        while (true) {
+            Q_ASSERT(meta->superClass());//This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
+            //At the point superclass doesn't have the same QCLASSINFO_REMOTEOBJECT_TYPE,
+            //we have the metaobject we should work from
+            if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE))
+                break;
+            meta = meta->superClass();
+        }
+    }
+    return typeName;
 }
 
 template <typename K, typename V, typename Query>
@@ -291,6 +309,107 @@ QRemoteObjectAbstractPersistedStorePrivate::~QRemoteObjectAbstractPersistedStore
 {
 }
 
+QRemoteObjectMetaObjectManager::~QRemoteObjectMetaObjectManager()
+{
+    for (QMetaObject *mo : dynamicTypes)
+        free(mo); //QMetaObjectBuilder uses malloc, not new
+}
+
+QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QString &type)
+{
+    return dynamicTypes.value(type);
+}
+
+QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
+{
+    QMetaObjectBuilder builder;
+    builder.setClassName("QRemoteObjectDynamicReplica");
+    builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
+    builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
+
+    QString type;
+    quint32 numEnums = 0;
+    quint32 numSignals = 0;
+    quint32 numMethods = 0;
+    quint32 numProperties = 0;
+
+    in >> type;
+
+    in >> numEnums;
+    for (quint32 i = 0; i < numEnums; ++i) {
+        QByteArray name;
+        in >> name;
+        auto enumBuilder = builder.addEnumerator(name);
+        bool isFlag;
+        in >> isFlag;
+        enumBuilder.setIsFlag(isFlag);
+
+        QByteArray scopeName;
+        in >> scopeName; // scope
+        // TODO uncomment this line after https://bugreports.qt.io/browse/QTBUG-64081 is implemented
+        //enumBuilder.setScope(scopeName);
+
+        int keyCount;
+        in >> keyCount;
+        for (int k = 0; k < keyCount; ++k) {
+            QByteArray key;
+            int value;
+            in >> key;
+            in >> value;
+            enumBuilder.addKey(key, value);
+        }
+    }
+
+    int curIndex = 0;
+
+    in >> numSignals;
+    for (quint32 i = 0; i < numSignals; ++i) {
+        QByteArray signature;
+        QList<QByteArray> paramNames;
+        in >> signature;
+        in >> paramNames;
+        ++curIndex;
+        auto mmb = builder.addSignal(signature);
+        mmb.setParameterNames(paramNames);
+    }
+
+    in >> numMethods;
+    for (quint32 i = 0; i < numMethods; ++i) {
+        QByteArray signature, returnType;
+        QList<QByteArray> paramNames;
+        in >> signature;
+        in >> returnType;
+        in >> paramNames;
+        ++curIndex;
+        const bool isVoid = returnType.isEmpty() || returnType == QByteArrayLiteral("void");
+        QMetaMethodBuilder mmb;
+        if (isVoid)
+            mmb = builder.addMethod(signature);
+        else
+            mmb = builder.addMethod(signature, QByteArrayLiteral("QRemoteObjectPendingCall"));
+        mmb.setParameterNames(paramNames);
+    }
+
+    in >> numProperties;
+
+    for (quint32 i = 0; i < numProperties; ++i) {
+        QByteArray name;
+        QByteArray typeName;
+        QByteArray signalName;
+        in >> name;
+        in >> typeName;
+        in >> signalName;
+        if (signalName.isEmpty())
+            builder.addProperty(name, typeName);
+        else
+            builder.addProperty(name, typeName, builder.indexOfSignal(signalName));
+    }
+
+    auto meta = builder.toMetaObject();
+    dynamicTypes.insert(type, meta);
+    return meta;
+}
+
 void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectReplica *instance)
 {
     int nConnections = 0;
@@ -515,9 +634,9 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceS
             auto propertyMeta = QMetaType::metaObjectForType(property.userType());
             QString name;
             if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject))
-                name = QStringLiteral("Model::%1").arg(QString::fromLatin1(property.name()));
+                name = MODEL().arg(QString::fromLatin1(property.name()));
             else
-                name = QStringLiteral("Class::%1").arg(QString::fromLatin1(property.name()));
+                name = CLASS().arg(QString::fromLatin1(property.name()));
             if (replicas.contains(name))
                 handleReplicaConnection(name);
             else
@@ -531,8 +650,8 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceS
 //requested Replica.  If not, fall back to the Connected Replica case.
 QReplicaImplementationInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
-    QMap<QString, QRemoteObjectSource*>::const_iterator mapIt;
-    if (remoteObjectIo && map_contains(remoteObjectIo->m_remoteObjects, name, mapIt)) {
+    QMap<QString, QRemoteObjectSourceBase*>::const_iterator mapIt;
+    if (remoteObjectIo && map_contains(remoteObjectIo->m_sourceObjects, name, mapIt)) {
         Q_Q(QRemoteObjectHostBase);
         QInProcessReplicaImplementation *rp = new QInProcessReplicaImplementation(name, meta, q);
         rp->configurePrivate(instance);
@@ -605,12 +724,13 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case InitPacket:
         {
-            qROPrivDebug() << "InitObject-->" << rxName << this;
+            qROPrivDebug() << "InitPacket-->" << rxName << this;
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             //Use m_rxArgs (a QVariantList to hold the properties QVariantList)
             deserializeInitPacket(connection->stream(), rxArgs);
             if (rep)
             {
+                handlePointerToQObjectProperties(rep.data(), rxArgs);
                 rep->initialize(rxArgs);
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -619,16 +739,15 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case InitDynamicPacket:
         {
-            qROPrivDebug() << "InitObject-->" << rxName << this;
-            QMetaObjectBuilder builder;
-            builder.setClassName("QRemoteObjectDynamicReplica");
-            builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
-            builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
-            deserializeInitDynamicPacket(connection->stream(), builder, rxArgs);
+            qROPrivDebug() << "InitDynamicPacket-->" << rxName << this;
+            const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection->stream());
+            deserializeInitPacket(connection->stream(), rxArgs);
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep)
             {
-                rep->initializeMetaObject(builder, rxArgs);
+                rep->setDynamicMetaObject(meta);
+                handlePointerToQObjectProperties(rep.data(), rxArgs);
+                rep->setDynamicProperties(rxArgs);
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
             }
@@ -656,8 +775,18 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             deserializePropertyChangePacket(connection->stream(), propertyIndex, rxValue);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
-                const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
-                rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
+                QConnectedReplicaImplementation *connectedRep = nullptr;
+                if (!rep->isShortCircuit()) {
+                    connectedRep = static_cast<QConnectedReplicaImplementation *>(rep.data());
+                    if (!connectedRep->childIndices().contains(propertyIndex))
+                        connectedRep = nullptr; //connectedRep will be a valid pointer only if propertyIndex is a child index
+                }
+                if (connectedRep)
+                    rep->setProperty(propertyIndex, handlePointerToQObjectProperty(connectedRep, propertyIndex, rxValue));
+                else {
+                    const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
+                    rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
+                }
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
             }
@@ -836,6 +965,7 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QRemoteObjectNode::ErrorCode>();
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
+    qRegisterMetaTypeStreamOperators<QRemoteObjectPackets::QRO_>();
 }
 
 bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteArray &b)
@@ -1192,6 +1322,56 @@ void QRemoteObjectNodePrivate::setRegistry(QRemoteObjectRegistry *reg)
     });
 }
 
+QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedReplicaImplementation *rep, int index, const QVariant &property)
+{
+    Q_Q(QRemoteObjectNode);
+    using namespace QRemoteObjectPackets;
+
+    QVariant retval;
+
+    Q_ASSERT(property.canConvert<QRO_>());
+    QRO_ childInfo = property.value<QRO_>();
+    qROPrivDebug() << "QRO_:" << childInfo.name << replicas.contains(childInfo.name) << replicas.keys();
+    if (replicas.contains(childInfo.name) && (childInfo.isNull || rep->isInitialized())) {
+        // Either the source has changed the pointer and we need to update it, or the source pointer is a nullptr
+        replicas.remove(childInfo.name);
+        if (childInfo.type == ObjectType::CLASS)
+            retval = QVariant::fromValue<QRemoteObjectDynamicReplica*>(nullptr);
+        else
+            retval = QVariant::fromValue<QAbstractItemModelReplica*>(nullptr);
+    } else {
+        if (!replicas.contains(childInfo.name)) {
+            if (childInfo.type == ObjectType::CLASS)
+                retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));
+            else
+                retval = QVariant::fromValue(q->acquireModel(childInfo.name));
+        } else //We are receiving the initial data for the QObject
+            retval = rep->getProperty(index); //Use existing value so changed signal isn't emitted
+
+        QSharedPointer<QConnectedReplicaImplementation> childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(childInfo.name).toStrongRef());
+        if (childRep->needsDynamicInitialization()) {
+            if (childInfo.classDefinition.isEmpty())
+                childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(childInfo.typeName));
+            else {
+                QDataStream in(childInfo.classDefinition);
+                childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(in));
+            }
+        }
+        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
+        childRep->setDynamicProperties(childInfo.parameters);
+    }
+
+    return retval;
+}
+
+void QRemoteObjectNodePrivate::handlePointerToQObjectProperties(QConnectedReplicaImplementation *rep, QVariantList &properties)
+{
+    using namespace QRemoteObjectPackets;
+    QVector<int> childIndices = rep->childIndices();
+    for (const int index : childIndices)
+        properties[index] = handlePointerToQObjectProperty(rep, index, properties.at(index));
+}
+
 /*!
     Blocks until this Node's \l Registry is initialized or \a timeout (in
     milliseconds) expires. Returns \c true if the \l Registry is successfully
@@ -1332,20 +1512,8 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
 
     const QMetaObject *meta = object->metaObject();
     QString _name = name;
-    QString typeName;
-    const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
-    if (ind != -1) { //We have an object created from repc or at least with QCLASSINFO defined
-        typeName = QString::fromLatin1(meta->classInfo(ind).value());
-        if (_name.isEmpty())
-            _name = typeName;
-        while (true) {
-            Q_ASSERT(meta->superClass()); //This recurses to QObject, which doesn't have QCLASSINFO_REMOTEOBJECT_TYPE
-            if (ind != meta->superClass()->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE)) //At the point we don't find the same QCLASSINFO_REMOTEOBJECT_TYPE,
-                            //we have the metaobject we should work from
-                break;
-            meta = meta->superClass();
-        }
-    } else { //This is a passed in QObject, use its API
+    QString typeName = getTypeNameAndMetaobjectFromClassInfo(meta);
+    if (typeName.isEmpty()) { //This is a passed in QObject, use its API
         if (_name.isEmpty()) {
             _name = object->objectName();
             if (_name.isEmpty()) {
@@ -1354,8 +1522,9 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
                 return false;
             }
         }
-    }
-    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName, this);
+    } else if (_name.isEmpty())
+        _name = typeName;
+    return d->remoteObjectIo->enableRemoting(object, meta, _name, typeName);
 }
 
 /*!
@@ -1391,7 +1560,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 }
 
 /*!
-    \fn bool QRemoteObjectHostBase::enableRemoting(ObjectType *object)
+    \fn template <template <typename> class ApiDefinition, typename ObjectType> bool QRemoteObjectHostBase::enableRemoting(ObjectType *object)
 
     This templated function overload enables a host node to provide remote
     access to a QObject \a object with a specified (and compile-time checked)
@@ -1428,7 +1597,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
 bool QRemoteObjectHostBase::enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter)
 {
     Q_D(QRemoteObjectHostBase);
-    return d->remoteObjectIo->enableRemoting(object, api, this, adapter);
+    return d->remoteObjectIo->enableRemoting(object, api, adapter);
 }
 
 /*!

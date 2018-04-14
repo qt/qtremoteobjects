@@ -121,7 +121,7 @@ QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
 
 }
 
-class QRemoteObjectHostBase;
+// TODO ModelInfo just needs roles, and no need for SubclassInfo
 class QAbstractItemModel;
 
 struct ModelInfo
@@ -131,18 +131,19 @@ struct ModelInfo
     QByteArray roles;
 };
 
+class SourceApiMap;
 struct SubclassInfo
 {
+    SubclassInfo(QObject *_ptr = nullptr, QString _name = QString(), SourceApiMap *_api = nullptr) : ptr(_ptr), name(_name), api(_api) {}
     QObject *ptr;
     QString name;
+    SourceApiMap *api;
 };
 
 class SourceApiMap
 {
 protected:
     SourceApiMap() {}
-    QVector<ModelInfo> m_models;
-    QVector<SubclassInfo> m_subclasses;
 public:
     virtual ~SourceApiMap() {}
     virtual QString name() const = 0;
@@ -172,7 +173,8 @@ public:
     virtual bool isAdapterSignal(int) const { return false; }
     virtual bool isAdapterMethod(int) const { return false; }
     virtual bool isAdapterProperty(int) const { return false; }
-    void qobjectSetup(QRemoteObjectHostBase *node) const;
+    QVector<ModelInfo> m_models;
+    QVector<SubclassInfo> m_subclasses;
 };
 
 QT_END_NAMESPACE

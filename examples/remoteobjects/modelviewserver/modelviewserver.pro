@@ -1,4 +1,5 @@
 QT += widgets remoteobjects
+requires(qtConfig(treeview))
 
 TEMPLATE = app
 

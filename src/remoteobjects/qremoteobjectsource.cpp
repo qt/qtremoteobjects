@@ -43,6 +43,7 @@
 
 #include "qconnectionfactories_p.h"
 #include "qremoteobjectsourceio_p.h"
+#include "qremoteobjectabstractitemmodeladapter_p.h"
 
 #include <QMetaProperty>
 #include <QVarLengthArray>
@@ -54,11 +55,11 @@
 QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
+using namespace QRemoteObjectStringLiterals;
 
-const int QRemoteObjectSource::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
-const int QRemoteObjectSource::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
+const int QRemoteObjectSourceBase::qobjectPropertyOffset = QObject::staticMetaObject.propertyCount();
+const int QRemoteObjectSourceBase::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 static const QByteArray s_classinfoRemoteobjectSignature(QCLASSINFO_REMOTEOBJECT_SIGNATURE);
-
 
 QByteArray QtPrivate::qtro_classinfo_signature(const QMetaObject *metaObject)
 {
@@ -73,16 +74,16 @@ QByteArray QtPrivate::qtro_classinfo_signature(const QMetaObject *metaObject)
     return QByteArray{};
 }
 
-QRemoteObjectSource::QRemoteObjectSource(QObject *obj, const SourceApiMap *api,
-                                         QObject *adapter, QRemoteObjectSourceIo *sourceIo)
+QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const SourceApiMap *api,
+                                                 QObject *adapter)
     : QObject(obj),
       m_object(obj),
       m_adapter(adapter),
       m_api(api),
-      m_sourceIo(sourceIo)
+      d(d)
 {
     if (!obj) {
-        qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: Cannot replicate a NULL object" << m_api->name();
+        qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourceBase: Cannot replicate a NULL object" << m_api->name();
         return;
     }
 
@@ -98,26 +99,105 @@ QRemoteObjectSource::QRemoteObjectSource(QObject *obj, const SourceApiMap *api,
         //derived classes.
         const auto target = m_api->isAdapterSignal(idx) ? adapter : obj;
         if (!QMetaObject::connect(target, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
-            qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourcePrivate: QMetaObject::connect returned false. Unable to connect.";
+            qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourceBase: QMetaObject::connect returned false. Unable to connect.";
             return;
         }
 
         qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << meta->method(sourceIndex).name();
     }
 
-    m_sourceIo->registerSource(this);
+    const int nChildren = api->m_models.count() + api->m_subclasses.count();
+    if (nChildren > 0) {
+        QVector<int> roles;
+        const int numProperties = api->propertyCount();
+        int modelIndex = 0, subclassIndex = 0;
+        for (int i = 0; i < numProperties; ++i) {
+            if (api->isAdapterProperty(i))
+                continue;
+            const int index = api->sourcePropertyIndex(i);
+            const auto property = m_object->metaObject()->property(index);
+            if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
+                auto propertyMeta = QMetaType::metaObjectForType(property.userType());
+                QObject *child = property.read(m_object).value<QObject *>();
+                if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
+                    const auto modelInfo = api->m_models.at(modelIndex++);
+                    QAbstractItemModel *model = qobject_cast<QAbstractItemModel *>(child);
+                    QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *modelApi =
+                        new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(modelInfo.name);
+                    if (!model)
+                        m_children.insert(i, new QRemoteObjectSource(nullptr, d, modelApi, nullptr));
+                    else {
+                        roles.clear();
+                        const auto knownRoles = model->roleNames();
+                        for (auto role : modelInfo.roles.split('|')) {
+                            const int roleIndex = knownRoles.key(role, -1);
+                            if (roleIndex == -1) {
+                                qCWarning(QT_REMOTEOBJECT) << "Invalid role" << role << "for model" << model->metaObject()->className();
+                                qCWarning(QT_REMOTEOBJECT) << "  known roles:" << knownRoles;
+                            } else
+                                roles << roleIndex;
+                        }
+                        auto adapter = new QAbstractItemModelSourceAdapter(model, nullptr,
+                                                                           roles.isEmpty() ? knownRoles.keys().toVector() : roles);
+                        m_children.insert(i, new QRemoteObjectSource(model, d, modelApi, adapter));
+                    }
+                } else {
+                    const auto classApi = api->m_subclasses.at(subclassIndex++);
+                    m_children.insert(i, new QRemoteObjectSource(child, d, classApi.api, nullptr));
+                }
+            }
+        }
+    }
+}
+
+QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceApiMap *api, QObject *adapter)
+    : QRemoteObjectSourceBase(obj, d, api, adapter)
+    , m_name(adapter ? MODEL().arg(api->name()) : CLASS().arg(api->name()))
+{
+    d->m_sourceIo->registerSource(this);
+}
+
+QRemoteObjectRootSource::QRemoteObjectRootSource(QObject *obj, const SourceApiMap *api,
+                                                 QObject *adapter, QRemoteObjectSourceIo *sourceIo)
+    : QRemoteObjectSourceBase(obj, new Private(sourceIo), api, adapter)
+    , m_name(api->name())
+{
+    d->m_sourceIo->registerSource(this);
+}
+
+QRemoteObjectSourceBase::~QRemoteObjectSourceBase()
+{
+    delete m_api;
 }
 
 QRemoteObjectSource::~QRemoteObjectSource()
 {
-    m_sourceIo->unregisterSource(this);
-    Q_FOREACH (ServerIoDevice *io, listeners) {
-        removeListener(io, true);
+    auto end = m_children.cend();
+    for (auto it = m_children.cbegin(); it != end; ++it) {
+        // We used QPointers for m_children because we don't control the lifetime of child QObjects
+        // Since the this/source QObject's parent is the referenced QObject, it could have already
+        // been deleted
+        delete it.value();
     }
-    delete m_api;
 }
 
-QVariantList* QRemoteObjectSource::marshalArgs(int index, void **a)
+QRemoteObjectRootSource::~QRemoteObjectRootSource()
+{
+    auto end = m_children.cend();
+    for (auto it = m_children.cbegin(); it != end; ++it) {
+        // We used QPointers for m_children because we don't control the lifetime of child QObjects
+        // Since the this/source QObject's parent is the referenced QObject, it could have already
+        // been deleted
+        delete it.value();
+    }
+    d->m_sourceIo->unregisterSource(this);
+    Q_FOREACH (ServerIoDevice *io, d->m_listeners) {
+        removeListener(io, true);
+    }
+    delete d;
+}
+
+QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
 {
     QVariantList &list = m_marshalledArgs;
     const int N = m_api->signalParameterCount(index);
@@ -143,7 +223,7 @@ QVariantList* QRemoteObjectSource::marshalArgs(int index, void **a)
     return &m_marshalledArgs;
 }
 
-bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
+bool QRemoteObjectSourceBase::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
 {
     int status = -1;
     int flags = 0;
@@ -181,9 +261,9 @@ bool QRemoteObjectSource::invoke(QMetaObject::Call c, bool forAdapter, int index
     return r == -1 && status == -1;
 }
 
-void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void **a)
+void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, void **a)
 {
-    if (listeners.empty())
+    if (d->m_listeners.empty())
         return;
 
     int propertyIndex = m_api->propertyIndexFromSignal(index);
@@ -192,46 +272,53 @@ void QRemoteObjectSource::handleMetaCall(int index, QMetaObject::Call call, void
         const auto target = m_api->isAdapterProperty(index) ? m_adapter : m_object;
         const QMetaProperty mp = target->metaObject()->property(propertyIndex);
         qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(index) ? "via adapter" : "") << rawIndex << propertyIndex << mp.name() << mp.read(target);
-        serializePropertyChangePacket(m_packet, m_api->name(), rawIndex, serializedProperty(mp, target));
-        m_packet.baseAddress = m_packet.size;
+        serializePropertyChangePacket(this, index);
+        d->m_packet.baseAddress = d->m_packet.size;
         propertyIndex = rawIndex;
     }
 
-    qCDebug(QT_REMOTEOBJECT) << "# Listeners" << listeners.length();
+    qCDebug(QT_REMOTEOBJECT) << "# Listeners" << d->m_listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
 
-    serializeInvokePacket(m_packet, m_api->name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
-    m_packet.baseAddress = 0;
+    serializeInvokePacket(d->m_packet, m_api->name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
+    d->m_packet.baseAddress = 0;
 
-    Q_FOREACH (ServerIoDevice *io, listeners)
-        io->write(m_packet.array, m_packet.size);
+    Q_FOREACH (ServerIoDevice *io, d->m_listeners)
+        io->write(d->m_packet.array, d->m_packet.size);
 }
 
-void QRemoteObjectSource::addListener(ServerIoDevice *io, bool dynamic)
+void QRemoteObjectRootSource::addListener(ServerIoDevice *io, bool dynamic)
 {
-    listeners.append(io);
+    d->m_listeners.append(io);
+    d->isDynamic = dynamic;
 
     if (dynamic) {
-        serializeInitDynamicPacket(m_packet, this);
-        io->write(m_packet.array, m_packet.size);
+        d->sentTypes.clear();
+        serializeInitDynamicPacket(d->m_packet, this);
+        io->write(d->m_packet.array, d->m_packet.size);
     } else {
-        serializeInitPacket(m_packet, this);
-        io->write(m_packet.array, m_packet.size);
+        serializeInitPacket(d->m_packet, this);
+        io->write(d->m_packet.array, d->m_packet.size);
     }
+
+    //Setting isDynamic == false will prevent class definitions from being sent if the
+    //QObject pointer is changed (setting a new subclass pointer).  I.e., class definitions
+    //are only sent by serializeInitDynamicPacket, not propertyChangePackets.
+    d->isDynamic = false;
 }
 
-int QRemoteObjectSource::removeListener(ServerIoDevice *io, bool shouldSendRemove)
+int QRemoteObjectRootSource::removeListener(ServerIoDevice *io, bool shouldSendRemove)
 {
-    listeners.removeAll(io);
+    d->m_listeners.removeAll(io);
     if (shouldSendRemove)
     {
-        serializeRemoveObjectPacket(m_packet, m_api->name());
-        io->write(m_packet.array, m_packet.size);
+        serializeRemoveObjectPacket(d->m_packet, m_api->name());
+        io->write(d->m_packet.array, d->m_packet.size);
     }
-    return listeners.length();
+    return d->m_listeners.length();
 }
 
-int QRemoteObjectSource::qt_metacall(QMetaObject::Call call, int methodId, void **a)
+int QRemoteObjectSourceBase::qt_metacall(QMetaObject::Call call, int methodId, void **a)
 {
     methodId = QObject::qt_metacall(call, methodId, a);
     if (methodId < 0)
@@ -275,9 +362,13 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
                                        QString::fromLatin1(property.name()),
                                        roleInfo});
             } else {
-                m_subclasses << SubclassInfo({child, QString::fromLatin1(property.name())});
+                const QMetaObject *meta = child->metaObject();
+                QString typeName = QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(meta);
+                if (typeName.isNull())
+                    typeName = QString::fromLatin1(propertyMeta->className());
+
+                m_subclasses << SubclassInfo{child, QString::fromLatin1(property.name()), new DynamicApiMap(child, meta, QString::fromLatin1(property.name()), typeName)};
             }
-            continue;
         }
         m_properties << i;
         const int notifyIndex = metaObject->property(i).notifySignalIndex();
@@ -349,45 +440,6 @@ QList<QByteArray> DynamicApiMap::methodParameterNames(int index) const
     const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);
     return m_cachedMetamethod.parameterNames();
-}
-
-void SourceApiMap::qobjectSetup(QRemoteObjectHostBase *node) const
-{
-    if (m_models.isEmpty() && m_subclasses.isEmpty())
-        return;
-
-    QVector<int> roles;
-
-    qCDebug(QT_REMOTEOBJECT) << "In qobjectSetup, model count =" << m_models.count() << "subclass count =" << m_subclasses.count();
-    for (int i = 0; i < m_models.count(); ++i) {
-        const auto model = m_models.at(i);
-        if (!model.ptr)
-            continue; // Pointer not initialized
-        roles.clear();
-        const auto knownRoles = model.ptr->roleNames();
-        for (auto role : model.roles.split('|')) {
-            const int roleIndex = knownRoles.key(role, -1);
-            if (roleIndex == -1) {
-                qCWarning(QT_REMOTEOBJECT) << "Invalid role" << role << "for model" << model.ptr->metaObject()->className();
-                qCWarning(QT_REMOTEOBJECT) << "  known roles:" << knownRoles;
-            } else
-                roles << roleIndex;
-        }
-        const auto reportedName = QString::fromLatin1("Model::%1").arg(model.name);
-        // TODO handle selection model
-        if (roles.isEmpty())
-            node->enableRemoting(model.ptr, reportedName, knownRoles.keys().toVector(), nullptr);
-        else
-            node->enableRemoting(model.ptr, reportedName, roles, nullptr);
-    }
-
-    for (int i = 0; i < m_subclasses.count(); ++i) {
-        const auto subclass = m_subclasses.at(i);
-        if (subclass.ptr) {
-            const auto reportedName = QString::fromLatin1("Class::%1").arg(subclass.name);
-            node->enableRemoting(subclass.ptr, reportedName);
-        }
-    }
 }
 
 QT_END_NAMESPACE

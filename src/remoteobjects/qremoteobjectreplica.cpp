@@ -60,10 +60,16 @@ QT_BEGIN_NAMESPACE
 
 using namespace QRemoteObjectPackets;
 
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_GCC("-Wtautological-compare")
+
 #if !defined(Q_OS_WIN) && !defined(Q_OS_INTEGRITY)
 Q_STATIC_ASSERT_X(&QRemoteObjectReplica::staticMetaObject == &QRemoteObjectDynamicReplica::staticMetaObject,
                   "m_signalOffset initializer expects QRemoteObjectDynamicReplica to not have a unique staticMetaObject");
 #endif
+
+QT_WARNING_POP
+
 // If QRemoteObjectDynamicReplica ever gets its own staticMetaObject, some commented out code will need to be
 // used.  It was changed to avoid a Coverity complaint.  We use the above static assert to detect if this changes
 // in the future.  See FIX #1, #2, #3 in this file.
@@ -83,8 +89,6 @@ QRemoteObjectReplicaImplementation::QRemoteObjectReplicaImplementation(const QSt
 
 QRemoteObjectReplicaImplementation::~QRemoteObjectReplicaImplementation()
 {
-    if (m_metaObject && qstrcmp(m_metaObject->className(), "QRemoteObjectDynamicReplica") == 0)
-        free(const_cast<QMetaObject*>(m_metaObject));
 }
 
 QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode *node)
@@ -114,6 +118,15 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
             }
         }
     });
+
+    if (!meta)
+        return;
+
+    for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
+        const QMetaProperty property = m_metaObject->property(index);
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+            m_childIndices << index - m_metaObject->propertyOffset();
+    }
 }
 
 QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
@@ -122,6 +135,10 @@ QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
         qCDebug(QT_REMOTEOBJECT) << "Replica deleted: sending RemoveObject to RemoteObjectSource" << m_objectName;
         serializeRemoveObjectPacket(m_packet, m_objectName);
         sendCommand();
+    }
+    for (auto prop : m_propertyStorage) {
+        if (prop.canConvert<QObject*>())
+            prop.value<QObject *>()->deleteLater();
     }
 }
 
@@ -163,6 +180,11 @@ bool QConnectedReplicaImplementation::sendCommand()
     if (m_heartbeatTimer.interval())
         m_heartbeatTimer.start();
     return true;
+}
+
+QVector<int> QConnectedReplicaImplementation::childIndices() const
+{
+    return m_childIndices;
 }
 
 void QConnectedReplicaImplementation::initialize(const QVariantList &values)
@@ -234,18 +256,33 @@ QVariantList QRemoteObjectReplica::retrieveProperties(const QString &repName, co
     return node()->retrieveProperties(repName, repSig);
 }
 
-void QRemoteObjectReplicaImplementation::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
+void QRemoteObjectReplicaImplementation::setDynamicMetaObject(const QMetaObject *meta)
 {
     Q_ASSERT(!m_metaObject);
 
-    m_metaObject = builder.toMetaObject();
+    m_metaObject = meta;
+}
+
+void QConnectedReplicaImplementation::setDynamicMetaObject(const QMetaObject *meta)
+{
+    QRemoteObjectReplicaImplementation::setDynamicMetaObject(meta);
+
+    for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
+        const QMetaProperty property = m_metaObject->property(index);
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+            m_childIndices << index - m_metaObject->propertyOffset();
+    }
+}
+
+void QRemoteObjectReplicaImplementation::setDynamicProperties(const QVariantList &values)
+{
     //rely on order of properties;
     setProperties(values);
 }
 
-void QConnectedReplicaImplementation::initializeMetaObject(const QMetaObjectBuilder &builder, const QVariantList &values)
+void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &values)
 {
-    QRemoteObjectReplicaImplementation::initializeMetaObject(builder, values);
+    QRemoteObjectReplicaImplementation::setDynamicProperties(values);
     foreach (QRemoteObjectReplica *obj, m_parentsNeedingConnect)
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();
@@ -631,6 +668,14 @@ void QRemoteObjectReplica::initializeNode(QRemoteObjectNode *node, const QString
 void QRemoteObjectReplica::setProperties(const QVariantList &properties)
 {
     d_impl->setProperties(properties);
+}
+
+/*!
+    \internal
+*/
+void QRemoteObjectReplica::setChild(int i, const QVariant &value)
+{
+    d_impl->setProperty(i, value);
 }
 
 /*!

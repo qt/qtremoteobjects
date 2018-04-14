@@ -83,6 +83,19 @@ public:
     Q_DECLARE_PUBLIC(QRemoteObjectAbstractPersistedStore)
 };
 
+class QRemoteObjectMetaObjectManager
+{
+public:
+    QRemoteObjectMetaObjectManager() {}
+    ~QRemoteObjectMetaObjectManager();
+
+    QMetaObject *metaObjectForType(const QString &type);
+    QMetaObject *addDynamicType(QDataStream &in);
+
+private:
+    QHash<QString, QMetaObject*> dynamicTypes;
+};
+
 class QRemoteObjectNodePrivate : public QObjectPrivate
 {
 public:
@@ -101,6 +114,8 @@ public:
     bool initConnection(const QUrl &address);
     bool hasInstance(const QString &name);
     void setRegistry(QRemoteObjectRegistry *);
+    QVariant handlePointerToQObjectProperty(QConnectedReplicaImplementation *rep, int index, const QVariant &property);
+    void handlePointerToQObjectProperties(QConnectedReplicaImplementation *rep, QVariantList &properties);
 
     void onClientRead(QObject *obj);
     void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry);
@@ -141,6 +156,7 @@ public:
     QRemoteObjectAbstractPersistedStore *persistedStore;
     bool m_handshakeReceived = false;
     int m_heartbeatInterval = 0;
+    QRemoteObjectMetaObjectManager dynamicTypeManager;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 

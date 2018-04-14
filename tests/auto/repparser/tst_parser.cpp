@@ -386,8 +386,9 @@ void tst_Parser::testModels()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    ASTModel model = astClass.models.first();
-    QCOMPARE(model.name, expectedModel);
+    ASTModel model = astClass.modelMetadata.first();
+    ASTProperty property = astClass.properties.at(model.propertyIndex);
+    QCOMPARE(property.name, expectedModel);
     int i = 0;
     for (auto role : model.roles) {
         QCOMPARE(role.name, expectedRoles.at(i).name);
@@ -430,9 +431,9 @@ void tst_Parser::testClasses()
 
     const ASTClass astSub = ast.classes.value(0);
     const ASTClass astObj = ast.classes.value(1);
-    const ASTChildRep child = astObj.children.first();
-    QCOMPARE(child.name, expectedName);
-    QCOMPARE(child.type, expectedType);
+    const ASTProperty property = astObj.properties.at(astObj.subClassPropertyIndices.at(0));
+    QCOMPARE(property.name, expectedName);
+    QCOMPARE(property.type, expectedType);
 }
 
 void tst_Parser::testInvalid_data()
