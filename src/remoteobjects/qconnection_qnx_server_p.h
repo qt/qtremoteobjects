@@ -103,7 +103,8 @@ public:
     ham_entity_t *hamEntityHandle;
     ham_condition_t *hamConditionHandle;
     QHash<uint64_t, ham_action_t*> hamActions;
-    bool hamAvailable, hamInitialized;
+    bool hamAvailable = false;
+    bool hamInitialized = false;
 #endif
 };
 

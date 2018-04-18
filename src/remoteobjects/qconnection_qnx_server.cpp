@@ -440,8 +440,9 @@ void QQnxNativeServerPrivate::teardownServer()
 void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid, pid_t toPid)
 {
     Q_Q(QQnxNativeServer);
-    QIOQnxSource *io = new QIOQnxSource(rcvid, q);
+    QIOQnxSource *io = new QIOQnxSource(rcvid);
     io->moveToThread(q->thread());
+    io->setParent(q);
     QObject::connect(io, &QIOQnxSource::aboutToClose,
                      q,  &QQnxNativeServer::onSourceClosed);
 
