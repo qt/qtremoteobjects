@@ -138,7 +138,6 @@ public:
         QByteArray objectSignature;
     };
 
-    QAtomicInt isInitialized;
     QMutex mutex;
     QUrl registryAddress;
     QHash<QString, QWeakPointer<QReplicaImplementationInterface> > replicas;

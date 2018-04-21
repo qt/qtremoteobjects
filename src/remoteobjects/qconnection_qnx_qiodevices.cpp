@@ -67,14 +67,16 @@ bool QQnxNativeIoPrivate::establishConnection()
 {
     //On the client side, we need to create the channel/connection
     //to listen for the server's send pulse.
-    const int channel = ChannelCreate(0);
-    if (channel == -1) {
-        WARNING(ChannelCreate)
-        return false;
+    if (channelId == -1) {
+        const int channel = ChannelCreate(0);
+        if (channel == -1) {
+            WARNING(ChannelCreate)
+            return false;
+        }
+        channelId = channel;
     }
-    channelId = channel;
 
-    const int connection = ConnectAttach(ND_LOCAL_NODE, 0, channel, _NTO_SIDE_CHANNEL, 0);
+    const int connection = ConnectAttach(ND_LOCAL_NODE, 0, channelId, _NTO_SIDE_CHANNEL, 0);
     if (connection == -1) {
         WARNING(ConnectAttach)
         teardownConnection();
@@ -149,10 +151,11 @@ void QQnxNativeIoPrivate::stopThread()
                 }
                 qFatal("MsgSendPulse failed on terminate pulse.  Error = %s", strerror(errno));
             }
+            thread.wait();
+            return;
         }
         if (errno == EAGAIN)
             qFatal("MsgSendPulse failed on terminate pulse (max retries)");
-        thread.wait();
     }
 }
 

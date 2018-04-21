@@ -190,7 +190,6 @@ void QRemoteObjectNodePrivate::setLastError(QRemoteObjectNode::ErrorCode errorCo
 void QRemoteObjectNodePrivate::setReplicaImplementation(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name)
 {
     qROPrivDebug() << "Starting setReplicaImplementation for" << name;
-    isInitialized.storeRelease(1);
     openConnectionIfNeeded(name);
     QMutexLocker locker(&mutex);
     if (hasInstance(name)) {
@@ -1177,10 +1176,6 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
         d->setLastError(ServerAlreadyCreated);
         return false;
     }
-    else if (d->isInitialized.loadAcquire()) {
-        d->setLastError(RegistryAlreadyHosted);
-        return false;
-    }
 
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
     if (d->remoteObjectIo->m_server.isNull()) { //Invalid url/scheme
@@ -1196,8 +1191,8 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
     //Since we don't know whether setHostUrl or setRegistryUrl/setRegistryHost will be called first,
     //break it into two pieces.  setHostUrl connects the RemoteObjectSourceIo->[add/remove]RemoteObjectSource to QRemoteObjectReplicaNode->[add/remove]RemoteObjectSource
     //setRegistry* calls appropriately connect RemoteObjecSourcetIo->[add/remove]RemoteObjectSource to the registry when it is created
-    QObject::connect(d->remoteObjectIo, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), this, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
-    QObject::connect(d->remoteObjectIo, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), this, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)));
+    QObject::connect(d->remoteObjectIo, &QRemoteObjectSourceIo::remoteObjectAdded, this, &QRemoteObjectHostBase::remoteObjectAdded);
+    QObject::connect(d->remoteObjectIo, &QRemoteObjectSourceIo::remoteObjectRemoved, this, &QRemoteObjectHostBase::remoteObjectRemoved);
 
     return true;
 }
@@ -1240,7 +1235,7 @@ bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
         if (!d->remoteObjectIo) {
             d->setLastError(ServerAlreadyCreated);
             return false;
-        } else if (d->isInitialized.loadAcquire() || d->registry) {
+        } else if (d->registry) {
             d->setLastError(RegistryAlreadyHosted);
             return false;
         }
@@ -1250,9 +1245,9 @@ bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
         d->registryAddress = d->remoteObjectIo->serverAddress();
         d->registrySource = remoteObject;
         //Connect RemoteObjectSourceIo->remoteObject[Added/Removde] to the registry Slot
-        QObject::connect(this, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), d->registrySource, SLOT(addSource(QRemoteObjectSourceLocation)));
-        QObject::connect(this, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), d->registrySource, SLOT(removeSource(QRemoteObjectSourceLocation)));
-        QObject::connect(d->remoteObjectIo, SIGNAL(serverRemoved(QUrl)),d->registrySource, SLOT(removeServer(QUrl)));
+        QObject::connect(this, &QRemoteObjectRegistryHost::remoteObjectAdded, d->registrySource, &QRegistrySource::addSource);
+        QObject::connect(this, &QRemoteObjectRegistryHost::remoteObjectRemoved, d->registrySource, &QRegistrySource::removeSource);
+        QObject::connect(d->remoteObjectIo, &QRemoteObjectSourceIo::serverRemoved,d->registrySource, &QRegistrySource::removeServer);
         //onAdd/Remove update the known remoteObjects list in the RegistrySource, so no need to connect to the RegistrySource remoteObjectAdded/Removed signals
         d->setRegistry(acquire<QRemoteObjectRegistry>());
         return true;
@@ -1284,21 +1279,17 @@ QUrl QRemoteObjectNode::registryUrl() const
 bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
 {
     Q_D(QRemoteObjectNode);
-    if (d->isInitialized.loadAcquire() || d->registry) {
+    if (d->registry) {
         d->setLastError(RegistryAlreadyHosted);
-        return false;
-    }
-
-    if (!connectToNode(registryAddress)) {
-        d->setLastError(RegistryNotAcquired);
         return false;
     }
 
     d->registryAddress = registryAddress;
     d->setRegistry(acquire<QRemoteObjectRegistry>());
     //Connect remoteObject[Added/Removed] to the registry Slot
-    QObject::connect(this, SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)), d->registry, SLOT(addSource(QRemoteObjectSourceLocation)));
-    QObject::connect(this, SIGNAL(remoteObjectRemoved(QRemoteObjectSourceLocation)), d->registry, SLOT(removeSource(QRemoteObjectSourceLocation)));
+    QObject::connect(this, &QRemoteObjectNode::remoteObjectAdded, d->registry, &QRemoteObjectRegistry::addSource);
+    QObject::connect(this, &QRemoteObjectNode::remoteObjectRemoved, d->registry, &QRemoteObjectRegistry::removeSource);
+    connectToNode(registryAddress);
     return true;
 }
 
