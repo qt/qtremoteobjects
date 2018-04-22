@@ -631,9 +631,12 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         //First output properties
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             out << "    Q_PROPERTY(" << typeForMode(property, mode) << " " << property.name << " READ " << property.name;
-            if (property.modifier == ASTProperty::Constant)
-                out << " CONSTANT";
-            else if (property.modifier == ASTProperty::ReadOnly)
+            if (property.modifier == ASTProperty::Constant) {
+                if (mode == REPLICA) // We still need to notify when we get the initial value
+                    out << " NOTIFY " << property.name << "Changed";
+                else
+                    out << " CONSTANT";
+            } else if (property.modifier == ASTProperty::ReadOnly)
                 out << " NOTIFY " << property.name << "Changed";
             else if (property.modifier == ASTProperty::ReadWrite)
                 out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
@@ -848,6 +851,14 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, className);
             Q_FOREACH (const ASTFunction &signal, signalsList)
                 out << "    void " << signal.name << "(" << signal.paramsAsString() << ");" << endl;
+
+            // CONSTANT source properties still need an onChanged signal on the Replica side to
+            // update (once) when the value is initialized.  Put these last, so they don't mess
+            // up the signal index order
+            Q_FOREACH (const ASTProperty &property, astClass.properties) {
+                if (mode == REPLICA && property.modifier == ASTProperty::Constant)
+                    out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, typeForMode(property, mode)) << " " << property.name << ");" << endl;
+            }
         }
         bool hasWriteSlots = false;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
