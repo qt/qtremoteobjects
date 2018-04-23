@@ -480,8 +480,12 @@ QRemoteObjectMetaObjectManager::~QRemoteObjectMetaObjectManager()
         free(mo); //QMetaObjectBuilder uses malloc, not new
 }
 
-QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QString &type)
+const QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QString &type)
 {
+    Q_ASSERT(staticTypes.contains(type) || dynamicTypes.contains(type));
+    auto it = staticTypes.constFind(type);
+    if (it != staticTypes.constEnd())
+        return it.value();
     return dynamicTypes.value(type);
 }
 
@@ -573,6 +577,15 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
     auto meta = builder.toMetaObject();
     dynamicTypes.insert(type, meta);
     return meta;
+}
+
+void QRemoteObjectMetaObjectManager::addFromReplica(QConnectedReplicaImplementation *rep)
+{
+    QString className = QString::fromLatin1(rep->m_metaObject->className());
+    if (className == QStringLiteral("QRemoteObjectDynamicReplica") || staticTypes.contains(className))
+        return;
+    className.chop(7); //Remove 'Replica' from name
+    staticTypes.insert(className, rep->m_metaObject);
 }
 
 void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectReplica *instance)
@@ -1462,38 +1475,45 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     Q_ASSERT(property.canConvert<QRO_>());
     QRO_ childInfo = property.value<QRO_>();
     qROPrivDebug() << "QRO_:" << childInfo.name << replicas.contains(childInfo.name) << replicas.keys();
-    if (replicas.contains(childInfo.name) && (childInfo.isNull || rep->isInitialized())) {
+    if (replicas.contains(childInfo.name) && childInfo.isNull) {
         // Either the source has changed the pointer and we need to update it, or the source pointer is a nullptr
         replicas.remove(childInfo.name);
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue<QRemoteObjectDynamicReplica*>(nullptr);
         else
             retval = QVariant::fromValue<QAbstractItemModelReplica*>(nullptr);
-    } else {
-        if (!replicas.contains(childInfo.name)) {
-            if (childInfo.type == ObjectType::CLASS)
-                retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));
-            else
-                retval = QVariant::fromValue(q->acquireModel(childInfo.name));
-        } else //We are receiving the initial data for the QObject
-            retval = rep->getProperty(index); //Use existing value so changed signal isn't emitted
+        return retval;
+    }
 
-        QSharedPointer<QConnectedReplicaImplementation> childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(childInfo.name).toStrongRef());
-        if (childRep->connectionToSource.isNull())
-            childRep->connectionToSource = rep->connectionToSource;
-        if (childRep->needsDynamicInitialization()) {
-            if (childInfo.classDefinition.isEmpty())
-                childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(childInfo.typeName));
-            else {
-                QDataStream in(childInfo.classDefinition);
-                childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(in));
-            }
-            handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
-            childRep->setDynamicProperties(childInfo.parameters);
-        } else {
-            handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
-            childRep->initialize(childInfo.parameters);
+    const bool newReplica = !replicas.contains(childInfo.name) || rep->isInitialized();
+    if (newReplica) {
+        if (rep->isInitialized()) {
+            auto rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
+            if (!rep->isShortCircuit())
+                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(rep.data()));
         }
+        if (childInfo.type == ObjectType::CLASS)
+            retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));
+        else
+            retval = QVariant::fromValue(q->acquireModel(childInfo.name));
+    } else //We are receiving the initial data for the QObject
+        retval = rep->getProperty(index); //Use existing value so changed signal isn't emitted
+
+    QSharedPointer<QConnectedReplicaImplementation> childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(childInfo.name).toStrongRef());
+    if (childRep->connectionToSource.isNull())
+        childRep->connectionToSource = rep->connectionToSource;
+    if (childRep->needsDynamicInitialization()) {
+        if (childInfo.classDefinition.isEmpty())
+            childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(childInfo.typeName));
+        else {
+            QDataStream in(childInfo.classDefinition);
+            childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(in));
+        }
+        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
+        childRep->setDynamicProperties(childInfo.parameters);
+    } else {
+        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
+        childRep->initialize(childInfo.parameters);
     }
 
     return retval;
@@ -1501,9 +1521,7 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
 
 void QRemoteObjectNodePrivate::handlePointerToQObjectProperties(QConnectedReplicaImplementation *rep, QVariantList &properties)
 {
-    using namespace QRemoteObjectPackets;
-    QVector<int> childIndices = rep->childIndices();
-    for (const int index : childIndices)
+    for (const int index : rep->childIndices())
         properties[index] = handlePointerToQObjectProperty(rep, index, properties.at(index));
 }
 

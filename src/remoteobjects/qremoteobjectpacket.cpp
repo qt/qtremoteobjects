@@ -60,6 +60,9 @@ void serializeProperty(DataStreamPacket &ds, const QRemoteObjectSourceBase *sour
         ds << QVariant::fromValue<qint32>(value.toInt());
     } else if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
         auto const childSource = source->m_children.value(internalIndex);
+        auto valueAsPointerToQObject = qvariant_cast<QObject *>(value);
+        if (childSource->m_object != valueAsPointerToQObject)
+            childSource->resetObject(valueAsPointerToQObject);
         QRO_ qro(childSource);
         if (source->d->isDynamic && qro.type == ObjectType::CLASS && !source->d->sentTypes.contains(qro.typeName)) {
             QDataStream classDef(&qro.classDefinition, QIODevice::WriteOnly);

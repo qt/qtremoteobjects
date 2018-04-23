@@ -100,6 +100,7 @@ protected:
     QSharedPointer<QReplicaImplementationInterface> d_impl;
 private:
     friend class QRemoteObjectNodePrivate;
+    friend class QConnectedReplicaImplementation;
 };
 
 QT_END_NAMESPACE

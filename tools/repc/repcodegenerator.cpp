@@ -640,7 +640,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << " NOTIFY " << property.name << "Changed";
             else if (property.modifier == ASTProperty::ReadWrite)
                 out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
-            else if (property.modifier == ASTProperty::ReadPush) {
+            else if (property.modifier == ASTProperty::ReadPush || property.modifier == ASTProperty::SourceOnlySetter) {
                 if (mode == REPLICA) // The setter slot isn't known to the PROP
                     out << " NOTIFY " << property.name << "Changed";
                 else // The Source can use the setter, since non-asynchronous
@@ -823,7 +823,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << "    virtual " << typeForMode(property, mode) << " " << property.name << "() const = 0;" << endl;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier == ASTProperty::ReadWrite ||
-                    property.modifier == ASTProperty::ReadPush)
+                    property.modifier == ASTProperty::ReadPush ||
+                    property.modifier == ASTProperty::SourceOnlySetter)
                 out << "    virtual void set" << cap(property.name) << "(" << typeForMode(property, mode) << " " << property.name << ") = 0;" << endl;
         }
     } else {
@@ -832,7 +833,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 << property.name << "; }" << endl;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier == ASTProperty::ReadWrite ||
-                    property.modifier == ASTProperty::ReadPush) {
+                    property.modifier == ASTProperty::ReadPush ||
+                    property.modifier == ASTProperty::SourceOnlySetter) {
                 generateSimpleSetter(out, property);
             }
         }

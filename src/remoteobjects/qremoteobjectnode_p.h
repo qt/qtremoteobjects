@@ -89,11 +89,13 @@ public:
     QRemoteObjectMetaObjectManager() {}
     ~QRemoteObjectMetaObjectManager();
 
-    QMetaObject *metaObjectForType(const QString &type);
+    const QMetaObject *metaObjectForType(const QString &type);
     QMetaObject *addDynamicType(QDataStream &in);
+    void addFromReplica(QConnectedReplicaImplementation *rep);
 
 private:
     QHash<QString, QMetaObject*> dynamicTypes;
+    QHash<QString, const QMetaObject*> staticTypes;
 };
 
 struct ProxyReplicaInfo;

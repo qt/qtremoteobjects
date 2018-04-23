@@ -60,7 +60,8 @@ void ModelreplicaTest::basicFunctions()
     QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
     QStringListModel *model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
-    MediaSimpleSource source(model);
+    MediaSimpleSource source;
+    source.setTracks(model);
     if (templated)
         host.enableRemoting<MediaSourceAPI>(&source);
     else

@@ -190,12 +190,14 @@ void ProxyTest::testProxy()
     QCOMPARE(replica->state(), QRemoteObjectReplica::Suspect);
 
     // Now test subclass Source
+    ParentClassSimpleSource parent;
     SubClassSimpleSource subclass;
     const MyPOD initialValue(42, 3.14, QStringLiteral("SubClass"));
     subclass.setMyPOD(initialValue);
     QStringListModel model;
     model.setStringList(QStringList() << "Track1" << "Track2" << "Track3");
-    ParentClassSimpleSource parent(&subclass, &model);
+    parent.setSubClass(&subclass);
+    parent.setTracks(&model);
     QCOMPARE(subclass.myPOD(), initialValue);
     if (sourceApi)
         host.enableRemoting<ParentClassSourceAPI>(&parent);
@@ -222,6 +224,7 @@ void ProxyTest::testProxy()
         }
         QSignalSpy dataSpy(rep->tracks(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
         QVector<QModelIndex> pending;
+        QTest::qWait(100);
         QCOMPARE(rep->tracks()->rowCount(), model.rowCount());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
         {
@@ -240,6 +243,17 @@ void ProxyTest::testProxy()
         {
             QCOMPARE(rep->tracks()->data(rep->tracks()->index(i, 0)), model.data(model.index(i), Qt::DisplayRole));
         }
+
+        //Change SubClass and make sure change propagates
+        SubClassSimpleSource updatedSubclass;
+        const MyPOD updatedValue(-1, 123.456, QStringLiteral("Updated"));
+        updatedSubclass.setMyPOD(updatedValue);
+        QSignalSpy replicaSpy(rep, SIGNAL(subClassChanged(SubClassReplica*)));
+        parent.setSubClass(&updatedSubclass);
+        replicaSpy.wait();
+        QCOMPARE(replicaSpy.count(), 1);
+        QCOMPARE(rep->subClass()->myPOD(), parent.subClass()->myPOD());
+        QCOMPARE(rep->subClass()->myPOD(), updatedValue);
     } else {
         replica.reset(client.acquireDynamic(QStringLiteral("ParentClass")));
         QVERIFY(replica->waitForSource(1000));
@@ -278,20 +292,43 @@ void ProxyTest::testProxy()
                      QSet<int>::fromList(model.roleNames().keys()));
         }
         QTRY_COMPARE(tracksReplica->isInitialized(), true);
-        /* Fixed in next commit (already in review)
+        QSignalSpy dataSpy(tracksReplica, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+        QVector<QModelIndex> pending;
+        QTest::qWait(100);
         QCOMPARE(tracksReplica->rowCount(), model.rowCount());
         for (int i = 0; i < tracksReplica->rowCount(); i++)
         {
             // We haven't received any data yet
-            QCOMPARE(tracksReplica->data(tracksReplica->index(i, 0)), QVariant());
+            const auto index = tracksReplica->index(i, 0);
+            QCOMPARE(tracksReplica->data(index), QVariant());
+            pending.append(index);
         }
-        // Wait for data to be fetch and confirm
-        QTest::qWait(100);
+        if (useProxy) { // A first batch of updates will be the empty proxy values
+            WaitForDataChanged w(pending, &dataSpy);
+            QVERIFY(w.wait());
+        }
+        WaitForDataChanged w(pending, &dataSpy);
+        QVERIFY(w.wait());
         for (int i = 0; i < tracksReplica->rowCount(); i++)
         {
             QCOMPARE(tracksReplica->data(tracksReplica->index(i, 0)), model.data(model.index(i), Qt::DisplayRole));
         }
-        */
+
+        //Change SubClass and make sure change propagates
+        SubClassSimpleSource updatedSubclass;
+        const MyPOD updatedValue(-1, 123.456, QStringLiteral("Updated"));
+        updatedSubclass.setMyPOD(updatedValue);
+        QSignalSpy replicaSpy(replica.data(), QByteArray(QByteArrayLiteral("2")+subclassMeta.notifySignal().methodSignature().constData()));
+        parent.setSubClass(&updatedSubclass);
+        replicaSpy.wait();
+        QCOMPARE(replicaSpy.count(), 1);
+        subclassQObjectPtr = subclassMeta.read(replica.data()).value<QObject *>();
+        QVERIFY(subclassQObjectPtr != nullptr);
+        subclassReplica = qobject_cast<QRemoteObjectDynamicReplica *>(subclassQObjectPtr);
+        QVERIFY(subclassReplica != nullptr);
+
+        pod = podMeta.read(subclassReplica).value<MyPOD>();
+        QCOMPARE(pod, parent.subClass()->myPOD());
     }
     replica.reset();
 }

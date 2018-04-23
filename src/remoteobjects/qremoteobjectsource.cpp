@@ -87,24 +87,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
         return;
     }
 
-    const QMetaObject *meta = obj->metaObject();
-    for (int idx = 0; idx < m_api->signalCount(); ++idx) {
-        const int sourceIndex = m_api->sourceSignalIndex(idx);
-
-        // This basically connects the parent Signals (note, all dynamic properties have onChange
-        //notifications, thus signals) to us.  Normally each Signal is mapped to a unique index,
-        //but since we are forwarding them all, we keep the offset constant.
-        //
-        //We know no one will inherit from this class, so no need to worry about indices from
-        //derived classes.
-        const auto target = m_api->isAdapterSignal(idx) ? adapter : obj;
-        if (!QMetaObject::connect(target, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
-            qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourceBase: QMetaObject::connect returned false. Unable to connect.";
-            return;
-        }
-
-        qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << meta->method(sourceIndex).name();
-    }
+    setConnections();
 
     const int nChildren = api->m_models.count() + api->m_subclasses.count();
     if (nChildren > 0) {
@@ -172,6 +155,60 @@ QRemoteObjectSourceBase::~QRemoteObjectSourceBase()
     delete m_api;
 }
 
+void QRemoteObjectSourceBase::setConnections()
+{
+    const QMetaObject *meta = m_object->metaObject();
+    for (int idx = 0; idx < m_api->signalCount(); ++idx) {
+        const int sourceIndex = m_api->sourceSignalIndex(idx);
+
+        // This basically connects the parent Signals (note, all dynamic properties have onChange
+        //notifications, thus signals) to us.  Normally each Signal is mapped to a unique index,
+        //but since we are forwarding them all, we keep the offset constant.
+        //
+        //We know no one will inherit from this class, so no need to worry about indices from
+        //derived classes.
+        const auto target = m_api->isAdapterSignal(idx) ? m_adapter : m_object;
+        if (!QMetaObject::connect(target, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+            qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourceBase: QMetaObject::connect returned false. Unable to connect.";
+            return;
+        }
+
+        qCDebug(QT_REMOTEOBJECT) << "Connection made" << idx << sourceIndex
+                                 << (m_api->isAdapterSignal(idx)
+                                     ? m_adapter->metaObject()->method(sourceIndex).name()
+                                     : meta->method(sourceIndex).name());
+    }
+}
+
+void QRemoteObjectSourceBase::resetObject(QObject *newObject)
+{
+    QObject::disconnect(m_object, 0, this, 0);
+    if (m_adapter)
+        QObject::disconnect(m_adapter, 0, this, 0);
+
+    m_object = newObject;
+    setParent(newObject);
+    if (newObject)
+        setConnections();
+
+    const int nChildren = m_api->m_models.count() + m_api->m_subclasses.count();
+    if (nChildren == 0)
+        return;
+
+    if (!newObject) {
+        for (auto child : m_children)
+            child->resetObject(nullptr);
+        return;
+    }
+
+    for (int i : m_children.keys()) {
+        const int index = m_api->sourcePropertyIndex(i);
+        const auto property = m_object->metaObject()->property(index);
+        QObject *child = property.read(m_object).value<QObject *>();
+        m_children[i]->resetObject(child);
+    }
+}
+
 QRemoteObjectSource::~QRemoteObjectSource()
 {
     for (auto it : m_children) {
@@ -200,7 +237,9 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
 QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
 {
     QVariantList &list = m_marshalledArgs;
-    const int N = m_api->signalParameterCount(index);
+    int N = m_api->signalParameterCount(index);
+    if (N == 1 && QMetaType::typeFlags(m_api->signalParameterType(index, 0)).testFlag(QMetaType::PointerToQObject))
+        N = 0; // Don't try to send pointers, the will be handle by QRO_
     if (list.size() < N)
         list.reserve(N);
     const int minFill = std::min(list.size(), N);
@@ -268,13 +307,14 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
 
     int propertyIndex = m_api->propertyIndexFromSignal(index);
     if (propertyIndex >= 0) {
-        const int rawIndex = m_api->propertyRawIndexFromSignal(index);
-        const auto target = m_api->isAdapterProperty(index) ? m_adapter : m_object;
+        const int internalIndex = m_api->propertyRawIndexFromSignal(index);
+        const auto target = m_api->isAdapterProperty(internalIndex) ? m_adapter : m_object;
         const QMetaProperty mp = target->metaObject()->property(propertyIndex);
-        qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(index) ? "via adapter" : "") << rawIndex << propertyIndex << mp.name() << mp.read(target);
+        qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(internalIndex) ? "via adapter" : "") << internalIndex << propertyIndex << mp.name() << mp.read(target);
+
         serializePropertyChangePacket(this, index);
         d->m_packet.baseAddress = d->m_packet.size;
-        propertyIndex = rawIndex;
+        propertyIndex = internalIndex;
     }
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << d->m_listeners.length();
@@ -364,8 +404,12 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
             } else {
                 const QMetaObject *meta = child->metaObject();
                 QString typeName = QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(meta);
-                if (typeName.isNull())
+                if (typeName.isNull()) {
                     typeName = QString::fromLatin1(propertyMeta->className());
+                    // TODO better way to ensure we have consistent typenames between source/replicas?
+                    if (typeName.endsWith(QStringLiteral("Source")))
+                        typeName.chop(6);
+                }
 
                 m_subclasses << new DynamicApiMap(child, meta, QString::fromLatin1(property.name()), typeName);
             }

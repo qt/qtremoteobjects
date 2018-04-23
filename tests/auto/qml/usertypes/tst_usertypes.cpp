@@ -136,7 +136,9 @@ void tst_usertypes::complexInQml()
     QScopedPointer<SimpleClockSimpleSource> clock;
     if (!nullobject)
         clock.reset(new SimpleClockSimpleSource());
-    ComplexTypeSimpleSource source(model, clock.data());
+    ComplexTypeSimpleSource source;
+    source.setTracks(model);
+    source.setClock(clock.data());
     if (templated)
         host.enableRemoting<ComplexTypeSourceAPI>(&source);
     else
