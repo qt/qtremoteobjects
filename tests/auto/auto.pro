@@ -13,6 +13,7 @@ SUBDIRS += \
     modelreplica \
     modelview \
     pods \
+    proxy \
     repc \
     repcodegenerator \
     repparser \

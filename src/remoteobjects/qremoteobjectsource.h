@@ -131,15 +131,6 @@ struct ModelInfo
     QByteArray roles;
 };
 
-class SourceApiMap;
-struct SubclassInfo
-{
-    SubclassInfo(QObject *_ptr = nullptr, QString _name = QString(), SourceApiMap *_api = nullptr) : ptr(_ptr), name(_name), api(_api) {}
-    QObject *ptr;
-    QString name;
-    SourceApiMap *api;
-};
-
 class SourceApiMap
 {
 protected:
@@ -174,7 +165,7 @@ public:
     virtual bool isAdapterMethod(int) const { return false; }
     virtual bool isAdapterProperty(int) const { return false; }
     QVector<ModelInfo> m_models;
-    QVector<SubclassInfo> m_subclasses;
+    QVector<SourceApiMap *> m_subclasses;
 };
 
 QT_END_NAMESPACE

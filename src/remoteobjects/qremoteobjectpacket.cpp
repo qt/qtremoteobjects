@@ -43,8 +43,6 @@
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 
-#include "private/qmetaobjectbuilder_p.h"
-
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;

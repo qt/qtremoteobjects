@@ -130,6 +130,8 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                         roles.clear();
                         const auto knownRoles = model->roleNames();
                         for (auto role : modelInfo.roles.split('|')) {
+                            if (role.isEmpty())
+                                continue;
                             const int roleIndex = knownRoles.key(role, -1);
                             if (roleIndex == -1) {
                                 qCWarning(QT_REMOTEOBJECT) << "Invalid role" << role << "for model" << model->metaObject()->className();
@@ -143,7 +145,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                     }
                 } else {
                     const auto classApi = api->m_subclasses.at(subclassIndex++);
-                    m_children.insert(i, new QRemoteObjectSource(child, d, classApi.api, nullptr));
+                    m_children.insert(i, new QRemoteObjectSource(child, d, classApi, nullptr));
                 }
             }
         }
@@ -172,23 +174,21 @@ QRemoteObjectSourceBase::~QRemoteObjectSourceBase()
 
 QRemoteObjectSource::~QRemoteObjectSource()
 {
-    auto end = m_children.cend();
-    for (auto it = m_children.cbegin(); it != end; ++it) {
+    for (auto it : m_children) {
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
-        delete it.value();
+        delete it;
     }
 }
 
 QRemoteObjectRootSource::~QRemoteObjectRootSource()
 {
-    auto end = m_children.cend();
-    for (auto it = m_children.cbegin(); it != end; ++it) {
+    for (auto it : m_children) {
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
-        delete it.value();
+        delete it;
     }
     d->m_sourceIo->unregisterSource(this);
     Q_FOREACH (ServerIoDevice *io, d->m_listeners) {
@@ -280,7 +280,7 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << d->m_listeners.length();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << marshalArgs(index, a);
 
-    serializeInvokePacket(d->m_packet, m_api->name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
+    serializeInvokePacket(d->m_packet, name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
     d->m_packet.baseAddress = 0;
 
     Q_FOREACH (ServerIoDevice *io, d->m_listeners)
@@ -367,7 +367,7 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
                 if (typeName.isNull())
                     typeName = QString::fromLatin1(propertyMeta->className());
 
-                m_subclasses << SubclassInfo{child, QString::fromLatin1(property.name()), new DynamicApiMap(child, meta, QString::fromLatin1(property.name()), typeName)};
+                m_subclasses << new DynamicApiMap(child, meta, QString::fromLatin1(property.name()), typeName);
             }
         }
         m_properties << i;

@@ -46,6 +46,8 @@
 #include <QtRemoteObjects/qremoteobjectregistry.h>
 #include <QtRemoteObjects/qremoteobjectdynamicreplica.h>
 
+#include <functional>
+
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectReplica;
@@ -174,6 +176,11 @@ public:
     bool enableRemoting(QObject *object, const QString &name = QString());
     bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = nullptr);
     bool disableRemoting(QObject *remoteObject);
+
+    typedef std::function<bool(const QString &, const QString &)> RemoteObjectNameFilter;
+    bool proxy(const QUrl &registryUrl, const QUrl &hostUrl={},
+               RemoteObjectNameFilter filter=[](const QString &, const QString &) {return true; });
+    bool reverseProxy(RemoteObjectNameFilter filter=[](const QString &, const QString &) {return true; });
 
 protected:
     virtual QUrl hostUrl() const;

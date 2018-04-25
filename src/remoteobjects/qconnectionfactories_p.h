@@ -190,6 +190,11 @@ public:
         };
     }
 
+    bool isValid(const QUrl &url)
+    {
+        return m_creatorFuncs.contains(url.scheme());
+    }
+
 private:
     friend class QtROFactoryLoader;
     QtROServerFactory();
@@ -222,6 +227,11 @@ public:
         m_creatorFuncs[id] = [](QObject *parent) -> ClientIoDevice * {
             return new T(parent);
         };
+    }
+
+    bool isValid(const QUrl &url)
+    {
+        return m_creatorFuncs.contains(url.scheme());
     }
 
 private:

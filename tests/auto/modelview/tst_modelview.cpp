@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 #include "modeltest.h"
+#include "../shared/model_utilities.h"
 
 #include <QtTest/QtTest>
 #include <QMetaType>
@@ -69,19 +70,6 @@ bool waitForSignal(QVector<Storage> *storage, QSignalSpy *spy)
         }
     }
     return storage->isEmpty() && spy->size() == storageSize;
-}
-
-inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
-{
-    QModelIndex left = lhs;
-    QModelIndex right = rhs;
-    while (left.row() == right.row() && left.column() == right.column() && left.isValid() && right.isValid()) {
-        left = left.parent();
-        right = right.parent();
-    }
-    if (left.isValid() || right.isValid())
-        return false;
-    return true;
 }
 
 QList<QStandardItem*> createInsertionChildren(int num, const QString& name, const QColor &background)
@@ -133,80 +121,6 @@ struct InsertedRow
     QModelIndex m_index;
     int m_start;
     int m_end;
-};
-
-struct WaitForDataChanged
-{
-    struct IndexPair
-    {
-        QModelIndex topLeft;
-        QModelIndex bottomRight;
-    };
-
-    WaitForDataChanged(const QVector<QModelIndex> &pending, QSignalSpy *spy) : m_pending(pending), m_spy(spy){}
-    bool wait()
-    {
-        Q_ASSERT(m_spy);
-        const int maxRuns = std::min(m_pending.size(), 100);
-        int runs = 0;
-        bool cancel = false;
-        while (!cancel) {
-            const int numSignals = m_spy->size();
-            for (int i = 0; i < numSignals; ++i) {
-                const QList<QVariant> &signal = m_spy->at(i);
-                IndexPair pair = extractPair(signal);
-                checkAndRemoveRange(pair.topLeft, pair.bottomRight);
-                cancel = m_pending.isEmpty();
-            }
-            if (!cancel)
-                m_spy->wait(50);
-            ++runs;
-            if (runs >= maxRuns)
-                cancel = true;
-        }
-        return runs < maxRuns;
-    }
-
-    static IndexPair extractPair(const QList<QVariant> &signal)
-    {
-        IndexPair pair;
-        if (signal.size() != 3)
-            return pair;
-        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[1].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[2].type() == QVariant::nameToType("QVector<int>");
-        if (!matchingTypes)
-            return pair;
-        const QModelIndex topLeft = signal[0].value<QModelIndex>();
-        const QModelIndex bottomRight = signal[1].value<QModelIndex>();
-        pair.topLeft = topLeft;
-        pair.bottomRight = bottomRight;
-        return pair;
-    }
-
-    void checkAndRemoveRange(const QModelIndex &topLeft, const QModelIndex &bottomRight)
-    {
-        QVERIFY(topLeft.parent() == bottomRight.parent());
-        QVector<QModelIndex>  toRemove;
-        for (int i = 0; i < m_pending.size(); ++i) {
-            const QModelIndex &pending = m_pending.at(i);
-            if (pending.isValid()  && compareIndices(pending.parent(), topLeft.parent())) {
-                const bool fitLeft = topLeft.column() <= pending.column();
-                const bool fitRight = bottomRight.column() >= pending.column();
-                const bool fitTop = topLeft.row() <= pending.row();
-                const bool fitBottom = bottomRight.row() >= pending.row();
-                if (fitLeft && fitRight && fitTop && fitBottom)
-                    toRemove.append(pending);
-            }
-        }
-        foreach (const QModelIndex &index, toRemove) {
-            const int ind = m_pending.indexOf(index);
-            m_pending.remove(ind);
-        }
-    }
-
-    QVector<QModelIndex> m_pending;
-    QSignalSpy *m_spy;
 };
 
 QTextStream cout(stdout, QIODevice::WriteOnly);

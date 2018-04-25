@@ -386,7 +386,7 @@ QString RepCodeGenerator::typeForMode(const ASTProperty &property, RepCodeGenera
 
 void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride)
 {
-    out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ")";
+    out << "    virtual void set" << cap(property.name) << "(" << typeForMode(property, SIMPLE_SOURCE) << " " << property.name << ")";
     if (generateOverride)
         out << " override";
     out << endl;
@@ -821,7 +821,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             if (property.modifier == ASTProperty::ReadWrite ||
                     property.modifier == ASTProperty::ReadPush)
-                out << "    virtual void set" << cap(property.name) << "(" << property.type << " " << property.name << ") = 0;" << endl;
+                out << "    virtual void set" << cap(property.name) << "(" << typeForMode(property, mode) << " " << property.name << ") = 0;" << endl;
         }
     } else {
         Q_FOREACH (const ASTProperty &property, astClass.properties)
@@ -1004,7 +1004,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2Changed, "
                               "static_cast<void (QObject::*)(%3)>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(i+1), onChangeProperties.at(i).name,
-                                  fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), onChangeProperties.at(i).type),
+                                  fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(onChangeProperties.at(i), SOURCE)),
                                   QString::number(i)) << endl;
 
     QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, QStringLiteral("typename ObjectType"));
@@ -1056,7 +1056,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     }
     for (int i : astClass.subClassPropertyIndices) {
         const ASTProperty &child = astClass.properties.at(i);
-        out << QString::fromLatin1("        m_subclasses << SubclassInfo{object->%1(), QStringLiteral(\"%1\"), new %2SourceAPI<%1_type_t>(object->%1(), QStringLiteral(\"%1\"))};")
+        out << QString::fromLatin1("        m_subclasses << new %2SourceAPI<%1_type_t>(object->%1(), QStringLiteral(\"%1\"));")
                                    .arg(child.name, child.type) << endl;
     }
     out << QStringLiteral("    }") << endl;
@@ -1159,7 +1159,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QStringLiteral("        switch (index) {") << endl;
         for (int i = 0; i < changedCount; ++i)
             out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2Changed(%3)\");")
-                   .arg(QString::number(i), onChangeProperties.at(i).name, onChangeProperties.at(i).type) << endl;
+                   .arg(QString::number(i), onChangeProperties.at(i).name, typeForMode(onChangeProperties.at(i), SOURCE)) << endl;
         for (int i = 0; i < signalCount; ++i)
         {
             const ASTFunction &sig = astClass.signalsList.at(i);

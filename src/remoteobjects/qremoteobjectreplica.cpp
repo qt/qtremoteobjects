@@ -46,7 +46,6 @@
 #include "qremoteobjectpendingcall_p.h"
 #include "qconnectionfactories_p.h"
 #include "qremoteobjectsource_p.h"
-#include "private/qmetaobjectbuilder_p.h"
 
 #include <QCoreApplication>
 #include <QDataStream>
