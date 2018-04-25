@@ -43,13 +43,12 @@ const QUrl registryUrl = QUrl(QLatin1String("local:testRegistry"));
 class ProxyTest : public QObject
 {
     Q_OBJECT
-
+private Q_SLOTS:
     void cleanup()
     {
         // wait for delivery of RemoveObject events to the source
         QTest::qWait(200);
     }
-private Q_SLOTS:
 
     void testProxy_data();
     void testProxy();
