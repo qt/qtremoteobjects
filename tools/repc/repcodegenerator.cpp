@@ -1272,6 +1272,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QString::fromLatin1("    const int* m_methodArgTypes[%1];").arg(methodCount) << endl;
     }
     out << QStringLiteral("};") << endl;
+    out << "" << endl;
 }
 
 QT_END_NAMESPACE
