@@ -73,7 +73,6 @@ QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation
     : QRemoteObjectReplica()
     , m_selectionModel(0)
     , m_rootItem(this)
-    , m_lastRequested(-1)
 {
     QAbstractItemModelReplicaImplementation::registerMetatypes();
     initializeModelConnections();
@@ -86,7 +85,6 @@ QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation
     : QRemoteObjectReplica(ConstructWithNode)
     , m_selectionModel(0)
     , m_rootItem(this)
-    , m_lastRequested(-1)
 {
     QAbstractItemModelReplicaImplementation::registerMetatypes();
     initializeModelConnections();
@@ -358,6 +356,7 @@ void QAbstractItemModelReplicaImplementation::handleInitDone(QRemoteObjectPendin
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
 
     handleModelResetDone(watcher);
+    m_initDone = true;
     emit q->initialized();
 }
 
@@ -647,6 +646,9 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
 
 void QAbstractItemModelReplicaImplementation::onModelReset()
 {
+    if (!m_initDone)
+        return;
+
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
     QRemoteObjectPendingCallWatcher *watcher = doModelReset();
     connect(watcher, &QRemoteObjectPendingCallWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleModelResetDone);

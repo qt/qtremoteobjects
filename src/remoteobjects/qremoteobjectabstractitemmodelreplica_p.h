@@ -460,7 +460,7 @@ public:
     QRemoteObjectPendingCallWatcher *doModelReset();
     void initializeModelConnections();
 
-    int m_lastRequested;
+    bool m_initDone = false;
     QVector<RequestedData> m_requestedData;
     QVector<RequestedHeaderData> m_requestedHeaderData;
     QVector<QRemoteObjectPendingCallWatcher*> m_pendingRequests;

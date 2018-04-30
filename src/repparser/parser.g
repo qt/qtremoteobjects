@@ -83,7 +83,8 @@ struct ASTProperty
         Constant,
         ReadOnly,
         ReadPush,
-        ReadWrite
+        ReadWrite,
+        SourceOnlySetter
     };
 
     ASTProperty();
@@ -438,6 +439,8 @@ bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &mo
         modifier = ASTProperty::ReadPush;
     else if (f == QStringLiteral("READWRITE"))
         modifier = ASTProperty::ReadWrite;
+    else if (f == QStringLiteral("SOURCEONLYSETTER"))
+        modifier = ASTProperty::SourceOnlySetter;
     else {
         setErrorString(QStringLiteral("Invalid property declaration: flag %1 is unknown").arg(flag));
         return false;
@@ -838,7 +841,7 @@ Model: model;
             return false;
 
         m_astClass.modelMetadata << model;
-        m_astClass.properties << ASTProperty(QStringLiteral("QAbstractItemModel"), name, QStringLiteral("nullptr"), ASTProperty::Constant, false, true);
+        m_astClass.properties << ASTProperty(QStringLiteral("QAbstractItemModel"), name, QStringLiteral("nullptr"), ASTProperty::SourceOnlySetter, false, true);
     }
     break;
 ./
@@ -851,7 +854,7 @@ case $rule_number:
     const QString type = captured().value(QLatin1String("type")).trimmed();
 
     m_astClass.subClassPropertyIndices << m_astClass.properties.size();
-    m_astClass.properties << ASTProperty(type, name, QStringLiteral("nullptr"), ASTProperty::Constant, false, true);
+    m_astClass.properties << ASTProperty(type, name, QStringLiteral("nullptr"), ASTProperty::SourceOnlySetter, false, true);
 }
 break;
 ./

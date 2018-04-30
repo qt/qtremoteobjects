@@ -204,8 +204,9 @@
     \endcode
 
     You can also use the \c CONSTANT, \c READONLY, \c PERSISTED, \c READWRITE,
-    or \c READPUSH keywords in the PROP declaration, which affects how this is
-    implemented.  READPUSH is the default value if no value used.
+    \c READPUSH, or \c SOURCEONLYSETTER keywords in the PROP declaration, which
+    affects how this is implemented. READPUSH is the default value if no value
+    used.
 
     \code
         PROP(int lifeUniverseEverything=42 CONSTANT)
@@ -220,6 +221,18 @@
     replica side will not have a push slot generated. Adding the PERSISTED
     trait to a PROP will have the PROP use the \l QRemoteObjectAbstractPersistedStore
     instance set on a Node (if any) to save/restore PROP values.
+
+    Another nuanced value is SOURCEONLYSETTER, which provides another way of
+    specifying asymmetric behavior, where the Source (specifically the helper
+    class, \l SimpleSource) will have a public getter and setter for the
+    property, but it will be ReadOnly (with a notify signal) on the \l Replica
+    side. Thus the property can be fully controlled from the \l Source side,
+    but only observed from the \l Replica side. SOURCEONLYSETTER is the mode
+    used by repc for MODEL and CLASS instances, meaning the \l Source can
+    change the pointed to object, but the \l Replica can not provide a new
+    object, as no set<Prop> or push<Prop> method is generated. Note, this does
+    not impact the behavior of the pointed to type's properties, just the
+    ability to change the pointer itself.
 
     \sa QRemoteObjectAbstractPersistedStore
 

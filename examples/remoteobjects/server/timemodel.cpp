@@ -50,7 +50,7 @@
 
 #include "timemodel.h"
 
-MinuteTimer::MinuteTimer(QObject *parent) : MinuteTimerSimpleSource(parent)
+MinuteTimer::MinuteTimer(QObject *parent) : MinuteTimerSimpleSource(parent), zone(0)
 {
     time = QTime::currentTime();
     setHour(time.hour());

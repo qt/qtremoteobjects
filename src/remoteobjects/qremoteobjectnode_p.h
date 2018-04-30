@@ -89,11 +89,40 @@ public:
     QRemoteObjectMetaObjectManager() {}
     ~QRemoteObjectMetaObjectManager();
 
-    QMetaObject *metaObjectForType(const QString &type);
+    const QMetaObject *metaObjectForType(const QString &type);
     QMetaObject *addDynamicType(QDataStream &in);
+    void addFromReplica(QConnectedReplicaImplementation *rep);
 
 private:
     QHash<QString, QMetaObject*> dynamicTypes;
+    QHash<QString, const QMetaObject*> staticTypes;
+};
+
+struct ProxyReplicaInfo;
+class ProxyInfo : public QObject
+{
+    Q_OBJECT
+public:
+    ProxyInfo(QRemoteObjectNode *node, QRemoteObjectHostBase *parent, QRemoteObjectHostBase::RemoteObjectNameFilter filter);
+    ~ProxyInfo() override;
+    enum class ProxyDirection { Forward, Reverse };
+
+    bool setReverseProxy(QRemoteObjectHostBase::RemoteObjectNameFilter filter);
+    void proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirection direction = ProxyDirection::Forward);
+    void unproxyObject(const QRemoteObjectSourceLocation &entry);
+
+    QRemoteObjectNode *proxyNode;
+    QRemoteObjectHostBase *parentNode;
+    QRemoteObjectHostBase::RemoteObjectNameFilter proxyFilter;
+    QRemoteObjectHostBase::RemoteObjectNameFilter reverseFilter;
+    QHash<QString, ProxyReplicaInfo*> proxiedReplicas;
+};
+
+struct ProxyReplicaInfo
+{
+    QRemoteObjectDynamicReplica* replica;
+    ProxyInfo::ProxyDirection direction;
+    ~ProxyReplicaInfo() { delete replica; }
 };
 
 class QRemoteObjectNodePrivate : public QObjectPrivate
@@ -168,6 +197,7 @@ public:
 
 public:
     QRemoteObjectSourceIo *remoteObjectIo;
+    ProxyInfo *proxyInfo = nullptr;
     Q_DECLARE_PUBLIC(QRemoteObjectHostBase);
 };
 

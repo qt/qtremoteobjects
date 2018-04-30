@@ -63,15 +63,16 @@ void SubClassReplicaTest::basicFunctions()
 
     QRemoteObjectRegistryHost host(QUrl("local:test"));
     SubClassSimpleSource subclass1, subclass2;
-    QScopedPointer<ParentClassSimpleSource> parent;
+    ParentClassSimpleSource parent;
+    parent.setSub1(&subclass1);
     if (nullobject)
-        parent.reset(new ParentClassSimpleSource(&subclass1, nullptr));
+        parent.setSub2(nullptr);
     else
-        parent.reset(new ParentClassSimpleSource(&subclass1, &subclass2));
+        parent.setSub2(&subclass2);
     if (templated)
-        host.enableRemoting<ParentClassSourceAPI>(parent.data());
+        host.enableRemoting<ParentClassSourceAPI>(&parent);
     else
-        host.enableRemoting(parent.data());
+        host.enableRemoting(&parent);
 
     QRemoteObjectNode client(QUrl("local:test"));
     const QScopedPointer<ParentClassReplica> replica(client.acquire<ParentClassReplica>());
@@ -84,7 +85,7 @@ void SubClassReplicaTest::basicFunctions()
     QCOMPARE(subclass1.value(), sub1->value());
     if (nullobject) {
         QCOMPARE(replica->sub2(), nullptr);
-        QCOMPARE(parent->sub2(), nullptr);
+        QCOMPARE(parent.sub2(), nullptr);
     } else
         QCOMPARE(subclass2.value(), replica->sub2()->value());
 }

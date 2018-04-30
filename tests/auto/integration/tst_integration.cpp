@@ -891,7 +891,8 @@ private slots:
         QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
-        Engine e;
+        Engine e(6);
+        QCOMPARE(e.cylinders(), 6);
         host.enableRemoting(&e);
 
         QRemoteObjectNode client;
@@ -899,7 +900,9 @@ private slots:
         Q_SET_OBJECT_NAME(client);
 
         const QScopedPointer<EngineReplica> engine_r(client.acquire<EngineReplica>());
+        QCOMPARE(engine_r->cylinders(), 4); // Default value
         engine_r->waitForSource();
+        QCOMPARE(engine_r->cylinders(), 6);
         QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged(int)));
         engine_r->setRpm(42);
         spy.wait();
@@ -934,7 +937,8 @@ private slots:
         QFETCH_GLOBAL(QUrl, hostUrl);
         QRemoteObjectHost host(hostUrl);
         SET_NODE_NAME(host);
-        Engine e;
+        Engine e(6);
+        QCOMPARE(e.cylinders(), 6);
         host.enableRemoting(&e);
 
         QRemoteObjectNode client;
@@ -944,6 +948,8 @@ private slots:
         const QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client.acquireDynamic(QStringLiteral("Engine")));
         engine_dr->waitForSource();
         const QMetaObject *metaObject = engine_dr->metaObject();
+        const QMetaProperty const_mp = metaObject->property(metaObject->indexOfProperty("cylinders"));
+        QCOMPARE(const_mp.read(engine_dr.data()).toInt(), 6);
         const int propIndex = metaObject->indexOfProperty("rpm");
         const QMetaProperty mp =  metaObject->property(propIndex);
         QSignalSpy spy(engine_dr.data(), QByteArray(QByteArrayLiteral("2")+mp.notifySignal().methodSignature().constData()));

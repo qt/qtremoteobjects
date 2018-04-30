@@ -191,7 +191,6 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     {
         switch (index) {
         case 0: return m_properties[1];
-        case 1: return m_properties[2];
         }
         return -1;
     }
@@ -199,7 +198,6 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     {
         switch (index) {
         case 0: return 0;
-        case 1: return 1;
         }
         return -1;
     }

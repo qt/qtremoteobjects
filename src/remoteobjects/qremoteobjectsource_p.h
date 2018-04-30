@@ -69,6 +69,8 @@ class QRemoteObjectSourceBase : public QObject
 public:
     ~QRemoteObjectSourceBase() override;
 
+    void setConnections();
+    void resetObject(QObject *newObject);
     int qt_metacall(QMetaObject::Call call, int methodId, void **a) final;
     QObject *m_object, *m_adapter;
     const SourceApiMap * const m_api;

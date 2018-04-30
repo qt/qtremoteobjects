@@ -106,7 +106,7 @@ enum class ObjectType : quint8 { CLASS, MODEL };
 class QRO_
 {
 public:
-    QRO_() {}
+    QRO_() : type(ObjectType::CLASS), isNull(true) {}
     explicit QRO_(QRemoteObjectSourceBase *source);
     QString name, typeName;
     ObjectType type;
