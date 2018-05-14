@@ -76,7 +76,8 @@ void tst_usertypes::modelInQml()
 
     QStringListModel *model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
-    TypeWithModelSimpleSource source(model);
+    TypeWithModelSimpleSource source;
+    source.setTracks(model);
     host.enableRemoting<TypeWithModelSourceAPI>(&source);
 
     QQmlEngine e;
@@ -99,7 +100,8 @@ void tst_usertypes::subObjectInQml()
     QRemoteObjectRegistryHost host(QUrl("local:testSubObject"));
 
     SimpleClockSimpleSource clock;
-    TypeWithSubObjectSimpleSource source(&clock);
+    TypeWithSubObjectSimpleSource source;
+    source.setClock(&clock);
     host.enableRemoting(&source);
 
     QQmlEngine e;
