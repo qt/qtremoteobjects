@@ -5,7 +5,7 @@ QT       -= gui
 REPC_MERGED += class.rep
 
 TARGET = tst_subclassreplicatest
-CONFIG   += console
+CONFIG   += console testcase
 CONFIG   -= app_bundle
 
 TEMPLATE = app
