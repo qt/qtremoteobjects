@@ -688,6 +688,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 else
                     out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(QRemoteObjectStringLiterals::MODEL().arg(\"%2\"))));")
                                               .arg(QString::number(index), property.name) << endl;
+                out << "        Q_EMIT " << property.name << "Changed(" << property.name << "()" << ");" << endl;
+
             }
             out << "    }" << endl;
         }

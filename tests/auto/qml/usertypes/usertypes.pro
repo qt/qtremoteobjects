@@ -5,7 +5,7 @@ REPC_MERGED += usertypes.rep
 #REPC_SOURCE += usertypes.rep
 
 TARGET = tst_usertypes
-CONFIG   += console
+CONFIG   += console testcase
 CONFIG   -= app_bundle
 
 TEMPLATE = app

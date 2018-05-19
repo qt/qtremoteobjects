@@ -402,7 +402,7 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
                                        QString::fromLatin1(property.name()),
                                        roleInfo});
             } else {
-                const QMetaObject *meta = child->metaObject();
+                const QMetaObject *meta = child ? child->metaObject() : propertyMeta;
                 QString typeName = QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(meta);
                 if (typeName.isNull()) {
                     typeName = QString::fromLatin1(propertyMeta->className());

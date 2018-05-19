@@ -41,6 +41,7 @@ public:
 
 private Q_SLOTS:
     void extraPropertyInQml();
+    void extraPropertyInQmlComplex();
     void modelInQml();
     void subObjectInQml();
     void complexInQml_data();
@@ -68,6 +69,30 @@ void tst_usertypes::extraPropertyInQml()
     QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").value<int>(), 10, 300);
 }
 
+void tst_usertypes::extraPropertyInQmlComplex()
+{
+    QRemoteObjectRegistryHost host(QUrl("local:testExtraComplex"));
+
+    SimpleClockSimpleSource clock;
+    QStringListModel *model = new QStringListModel();
+    model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
+    ComplexTypeSimpleSource source;
+    source.setClock(&clock);
+    source.setTracks(model);
+    host.enableRemoting(&source);
+
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/extraPropComplex.qml");
+    QObject *obj = c.create();
+    QVERIFY(obj);
+
+    ComplexTypeReplica *rep = qobject_cast<ComplexTypeReplica*>(obj);
+    QVERIFY(rep);
+
+    // don't crash
+    QTRY_VERIFY_WITH_TIMEOUT(rep->isInitialized(), 300);
+}
+
 void tst_usertypes::modelInQml()
 {
     qmlRegisterType<TypeWithModelReplica>("usertypes", 1, 0, "TypeWithModelReplica");
@@ -76,7 +101,8 @@ void tst_usertypes::modelInQml()
 
     QStringListModel *model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
-    TypeWithModelSimpleSource source(model);
+    TypeWithModelSimpleSource source;
+    source.setTracks(model);
     host.enableRemoting<TypeWithModelSourceAPI>(&source);
 
     QQmlEngine e;
@@ -99,7 +125,8 @@ void tst_usertypes::subObjectInQml()
     QRemoteObjectRegistryHost host(QUrl("local:testSubObject"));
 
     SimpleClockSimpleSource clock;
-    TypeWithSubObjectSimpleSource source(&clock);
+    TypeWithSubObjectSimpleSource source;
+    source.setClock(&clock);
     host.enableRemoting(&source);
 
     QQmlEngine e;

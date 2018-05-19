@@ -121,10 +121,12 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
     if (!meta)
         return;
 
-    for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
-        const QMetaProperty property = m_metaObject->property(index);
+    auto offsetMeta = m_metaObject;
+    QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(offsetMeta);
+    for (int index = offsetMeta->propertyOffset(); index < offsetMeta->propertyCount(); ++index) {
+        const QMetaProperty property = offsetMeta->property(index);
         if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
-            m_childIndices << index - m_metaObject->propertyOffset();
+            m_childIndices << index - offsetMeta->propertyOffset();
     }
 }
 
