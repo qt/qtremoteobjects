@@ -47,7 +47,7 @@ QT_BEGIN_NAMESPACE
 /*!
     \class QRemoteObjectDynamicReplica
     \inmodule QtRemoteObjects
-    \brief A dynamically instantiated \l {Replica}
+    \brief A dynamically instantiated \l {Replica}.
 
     There are generated replicas (replicas having the header files produced by the \l {repc} {Replica Compiler}), and dynamic replicas, which are generated on-the-fly.  This is the class for the dynamic type of replica.
 
