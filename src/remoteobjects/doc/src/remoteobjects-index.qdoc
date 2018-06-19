@@ -80,6 +80,14 @@ To link against the \e {Qt Remote Objects} module, add this line to the project 
 QT += remoteobjects
 \endcode
 
+\section2 Licenses
+
+Qt Remote Objects is available under commercial licenses from \l{The Qt Company}.
+In addition, it is available under the
+\l{GNU Lesser General Public License, version 3}, or the
+\l{GNU General Public License, version 2}.
+See \l{Qt Licensing} for further details.
+
 \section2 Guides
  \list
     \li \l {Overview Qt Remote Objects}
