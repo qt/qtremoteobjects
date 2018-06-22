@@ -664,6 +664,7 @@ Type: PreprocessorDirective | PreprocessorDirective Newlines;
 Type: Pod | Pod Newlines;
 Type: Class;
 Type: UseEnum | UseEnum Newlines;
+Type: Comments | Comments Newlines;
 Type: Enum;
 /.
     case $rule_number:
@@ -723,7 +724,7 @@ Class: ClassStart Start Stop;
 ./
 
 ClassTypes: ClassType | ClassType ClassTypes;
-ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass;
+ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass | Comments;
 ClassType: Enum;
 /.
     case $rule_number:

@@ -70,6 +70,9 @@ void tst_Parser::testBasic_data()
     QTest::newRow("preprocessor_line_ifgroup") << "#if 1\n#include \"foo\n#endif";
     //QTest::newRow("comment") << "//This is a comment";
     QTest::newRow("enum") << "ENUM MyEnum {test}";
+    QTest::newRow("empty class with comment") << "class MyClass {\n//comment\n}";
+    QTest::newRow("comment, class") << "//comment\nclass MyClass {}";
+    QTest::newRow("include, comment, class") << "#include \"foo\"\n//comment\nclass MyClass {}";
 }
 
 void tst_Parser::testBasic()
@@ -96,6 +99,9 @@ void tst_Parser::testProperties_data()
     QTest::addColumn<bool>("expectedPersistence");
 
     QTest::newRow("default") << "PROP(QString foo)" << "QString" << "foo" << QString() << ASTProperty::ReadPush << false;
+    QTest::newRow("default with comment") << "PROP(QString foo) // my property" << "QString" << "foo" << QString() << ASTProperty::ReadPush << false;
+    QTest::newRow("default with comment above") << "// my property\nPROP(QString foo)" << "QString" << "foo" << QString() << ASTProperty::ReadPush << false;
+    QTest::newRow("default with indented comment above") << "    // my property\nPROP(QString foo)" << "QString" << "foo" << QString() << ASTProperty::ReadPush << false;
     QTest::newRow("readonly") << "PROP(QString foo READONLY)" << "QString" << "foo" << QString() << ASTProperty::ReadOnly << false;
     QTest::newRow("constant") << "PROP(QString foo CONSTANT)" << "QString" << "foo" << QString() << ASTProperty::Constant << false;
     QTest::newRow("readwrite") << "PROP(QString foo READWRITE)" << "QString" << "foo" << QString() << ASTProperty::ReadWrite << false;
