@@ -1773,9 +1773,9 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     const bool newReplica = !replicas.contains(childInfo.name) || rep->isInitialized();
     if (newReplica) {
         if (rep->isInitialized()) {
-            auto rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
-            if (!rep->isShortCircuit())
-                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(rep.data()));
+            auto childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
+            if (childRep && !childRep->isShortCircuit())
+                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(childRep.data()));
         }
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));

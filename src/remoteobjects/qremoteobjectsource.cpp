@@ -137,9 +137,10 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
 
 QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceApiMap *api, QObject *adapter)
     : QRemoteObjectSourceBase(obj, d, api, adapter)
-    , m_name(adapter ? MODEL().arg(api->name()) : CLASS().arg(api->name()))
+    , m_name(api->typeName() == QLatin1String("QAbstractItemModelAdapter") ? MODEL().arg(api->name()) : CLASS().arg(api->name()))
 {
-    d->m_sourceIo->registerSource(this);
+    if (obj)
+        d->m_sourceIo->registerSource(this);
 }
 
 QRemoteObjectRootSource::QRemoteObjectRootSource(QObject *obj, const SourceApiMap *api,
@@ -182,11 +183,21 @@ void QRemoteObjectSourceBase::setConnections()
 
 void QRemoteObjectSourceBase::resetObject(QObject *newObject)
 {
-    QObject::disconnect(m_object, 0, this, 0);
-    if (m_adapter)
-        QObject::disconnect(m_adapter, 0, this, 0);
+    if (m_object)
+        m_object->disconnect(this);
+    if (m_adapter) {
+        m_adapter->disconnect(this);
+        delete m_adapter;
+        m_adapter = nullptr;
+    }
 
     m_object = newObject;
+    auto model = qobject_cast<QAbstractItemModel *>(newObject);
+    if (model) {
+        d->m_sourceIo->registerSource(this);
+        m_adapter = new QAbstractItemModelSourceAdapter(model, nullptr, model->roleNames().keys().toVector());
+    }
+
     setParent(newObject);
     if (newObject)
         setConnections();

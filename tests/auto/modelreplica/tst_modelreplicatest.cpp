@@ -35,16 +35,13 @@ class ModelreplicaTest : public QObject
     Q_OBJECT
 
 public:
-    ModelreplicaTest();
+    ModelreplicaTest() = default;
 
 private Q_SLOTS:
     void basicFunctions();
     void basicFunctions_data();
+    void nullModel();
 };
-
-ModelreplicaTest::ModelreplicaTest()
-{
-}
 
 void ModelreplicaTest::basicFunctions_data()
 {
@@ -58,7 +55,7 @@ void ModelreplicaTest::basicFunctions()
     QFETCH(bool, templated);
 
     QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
-    QStringListModel *model = new QStringListModel();
+    auto model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
     MediaSimpleSource source;
     source.setTracks(model);
@@ -89,6 +86,31 @@ void ModelreplicaTest::basicFunctions()
     {
         QCOMPARE(model->data(model->index(i), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
     }
+}
+
+void ModelreplicaTest::nullModel()
+{
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    MediaSimpleSource source;
+    host.enableRemoting(&source);
+
+    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
+    QVERIFY(replica->waitForSource(100));
+
+    auto model = new QStringListModel(this);
+    model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
+    source.setTracks(model);
+
+    QTRY_VERIFY(replica->tracks());
+    QTRY_COMPARE(replica->tracks()->rowCount(), 3);
+    QTRY_COMPARE(replica->tracks()->data(replica->tracks()->index(0, 0)), "Track1");
+
+    model = new QStringListModel(this);
+    model->setStringList(QStringList() << "New Track1" << "New Track2" << "New Track3"  << "New Track4");
+    source.setTracks(model);
+    QTRY_COMPARE(replica->tracks()->rowCount(), 4);
+    QTRY_COMPARE(replica->tracks()->data(replica->tracks()->index(3, 0)), "New Track4");
 }
 
 QTEST_MAIN(ModelreplicaTest)
