@@ -120,6 +120,8 @@ void tst_Parser::testProperties_data()
     QTest::newRow("templatetype") << "PROP(QVector<int> bar)" << "QVector<int>" << "bar" << QString() << ASTProperty::ReadPush << false;
     QTest::newRow("nested templatetype") << "PROP(QMap<int, QVector<int> > bar)" << "QMap<int, QVector<int> >" << "bar" << QString() << ASTProperty::ReadPush << false;
     QTest::newRow("non-int default value") << "PROP(double foo=1.1 CONSTANT)" << "double" << "foo" << "1.1" << ASTProperty::Constant << false;
+    QTest::newRow("tab") << "PROP(double\tfoo)" << "double" << "foo" << "" << ASTProperty::ReadPush << false;
+    QTest::newRow("two tabs") << "PROP(double\t\tfoo)" << "double" << "foo" << "" << ASTProperty::ReadPush << false;
 }
 
 void tst_Parser::testProperties()
@@ -257,6 +259,7 @@ void tst_Parser::testPods_data()
     QTest::newRow("one pod") << "POD preset(int presetNumber)" << "int" << "presetNumber";
     QTest::newRow("two pod") << "POD preset(int presetNumber, double foo)" << "int;double" << "presetNumber;foo";
     QTest::newRow("two pod with space") << "POD preset ( int presetNumber , double foo ) " << "int;double" << "presetNumber;foo";
+    QTest::newRow("two pod multiline") << "POD preset(\nint presetNumber,\ndouble foo\n)" << "int;double" << "presetNumber;foo";
     //Template
     QTest::newRow("pod template") << "POD preset(QMap<QString,int> foo) " << "QMap<QString,int>" << "foo";
     QTest::newRow("pod template (QList)") << "POD preset(QList<QString> foo) " << "QList<QString>" << "foo";
@@ -306,16 +309,23 @@ void tst_Parser::testEnums_data()
     QTest::addColumn<QList<int> >("expectedvalues");
     QTest::addColumn<int>("expectedmax");
     QTest::addColumn<bool>("expectedsigned");
+    QTest::addColumn<bool>("inclass");
 
-    //Separate by ";"
-    QTest::newRow("one enum val") << "ENUM preset {presetNumber}" << "presetNumber" << (QList<int>() << 0) << 0 << false;
-    QTest::newRow("two enum val") << "ENUM preset {presetNumber, foo}" << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false;
-    QTest::newRow("two enum val -1 2nd") << "ENUM preset {presetNumber, foo = -1}" << "presetNumber;foo" << (QList<int>() << 0 << -1) << 1 << true;
-    QTest::newRow("two enum val -1 1st") << "ENUM preset {presetNumber=-1, foo}" << "presetNumber;foo" << (QList<int>() << -1 << 0) << 1 << true;
-    QTest::newRow("two enum val hex") << "ENUM preset {presetNumber=0xf, foo}" << "presetNumber;foo" << (QList<int>() << 15 << 16) << 16 << false;
-    QTest::newRow("two enum val hex") << "ENUM preset {presetNumber=0xff, foo}" << "presetNumber;foo" << (QList<int>() << 255 << 256) << 256 << false;
-    QTest::newRow("two enum val with space") << "ENUM preset { presetNumber ,  foo } " << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false;
-    QTest::newRow("set values") << "ENUM preset { val1=1 , val3=3, val5=5 } " << "val1;val3;val5" << (QList<int>() << 1 << 3 << 5) << 5 << false;
+    for (int i = 0; i <= 1; ++i) {
+        bool inclass = i == 1;
+        QString identifier = inclass ? QLatin1String("%1 in class") : QLatin1String("%1 outside class");
+        //Separate by ";"
+        QTest::newRow(identifier.arg("one enum val").toLatin1()) << "ENUM preset {presetNumber}" << "presetNumber" << (QList<int>() << 0) << 0 << false << inclass;
+        QTest::newRow(identifier.arg("two enum val").toLatin1()) << "ENUM preset {presetNumber, foo}" << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false << inclass;
+        QTest::newRow(identifier.arg("two enum val -1 2nd").toLatin1()) << "ENUM preset {presetNumber, foo = -1}" << "presetNumber;foo" << (QList<int>() << 0 << -1) << 1 << true << inclass;
+        QTest::newRow(identifier.arg("two enum val -1 1st").toLatin1()) << "ENUM preset {presetNumber=-1, foo}" << "presetNumber;foo" << (QList<int>() << -1 << 0) << 1 << true << inclass;
+        QTest::newRow(identifier.arg("two enum val hex").toLatin1()) << "ENUM preset {presetNumber=0xf, foo}" << "presetNumber;foo" << (QList<int>() << 15 << 16) << 16 << false << inclass;
+        QTest::newRow(identifier.arg("two enum val hex").toLatin1()) << "ENUM preset {presetNumber=0xff, foo}" << "presetNumber;foo" << (QList<int>() << 255 << 256) << 256 << false << inclass;
+        QTest::newRow(identifier.arg("two enum val with space").toLatin1()) << "ENUM preset { presetNumber ,  foo } " << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false << inclass;
+        QTest::newRow(identifier.arg("set values").toLatin1()) << "ENUM preset { val1=1 , val3=3, val5=5 } " << "val1;val3;val5" << (QList<int>() << 1 << 3 << 5) << 5 << false << inclass;
+        QTest::newRow(identifier.arg("multiline").toLatin1()) << "ENUM preset {\nval1,\nval2,\nval3\n} " << "val1;val2;val3" << (QList<int>() << 0 << 1 << 2) << 2 << false << inclass;
+        QTest::newRow(identifier.arg("multiline indented").toLatin1()) << "    ENUM preset {\n        val1,\n        val2,\n        val3\n    } " << "val1;val2;val3" << (QList<int>() << 0 << 1 << 2) << 2 << false << inclass;
+    }
 }
 
 void tst_Parser::testEnums()
@@ -325,13 +335,17 @@ void tst_Parser::testEnums()
     QFETCH(QList<int>, expectedvalues);
     QFETCH(int, expectedmax);
     QFETCH(bool, expectedsigned);
+    QFETCH(bool, inclass);
 
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << enumdeclaration << endl;
+    if (!inclass)
+        stream << enumdeclaration << endl;
     stream << "class TestClass" << endl;
     stream << "{" << endl;
+    if (inclass)
+        stream << enumdeclaration << endl;
     stream << "};" << endl;
     file.seek(0);
 
@@ -340,9 +354,15 @@ void tst_Parser::testEnums()
 
     const AST ast = parser.ast();
     QCOMPARE(ast.classes.count(), 1);
-
-    QCOMPARE(ast.enums.count(), 1);
-    const ASTEnum enums = ast.enums.first();
+    ASTEnum enums;
+    if (inclass) {
+        const ASTClass astClass = ast.classes.first();
+        QCOMPARE(astClass.enums.count(), 1);
+        enums = astClass.enums.first();
+    } else {
+        QCOMPARE(ast.enums.count(), 1);
+        enums = ast.enums.first();
+    }
     const QVector<ASTEnumParam> paramList = enums.params;
     const QStringList nameList = expectednames.split(QLatin1Char(';'));
     QVERIFY(nameList.count() == expectedvalues.count());

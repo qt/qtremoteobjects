@@ -53,8 +53,8 @@
 %token slot "[slot][ \\t]*SLOT[ \\t]*\\((?<type>[^\\(]*)\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token model "[model][ \\t]*MODEL[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<args>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
 %token childrep "[childrep][ \\t]*CLASS[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<type>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
-%token start "[start]\\{[ \\t]*"
-%token stop "[stop]\\};?[ \\t]*"
+%token start "[start][ \\t]*\\{[ \\t]*"
+%token stop "[stop][ \\t]*\\};?[ \\t]*"
 %token comma "[comma],"
 %token comment "[comment](?<comment>[ \\t]*//[^\\n]*\\n)"
 %token preprocessor_directive "[preprocessor_directive](?<preprocessor_directive>#[ \\t]*[^\\n]*\\n)"
@@ -449,9 +449,21 @@ bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &mo
     return true;
 }
 
+QString stripArgs(const QString &arguments)
+{
+    // This repc parser searches for the longest possible matches, which can be multiline.
+    // This method "cleans" the string input, removing comments and converting to a single
+    // line for subsequent parsing.
+    QStringList lines = arguments.split(QRegExp(QStringLiteral("\r?\n")));
+    for (auto & line : lines)
+        line.replace(QRegExp(QStringLiteral("//.*")),QString());
+    return lines.join(QString());
+}
+
 bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclaration)
 {
-    QString input = propertyDeclaration.trimmed();
+    QString input = stripArgs(propertyDeclaration).trimmed();
+    const QRegExp whitespace(QStringLiteral("\\s"));
 
     QString propertyType;
     QString propertyName;
@@ -475,7 +487,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
             --templateDepth;
             if (templateDepth == 0)
                 inTemplate = false;
-        } else if (inputChar == QLatin1Char(' ')) {
+        } else if (inputChar.isSpace()) {
             if (!inTemplate) {
                 nameIndex = i;
                 break;
@@ -500,7 +512,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
         propertyName = input.left(equalSignIndex).trimmed();
 
         input = input.mid(equalSignIndex + 1).trimmed();
-        const int whitespaceIndex = input.indexOf(QLatin1Char(' '));
+        const int whitespaceIndex = input.indexOf(whitespace);
         if (whitespaceIndex == -1) { // no flag given
             propertyDefaultValue = input;
             propertyModifier = ASTProperty::ReadPush;
@@ -512,7 +524,7 @@ bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclara
                 return false;
         }
     } else { // there is no default value
-        const int whitespaceIndex = input.indexOf(QLatin1Char(' '));
+        const int whitespaceIndex = input.indexOf(whitespace);
         if (whitespaceIndex == -1) { // no flag given
             propertyName = input;
             propertyModifier = ASTProperty::ReadPush;
@@ -551,6 +563,7 @@ AST RepParser::ast() const
 
 void RepParser::TypeParser::parseArguments(const QString &arguments)
 {
+    const QString strippedArgs = stripArgs(arguments);
     int templateDepth = 0;
     bool inTemplate = false;
     bool inVariable = false;
@@ -558,8 +571,8 @@ void RepParser::TypeParser::parseArguments(const QString &arguments)
     QString variableName;
     ASTDeclaration::VariableTypes variableType = ASTDeclaration::None;
     int variableNameIndex = 0;
-    for (int i = 0; i < arguments.size(); ++i) {
-        const QChar inputChar(arguments.at(i));
+    for (int i = 0; i < strippedArgs.size(); ++i) {
+        const QChar inputChar(strippedArgs.at(i));
         if (inputChar == QLatin1Char('<')) {
             propertyType += inputChar;
             inTemplate = true;
@@ -569,7 +582,7 @@ void RepParser::TypeParser::parseArguments(const QString &arguments)
             --templateDepth;
             if (templateDepth == 0)
                 inTemplate = false;
-        } else if (inputChar == QLatin1Char(' ')) {
+        } else if (inputChar.isSpace()) {
             if (inTemplate)
                 propertyType += inputChar;
             else if (!propertyType.isEmpty()) {
