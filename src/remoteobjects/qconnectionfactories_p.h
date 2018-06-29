@@ -65,39 +65,57 @@ static const QLatin1String protocolVersion("QtRO 1.1");
 
 }
 
-//The Qt servers create QIODevice derived classes from handleConnection.
-//The problem is that they behave differently, so this class adds some
-//consistency.
-class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public QObject
+class Q_REMOTEOBJECTS_EXPORT IoDeviceBase : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY(IoDeviceBase)
+
+public:
+    explicit IoDeviceBase(QObject *parent = nullptr);
+    ~IoDeviceBase() override;
+
+    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
+
+    virtual void write(const QByteArray &data);
+    virtual void write(const QByteArray &data, qint64);
+    virtual bool isOpen() const { return !isClosing(); }
+    virtual void close();
+    virtual qint64 bytesAvailable() const;
+    virtual QIODevice *connection() const = 0;
+    void initializeDataStream();
+    QDataStream& stream() { return m_dataStream; }
+    inline bool isClosing() const { return m_isClosing; }
+    void addSource(const QString &);
+    void removeSource(const QString &);
+    QSet<QString> remoteObjects() const;
+
+Q_SIGNALS:
+    void readyRead();
+
+protected:
+    virtual QString deviceType() const = 0;
+    virtual void doClose() = 0;
+    bool m_isClosing;
+
+private:
+    quint32 m_curReadSize;
+    QDataStream m_dataStream;
+    QSet<QString> m_remoteObjects;
+};
+
+class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public IoDeviceBase
 {
     Q_OBJECT
     Q_DISABLE_COPY(ServerIoDevice)
 
 public:
     explicit ServerIoDevice(QObject *parent = nullptr);
-    ~ServerIoDevice() override;
-
-    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
-
-    virtual void write(const QByteArray &data);
-    virtual void write(const QByteArray &data, qint64);
-    void close();
-    virtual qint64 bytesAvailable();
-    virtual QIODevice *connection() const = 0;
-    void initializeDataStream();
-    QDataStream& stream() { return m_dataStream; }
 
 Q_SIGNALS:
     void disconnected();
-    void readyRead();
 
 protected:
-    virtual void doClose() = 0;
-
-private:
-    bool m_isClosing;
-    quint32 m_curReadSize;
-    QDataStream m_dataStream;
+    QString deviceType() const override;
 };
 
 class Q_REMOTEOBJECTS_EXPORT QConnectionAbstractServer : public QObject
@@ -123,7 +141,7 @@ Q_SIGNALS:
     void newConnection();
 };
 
-class Q_REMOTEOBJECTS_EXPORT ClientIoDevice : public QObject
+class Q_REMOTEOBJECTS_EXPORT ClientIoDevice : public IoDeviceBase
 {
     Q_OBJECT
     Q_DISABLE_COPY(ClientIoDevice)
@@ -132,43 +150,23 @@ public:
     explicit ClientIoDevice(QObject *parent = nullptr);
     ~ClientIoDevice() override;
 
-    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
-
-    virtual void write(const QByteArray &data);
-    virtual void write(const QByteArray &data, qint64);
-    void close();
     void disconnectFromServer();
     virtual void connectToServer() = 0;
-    virtual qint64 bytesAvailable() const;
 
     QUrl url() const;
-    void addSource(const QString &);
-    void removeSource(const QString &);
-    QSet<QString> remoteObjects() const;
-
-    virtual bool isOpen() const = 0;
-    virtual QIODevice *connection() const = 0;
-    inline QDataStream& stream() { return m_dataStream; }
 
 Q_SIGNALS:
     void disconnected();
-    void readyRead();
     void shouldReconnect(ClientIoDevice*);
-protected:
-    virtual void doClose() = 0;
-    virtual void doDisconnectFromServer() = 0;
-    inline bool isClosing() const { return m_isClosing; }
-    QDataStream m_dataStream;
 
-private:
-    bool m_isClosing;
-    QUrl m_url;
+protected:
+    virtual void doDisconnectFromServer() = 0;
+    QString deviceType() const override;
 
 private:
     friend class QtROClientFactory;
 
-    quint32 m_curReadSize;
-    QSet<QString> m_remoteObjects;
+    QUrl m_url;
 };
 
 class QtROServerFactory

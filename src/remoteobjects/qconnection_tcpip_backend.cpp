@@ -120,10 +120,8 @@ void TcpClientIo::onStateChanged(QAbstractSocket::SocketState state)
         m_socket->abort();
         emit shouldReconnect(this);
     }
-    if (state == QAbstractSocket::ConnectedState) {
-        m_dataStream.setDevice(connection());
-        m_dataStream.resetStatus();
-    }
+    if (state == QAbstractSocket::ConnectedState)
+        initializeDataStream();
 }
 
 

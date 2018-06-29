@@ -114,10 +114,8 @@ void QnxClientIo::onStateChanged(QAbstractSocket::SocketState state)
     if (state == QAbstractSocket::ClosingState && !isClosing()) {
         m_socket->abort();
         emit shouldReconnect(this);
-    } else if (state == QAbstractSocket::ConnectedState) {
-        m_dataStream.setDevice(connection());
-        m_dataStream.resetStatus();
-    }
+    } else if (state == QAbstractSocket::ConnectedState)
+        initializeDataStream();
 }
 
 QnxServerIo::QnxServerIo(QIOQnxSource *conn, QObject *parent)

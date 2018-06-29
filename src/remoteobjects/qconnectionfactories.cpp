@@ -89,10 +89,88 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
     return true;
 }
 
-ClientIoDevice::ClientIoDevice(QObject *parent)
+/*!
+    All communication between nodes happens through some form of QIODevice with
+    an associated QDataStream to handle marshalling of Qt types. IoDeviceBase
+    is an abstract base class that provides a consistent interface to QtRO, yet
+    can be extended to support different types of QIODevice.
+ */
+IoDeviceBase::IoDeviceBase(QObject *parent)
     : QObject(parent), m_isClosing(false), m_curReadSize(0)
 {
     m_dataStream.setVersion(dataStreamVersion);
+}
+
+IoDeviceBase::~IoDeviceBase()
+{
+}
+
+bool IoDeviceBase::read(QRemoteObjectPacketTypeEnum &type, QString &name)
+{
+    qCDebug(QT_REMOTEOBJECT_IO) << deviceType() << "read()" << m_curReadSize << bytesAvailable();
+
+    if (m_curReadSize == 0) {
+        if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
+            return false;
+
+        m_dataStream >> m_curReadSize;
+    }
+
+    qCDebug(QT_REMOTEOBJECT_IO) << deviceType() << "read()-looking for map" << m_curReadSize << bytesAvailable();
+
+    if (bytesAvailable() < m_curReadSize)
+        return false;
+
+    m_curReadSize = 0;
+    return fromDataStream(m_dataStream, type, name);
+}
+
+void IoDeviceBase::write(const QByteArray &data)
+{
+    if (connection()->isOpen() && !m_isClosing)
+        connection()->write(data);
+}
+
+void IoDeviceBase::write(const QByteArray &data, qint64 size)
+{
+    if (connection()->isOpen() && !m_isClosing)
+        connection()->write(data.data(), size);
+}
+
+void IoDeviceBase::close()
+{
+    m_isClosing = true;
+    doClose();
+}
+
+qint64 IoDeviceBase::bytesAvailable() const
+{
+    return connection()->bytesAvailable();
+}
+
+void IoDeviceBase::initializeDataStream()
+{
+    m_dataStream.setDevice(connection());
+    m_dataStream.resetStatus();
+}
+
+void IoDeviceBase::addSource(const QString &name)
+{
+    m_remoteObjects.insert(name);
+}
+
+void IoDeviceBase::removeSource(const QString &name)
+{
+    m_remoteObjects.remove(name);
+}
+
+QSet<QString> IoDeviceBase::remoteObjects() const
+{
+    return m_remoteObjects;
+}
+
+ClientIoDevice::ClientIoDevice(QObject *parent) : IoDeviceBase(parent)
+{
 }
 
 ClientIoDevice::~ClientIoDevice()
@@ -101,51 +179,10 @@ ClientIoDevice::~ClientIoDevice()
         close();
 }
 
-void ClientIoDevice::close()
-{
-    m_isClosing = true;
-    doClose();
-}
-
 void ClientIoDevice::disconnectFromServer()
 {
     doDisconnectFromServer();
     emit shouldReconnect(this);
-}
-
-bool ClientIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
-{
-    qCDebug(QT_REMOTEOBJECT_IO) << "ClientIODevice::read()" << m_curReadSize << bytesAvailable();
-
-    if (m_curReadSize == 0) {
-        if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
-            return false;
-
-        m_dataStream >> m_curReadSize;
-    }
-
-    qCDebug(QT_REMOTEOBJECT_IO) << "ClientIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
-
-    if (bytesAvailable() < m_curReadSize)
-        return false;
-
-    m_curReadSize = 0;
-    return fromDataStream(m_dataStream, type, name);
-}
-
-void ClientIoDevice::write(const QByteArray &data)
-{
-    connection()->write(data);
-}
-
-void ClientIoDevice::write(const QByteArray &data, qint64 size)
-{
-    connection()->write(data.data(), size);
-}
-
-qint64 ClientIoDevice::bytesAvailable() const
-{
-    return connection()->bytesAvailable();
 }
 
 QUrl ClientIoDevice::url() const
@@ -153,78 +190,23 @@ QUrl ClientIoDevice::url() const
     return m_url;
 }
 
-void ClientIoDevice::addSource(const QString &name)
+QString ClientIoDevice::deviceType() const
 {
-    m_remoteObjects.insert(name);
+    return QStringLiteral("ClientIoDevice");
 }
 
-void ClientIoDevice::removeSource(const QString &name)
-{
-    m_remoteObjects.remove(name);
-}
-
-QSet<QString> ClientIoDevice::remoteObjects() const
-{
-    return m_remoteObjects;
-}
-
-ServerIoDevice::ServerIoDevice(QObject *parent)
-    : QObject(parent), m_isClosing(false), m_curReadSize(0)
-{
-    m_dataStream.setVersion(dataStreamVersion);
-}
-
-ServerIoDevice::~ServerIoDevice()
+/*!
+    The Qt servers create QIODevice derived classes from handleConnection. The
+    problem is that they behave differently, so this class adds some
+    consistency.
+ */
+ServerIoDevice::ServerIoDevice(QObject *parent) : IoDeviceBase(parent)
 {
 }
 
-bool ServerIoDevice::read(QRemoteObjectPacketTypeEnum &type, QString &name)
+QString ServerIoDevice::deviceType() const
 {
-    qCDebug(QT_REMOTEOBJECT_IO) << "ServerIODevice::read()" << m_curReadSize << bytesAvailable();
-
-    if (m_curReadSize == 0) {
-        if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
-            return false;
-
-        m_dataStream >> m_curReadSize;
-    }
-
-    qCDebug(QT_REMOTEOBJECT_IO) << "ServerIODevice::read()-looking for map" << m_curReadSize << bytesAvailable();
-
-    if (bytesAvailable() < m_curReadSize)
-        return false;
-
-    m_curReadSize = 0;
-    return fromDataStream(m_dataStream, type, name);
-}
-
-void ServerIoDevice::close()
-{
-    m_isClosing = true;
-    doClose();
-}
-
-void ServerIoDevice::write(const QByteArray &data)
-{
-    if (connection()->isOpen() && !m_isClosing)
-        connection()->write(data);
-}
-
-void ServerIoDevice::write(const QByteArray &data, qint64 size)
-{
-    if (connection()->isOpen() && !m_isClosing)
-        connection()->write(data.data(), size);
-}
-
-qint64 ServerIoDevice::bytesAvailable()
-{
-    return connection()->bytesAvailable();
-}
-
-void ServerIoDevice::initializeDataStream()
-{
-    m_dataStream.setDevice(connection());
-    m_dataStream.resetStatus();
+    return QStringLiteral("ServerIoDevice");
 }
 
 QConnectionAbstractServer::QConnectionAbstractServer(QObject *parent)

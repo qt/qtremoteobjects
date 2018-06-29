@@ -115,10 +115,8 @@ void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
         m_socket->abort();
         emit shouldReconnect(this);
     }
-    if (state == QLocalSocket::ConnectedState) {
-        m_dataStream.setDevice(connection());
-        m_dataStream.resetStatus();
-    }
+    if (state == QLocalSocket::ConnectedState)
+        initializeDataStream();
 }
 
 LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
