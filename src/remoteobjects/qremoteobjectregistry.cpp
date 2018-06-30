@@ -56,7 +56,7 @@ class QRemoteObjectRegistryPrivate : public QObjectPrivate
 /*!
     \class QRemoteObjectRegistry
     \inmodule QtRemoteObjects
-    \brief A class holding information about \l {Source} objects available on the Qt Remote Objects network
+    \brief A class holding information about \l {Source} objects available on the Qt Remote Objects network.
 
     The Registry is a special Source/Replica pair held by a \l
     {QRemoteObjectNode} {node} itself. It knows about all other \l {Source}s

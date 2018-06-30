@@ -228,7 +228,7 @@ ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
 /*!
     \class QtROServerFactory
     \inmodule QtRemoteObjects
-    \brief A class holding information about server backends available on the Qt Remote Objects network
+    \brief A class holding information about server backends available on the Qt Remote Objects network.
 */
 QtROServerFactory::QtROServerFactory()
 {
@@ -247,7 +247,7 @@ QtROServerFactory *QtROServerFactory::instance()
 /*!
     \class QtROClientFactory
     \inmodule QtRemoteObjects
-    \brief A class holding information about client backends available on the Qt Remote Objects network
+    \brief A class holding information about client backends available on the Qt Remote Objects network.
 */
 QtROClientFactory::QtROClientFactory()
 {

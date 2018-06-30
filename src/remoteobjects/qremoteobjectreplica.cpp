@@ -548,7 +548,7 @@ void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep
 /*!
     \class QRemoteObjectReplica
     \inmodule QtRemoteObjects
-    \brief A class interacting with (but not implementing) a Qt API on the Remote Object network
+    \brief A class interacting with (but not implementing) a Qt API on the Remote Object network.
 
     A Remote Object Replica is a QObject proxy for another QObject (called the
     \l {Source} object). Once initialized, a replica can be considered a
