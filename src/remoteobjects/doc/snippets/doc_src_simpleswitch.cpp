@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
     SimpleSwitch srcSwitch; // create simple switch
 
-    QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNode(); // create host node without Regsitry
+    QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNode(); // create host node without Registry
     //The static node creation routines take one or two URLs as input parameters, but they have default values to help people getting started.
     //It is recommended use your own URLs in any production environment to avoid name conflicts.
     srcNode.enableRemoting(&srcSwitch); // enable remoting/sharing
