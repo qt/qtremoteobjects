@@ -104,16 +104,23 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
             m_heartbeatTimer.start();
     });
     connect(&m_heartbeatTimer, &QTimer::timeout, this, [this] {
+        // TODO: Revisit if a baseclass method can be used to avoid specialized cast
+        // conditional logic.
+        auto clientIo = qobject_cast<ClientIoDevice *>(connectionToSource);
         if (m_pendingCalls.contains(0)) {
             // The source didn't respond in time, disconnect the connection
-            if (connectionToSource)
-                connectionToSource->disconnectFromServer();
+            if (clientIo)
+                clientIo->disconnectFromServer();
+            else if (connectionToSource)
+                connectionToSource->close();
         } else {
             serializePingPacket(m_packet, m_objectName);
             if (sendCommandWithReply(0).d->serialId == -1) {
                 m_heartbeatTimer.stop();
-                if (connectionToSource)
-                    connectionToSource->disconnectFromServer();
+                if (clientIo)
+                    clientIo->disconnectFromServer();
+                else if (connectionToSource)
+                    connectionToSource->close();
             }
         }
     });
@@ -449,7 +456,7 @@ void QConnectedReplicaImplementation::setProperty(int i, const QVariant &prop)
     m_propertyStorage[i] = prop;
 }
 
-void QConnectedReplicaImplementation::setConnection(ClientIoDevice *conn)
+void QConnectedReplicaImplementation::setConnection(IoDeviceBase *conn)
 {
     if (connectionToSource.isNull()) {
         connectionToSource = conn;

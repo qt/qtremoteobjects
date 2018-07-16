@@ -62,7 +62,7 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectSourceIo;
-class ServerIoDevice;
+class IoDeviceBase;
 
 class QRemoteObjectSourceBase : public QObject
 {
@@ -87,7 +87,7 @@ public:
     struct Private {
         Private(QRemoteObjectSourceIo *io) : m_sourceIo(io), isDynamic(false) {}
         QRemoteObjectSourceIo *m_sourceIo;
-        QVector<ServerIoDevice*> m_listeners;
+        QVector<IoDeviceBase*> m_listeners;
         QRemoteObjectPackets::DataStreamPacket m_packet;
 
         // Types needed during recursively sending a root to a new listener
@@ -122,8 +122,8 @@ public:
 
     bool isRoot() const override { return true; }
     QString name() const override { return m_name; }
-    void addListener(ServerIoDevice *io, bool dynamic = false);
-    int removeListener(ServerIoDevice *io, bool shouldSendRemove = false);
+    void addListener(IoDeviceBase *io, bool dynamic = false);
+    int removeListener(IoDeviceBase *io, bool shouldSendRemove = false);
 
     QString m_name;
 };

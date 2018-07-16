@@ -154,7 +154,7 @@ public:
 
     virtual QReplicaImplementationInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
     void handleReplicaConnection(const QString &name);
-    void handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, ClientIoDevice *connection);
+    void handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, IoDeviceBase *connection);
     void initialize();
 private:
     bool checkSignatures(const QByteArray &a, const QByteArray &b);
@@ -162,7 +162,7 @@ private:
 public:
     struct SourceInfo
     {
-        ClientIoDevice* device;
+        IoDeviceBase* device;
         QString typeName;
         QByteArray objectSignature;
     };
@@ -171,6 +171,7 @@ public:
     QUrl registryAddress;
     QHash<QString, QWeakPointer<QReplicaImplementationInterface> > replicas;
     QMap<QString, SourceInfo> connectedSources;
+    QMap<QString, QRemoteObjectNode::RemoteObjectSchemaHandler> schemaHandlers;
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
     QRemoteObjectRegistry *registry;

@@ -52,20 +52,29 @@ using namespace QtRemoteObjects;
 
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
     : QObject(parent)
-    , m_server(QtROServerFactory::instance()->create(address, this))
+    , m_server(QtROServerFactory::instance()->isValid(address) ?
+               QtROServerFactory::instance()->create(address, this) : nullptr)
 {
     if (m_server && m_server->listen(address)) {
         qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;
     } else {
-        qROWarning(this) << "Listen failed for URL:" << address;
-        if (m_server)
+        if (m_server) {
+            qROWarning(this) << "Listen failed for URL:" << address;
             qROWarning(this) << m_server->serverError();
-        else
-            qROWarning(this) << "Most likely an unrecognized scheme was used.";
+        } else {
+            m_address = address;
+            qRODebug(this) << "Using" << address << "as external url.";
+        }
         return;
     }
 
     connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
+}
+
+QRemoteObjectSourceIo::QRemoteObjectSourceIo(QObject *parent)
+    : QObject(parent)
+    , m_server(nullptr)
+{
 }
 
 QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
@@ -93,7 +102,7 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
 
     new QRemoteObjectRootSource(object, api, adapter, this);
     QRemoteObjectPackets::serializeObjectListPacket(m_packet, {QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName(), api->objectSignature()}});
-    foreach (ServerIoDevice *conn, m_connections)
+    for (auto conn : m_connections)
         conn->write(m_packet.array, m_packet.size);
     if (const int count = m_connections.size())
         qRODebug(this) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
@@ -120,8 +129,10 @@ void QRemoteObjectSourceIo::registerSource(QRemoteObjectSourceBase *source)
         qRODebug(this) << "Registering" << name;
         m_sourceRoots[name] = root;
         m_objectToSourceMap[source->m_object] = root;
-        const auto &type = source->m_api->typeName();
-        emit remoteObjectAdded(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
+        if (serverAddress().isValid()) {
+            const auto &type = source->m_api->typeName();
+            emit remoteObjectAdded(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
+        }
     }
 }
 
@@ -134,13 +145,14 @@ void QRemoteObjectSourceIo::unregisterSource(QRemoteObjectSourceBase *source)
         const auto type = source->m_api->typeName();
         m_objectToSourceMap.remove(source->m_object);
         m_sourceRoots.remove(name);
-        emit remoteObjectRemoved(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
+        if (serverAddress().isValid())
+            emit remoteObjectRemoved(qMakePair(name, QRemoteObjectSourceLocationInfo(type, serverAddress())));
     }
 }
 
 void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 {
-    ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
+    IoDeviceBase *connection = qobject_cast<IoDeviceBase*>(conn);
     m_connections.remove(connection);
 
     qRODebug(this) << "OnServerDisconnect";
@@ -158,7 +170,7 @@ void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 void QRemoteObjectSourceIo::onServerRead(QObject *conn)
 {
     // Assert the invariant here conn is of type QIODevice
-    ServerIoDevice *connection = qobject_cast<ServerIoDevice*>(conn);
+    IoDeviceBase *connection = qobject_cast<IoDeviceBase*>(conn);
     QRemoteObjectPacketTypeEnum packetType;
 
     do {
@@ -258,12 +270,17 @@ void QRemoteObjectSourceIo::handleConnection()
     qRODebug(this) << "handleConnection" << m_connections;
 
     ServerIoDevice *conn = m_server->nextPendingConnection();
+    newConnection(conn);
+}
+
+void QRemoteObjectSourceIo::newConnection(IoDeviceBase *conn)
+{
     m_connections.insert(conn);
-    connect(conn, &ServerIoDevice::disconnected, this, [this, conn]() {
-        onServerDisconnect(conn);
-    });
-    connect(conn, &ServerIoDevice::readyRead, this, [this, conn]() {
+    connect(conn, &IoDeviceBase::readyRead, this, [this, conn]() {
         onServerRead(conn);
+    });
+    connect(conn, &IoDeviceBase::disconnected, this, [this, conn]() {
+        onServerDisconnect(conn);
     });
 
     serializeHandshakePacket(m_packet);
@@ -280,7 +297,9 @@ void QRemoteObjectSourceIo::handleConnection()
 
 QUrl QRemoteObjectSourceIo::serverAddress() const
 {
-    return m_server->address();
+    if (m_server)
+        return m_server->address();
+    return m_address;
 }
 
 QT_END_NAMESPACE

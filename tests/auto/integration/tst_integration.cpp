@@ -32,11 +32,12 @@
 #include <QMetaType>
 #include <QProcess>
 #include <QFileInfo>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 #include <QRemoteObjectReplica>
 #include <QRemoteObjectNode>
 #include <QRemoteObjectSettingsStore>
-
 #include "engine.h"
 #include "speedometer.h"
 #include "rep_engine_replica.h"
@@ -136,6 +137,21 @@ class tst_Integration: public QObject
 {
     Q_OBJECT
 
+    void setupTcp()
+    {
+        if (!tcpServer) {
+            tcpServer = new QTcpServer;
+            tcpServer->listen(QHostAddress::Any, 65511);
+            socketClient = new QTcpSocket;
+            socketClient->connectToHost(QHostAddress::LocalHost, tcpServer->serverPort());
+            QVERIFY(socketClient->waitForConnected(5000));
+
+            QVERIFY(tcpServer->waitForNewConnection(5000));
+            QVERIFY(tcpServer->hasPendingConnections());
+            socketServer = tcpServer->nextPendingConnection();
+        }
+    }
+
     void setupHost(bool useRegistry=false)
     {
         QFETCH_GLOBAL(QUrl, hostUrl);
@@ -146,6 +162,9 @@ class tst_Integration: public QObject
             host->setHostUrl(hostUrl);
             if (useRegistry)
                 host->setRegistryUrl(registryUrl);
+        } else {
+            setupTcp();
+            host->addHostSideConnection(socketServer);
         }
     }
 
@@ -153,16 +172,19 @@ class tst_Integration: public QObject
     {
         QFETCH_GLOBAL(QUrl, hostUrl);
         QFETCH_GLOBAL(QUrl, registryUrl);
+        client = new QRemoteObjectNode;
+        Q_SET_OBJECT_NAME(*client);
         if (!hostUrl.isEmpty())
         {
             if (useRegistry)
-                client = new QRemoteObjectNode(registryUrl);
+                client->setRegistryUrl(registryUrl);
             else {
-                client = new QRemoteObjectNode;
                 client->connectToNode(hostUrl);
             }
+        } else {
+            setupTcp();
+            client->addClientSideConnection(socketClient);
         }
-        Q_SET_OBJECT_NAME(*client);
     }
 
     void setupRegistry()
@@ -179,16 +201,20 @@ private:
     QRemoteObjectHost *host;
     QRemoteObjectNode *client;
     QRemoteObjectRegistryHost *registry;
+    QTcpServer *tcpServer;
+    QPointer<QTcpSocket> socketClient, socketServer;
 
 private slots:
     void initTestCase_data()
     {
         QTest::addColumn<QUrl>("hostUrl");
         QTest::addColumn<QUrl>("registryUrl");
+
 #ifndef SKIP_LOCAL
         QTest::newRow("local") << QUrl(QLatin1String("local:replica_local_integration")) << QUrl(QLatin1String("local:registry_local_integration"));
 #endif
         QTest::newRow("tcp") << QUrl(QLatin1String("tcp://127.0.0.1:65511")) << QUrl(QLatin1String("tcp://127.0.0.1:65512"));
+        QTest::newRow("external") << QUrl() << QUrl();
 #ifdef __QNXNTO__
         QTest::newRow("qnx") << QUrl(QLatin1String("qnx:replica")) << QUrl(QLatin1String("qnx:registry"));
 #endif
@@ -208,6 +234,9 @@ private slots:
         registry = nullptr;
         host = nullptr;
         client = nullptr;
+        tcpServer = nullptr;
+        socketClient = nullptr;
+        socketServer = nullptr;
     }
 
     void cleanup()
@@ -215,6 +244,13 @@ private slots:
         delete registry;
         delete host;
         delete client;
+        delete tcpServer;
+        if (socketClient) {
+            socketClient->deleteLater();
+        }
+        if (socketServer) {
+            socketServer->deleteLater();
+        }
         // wait for delivery of RemoveObject events to the source
         QTest::qWait(200);
     }
@@ -424,6 +460,9 @@ private slots:
 
     void registryAddedTest()
     {
+        QFETCH_GLOBAL(QUrl, registryUrl);
+        if (registryUrl.isEmpty())
+            QSKIP("Skipping registry tests for external QIODevice types.");
         setupRegistry();
 
         setupHost(true);
@@ -489,6 +528,9 @@ private slots:
 
     void registryTest()
     {
+        QFETCH_GLOBAL(QUrl, registryUrl);
+        if (registryUrl.isEmpty())
+            QSKIP("Skipping registry tests for external QIODevice types.");
         setupRegistry();
         TcpDataCenterSimpleSource source1;
         source1.setData1(5);
@@ -558,7 +600,9 @@ private slots:
 
     void noRegistryTest()
     {
-        setupHost(true);
+        QFETCH_GLOBAL(QUrl, registryUrl);
+        if (registryUrl.isEmpty())
+            QSKIP("Skipping registry tests for external QIODevice types.");        setupHost(true);
         const bool res = host->waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(host->registry()->isInitialized(), false);
@@ -571,6 +615,8 @@ private slots:
     {
         QFETCH_GLOBAL(QUrl, hostUrl);
         QFETCH_GLOBAL(QUrl, registryUrl);
+        if (registryUrl.isEmpty())
+            QSKIP("Skipping registry tests for external QIODevice types.");
         setupClient(true);
 
         // create a replica before the registry host started
@@ -1219,10 +1265,13 @@ private slots:
     void SchemeTest()
     {
         QFETCH_GLOBAL(QUrl, hostUrl);
+        QFETCH_GLOBAL(QUrl, registryUrl);
         QRemoteObjectHost valid(hostUrl);
         QVERIFY(valid.lastError() == QRemoteObjectNode::NoError);
         QRemoteObjectHost invalid(QUrl(QLatin1String("invalid:invalid")));
         QVERIFY(invalid.lastError() == QRemoteObjectNode::HostUrlInvalid);
+        QRemoteObjectHost validExternal(QUrl(QLatin1String("invalid:invalid")), registryUrl, QRemoteObjectHost::AllowExternalRegistration);
+        QVERIFY(validExternal.lastError() == QRemoteObjectNode::NoError);
         QRemoteObjectNode invalidRegistry(QUrl(QLatin1String("invalid:invalid")));
         QVERIFY(invalidRegistry.lastError() == QRemoteObjectNode::RegistryNotAcquired);
     }

@@ -105,6 +105,7 @@ public:
     ~QRemoteObjectNode() override;
 
     Q_INVOKABLE bool connectToNode(const QUrl &address);
+    void addClientSideConnection(QIODevice *ioDevice);
     virtual void setName(const QString &name);
     template < class ObjectType >
     ObjectType *acquire(const QString &name = QString())
@@ -140,6 +141,9 @@ public:
     int heartbeatInterval() const;
     void setHeartbeatInterval(int interval);
 
+    typedef std::function<void (QUrl)> RemoteObjectSchemaHandler;
+    void registerExternalSchema(const QString &schema, RemoteObjectSchemaHandler handler);
+
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &);
     void remoteObjectRemoved(const QRemoteObjectSourceLocation &);
@@ -165,6 +169,8 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode
 {
     Q_OBJECT
 public:
+    enum AllowedSchemas { BuiltInSchemasOnly, AllowExternalRegistration };
+    Q_ENUM(AllowedSchemas)
     ~QRemoteObjectHostBase() override;
     void setName(const QString &name) override;
 
@@ -177,6 +183,7 @@ public:
     bool enableRemoting(QObject *object, const QString &name = QString());
     bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = nullptr);
     bool disableRemoting(QObject *remoteObject);
+    void addHostSideConnection(QIODevice *ioDevice);
 
     typedef std::function<bool(const QString &, const QString &)> RemoteObjectNameFilter;
     bool proxy(const QUrl &registryUrl, const QUrl &hostUrl={},
@@ -185,7 +192,7 @@ public:
 
 protected:
     virtual QUrl hostUrl() const;
-    virtual bool setHostUrl(const QUrl &hostAddress);
+    virtual bool setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas=BuiltInSchemasOnly);
     QRemoteObjectHostBase(QRemoteObjectHostBasePrivate &, QObject *);
 
 private:
@@ -198,11 +205,12 @@ class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHost : public QRemoteObjectHostBase
     Q_OBJECT
 public:
     QRemoteObjectHost(QObject *parent = nullptr);
-    QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(), QObject *parent = nullptr);
+    QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress = QUrl(),
+                      AllowedSchemas allowedSchemas=BuiltInSchemasOnly, QObject *parent = nullptr);
     QRemoteObjectHost(const QUrl &address, QObject *parent);
     ~QRemoteObjectHost() override;
     QUrl hostUrl() const override;
-    bool setHostUrl(const QUrl &hostAddress) override;
+    bool setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas=BuiltInSchemasOnly) override;
 
 protected:
     QRemoteObjectHost(QRemoteObjectHostPrivate &, QObject *);

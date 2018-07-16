@@ -70,12 +70,14 @@ class QRemoteObjectSourceIo : public QObject
     Q_OBJECT
 public:
     explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = nullptr);
+    explicit QRemoteObjectSourceIo(QObject *parent = nullptr);
     ~QRemoteObjectSourceIo() override;
 
     bool enableRemoting(QObject *object, const QMetaObject *meta, const QString &name,
                         const QString &typeName);
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = nullptr);
     bool disableRemoting(QObject *object);
+    void newConnection(IoDeviceBase *conn);
 
     QUrl serverAddress() const;
 
@@ -94,15 +96,16 @@ public:
     void unregisterSource(QRemoteObjectSourceBase *source);
 
     QHash<QIODevice*, quint32> m_readSize;
-    QSet<ServerIoDevice*> m_connections;
+    QSet<IoDeviceBase*> m_connections;
     QHash<QObject *, QRemoteObjectRootSource*> m_objectToSourceMap;
     QMap<QString, QRemoteObjectSourceBase*> m_sourceObjects;
     QMap<QString, QRemoteObjectRootSource*> m_sourceRoots;
-    QHash<ServerIoDevice*, QUrl> m_registryMapping;
+    QHash<IoDeviceBase*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
     QRemoteObjectPackets::DataStreamPacket m_packet;
     QString m_rxName;
     QVariantList m_rxArgs;
+    QUrl m_address;
 };
 
 QT_END_NAMESPACE

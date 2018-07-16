@@ -96,6 +96,7 @@ See \l{Qt Licensing} for further details.
     \li \l {Source Objects}{Qt Remote Objects Source Objects}
     \li \l {Replica Objects}{Qt Remote Objects Replica Objects}
     \li \l {Qt Remote Objects Registry}
+    \li \l {Qt Remote Objects - External QIODevices}
     \li \l {Qt Remote Objects Compiler}
     \li \l {Remote Object Interaction}
     \li \l {Using Qt Remote Objects}

@@ -53,6 +53,8 @@
 
 #include <QAbstractSocket>
 #include <QDataStream>
+#include <QIODevice>
+#include <QPointer>
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
@@ -91,6 +93,7 @@ public:
 
 Q_SIGNALS:
     void readyRead();
+    void disconnected();
 
 protected:
     virtual QString deviceType() const = 0;
@@ -110,9 +113,6 @@ class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public IoDeviceBase
 
 public:
     explicit ServerIoDevice(QObject *parent = nullptr);
-
-Q_SIGNALS:
-    void disconnected();
 
 protected:
     QString deviceType() const override;
@@ -156,7 +156,6 @@ public:
     QUrl url() const;
 
 Q_SIGNALS:
-    void disconnected();
     void shouldReconnect(ClientIoDevice*);
 
 protected:
@@ -167,6 +166,21 @@ private:
     friend class QtROClientFactory;
 
     QUrl m_url;
+};
+
+class ExternalIoDevice : public IoDeviceBase
+{
+    Q_OBJECT
+
+public:
+    explicit ExternalIoDevice(QIODevice *device, QObject *parent=nullptr);
+    QIODevice *connection() const override;
+    bool isOpen() const override;
+
+protected:
+    void doClose() override;
+    QString deviceType() const override;
+    QPointer<QIODevice> m_device;
 };
 
 class QtROServerFactory

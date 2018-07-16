@@ -79,13 +79,14 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
     case Ping: type = Ping; break;
     case Pong: type = Pong; break;
     default:
-        qCWarning(QT_REMOTEOBJECT_IO) << "Invalid packet received" << type;
+        qCWarning(QT_REMOTEOBJECT_IO) << "Invalid packet received" << _type;
     }
     if (type == Invalid)
         return false;
     if (type == ObjectList)
         return true;
     in >> name;
+    qCDebug(QT_REMOTEOBJECT_IO) << "Packet received of type" << type << "for object" << name;
     return true;
 }
 
@@ -223,6 +224,41 @@ ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
     ServerIoDevice *iodevice = configureNewConnection();
     iodevice->initializeDataStream();
     return iodevice;
+}
+
+ExternalIoDevice::ExternalIoDevice(QIODevice *device, QObject *parent)
+    : IoDeviceBase(parent)
+    , m_device(device)
+{
+    initializeDataStream();
+    connect(m_device, &QIODevice::aboutToClose, this, [this]() { this->m_isClosing = true; });
+    connect(m_device, &QIODevice::readyRead, this, &ExternalIoDevice::readyRead);
+    auto meta = device->metaObject();
+    if (-1 == meta->indexOfSignal(SIGNAL(disconnected())))
+        connect(m_device, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
+}
+
+QIODevice *ExternalIoDevice::connection() const
+{
+    return m_device;
+}
+
+bool ExternalIoDevice::isOpen() const
+{
+    if (!m_device)
+        return false;
+    return m_device->isOpen() && IoDeviceBase::isOpen();
+}
+
+void ExternalIoDevice::doClose()
+{
+    if (isOpen())
+        m_device->close();
+}
+
+QString ExternalIoDevice::deviceType() const
+{
+    return QStringLiteral("ExternalIoDevice");
 }
 
 /*!

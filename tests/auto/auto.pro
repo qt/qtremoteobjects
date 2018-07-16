@@ -22,4 +22,4 @@ SUBDIRS += \
     sub_localsockettestserver
 
 qtHaveModule(qml): SUBDIRS += qml
-qtConfig(process): SUBDIRS += integration_multiprocess
+qtConfig(process): SUBDIRS += integration_multiprocess integration_external

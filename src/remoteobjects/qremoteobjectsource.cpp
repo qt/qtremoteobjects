@@ -228,7 +228,7 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
         delete it;
     }
     d->m_sourceIo->unregisterSource(this);
-    Q_FOREACH (ServerIoDevice *io, d->m_listeners) {
+    Q_FOREACH (IoDeviceBase *io, d->m_listeners) {
         removeListener(io, true);
     }
     delete d;
@@ -323,11 +323,11 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
     serializeInvokePacket(d->m_packet, name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
     d->m_packet.baseAddress = 0;
 
-    Q_FOREACH (ServerIoDevice *io, d->m_listeners)
+    Q_FOREACH (IoDeviceBase *io, d->m_listeners)
         io->write(d->m_packet.array, d->m_packet.size);
 }
 
-void QRemoteObjectRootSource::addListener(ServerIoDevice *io, bool dynamic)
+void QRemoteObjectRootSource::addListener(IoDeviceBase *io, bool dynamic)
 {
     d->m_listeners.append(io);
     d->isDynamic = dynamic;
@@ -347,7 +347,7 @@ void QRemoteObjectRootSource::addListener(ServerIoDevice *io, bool dynamic)
     d->isDynamic = false;
 }
 
-int QRemoteObjectRootSource::removeListener(ServerIoDevice *io, bool shouldSendRemove)
+int QRemoteObjectRootSource::removeListener(IoDeviceBase *io, bool shouldSendRemove)
 {
     d->m_listeners.removeAll(io);
     if (shouldSendRemove)

@@ -163,6 +163,44 @@ void QRemoteObjectNode::setHeartbeatInterval(int interval)
 }
 
 /*!
+    \since 5.12
+    \typedef QRemoteObjectNode::RemoteObjectSchemaHandler
+
+    Typedef for a std::function method that can take a QUrl input and is
+    responsible for creating the communications channel between this node and
+    the node hosting the desired \l Source. As some types of QIODevices (e.g.,
+    QSslSocket) require additional steps before the device is ready for use,
+    the method is responsible for calling \l addClientSideConnection once the
+    connection is fully established.
+*/
+
+/*!
+    \since 5.12
+    \brief Provide a custom method to handle externally provided schemas
+
+    This method is tied to the \l Registry and \l {External Schemas}. By
+    registering a std::function handler for an external schema, the registered
+    method will be called when the registry is notified of a \l Source you've
+    acquired being available. Without this registration, QtRO would only be
+    able to handle the "built-in" schemas.
+
+    The provided method, \a handler, will be called when the registry sees a \l
+    Source object on a new (not yet connected) Node with a {QUrl::schema()} of
+    \a schema. The \a handler, of type \l
+    QRemoteObjectNode::RemoteObjectSchemaHandler will get the \l QUrl of the
+    Node providing the \l Source as an input parameter, and is responsible for
+    establishing the communications channel (a \l QIODevice of some sort) and
+    calling \l addClientSideConnection with it.
+
+    \sa RemoteObjectSchemaHandler
+*/
+void QRemoteObjectNode::registerExternalSchema(const QString &schema, QRemoteObjectNode::RemoteObjectSchemaHandler handler)
+{
+    Q_D(QRemoteObjectNode);
+    d->schemaHandlers.insert(schema, handler);
+}
+
+/*!
     \since 5.11
     \brief Forward Remote Objects from another network
 
@@ -642,21 +680,26 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
 
     requestedUrls.insert(address);
 
+    if (schemaHandlers.contains(address.scheme())) {
+        schemaHandlers[address.scheme()](address);
+        return true;
+    }
+
     ClientIoDevice *connection = QtROClientFactory::instance()->create(address, q);
     if (!connection) {
         qROPrivWarning() << "Could not create ClientIoDevice for client. Invalid url/scheme provided?" << address;
         return false;
     }
-
     qROPrivDebug() << "Opening connection to" << address.toString();
     qROPrivDebug() << "Replica Connection isValid" << connection->isOpen();
     QObject::connect(connection, &ClientIoDevice::shouldReconnect, q, [this, connection]() {
         onShouldReconnect(connection);
     });
-    QObject::connect(connection, &ClientIoDevice::readyRead, q, [this, connection]() {
+    QObject::connect(connection, &IoDeviceBase::readyRead, q, [this, connection]() {
         onClientRead(connection);
     });
     connection->connectToServer();
+
     return true;
 }
 
@@ -791,7 +834,7 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QString &name)
     }
 }
 
-void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, ClientIoDevice *connection)
+void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, IoDeviceBase *connection)
 {
     if (!checkSignatures(rep->m_objectSignature, sourceSignature)) {
         qROPrivWarning() << "Signature mismatch for" << rep->m_metaObject->className() << (rep->m_objectName.isEmpty() ? QLatin1String("(unnamed)") : rep->m_objectName);
@@ -820,7 +863,7 @@ QReplicaImplementationInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(
 void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 {
     using namespace QRemoteObjectPackets;
-    ClientIoDevice *connection = qobject_cast<ClientIoDevice*>(obj);
+    IoDeviceBase *connection = qobject_cast<IoDeviceBase*>(obj);
     QRemoteObjectPacketTypeEnum packetType;
     Q_ASSERT(connection);
 
@@ -913,7 +956,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             qROPrivDebug() << "RemoveObject-->" << rxName << this;
             connectedSources.remove(rxName);
             connection->removeSource(rxName);
-            if (replicas.contains(rxName)) { //We have a replica waiting on this remoteObject
+            if (replicas.contains(rxName)) { //We have a replica using the removed source
                 QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
                 if (rep && !rep->connectionToSource.isNull()) {
                     rep->connectionToSource.clear();
@@ -1105,6 +1148,26 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 */
 
 /*!
+    \enum QRemoteObjectHostBase::AllowedSchemas
+
+    This enum is used to specify whether a Node will accept a url with an
+    unrecognized schema for the hostUrl. By default only urls with known
+    schemas are accepted, but using \c AllowExternalRegistration will enable
+    the \l Registry to pass your external (to QtRO) url to client Nodes.
+
+    \value BuiltInSchemasOnly Only allow the hostUrl to be set to a QtRO
+    supported schema. This is the default value, and causes a Node error to be
+    set if an unrecognized schema is provided.
+    \value AllowExternalRegistration The provided schema is registered as an
+    \l {External Schemas} {External Schema}
+
+    \sa QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress =
+    QUrl(), AllowedSchemas allowedSchemas=BuiltInSchemasOnly, QObject *parent =
+    nullptr), setHostUrl(const QUrl &hostAddress, AllowedSchemas
+    allowedSchemas=BuiltInSchemasOnly)
+*/
+
+/*!
     \fn ObjectType *QRemoteObjectNode::acquire(const QString &name)
 
     Returns a pointer to a Replica of type ObjectType (which is a template
@@ -1217,15 +1280,20 @@ QRemoteObjectHost::QRemoteObjectHost(QObject *parent)
     Constructs a new QRemoteObjectHost Node (i.e., a Node that supports
     exposing \l Source objects on the QtRO network) with address \a address. If
     set, \a registryAddress will be used to connect to the \l
-    QRemoteObjectRegistry at the provided address.
+    QRemoteObjectRegistry at the provided address. The \a allowedSchemas
+    parameter is only needed (and should be set to \l
+    {QRemoteObjectHostBase::AllowExternalRegistration}
+    {AllowExternalRegistration}) if the schema of the url should be used as an
+    \l {External Schemas} {External Schema} by the registry.
 
     \sa setHostUrl(), setRegistryUrl()
 */
-QRemoteObjectHost::QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress, QObject *parent)
+QRemoteObjectHost::QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress,
+                                     AllowedSchemas allowedSchemas, QObject *parent)
     : QRemoteObjectHostBase(*new QRemoteObjectHostPrivate, parent)
 {
     if (!address.isEmpty()) {
-        if (!setHostUrl(address))
+        if (!setHostUrl(address, allowedSchemas))
             return;
     }
 
@@ -1325,7 +1393,7 @@ QUrl QRemoteObjectHostBase::hostUrl() const
     \internal The HostBase version of this method is protected so the method
     isn't exposed on RegistryHost nodes.
 */
-bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
+bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas)
 {
     Q_D(QRemoteObjectHostBase);
     if (d->remoteObjectIo) {
@@ -1333,13 +1401,11 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress)
         return false;
     }
 
-    d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
-    if (d->remoteObjectIo->m_server.isNull()) { //Invalid url/scheme
+    if (allowedSchemas == AllowedSchemas::BuiltInSchemasOnly && !QtROServerFactory::instance()->isValid(hostAddress)) {
         d->setLastError(HostUrlInvalid);
-        delete d->remoteObjectIo;
-        d->remoteObjectIo = 0;
         return false;
     }
+    d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
 
     //If we've given a name to the node, set it on the sourceIo as well
     if (!objectName().isEmpty())
@@ -1368,10 +1434,15 @@ QUrl QRemoteObjectHost::hostUrl() const
     Sets the \a hostAddress for a host QRemoteObjectNode.
 
     Returns \c true if the Host address is set, otherwise \c false.
+
+    The \a allowedSchemas parameter is only needed (and should be set to \l
+    {QRemoteObjectHostBase::AllowExternalRegistration}
+    {AllowExternalRegistration}) if the schema of the url should be used as an
+    \l {External Schemas} {External Schema} by the registry.
 */
-bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress)
+bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas)
 {
-    return QRemoteObjectHostBase::setHostUrl(hostAddress);
+    return QRemoteObjectHostBase::setHostUrl(hostAddress, allowedSchemas);
 }
 
 /*!
@@ -1565,6 +1636,30 @@ bool QRemoteObjectNode::connectToNode(const QUrl &address)
         return false;
     }
     return true;
+}
+
+/*!
+    \since 5.12
+
+    In order to \l QRemoteObjectNode::acquire() \l Replica objects over \l
+    {External QIODevices}, Qt Remote Objects needs access to the communications
+    channel (a \l QIODEvice) between the respective nodes. It is the
+    addClientSideConnection() call that enables this, taking the \a ioDevice as
+    input. Any acquire() call made without calling addClientSideConnection will
+    still work, but the Node will not be able to initialize the \l Replica
+    without being provided the connection to the Host node.
+
+    \sa {QRemoteObjectHostBase::addHostSideConnection}
+*/
+void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
+{
+    Q_D(QRemoteObjectNode);
+    ExternalIoDevice *device = new ExternalIoDevice(ioDevice, this);
+    connect(device, &IoDeviceBase::readyRead, this, [d, device]() {
+        d->onClientRead(device);
+    });
+    if (device->bytesAvailable())
+        d->onClientRead(device);
 }
 
 /*!
@@ -1781,6 +1876,29 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
     }
 
     return true;
+}
+
+/*!
+    \since 5.12
+
+    In order to \l QRemoteObjectHost::enableRemoting() \l Source objects over
+    \l {External QIODevices}, Qt Remote Objects needs access to the
+    communications channel (a \l QIODEvice) between the respective nodes. It is
+    the addHostSideConnection() call that enables this on the \l Source side,
+    taking the \a ioDevice as input. Any enableRemoting() call will still work
+    without calling addHostSideConnection, but the Node will not be able to
+    share the \l Source objects without being provided the connection to the
+    Replica node.
+
+    \sa addClientSideConnection
+*/
+void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
+{
+    Q_D(QRemoteObjectHostBase);
+    if (!d->remoteObjectIo)
+        d->remoteObjectIo = new QRemoteObjectSourceIo(this);
+    ExternalIoDevice *device = new ExternalIoDevice(ioDevice, this);
+    return d->remoteObjectIo->newConnection(device);
 }
 
 /*!

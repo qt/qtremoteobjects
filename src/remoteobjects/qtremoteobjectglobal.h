@@ -173,6 +173,7 @@ enum QRemoteObjectPacketTypeEnum
     Ping,
     Pong
 };
+Q_ENUM_NS(QRemoteObjectPacketTypeEnum)
 
 enum InitialAction {
     FetchRootSize,
