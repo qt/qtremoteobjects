@@ -105,6 +105,7 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
     });
     connect(&m_heartbeatTimer, &QTimer::timeout, this, [this] {
         if (m_pendingCalls.contains(0)) {
+            m_pendingCalls.take(0);
             // The source didn't respond in time, disconnect the connection
             if (connectionToSource)
                 connectionToSource->disconnectFromServer();
