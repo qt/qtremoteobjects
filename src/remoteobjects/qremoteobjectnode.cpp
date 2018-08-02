@@ -794,6 +794,7 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QString &name)
 void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, ClientIoDevice *connection)
 {
     if (!checkSignatures(rep->m_objectSignature, sourceSignature)) {
+        qROPrivWarning() << "Signature mismatch for" << rep->m_metaObject->className() << (rep->m_objectName.isEmpty() ? QLatin1String("(unnamed)") : rep->m_objectName);
         rep->setState(QRemoteObjectReplica::SignatureMismatch);
         return;
     }
