@@ -46,7 +46,6 @@ private Q_SLOTS:
 
     void testRun()
     {
-
         auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
 
@@ -151,6 +150,27 @@ private Q_SLOTS:
 
         QTRY_COMPARE(rep->enum1(), MyInterfaceReplica::Second);
         QTRY_COMPARE(rep->started(), false);
+    }
+
+    void testPod()
+    {
+        QScopedPointer<QRemoteObjectDynamicReplica> podRep(m_repNode.acquireDynamic("PodInterface"));
+        QVERIFY(podRep->waitForSource());
+        QVariant value = podRep->property("myPod");
+        const QMetaObject *mo = QMetaType::metaObjectForType(value.userType());
+        const void *gadget = value.constData();
+
+        QMetaProperty iProp = mo->property(mo->indexOfProperty("i"));
+        QVariant iValue = iProp.readOnGadget(gadget);
+        QCOMPARE(iValue.toInt(), 1);
+
+        QMetaProperty fProp = mo->property(mo->indexOfProperty("f"));
+        QVariant fValue = fProp.readOnGadget(gadget);
+        QCOMPARE(fValue.toFloat(), 5.0f);
+
+        QMetaProperty sProp = mo->property(mo->indexOfProperty("s"));
+        QVariant sValue = sProp.readOnGadget(gadget);
+        QCOMPARE(sValue.toString(), QString(QLatin1String("test")));
     }
 
     void cleanupTestCase()
