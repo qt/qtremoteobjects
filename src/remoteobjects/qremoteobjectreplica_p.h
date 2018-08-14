@@ -69,13 +69,6 @@ class QRemoteObjectReplica;
 class QRemoteObjectSource;
 class ClientIoDevice;
 
-namespace QRemoteObjectPackets {
-class QInitDynamicPacket;
-class QInvokePacket;
-class QInvokeReplyPacket;
-class QRemoteObjectPacket;
-}
-
 class QReplicaImplementationInterface
 {
 public:
