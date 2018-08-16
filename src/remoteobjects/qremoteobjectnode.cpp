@@ -90,6 +90,20 @@ bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::co
     return true;
 }
 
+/*!
+    \qmltype Node
+    \instantiates QRemoteObjectNode
+    \inqmlmodule QtQml.RemoteObjects
+    \brief A node on a Qt Remote Objects network.
+
+    The Node type provides an entry point to a Qt Remote Objects network. A network
+    can be as simple as two nodes, or an arbitrarily complex set of processes and devices.
+
+    A Node does not have a url that other nodes can connect to, and thus is able to acquire
+    replicas only. It is not able to share source objects.
+
+*/
+
 QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     : QObjectPrivate()
     , registry(nullptr)
@@ -136,16 +150,31 @@ void QRemoteObjectNode::timerEvent(QTimerEvent*)
 }
 
 /*!
+    \qmlproperty int Node::heartbeatInterval
+
+    Heartbeat interval in ms.
+
+    The heartbeat (only helpful for socket connections) will periodically send a
+    message to connected nodes to detect whether the connection was disrupted.
+    Qt Remote Objects will try to reconnect automatically if it detects a dropped
+    connection. This function can help with that detection since the client will
+    only detect that the server is unavailable when it tries to send data.
+
+    A value of \c 0 (the default) will disable the heartbeat.
+*/
+
+
+/*!
     \property QRemoteObjectNode::heartbeatInterval
     \brief Heartbeat interval in ms.
 
     The heartbeat (only helpful for socket connections) will periodically send a
     message to connected nodes to detect whether the connection was disrupted.
     Qt Remote Objects will try to reconnect automatically if it detects a dropped
-    connection, this function can help with that detection since the client will
-    only detect the server is unavailable when it tries to send data.
+    connection. This function can help with that detection since the client will
+    only detect that the server is unavailable when it tries to send data.
 
-    Setting to 0 (the default) will disable the heartbeat.
+    A value of \c 0 (the default) will disable the heartbeat.
 */
 int QRemoteObjectNode::heartbeatInterval() const
 {
@@ -483,9 +512,21 @@ QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
 }
 
 /*!
+    \qmlproperty QRemoteObjectAbstractPersistedStore Node::persistedStore
+
+    Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node.
+
+    Allows replica \l PROP members with the PERSISTED trait to save their current value when the
+    replica is deleted and restore a stored value the next time the replica is started.
+
+    Requires a \l QRemoteObjectAbstractPersistedStore class implementation to control where and how
+    persistence is handled. A default QSettings-based implementation is provided by SettingsStore.
+*/
+
+/*!
     \since 5.11
     \property QRemoteObjectNode::persistedStore
-    \brief Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node
+    \brief Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node.
 
     Allows replica \l PROP members with the PERSISTED trait to save their current value when the
     replica is deleted and restore a stored value the next time the replica is started.
@@ -1497,10 +1538,18 @@ QRemoteObjectNode::ErrorCode QRemoteObjectNode::lastError() const
 }
 
 /*!
+    \qmlproperty url Node::registryUrl
+
+    The address of the \l {QRemoteObjectRegistry} {Registry} used by this node.
+
+    This is an empty QUrl if there is no registry in use.
+*/
+
+/*!
     \property QRemoteObjectNode::registryUrl
     \brief The address of the \l {QRemoteObjectRegistry} {Registry} used by this node.
 
-    This will be an empty QUrl if there is no registry in use.
+    This is an empty QUrl if there is no registry in use.
 */
 QUrl QRemoteObjectNode::registryUrl() const
 {

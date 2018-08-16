@@ -46,6 +46,21 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \qmltype SettingsStore
+    \inqmlmodule QtQml.RemoteObjects
+    \brief A basic store for persisted properties.
+
+    This type provides simple QSettings-based storage for properties marked as PERSISTED. It is used in
+    conjunction with Node::persistedStore:
+
+    \code
+    Node {
+        persistedStore: SettingsStore {}
+    }
+    \endcode
+*/
+
 class QRemoteObjectSettingsStorePrivate : public QRemoteObjectAbstractPersistedStorePrivate
 {
 public:
