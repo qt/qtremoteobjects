@@ -123,6 +123,7 @@ inline QString local() { return QStringLiteral("local"); }
 inline QString tcp() { return QStringLiteral("tcp"); }
 inline QString CLASS() { return QStringLiteral("Class::%1"); }
 inline QString MODEL() { return QStringLiteral("Model::%1"); }
+inline QString QAIMADAPTER() { return QStringLiteral("QAbstractItemModelAdapter"); }
 
 }
 

@@ -120,7 +120,8 @@ public:
 
 struct ProxyReplicaInfo
 {
-    QRemoteObjectDynamicReplica* replica;
+    // We need QObject, so we can hold Dynamic Replicas and QAIM Adapters
+    QObject* replica;
     ProxyInfo::ProxyDirection direction;
     ~ProxyReplicaInfo() { delete replica; }
 };

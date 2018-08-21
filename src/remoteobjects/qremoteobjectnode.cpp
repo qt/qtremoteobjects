@@ -1808,6 +1808,8 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
                                                                                      Q_ARG(QVector<int>, roles));
     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *api =
         new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(name);
+    if (!this->objectName().isEmpty())
+        adapter->setObjectName(this->objectName().append(QStringLiteral("Adapter")));
     return enableRemoting(model, api, adapter);
 }
 
@@ -1996,6 +1998,7 @@ bool ProxyInfo::setReverseProxy(QRemoteObjectHostBase::RemoteObjectNameFilter fi
 void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirection direction)
 {
     const QString name = entry.first;
+    Q_ASSERT(!proxiedReplicas.contains(name));
     const QString typeName = entry.second.typeName;
 
     if (direction == ProxyDirection::Forward) {
@@ -2004,27 +2007,44 @@ void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirec
 
         qCDebug(QT_REMOTEOBJECT) << "Starting proxy for" << name << "from" << entry.second.hostUrl;
 
-        QRemoteObjectDynamicReplica *rep = proxyNode->acquireDynamic(name);
-        Q_ASSERT(!proxiedReplicas.contains(name));
-        proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
-        connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
-                [rep, name, this]() { this->parentNode->enableRemoting(rep, name); });
+        if (entry.second.typeName == QAIMADAPTER()) {
+            QAbstractItemModelReplica *rep = proxyNode->acquireModel(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QAbstractItemModelReplica::initialized, this,
+                    [rep, name, this]() { this->parentNode->enableRemoting(rep, name, QVector<int>()); });
+        } else {
+            QRemoteObjectDynamicReplica *rep = proxyNode->acquireDynamic(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
+                    [rep, name, this]() { this->parentNode->enableRemoting(rep, name); });
+        }
     } else {
         if (!reverseFilter(name, typeName))
             return;
 
         qCDebug(QT_REMOTEOBJECT) << "Starting reverse proxy for" << name << "from" << entry.second.hostUrl;
 
-        QRemoteObjectDynamicReplica *rep = this->parentNode->acquireDynamic(name);
-        Q_ASSERT(!proxiedReplicas.contains(name));
-        proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
-        connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
-                [rep, name, this]()
-        {
-            QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
-            Q_ASSERT(host);
-            host->enableRemoting(rep, name);
-        });
+        if (entry.second.typeName == QAIMADAPTER()) {
+            QAbstractItemModelReplica *rep = this->parentNode->acquireModel(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QAbstractItemModelReplica::initialized, this,
+                    [rep, name, this]()
+            {
+                QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
+                Q_ASSERT(host);
+                host->enableRemoting(rep, name, QVector<int>());
+            });
+        } else {
+            QRemoteObjectDynamicReplica *rep = this->parentNode->acquireDynamic(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
+                    [rep, name, this]()
+            {
+                QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
+                Q_ASSERT(host);
+                host->enableRemoting(rep, name);
+            });
+        }
     }
 
 }

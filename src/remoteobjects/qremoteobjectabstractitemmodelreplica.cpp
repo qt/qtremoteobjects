@@ -428,7 +428,7 @@ void QAbstractItemModelReplicaImplementation::handleSizeDone(QRemoteObjectPendin
 
 void QAbstractItemModelReplicaImplementation::init()
 {
-    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO;
+    qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << this->node()->objectName();
     QRemoteObjectPendingCallWatcher *watcher = doModelReset();
     connect(watcher, &QRemoteObjectPendingCallWatcher::finished, this, &QAbstractItemModelReplicaImplementation::handleInitDone);
 }
