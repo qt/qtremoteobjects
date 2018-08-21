@@ -130,6 +130,13 @@ QDataStream& operator>>(QDataStream &stream, QRO_ &info);
 void serializeObjectListPacket(DataStreamPacket&, const ObjectInfoList&);
 void deserializeObjectListPacket(QDataStream&, ObjectInfoList&);
 
+struct GadgetProperty {
+    QByteArray name;
+    QByteArray type;
+};
+
+using GadgetsData = QHash<QByteArray, QVector<GadgetProperty>>;
+
 //Helper class for creating a QByteArray from a QRemoteObjectPacket
 class DataStreamPacket : public QDataStream
 {
