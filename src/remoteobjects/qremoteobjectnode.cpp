@@ -823,14 +823,19 @@ QReplicaImplementationInterface *QRemoteObjectNodePrivate::handleNewAcquire(cons
 
 void QRemoteObjectNodePrivate::handleReplicaConnection(const QString &name)
 {
-    QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(name).toStrongRef());
+    QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(name).toStrongRef());
     if (!rep) { //replica has been deleted, remove from list
         replicas.remove(name);
         return;
     }
-    if (rep->connectionToSource.isNull()) {
+
+    if (rep->isShortCircuit())
+        return;
+
+    QConnectedReplicaImplementation *connectedRep = static_cast<QConnectedReplicaImplementation *>(rep.data());
+    if (connectedRep->connectionToSource.isNull()) {
         const auto sourceInfo = connectedSources.value(name);
-        handleReplicaConnection(sourceInfo.objectSignature, rep.data(), sourceInfo.device);
+        handleReplicaConnection(sourceInfo.objectSignature, connectedRep, sourceInfo.device);
     }
 }
 
