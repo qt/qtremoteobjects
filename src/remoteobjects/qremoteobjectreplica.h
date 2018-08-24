@@ -42,7 +42,7 @@
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
-#include <QtCore/QSharedPointer>
+#include <QtCore/qsharedpointer.h>
 
 QT_BEGIN_NAMESPACE
 

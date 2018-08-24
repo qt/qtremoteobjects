@@ -41,9 +41,9 @@
 #define QTREMOTEOBJECTGLOBAL_H
 
 #include <QtCore/qglobal.h>
-#include <QtCore/QHash>
-#include <QtCore/QUrl>
-#include <QtCore/QLoggingCategory>
+#include <QtCore/qhash.h>
+#include <QtCore/qurl.h>
+#include <QtCore/qloggingcategory.h>
 
 QT_BEGIN_NAMESPACE
 

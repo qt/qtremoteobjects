@@ -40,8 +40,8 @@
 #ifndef QREMOTEOBJECTNODE_H
 #define QREMOTEOBJECTNODE_H
 
-#include <QtCore/QSharedPointer>
-#include <QtCore/QMetaClassInfo>
+#include <QtCore/qsharedpointer.h>
+#include <QtCore/qmetaobject.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 #include <QtRemoteObjects/qremoteobjectregistry.h>
 #include <QtRemoteObjects/qremoteobjectdynamicreplica.h>

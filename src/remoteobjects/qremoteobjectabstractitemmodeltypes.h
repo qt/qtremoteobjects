@@ -40,16 +40,16 @@
 #ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
 #define QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
 
-#include <QDataStream>
-#include <QList>
-#include <QVector>
-#include <QPair>
-#include <QVariant>
-#include <QModelIndex>
-#include <QItemSelectionModel>
-#include <QSize>
-#include <QDebug>
-#include <qnamespace.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qlist.h>
+#include <QtCore/qvector.h>
+#include <QtCore/qpair.h>
+#include <QtCore/qvariant.h>
+#include <QtCore/qabstractitemmodel.h>
+#include <QtCore/qitemselectionmodel.h>
+#include <QtCore/qsize.h>
+#include <QtCore/qdebug.h>
+#include <QtCore/qnamespace.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 QT_BEGIN_NAMESPACE
