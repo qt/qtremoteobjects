@@ -27,7 +27,7 @@
 ****************************************************************************/
 
 import QtTest 1.1
-import QtQml.RemoteObjects 1.0
+import QtRemoteObjects 5.12
 
 TestCase {
     id: testCase

@@ -93,7 +93,7 @@ bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::co
 /*!
     \qmltype Node
     \instantiates QRemoteObjectNode
-    \inqmlmodule QtQml.RemoteObjects
+    \inqmlmodule QtRemoteObjects
     \brief A node on a Qt Remote Objects network.
 
     The Node type provides an entry point to a Qt Remote Objects network. A network

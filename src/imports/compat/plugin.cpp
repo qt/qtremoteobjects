@@ -44,7 +44,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QtRemoteObjectsPlugin : public QQmlExtensionPlugin
+class QtQmlRemoteObjectsPlugin : public QQmlExtensionPlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID QQmlExtensionInterface_iid)
@@ -52,13 +52,11 @@ class QtRemoteObjectsPlugin : public QQmlExtensionPlugin
 public:
     void registerTypes(const char *uri) override
     {
-        qmlRegisterModule(uri, 5, QT_VERSION_MINOR);
+        qmlRegisterUncreatableType<QRemoteObjectAbstractPersistedStore>(uri, 1, 0, "PersistedStore", "Cannot create PersistedStore");
 
-        qmlRegisterUncreatableType<QRemoteObjectAbstractPersistedStore>(uri, 5, 12, "PersistedStore", "Cannot create PersistedStore");
-
-        qmlRegisterType<QRemoteObjectNode>(uri, 5, 12, "Node");
-        qmlRegisterType<QRemoteObjectSettingsStore>(uri, 5, 12, "SettingsStore");
-        qmlProtectModule(uri, 5);
+        qmlRegisterType<QRemoteObjectNode>(uri, 1, 0, "Node");
+        qmlRegisterType<QRemoteObjectSettingsStore>(uri, 1, 0, "SettingsStore");
+        qmlProtectModule(uri, 1);
     }
 };
 
