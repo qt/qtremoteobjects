@@ -90,6 +90,20 @@ bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::co
     return true;
 }
 
+/*!
+    \qmltype Node
+    \instantiates QRemoteObjectNode
+    \inqmlmodule QtQml.RemoteObjects
+    \brief A node on a Qt Remote Objects network.
+
+    The Node type provides an entry point to a Qt Remote Objects network. A network
+    can be as simple as two nodes, or an arbitrarily complex set of processes and devices.
+
+    A Node does not have a url that other nodes can connect to, and thus is able to acquire
+    replicas only. It is not able to share source objects.
+
+*/
+
 QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     : QObjectPrivate()
     , registry(nullptr)
@@ -136,16 +150,31 @@ void QRemoteObjectNode::timerEvent(QTimerEvent*)
 }
 
 /*!
+    \qmlproperty int Node::heartbeatInterval
+
+    Heartbeat interval in ms.
+
+    The heartbeat (only helpful for socket connections) will periodically send a
+    message to connected nodes to detect whether the connection was disrupted.
+    Qt Remote Objects will try to reconnect automatically if it detects a dropped
+    connection. This function can help with that detection since the client will
+    only detect that the server is unavailable when it tries to send data.
+
+    A value of \c 0 (the default) will disable the heartbeat.
+*/
+
+
+/*!
     \property QRemoteObjectNode::heartbeatInterval
     \brief Heartbeat interval in ms.
 
     The heartbeat (only helpful for socket connections) will periodically send a
     message to connected nodes to detect whether the connection was disrupted.
     Qt Remote Objects will try to reconnect automatically if it detects a dropped
-    connection, this function can help with that detection since the client will
-    only detect the server is unavailable when it tries to send data.
+    connection. This function can help with that detection since the client will
+    only detect that the server is unavailable when it tries to send data.
 
-    Setting to 0 (the default) will disable the heartbeat.
+    A value of \c 0 (the default) will disable the heartbeat.
 */
 int QRemoteObjectNode::heartbeatInterval() const
 {
@@ -483,9 +512,21 @@ QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
 }
 
 /*!
+    \qmlproperty QRemoteObjectAbstractPersistedStore Node::persistedStore
+
+    Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node.
+
+    Allows replica \l PROP members with the PERSISTED trait to save their current value when the
+    replica is deleted and restore a stored value the next time the replica is started.
+
+    Requires a \l QRemoteObjectAbstractPersistedStore class implementation to control where and how
+    persistence is handled. A default QSettings-based implementation is provided by SettingsStore.
+*/
+
+/*!
     \since 5.11
     \property QRemoteObjectNode::persistedStore
-    \brief Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node
+    \brief Allows setting a \l QRemoteObjectAbstractPersistedStore instance for the node.
 
     Allows replica \l PROP members with the PERSISTED trait to save their current value when the
     replica is deleted and restore a stored value the next time the replica is started.
@@ -823,14 +864,19 @@ QReplicaImplementationInterface *QRemoteObjectNodePrivate::handleNewAcquire(cons
 
 void QRemoteObjectNodePrivate::handleReplicaConnection(const QString &name)
 {
-    QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(name).toStrongRef());
+    QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(name).toStrongRef());
     if (!rep) { //replica has been deleted, remove from list
         replicas.remove(name);
         return;
     }
-    if (rep->connectionToSource.isNull()) {
+
+    if (rep->isShortCircuit())
+        return;
+
+    QConnectedReplicaImplementation *connectedRep = static_cast<QConnectedReplicaImplementation *>(rep.data());
+    if (connectedRep->connectionToSource.isNull()) {
         const auto sourceInfo = connectedSources.value(name);
-        handleReplicaConnection(sourceInfo.objectSignature, rep.data(), sourceInfo.device);
+        handleReplicaConnection(sourceInfo.objectSignature, connectedRep, sourceInfo.device);
     }
 }
 
@@ -1492,10 +1538,18 @@ QRemoteObjectNode::ErrorCode QRemoteObjectNode::lastError() const
 }
 
 /*!
+    \qmlproperty url Node::registryUrl
+
+    The address of the \l {QRemoteObjectRegistry} {Registry} used by this node.
+
+    This is an empty QUrl if there is no registry in use.
+*/
+
+/*!
     \property QRemoteObjectNode::registryUrl
     \brief The address of the \l {QRemoteObjectRegistry} {Registry} used by this node.
 
-    This will be an empty QUrl if there is no registry in use.
+    This is an empty QUrl if there is no registry in use.
 */
 QUrl QRemoteObjectNode::registryUrl() const
 {
@@ -1808,6 +1862,8 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
                                                                                      Q_ARG(QVector<int>, roles));
     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *api =
         new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(name);
+    if (!this->objectName().isEmpty())
+        adapter->setObjectName(this->objectName().append(QStringLiteral("Adapter")));
     return enableRemoting(model, api, adapter);
 }
 
@@ -1996,6 +2052,7 @@ bool ProxyInfo::setReverseProxy(QRemoteObjectHostBase::RemoteObjectNameFilter fi
 void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirection direction)
 {
     const QString name = entry.first;
+    Q_ASSERT(!proxiedReplicas.contains(name));
     const QString typeName = entry.second.typeName;
 
     if (direction == ProxyDirection::Forward) {
@@ -2004,27 +2061,44 @@ void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirec
 
         qCDebug(QT_REMOTEOBJECT) << "Starting proxy for" << name << "from" << entry.second.hostUrl;
 
-        QRemoteObjectDynamicReplica *rep = proxyNode->acquireDynamic(name);
-        Q_ASSERT(!proxiedReplicas.contains(name));
-        proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
-        connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
-                [rep, name, this]() { this->parentNode->enableRemoting(rep, name); });
+        if (entry.second.typeName == QAIMADAPTER()) {
+            QAbstractItemModelReplica *rep = proxyNode->acquireModel(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QAbstractItemModelReplica::initialized, this,
+                    [rep, name, this]() { this->parentNode->enableRemoting(rep, name, QVector<int>()); });
+        } else {
+            QRemoteObjectDynamicReplica *rep = proxyNode->acquireDynamic(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
+                    [rep, name, this]() { this->parentNode->enableRemoting(rep, name); });
+        }
     } else {
         if (!reverseFilter(name, typeName))
             return;
 
         qCDebug(QT_REMOTEOBJECT) << "Starting reverse proxy for" << name << "from" << entry.second.hostUrl;
 
-        QRemoteObjectDynamicReplica *rep = this->parentNode->acquireDynamic(name);
-        Q_ASSERT(!proxiedReplicas.contains(name));
-        proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
-        connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
-                [rep, name, this]()
-        {
-            QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
-            Q_ASSERT(host);
-            host->enableRemoting(rep, name);
-        });
+        if (entry.second.typeName == QAIMADAPTER()) {
+            QAbstractItemModelReplica *rep = this->parentNode->acquireModel(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QAbstractItemModelReplica::initialized, this,
+                    [rep, name, this]()
+            {
+                QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
+                Q_ASSERT(host);
+                host->enableRemoting(rep, name, QVector<int>());
+            });
+        } else {
+            QRemoteObjectDynamicReplica *rep = this->parentNode->acquireDynamic(name);
+            proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
+            connect(rep, &QRemoteObjectDynamicReplica::initialized, this,
+                    [rep, name, this]()
+            {
+                QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
+                Q_ASSERT(host);
+                host->enableRemoting(rep, name);
+            });
+        }
     }
 
 }

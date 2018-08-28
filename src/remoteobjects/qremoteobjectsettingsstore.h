@@ -40,7 +40,7 @@
 #ifndef QREMOTEOBJECTSETTINGSSTORE_H
 #define QREMOTEOBJECTSETTINGSSTORE_H
 
-#include "qremoteobjectnode.h"
+#include <QtRemoteObjects/qremoteobjectnode.h>
 
 QT_BEGIN_NAMESPACE
 

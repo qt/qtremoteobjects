@@ -42,8 +42,8 @@
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
-#include <QAbstractItemModel>
-#include <QItemSelectionModel>
+#include <QtCore/qabstractitemmodel.h>
+#include <QtCore/qitemselectionmodel.h>
 
 QT_BEGIN_NAMESPACE
 

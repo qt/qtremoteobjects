@@ -304,6 +304,28 @@ private slots:
         QCOMPARE(engine_r->engineType(), EngineReplica::ELECTRIC);
     }
 
+    // ensure we don't crash when ObjectList iterates over in process replicas
+    void inProcessObjectList()
+    {
+        setupRegistry();
+        setupHost(true);
+        setupClient(true);
+        Engine e;
+        host->enableRemoting(&e);
+        e.setStarted(false);
+
+        const QScopedPointer<EngineReplica> engine_r(host->acquire<EngineReplica>());
+        const QScopedPointer<EngineReplica> engine_r2(client->acquire<EngineReplica>());
+        engine_r->waitForSource(1000);
+        engine_r2->waitForSource(1000);
+        QCOMPARE(engine_r->started(), false);
+        QCOMPARE(engine_r2->started(), false);
+        engine_r->pushStarted(true);
+
+        QTRY_COMPARE(engine_r->started(), true);
+        QTRY_COMPARE(engine_r2->started(), true);
+    }
+
     void enumTest()
     {
         setupHost();

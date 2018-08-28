@@ -68,6 +68,8 @@ private Q_SLOTS:
         host.enableRemoting<ParentClassSourceAPI>(&parent);
     }
     */
+
+    void testTopLevelModel();
 };
 
 void ProxyTest::testProxy_data()
@@ -331,6 +333,35 @@ void ProxyTest::testProxy()
         QCOMPARE(pod, parent.subClass()->myPOD());
     }
     replica.reset();
+}
+
+void ProxyTest::testTopLevelModel()
+{
+    QRemoteObjectRegistryHost registry(registryUrl);
+
+    //Setup Local Host
+    QRemoteObjectHost host(localHostUrl);
+    SET_NODE_NAME(host);
+    host.setRegistryUrl(registryUrl);
+
+    QStringListModel model;
+    model.setStringList(QStringList() << "Track1" << "Track2" << "Track3");
+    host.enableRemoting(&model, "trackList", QVector<int>() << Qt::DisplayRole);
+
+    QRemoteObjectHost proxyNode;
+    SET_NODE_NAME(proxyNode);
+    proxyNode.setHostUrl(tcpHostUrl);
+    proxyNode.proxy(registryUrl);
+
+    //Setup Local Replica
+    QRemoteObjectNode client;
+    SET_NODE_NAME(client);
+    client.connectToNode(tcpHostUrl);
+    QAbstractItemModelReplica *replica = client.acquireModel("trackList");
+    QSignalSpy tracksSpy(replica, &QAbstractItemModelReplica::initialized);
+    QVERIFY(tracksSpy.wait());
+    QTest::qWait(100);
+    QCOMPARE(replica->rowCount(), model.rowCount());
 }
 
 QTEST_MAIN(ProxyTest)
