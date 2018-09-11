@@ -165,6 +165,31 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectRootSou
     ds.finishPacket();
 }
 
+static void mergeData(GadgetsData &a, const GadgetsData &b)
+{
+    for (auto it = b.constBegin(); it != b.constEnd(); ++it)
+        a[it.key()] = it.value();
+}
+
+static GadgetsData gadgetData(const QMetaObject *mo)
+{
+    if (!mo)
+        return {};
+    GadgetsData res;
+    auto & properties = res[mo->className()];
+    const int numProperties = mo->propertyCount();
+    for (int i = 0; i < numProperties; ++i) {
+        const auto property = mo->property(i);
+        GadgetProperty data;
+        data.name = property.name();
+        data.type = property.typeName();
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::IsGadget))
+            mergeData(res, gadgetData(QMetaType::metaObjectForType(property.userType())));
+        properties.push_back(data);
+    }
+    return res;
+}
+
 void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
@@ -190,6 +215,53 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
     }
 
     const int numSignals = api->signalCount();
+    const int numMethods = api->methodCount();
+    const int numProperties = api->propertyCount();
+
+    GadgetsData gadgets;
+    QSet<int> processedTypes;
+    for (int si = 0; si < numSignals; ++si) {
+        const int params = api->signalParameterCount(si);
+        for (int pi = 0; pi < params; ++pi) {
+            const int type = api->signalParameterType(si, pi);
+            if (processedTypes.contains(type) || !QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
+                    continue;
+            mergeData(gadgets, gadgetData(QMetaType::metaObjectForType(type)));
+            processedTypes.insert(type);
+        }
+    }
+
+    for (int mi = 0; mi < numMethods; ++mi) {
+        const int params = api->methodParameterCount(mi);
+        for (int pi = 0; pi < params; ++pi) {
+            const int type = api->methodParameterType(mi, pi);
+            if (processedTypes.contains(type) || !QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
+                    continue;
+            mergeData(gadgets, gadgetData(QMetaType::metaObjectForType(type)));
+            processedTypes.insert(type);
+        }
+    }
+    for (int pi = 0; pi < numProperties; ++pi) {
+        const int index = api->sourcePropertyIndex(pi);
+        Q_ASSERT(index >= 0);
+        const auto target = api->isAdapterProperty(pi) ? source->m_adapter : source->m_object;
+        const auto metaProperty = target->metaObject()->property(index);
+        const int type = metaProperty.userType();
+        if (processedTypes.contains(type) || !QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
+                continue;
+        mergeData(gadgets, gadgetData(QMetaType::metaObjectForType(type)));
+        processedTypes.insert(type);
+    }
+    ds << quint32(gadgets.size());
+    for (auto it = gadgets.constBegin(); it != gadgets.constEnd(); ++it) {
+        ds << it.key();
+        ds << quint32(it.value().size());
+        for (const auto &prop : qAsConst(it.value())) {
+            ds << prop.name;
+            ds << prop.type;
+        }
+    }
+
     ds << quint32(numSignals);  //Number of signals
     for (int i = 0; i < numSignals; ++i) {
         const int index = api->sourceSignalIndex(i);
@@ -198,7 +270,6 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
         ds << api->signalParameterNames(i);
     }
 
-    const int numMethods = api->methodCount();
     ds << quint32(numMethods);  //Number of methods
     for (int i = 0; i < numMethods; ++i) {
         const int index = api->sourceMethodIndex(i);
@@ -208,7 +279,6 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
         ds << api->methodParameterNames(i);
     }
 
-    const int numProperties = api->propertyCount();
     ds << quint32(numProperties);  //Number of properties
     for (int i = 0; i < numProperties; ++i) {
         const int index = api->sourcePropertyIndex(i);

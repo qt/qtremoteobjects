@@ -51,11 +51,71 @@
 #include "qremoteobjectabstractitemmodelreplica_p.h"
 #include "qremoteobjectabstractitemmodeladapter_p.h"
 #include <QAbstractItemModel>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
 using namespace QRemoteObjectStringLiterals;
+
+using GadgetType = QVector<QVariant>;
+using RegisteredType = QPair<GadgetType, std::shared_ptr<QMetaObject>>;
+static QMutex s_managedTypesMutex;
+static QHash<int, RegisteredType> s_managedTypes;
+
+static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+{
+    if (_c == QMetaObject::ReadProperty) {
+        GadgetType *_t = reinterpret_cast<GadgetType *>(_o);
+        if (_id < _t->size()) {
+            const auto &prop = _t->at(_id);
+            QMetaType::destruct(int(prop.userType()), _a[0]);
+            QMetaType::construct(int(prop.userType()), _a[0], prop.constData());
+        }
+    } else if (_c == QMetaObject::WriteProperty) {
+        GadgetType *_t = reinterpret_cast<GadgetType *>(_o);
+        if (_id < _t->size()) {
+            auto & prop = (*_t)[_id];
+            prop = QVariant(prop.userType(), _a[0]);
+        }
+    }
+}
+
+static void GadgetTypedDestructor(int, void *ptr)
+{
+    reinterpret_cast<GadgetType*>(ptr)->~GadgetType();
+}
+
+static void *GadgetTypedConstructor(int type, void *where, const void *copy)
+{
+    GadgetType *ret = where ? new(where) GadgetType : new GadgetType;
+    if (copy) {
+        *ret = *reinterpret_cast<const GadgetType*>(copy);
+    } else {
+        QMutexLocker lock(&s_managedTypesMutex);
+        auto it = s_managedTypes.find(type);
+        if (it == s_managedTypes.end()) {
+            delete ret;
+            return nullptr;
+        }
+        *ret = it->first;
+    }
+    return ret;
+}
+
+static void GadgetSaveOperator(QDataStream & out, const void *data)
+{
+    const GadgetType *gadgetProperties = reinterpret_cast<const GadgetType *>(data);
+    for (const auto &prop : *gadgetProperties)
+        out << prop;
+}
+
+static void GadgetLoadOperator(QDataStream &in, void *data)
+{
+    GadgetType *gadgetProperties = reinterpret_cast<GadgetType *>(data);
+    for (auto &prop : *gadgetProperties)
+        in >> prop;
+}
 
 static QString name(const QMetaObject * const mobj)
 {
@@ -568,6 +628,47 @@ const QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QStri
     return dynamicTypes.value(type);
 }
 
+static int registerGadget(QRemoteObjectPackets::GadgetsData &gadgets, QByteArray typeName)
+{
+   const auto &properties = gadgets.take(typeName);
+   int typeId = QMetaType::type(typeName);
+   if (typeId != QMetaType::UnknownType)
+       return typeId;
+
+   QMetaObjectBuilder gadgetBuilder;
+   gadgetBuilder.setClassName(typeName);
+   gadgetBuilder.setFlags(QMetaObjectBuilder::DynamicMetaObject | QMetaObjectBuilder::PropertyAccessInStaticMetaCall);
+   GadgetType gadgetType;
+   for (const auto &prop : properties) {
+       int propertyType = QMetaType::type(prop.type);
+       if (!propertyType && gadgets.contains(prop.type))
+           propertyType = registerGadget(gadgets, prop.type);
+       gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
+       auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
+       dynamicProperty.setWritable(true);
+       dynamicProperty.setReadable(true);
+   }
+   auto meta = gadgetBuilder.toMetaObject();
+   meta->d.static_metacall = &GadgetsStaticMetacallFunction;
+   meta->d.superdata = nullptr;
+   const auto flags = QMetaType::WasDeclaredAsMetaType | QMetaType::IsGadget | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+   int gadgetTypeId = QMetaType::registerType(typeName.constData(),
+                                              &GadgetTypedDestructor,
+                                              &GadgetTypedConstructor,
+                                              sizeof(GadgetType),
+                                              flags, meta);
+   QMetaType::registerStreamOperators(gadgetTypeId, &GadgetSaveOperator, &GadgetLoadOperator);
+   QMutexLocker lock(&s_managedTypesMutex);
+   s_managedTypes[gadgetTypeId] = qMakePair(gadgetType, std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }});
+   return gadgetTypeId;
+}
+
+static void registerAllGadgets(QRemoteObjectPackets::GadgetsData &gadgets)
+{
+    while (!gadgets.isEmpty())
+        registerGadget(gadgets, gadgets.constBegin().key());
+}
+
 QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
 {
     QMetaObjectBuilder builder;
@@ -577,6 +678,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
 
     QString type;
     quint32 numEnums = 0;
+    quint32 numGadgets = 0;
     quint32 numSignals = 0;
     quint32 numMethods = 0;
     quint32 numProperties = 0;
@@ -607,6 +709,22 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
             enumBuilder.addKey(key, value);
         }
     }
+    in >> numGadgets;
+    QRemoteObjectPackets::GadgetsData gadgets;
+    for (quint32 i = 0; i < numGadgets; ++i) {
+        QByteArray type;
+        in >> type;
+        quint32 numProperties;
+        in >> numProperties;
+        auto &properties = gadgets[type];
+        for (quint32 p = 0; p < numProperties; ++p) {
+            QRemoteObjectPackets::GadgetProperty prop;
+            in >> prop.name;
+            in >> prop.type;
+            properties.push_back(prop);
+        }
+    }
+    registerAllGadgets(gadgets);
 
     int curIndex = 0;
 
