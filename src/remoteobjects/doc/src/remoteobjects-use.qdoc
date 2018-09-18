@@ -29,22 +29,22 @@
 \title Using Qt Remote Objects
 \brief Introduction to using Qt Remote Objects.
 
-Consider a sensor, a global positioning system (GPS) receiver for instance. In
+Consider a sensor; a global positioning system (GPS) receiver for instance. In
 QtRO terms, the \l {Source} would be the process that directly interacts with
 the GPS hardware and derives your current location. The location would be
 exposed as QObject properties, and the periodic updates to the location would
 update the properties and emit property changed signals. \l {Replica}s would be
 created in other processes and would always know your current location, but
 would not need any of the logic to compute the location from the sensor data.
-Connecting to the location changed Signal on the \l {Replica} would work as
-expected, as the signal emitted from the \l {Source} would trigger the Signal
+Connecting to the location changed signal on the \l {Replica} would work as
+expected, as the signal emitted from the \l {Source} would trigger the signal
 emission on every \l {Replica}.
 
 Another example of QtRO usage would be for a service (for example, access to a printer).
 The \l {Source} is again the process controlling the printer directly. Here you
 would again likely have properties monitoring the ink levels or whether the printer is
 currently busy. However, the key feature, being able to print something, needs to be
-passed back to the printer. This aligns with the Qt Slot mechanism, which QtRO
+passed back to the printer. This aligns with the Qt slot mechanism, which QtRO
 uses as the way for \l {Replica}s to make calls on the \l {Source}. In effect,
 properties and signals go from \l {Source} to \l {Replica}s, while slots go
 from (a) \l {Replica} to the \l {Source}. Assuming a print request is accepted,

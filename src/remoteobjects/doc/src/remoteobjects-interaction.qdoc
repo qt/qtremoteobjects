@@ -36,9 +36,9 @@ to the source, and if a change is made, it will be made on the source and
 subsequently forwarded to all replicas. To the replica, it is then an
 asynchronous call, with latency before the change takes effect.
 
-Whereas you can emit a signal on a replica, this may have unexpected results and
+While technically you can emit a signal on a replica, this may have unexpected results and
 is discouraged for that reason. It will only trigger slots connected to the
-replica itself, no slots connected to the source or other replicas. Like
+replica itself, not slots connected to the source or other replicas. Like
 property setters, slot invocations on a replica are forwarded to the Source to
 run.
 
