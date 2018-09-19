@@ -35,7 +35,7 @@
 When you \l {QRemoteObjectNode::acquire()} a replica, the node URL is not passed
 as an argument. This means you do not need to specify the host node, but it does
 require you to have some other means of connecting to that host. Without the
-registry, it is necessary to manually call \l {QRemoteObjectNode::connect()},
+registry, it is necessary to manually call \l {QRemoteObjectNode::connectToNode()},
 from each node, to every host node that has \l {Source} objects it should
 replicate. This is fine for small or static networks, but does not scale.
 

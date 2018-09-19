@@ -71,8 +71,8 @@ signal to alert you if the connection is lost.
 Objects shared over QtRO use the links (conduits) between nodes for all
 communication. If you intend to share a QObject, you must create a \e {host
 node} with a URL other nodes can connect to. You can also use the QtRO \l
-{Registry} to facilitate connections, but your node’s sharing \l {Source}
-{sources} still need to be a Host Node. Each shared object is given a name
+{Registry} to facilitate connections, but your nodes sharing \l {Source}
+{sources} still need to be Host nodes. Each shared object is given a name
 (a QString), used for identifying it on the QtRO network.
 
 See the \l {Qt Remote Objects} {Overview} for a more detailed description, or
@@ -166,10 +166,10 @@ Above,
         our SimpleSwitch,
     \li \c timeout_slot() is connected to the timeout() signal of
         \c stateChangeTimer,
-    \li \c server_slot(), which is called on the source (automatically
-        via QtRO) whenever any replica calls their version of the slot,
+    \li \c server_slot() -- which is called on the source (automatically
+        via QtRO) whenever any replica calls their version of the slot --
         outputs the received value, and
-    \li \c currStateChanged(bool) signal, defined in \l {repc}-generated
+    \li \c currStateChanged(bool), defined in \l {repc}-generated
         \c rep_SimpleSwitch_source.h, is emitted whenever currState
         toggles. In this example, we ignore the signal on the source side,
         and handle it later on the replica side.
@@ -276,10 +276,9 @@ generates the following output:
 A dynamic replica is initially created as a "bare" QObject - that is, it has
 no properties, signals or slots. QtRO returns the API for the object during
 initialization (after the connection to the source is made), thus the API is
-added to the object at runtime. Dynamic replicas are good when a replica is
-intended to be used in QML.
+added to the object at runtime.
 
-There are no changes to source side as a dynamic \l Replica only impacts
+There are no changes to the source side as a dynamic \l Replica only impacts
 how the requestor node acquires the replica. The source-side code shown
 in \l {qtro-example1}{Example 1} will be used.
 
@@ -317,8 +316,8 @@ to \l {qtro-example1}{Example 1}.
 \target qtro-example3
 \section1 Example 3: Remote Nodes using a Registry
 
-This example will illustrate the use of \l {Registry} for building the node
-topology. For only two nodes, the benefits of using the Registry are minimal.
+This example will illustrate the use of a \l {Registry} for building the node
+topology. For only two nodes, the benefits of using a registry are minimal.
 With a registry, instead of using a QUrl to create a direct connection between
 two nodes, you use a different QUrl to point both the host and replica nodes to
 the registry. As the network grows, using a registry means that all nodes only
@@ -336,7 +335,7 @@ node is created and connected to the \l {Registry}:
 
 \section2 Replica Code
 
-Requestor object used for this example is the dynamic replica client
+The requestor object used for this example is the dynamic replica client
 discussed in \l {qtro-example2}{Example 2}.
 
 The only modification is in \c main.cpp: a \l {Registry} node is created

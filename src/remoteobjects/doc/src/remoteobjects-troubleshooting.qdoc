@@ -29,5 +29,12 @@
 \title Troubleshooting Qt Remote Objects
 \section1 Troubleshooting
 
-//! TODO
+QtRO includes a number of internal logging categories that can be used for further debugging:
+
+\code
+qt.remoteobjects
+qt.remoteobjects.io
+qt.remoteobjects.models
+\endcode
+
 */
