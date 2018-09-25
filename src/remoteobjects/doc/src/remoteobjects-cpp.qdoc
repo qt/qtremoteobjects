@@ -32,7 +32,7 @@
 \ingroup modules
 \qtvariable remoteobjects
 
-    To use the QtRemoteObjects in your application, add the following configuration option to your \c .pro file:
+    To use Qt Remote Objects in your application, add the following configuration option to your \c .pro file:
     \snippet snippets.pro project_file_include
 
     Use the following include in you source files:

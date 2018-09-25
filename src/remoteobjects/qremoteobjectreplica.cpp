@@ -108,6 +108,7 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
         // conditional logic.
         auto clientIo = qobject_cast<ClientIoDevice *>(connectionToSource);
         if (m_pendingCalls.contains(0)) {
+            m_pendingCalls.take(0);
             // The source didn't respond in time, disconnect the connection
             if (clientIo)
                 clientIo->disconnectFromServer();

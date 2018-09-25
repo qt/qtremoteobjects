@@ -111,7 +111,7 @@ void SimpleSwitch::timeout_slot()
 //! [simpleSwitch_serversource_example1]
 
 //! [simpleSwitch_serverhostnode_example1]
-QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNode();
+QRemoteObjectHost srcNode;
 //! [simpleSwitch_serverhostnode_example1]
 
 //! [simpleSwitch_enableremoting_example1]
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
     SimpleSwitch srcSwitch; // create simple switch
 
-    QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNode(); // create host node without Registry
+    QRemoteObjectHost srcNode; // create host node without Registry
     //The static node creation routines take one or two URLs as input parameters, but they have default values to help people getting started.
     //It is recommended use your own URLs in any production environment to avoid name conflicts.
     srcNode.enableRemoting(&srcSwitch); // enable remoting/sharing
@@ -350,8 +350,8 @@ int main(int argc, char *argv[])
 
     SimpleSwitch srcSwitch; // create SimpleSwitch
 
-    QRemoteObjectNode regNode = QRemoteObjectNode::createRegistryHostNode(); // create node that hosts registy
-    QRemoteObjectNode srcNode = QRemoteObjectNode::createHostNodeConnectedToRegistry(); // create node that will host source and connect to registry
+    QRemoteObjectRegistryHost regNode(QUrl(QStringLiteral("local:registry"))); // create node that hosts registry
+      QRemoteObjectHost srcNode(QUrl(QStringLiteral("local:switch")), QUrl(QStringLiteral("local:registry"))); // create node that will host source and connect to registry
     //Note, you can add srcSwitch directly to regNode if desired.
     //We use two Nodes here, as the regNode could easily be in a third process.
 
@@ -362,5 +362,5 @@ int main(int argc, char *argv[])
 //! [simpleSwitch_registrymaincpp_example3]
 
 //! [simpleSwitch_registrydynamicclientmaincpp_example3]
-    QRemoteObjectNode repNode = QRemoteObjectNode::createNodeConnectedToRegistry();
+    QRemoteObjectNode repNode(QUrl(QStringLiteral("local:registry")));
 //! [simpleSwitch_registrydynamicclientmaincpp_example3]
