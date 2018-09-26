@@ -1994,7 +1994,11 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
     obtain Replicas of this Source.
 
     This is best illustrated by example:
-    \snippet doc_src_remoteobjects.cpp api_source
+    \code
+        #include "rep_TimeModel_source.h"
+        MinuteTimer timer;
+        hostNode.enableRemoting<MinuteTimerSourceAPI>(&timer);
+    \endcode
 
     Here the MinuteTimerSourceAPI is the set of Signals/Slots/Properties
     defined by the TimeModel.rep file. Compile time checks are made to verify

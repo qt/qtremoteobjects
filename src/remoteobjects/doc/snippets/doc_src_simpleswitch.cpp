@@ -329,14 +329,11 @@ int main(int argc, char *argv[])
 
     QSharedPointer<QRemoteObjectDynamicReplica> ptr; // shared pointer to hold replica
 
-    QRemoteObjectNode repNode; // create remote object node
-    repNode.connect(); // connect with remote host node
+    QRemoteObjectNode repNode(QUrl(QStringLiteral("local:registry")));
 
-    ptr.reset(repNode.acquire("SimpleSwitch")); // acquire replica of source from host node
+    ptr.reset(repNode.acquireDynamic("SimpleSwitch")); // acquire replica of source from host node
 
-    dynamicclient rswitch(ptr); // create client switch object and pass replica reference to it
-
-    return a.exec();
+    DynamicClient rswitch(ptr); // create client switch object and pass replica reference to it
 }
 //! [simpleSwitch_dynamicclientmaincpp_example2]
 
