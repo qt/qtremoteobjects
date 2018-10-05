@@ -200,33 +200,33 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
         Q_FOREACH (const PODAttribute &attribute, pod.attributes)
             metaTypes << attribute.type;
     }
-    Q_FOREACH (const ASTClass &astClass, ast.classes) {
-        Q_FOREACH (const ASTProperty &property, astClass.properties) {
-            if (property.isPointer)
-                continue;
-            metaTypes << property.type;
-        }
-        Q_FOREACH (const ASTFunction &function, astClass.signalsList + astClass.slotsList) {
-            metaTypes << function.returnType;
-            Q_FOREACH (const ASTDeclaration &decl, function.params) {
-                metaTypes << decl.type;
-            }
-        }
-    }
-
     const QString metaTypeRegistrationCode = generateMetaTypeRegistration(metaTypes)
                                            + generateMetaTypeRegistrationForEnums(ast.enumUses);
 
     Q_FOREACH (const ASTClass &astClass, ast.classes) {
+        QSet<QString> classMetaTypes;
+        Q_FOREACH (const ASTProperty &property, astClass.properties) {
+            if (property.isPointer)
+                continue;
+            classMetaTypes << property.type;
+        }
+        Q_FOREACH (const ASTFunction &function, astClass.signalsList + astClass.slotsList) {
+            classMetaTypes << function.returnType;
+            Q_FOREACH (const ASTDeclaration &decl, function.params) {
+                classMetaTypes << decl.type;
+            }
+        }
+        QString classMetaTypeRegistrationCode = metaTypeRegistrationCode + generateMetaTypeRegistration(classMetaTypes);
+
         if (mode == MERGED) {
-            generateClass(REPLICA, stream, astClass, metaTypeRegistrationCode);
-            generateClass(SOURCE, stream, astClass, metaTypeRegistrationCode);
-            generateClass(SIMPLE_SOURCE, stream, astClass, metaTypeRegistrationCode);
+            generateClass(REPLICA, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(SOURCE, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
             generateSourceAPI(stream, astClass);
         } else {
-            generateClass(mode, stream, astClass, metaTypeRegistrationCode);
+            generateClass(mode, stream, astClass, classMetaTypeRegistrationCode);
             if (mode == SOURCE) {
-                generateClass(SIMPLE_SOURCE, stream, astClass, metaTypeRegistrationCode);
+                generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
                 generateSourceAPI(stream, astClass);
             }
         }
