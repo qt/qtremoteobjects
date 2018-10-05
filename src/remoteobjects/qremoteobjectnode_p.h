@@ -90,7 +90,7 @@ public:
     ~QRemoteObjectMetaObjectManager();
 
     const QMetaObject *metaObjectForType(const QString &type);
-    QMetaObject *addDynamicType(QDataStream &in);
+    QMetaObject *addDynamicType(IoDeviceBase* connection, QDataStream &in);
     void addFromReplica(QConnectedReplicaImplementation *rep);
 
 private:
