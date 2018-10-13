@@ -62,6 +62,7 @@ using GadgetType = QVector<QVariant>;
 using RegisteredType = QPair<GadgetType, std::shared_ptr<QMetaObject>>;
 static QMutex s_managedTypesMutex;
 static QHash<int, RegisteredType> s_managedTypes;
+static QHash<int, QSet<IoDeviceBase*>> s_trackedConnections;
 
 static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
@@ -628,12 +629,38 @@ const QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QStri
     return dynamicTypes.value(type);
 }
 
-static int registerGadget(QRemoteObjectPackets::GadgetsData &gadgets, QByteArray typeName)
+static void trackConnection(int typeId, IoDeviceBase *connection)
+{
+    QMutexLocker lock(&s_managedTypesMutex);
+    if (s_trackedConnections[typeId].contains(connection))
+        return;
+    s_trackedConnections[typeId].insert(connection);
+    auto unregisterIfNotUsed = [typeId, connection]{
+        QMutexLocker lock(&s_managedTypesMutex);
+        Q_ASSERT(s_trackedConnections.contains(typeId));
+        Q_ASSERT(s_trackedConnections[typeId].contains(connection));
+        s_trackedConnections[typeId].remove(connection);
+        if (s_trackedConnections[typeId].isEmpty()) {
+            s_trackedConnections.remove(typeId);
+            s_managedTypes.remove(typeId);
+            QMetaType::unregisterType(typeId);
+        }
+    };
+
+    // Unregister the type only when the connection is destroyed
+    // Do not unregister types when the connections is discconected, because
+    // if it gets reconnected it will not register the types again
+    QObject::connect(connection, &IoDeviceBase::destroyed, unregisterIfNotUsed);
+}
+
+static int registerGadget(IoDeviceBase *connection, QRemoteObjectPackets::GadgetsData &gadgets, QByteArray typeName)
 {
    const auto &properties = gadgets.take(typeName);
    int typeId = QMetaType::type(typeName);
-   if (typeId != QMetaType::UnknownType)
+   if (typeId != QMetaType::UnknownType) {
+       trackConnection(typeId, connection);
        return typeId;
+   }
 
    QMetaObjectBuilder gadgetBuilder;
    gadgetBuilder.setClassName(typeName);
@@ -642,7 +669,7 @@ static int registerGadget(QRemoteObjectPackets::GadgetsData &gadgets, QByteArray
    for (const auto &prop : properties) {
        int propertyType = QMetaType::type(prop.type);
        if (!propertyType && gadgets.contains(prop.type))
-           propertyType = registerGadget(gadgets, prop.type);
+           propertyType = registerGadget(connection, gadgets, prop.type);
        gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
        auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
        dynamicProperty.setWritable(true);
@@ -651,25 +678,26 @@ static int registerGadget(QRemoteObjectPackets::GadgetsData &gadgets, QByteArray
    auto meta = gadgetBuilder.toMetaObject();
    meta->d.static_metacall = &GadgetsStaticMetacallFunction;
    meta->d.superdata = nullptr;
-   const auto flags = QMetaType::WasDeclaredAsMetaType | QMetaType::IsGadget | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+   const auto flags = QMetaType::IsGadget | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
    int gadgetTypeId = QMetaType::registerType(typeName.constData(),
                                               &GadgetTypedDestructor,
                                               &GadgetTypedConstructor,
                                               sizeof(GadgetType),
                                               flags, meta);
    QMetaType::registerStreamOperators(gadgetTypeId, &GadgetSaveOperator, &GadgetLoadOperator);
+   trackConnection(gadgetTypeId, connection);
    QMutexLocker lock(&s_managedTypesMutex);
    s_managedTypes[gadgetTypeId] = qMakePair(gadgetType, std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }});
    return gadgetTypeId;
 }
 
-static void registerAllGadgets(QRemoteObjectPackets::GadgetsData &gadgets)
+static void registerAllGadgets(IoDeviceBase *connection, QRemoteObjectPackets::GadgetsData &gadgets)
 {
     while (!gadgets.isEmpty())
-        registerGadget(gadgets, gadgets.constBegin().key());
+        registerGadget(connection, gadgets, gadgets.constBegin().key());
 }
 
-QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
+QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connection, QDataStream &in)
 {
     QMetaObjectBuilder builder;
     builder.setClassName("QRemoteObjectDynamicReplica");
@@ -724,7 +752,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QDataStream &in)
             properties.push_back(prop);
         }
     }
-    registerAllGadgets(gadgets);
+    registerAllGadgets(connection, gadgets);
 
     int curIndex = 0;
 
@@ -1102,7 +1130,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case InitDynamicPacket:
         {
             qROPrivDebug() << "InitDynamicPacket-->" << rxName << this;
-            const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection->stream());
+            const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection, connection->stream());
             deserializeInitPacket(connection->stream(), rxArgs);
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep)
@@ -1754,7 +1782,7 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
             childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(childInfo.typeName));
         else {
             QDataStream in(childInfo.classDefinition);
-            childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(in));
+            childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(rep->connectionToSource, in));
         }
         handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
         childRep->setDynamicProperties(childInfo.parameters);

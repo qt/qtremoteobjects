@@ -39,8 +39,9 @@ class tst_Client_Process : public QObject
 private Q_SLOTS:
     void initTestCase()
     {
-        m_repNode.connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
-        m_rep.reset(m_repNode.acquire<MyInterfaceReplica>());
+        m_repNode.reset(new QRemoteObjectNode);
+        m_repNode->connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
+        m_rep.reset(m_repNode->acquire<MyInterfaceReplica>());
         QVERIFY(m_rep->waitForSource());
     }
 
@@ -65,7 +66,7 @@ private Q_SLOTS:
     void testEnumDetails()
     {
         QHash<QByteArray, int> kvs = {{"First", 0}, {"Second", 1}, {"Third", 2}};
-        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_repNode.acquireDynamic("MyInterface"));
+        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_repNode->acquireDynamic("MyInterface"));
         QVERIFY(rep->waitForSource());
 
         auto mo = rep->metaObject();
@@ -92,7 +93,7 @@ private Q_SLOTS:
 
     void testMethodSignalParamDetails()
     {
-        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_repNode.acquireDynamic("MyInterface"));
+        QScopedPointer<QRemoteObjectDynamicReplica> rep(m_repNode->acquireDynamic("MyInterface"));
         QVERIFY(rep->waitForSource());
 
         auto mo = rep->metaObject();
@@ -140,7 +141,7 @@ private Q_SLOTS:
     void testMethodSignal()
     {
         QScopedPointer<MyInterfaceReplica> rep(new MyInterfaceReplica());
-        rep->setNode(&m_repNode);
+        rep->setNode(m_repNode.get());
         QVERIFY(rep->waitForSource());
 
         rep->testEnumParamsInSlots(MyInterfaceReplica::Second, false, 74);
@@ -154,7 +155,7 @@ private Q_SLOTS:
 
     void testPod()
     {
-        QScopedPointer<QRemoteObjectDynamicReplica> podRep(m_repNode.acquireDynamic("PodInterface"));
+        QScopedPointer<QRemoteObjectDynamicReplica> podRep(m_repNode->acquireDynamic("PodInterface"));
         QVERIFY(podRep->waitForSource());
         QVariant value = podRep->property("myPod");
         const QMetaObject *mo = QMetaType::metaObjectForType(value.userType());
@@ -177,10 +178,14 @@ private Q_SLOTS:
     {
         auto reply = m_rep->quit();
         QVERIFY(reply.waitForFinished());
+        m_rep.reset();
+        QVERIFY(QMetaType::type("MyPOD") != QMetaType::UnknownType);
+        m_repNode.reset();
+        QVERIFY(QMetaType::type("MyPOD") == QMetaType::UnknownType);
     }
 
 private:
-    QRemoteObjectNode m_repNode;
+    QScopedPointer<QRemoteObjectNode> m_repNode;
     QScopedPointer<MyInterfaceReplica> m_rep;
 };
 
