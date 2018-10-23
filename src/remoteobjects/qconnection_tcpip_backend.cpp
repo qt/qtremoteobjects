@@ -104,6 +104,7 @@ void TcpClientIo::onError(QAbstractSocket::SocketError error)
     switch (error) {
     case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
     case QAbstractSocket::ConnectionRefusedError:
+    case QAbstractSocket::NetworkError:
         emit shouldReconnect(this);
         break;
     case QAbstractSocket::AddressInUseError:
