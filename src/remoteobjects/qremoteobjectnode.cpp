@@ -2094,7 +2094,8 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
     taking the \a ioDevice as input. Any enableRemoting() call will still work
     without calling addHostSideConnection, but the Node will not be able to
     share the \l Source objects without being provided the connection to the
-    Replica node.
+    Replica node. Before calling this function you must call \l setHostUrl with
+    a unique URL and \l QRemoteObjectHost::AllowExternalRegistration.
 
     \sa addClientSideConnection
 */
