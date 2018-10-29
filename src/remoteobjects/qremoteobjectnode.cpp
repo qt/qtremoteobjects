@@ -1337,6 +1337,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     \value MissingObjectName The given QObject does not have objectName() set.
     \value HostUrlInvalid The given url has an invalid or unrecognized scheme.
     \value ProtocolMismatch The client and the server have different protocol versions.
+    \value ListenFailed Can't listen on the specified host port.
 */
 
 /*!
@@ -1598,6 +1599,13 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
         return false;
     }
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
+
+    if (allowedSchemas == AllowedSchemas::BuiltInSchemasOnly && !d->remoteObjectIo->startListening()) {
+        d->setLastError(ListenFailed);
+        delete d->remoteObjectIo;
+        d->remoteObjectIo = nullptr;
+        return false;
+    }
 
     //If we've given a name to the node, set it on the sourceIo as well
     if (!objectName().isEmpty())
