@@ -111,22 +111,24 @@ void QAbstractItemModelReplicaImplementation::initialize()
 void QAbstractItemModelReplicaImplementation::registerMetatypes()
 {
     static bool alreadyRegistered = false;
-    if (!alreadyRegistered) {
-        alreadyRegistered = true;
-        qRegisterMetaType<Qt::Orientation>();
-        qRegisterMetaType<QVector<Qt::Orientation> >();
-        qRegisterMetaTypeStreamOperators<ModelIndex>();
-        qRegisterMetaTypeStreamOperators<IndexList>();
-        qRegisterMetaTypeStreamOperators<DataEntries>();
-        qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
-        qRegisterMetaTypeStreamOperators<Qt::Orientation>();
-        qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
-        qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
-        qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
-        qRegisterMetaType<QSize>();
-        qRegisterMetaType<QIntHash>();
-        qRegisterMetaTypeStreamOperators<QIntHash>();
-    }
+    if (alreadyRegistered)
+        return;
+
+    alreadyRegistered = true;
+    qRegisterMetaType<QAbstractItemModel*>();
+    qRegisterMetaType<Qt::Orientation>();
+    qRegisterMetaType<QVector<Qt::Orientation> >();
+    qRegisterMetaTypeStreamOperators<ModelIndex>();
+    qRegisterMetaTypeStreamOperators<IndexList>();
+    qRegisterMetaTypeStreamOperators<DataEntries>();
+    qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
+    qRegisterMetaTypeStreamOperators<Qt::Orientation>();
+    qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
+    qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
+    qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
+    qRegisterMetaType<QSize>();
+    qRegisterMetaType<QIntHash>();
+    qRegisterMetaTypeStreamOperators<QIntHash>();
 }
 
 void QAbstractItemModelReplicaImplementation::initializeModelConnections()

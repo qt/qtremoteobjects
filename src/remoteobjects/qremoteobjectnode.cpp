@@ -1377,6 +1377,8 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     qRegisterMetaTypeStreamOperators<QRemoteObjectPackets::QRO_>();
+    // To support dynamic MODELs, we need to make sure the types are registered
+    QAbstractItemModelSourceAdapter::registerTypes();
 }
 
 bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteArray &b)
