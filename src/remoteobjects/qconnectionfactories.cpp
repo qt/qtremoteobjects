@@ -231,11 +231,11 @@ ExternalIoDevice::ExternalIoDevice(QIODevice *device, QObject *parent)
     , m_device(device)
 {
     initializeDataStream();
-    connect(m_device, &QIODevice::aboutToClose, this, [this]() { this->m_isClosing = true; });
-    connect(m_device, &QIODevice::readyRead, this, &ExternalIoDevice::readyRead);
+    connect(m_device.data(), &QIODevice::aboutToClose, this, [this]() { this->m_isClosing = true; });
+    connect(m_device.data(), &QIODevice::readyRead, this, &ExternalIoDevice::readyRead);
     auto meta = device->metaObject();
     if (-1 == meta->indexOfSignal(SIGNAL(disconnected())))
-        connect(m_device, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
+      connect(m_device.data(), SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 }
 
 QIODevice *ExternalIoDevice::connection() const

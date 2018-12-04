@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
     SimpleSwitch srcSwitch; // create simple switch
 
-    QRemoteObjectHost srcNode(QUrl(QStringLiteral("local:switch")); // create host node without Registry
+    QRemoteObjectHost srcNode(QUrl(QStringLiteral("local:switch"))); // create host node without Registry
     srcNode.enableRemoting(&srcSwitch); // enable remoting/sharing
 
     return a.exec();
@@ -142,7 +142,7 @@ REPC_REPLICA = simpleswitch.rep
 
 //! [simpleSwitch_clientremotenode_example1]
 QRemoteObjectNode repNode; // create remote object node
-repNode.connectToNode(QUrl(QStringLiteral("local:switch")); // connect with remote host node
+repNode.connectToNode(QUrl(QStringLiteral("local:switch"))); // connect with remote host node
  //! [simpleSwitch_clientremotenode_example1]
 
  //! [simpleSwitch_clientacquirereplica_example1]
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
     QSharedPointer<SimpleSwitchReplica> ptr; // shared pointer to hold source replica
 
     QRemoteObjectNode repNode; // create remote object node
-    repNode.connectToNode(QUrl(QStringLiteral("local:switch")); // connect with remote host node
+    repNode.connectToNode(QUrl(QStringLiteral("local:switch"))); // connect with remote host node
 
     ptr.reset(repNode.acquire<SimpleSwitchReplica>()); // acquire replica of source from host node
 
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
 
 //! [simpleSwitch_dynamicclientnode_example2]
 QRemoteObjectNode repNode; // create remote object node
-repNode.connectToNode(QUrl(QStringLiteral("local:switch")); // connect with remote host node
+repNode.connectToNode(QUrl(QStringLiteral("local:switch"))); // connect with remote host node
 //! [simpleSwitch_dynamicclientnode_example2]
 
 //! [simpleSwitch_dynamicclientacquirereplica_example2]
@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
     QSharedPointer<QRemoteObjectDynamicReplica> ptr; // shared pointer to hold replica
 
     QRemoteObjectNode repNode;
-    repNode.connectToNode(QUrl(QStringLiteral("local:switch"));
+    repNode.connectToNode(QUrl(QStringLiteral("local:switch")));
 
     ptr.reset(repNode.acquireDynamic("SimpleSwitch")); // acquire replica of source from host node
 
