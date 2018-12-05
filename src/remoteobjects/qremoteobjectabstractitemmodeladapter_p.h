@@ -68,7 +68,7 @@ public:
     Q_INVOKABLE explicit QAbstractItemModelSourceAdapter(QAbstractItemModel *object, QItemSelectionModel *sel, const QVector<int> &roles = QVector<int>());
     Q_PROPERTY(QVector<int> availableRoles READ availableRoles WRITE setAvailableRoles NOTIFY availableRolesChanged)
     Q_PROPERTY(QIntHash roleNames READ roleNames)
-    void registerTypes();
+    static void registerTypes();
     QItemSelectionModel* selectionModel() const;
 
 public Q_SLOTS:

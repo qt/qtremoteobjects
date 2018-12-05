@@ -1337,6 +1337,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     \value MissingObjectName The given QObject does not have objectName() set.
     \value HostUrlInvalid The given url has an invalid or unrecognized scheme.
     \value ProtocolMismatch The client and the server have different protocol versions.
+    \value ListenFailed Can't listen on the specified host port.
 */
 
 /*!
@@ -1376,6 +1377,8 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaTypeStreamOperators<QVector<int> >();
     qRegisterMetaTypeStreamOperators<QRemoteObjectPackets::QRO_>();
+    // To support dynamic MODELs, we need to make sure the types are registered
+    QAbstractItemModelSourceAdapter::registerTypes();
 }
 
 bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteArray &b)
@@ -1599,6 +1602,13 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
     }
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
 
+    if (allowedSchemas == AllowedSchemas::BuiltInSchemasOnly && !d->remoteObjectIo->startListening()) {
+        d->setLastError(ListenFailed);
+        delete d->remoteObjectIo;
+        d->remoteObjectIo = nullptr;
+        return false;
+    }
+
     //If we've given a name to the node, set it on the sourceIo as well
     if (!objectName().isEmpty())
         d->remoteObjectIo->setObjectName(objectName());
@@ -1763,9 +1773,9 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     const bool newReplica = !replicas.contains(childInfo.name) || rep->isInitialized();
     if (newReplica) {
         if (rep->isInitialized()) {
-            auto rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
-            if (!rep->isShortCircuit())
-                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(rep.data()));
+            auto childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
+            if (childRep && !childRep->isShortCircuit())
+                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(childRep.data()));
         }
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));

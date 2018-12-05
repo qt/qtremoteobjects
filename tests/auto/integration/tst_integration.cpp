@@ -210,14 +210,14 @@ private slots:
         QTest::addColumn<QUrl>("hostUrl");
         QTest::addColumn<QUrl>("registryUrl");
 
-#ifndef SKIP_LOCAL
-        QTest::newRow("local") << QUrl(QLatin1String("local:replica_local_integration")) << QUrl(QLatin1String("local:registry_local_integration"));
-#endif
         QTest::newRow("tcp") << QUrl(QLatin1String("tcp://127.0.0.1:65511")) << QUrl(QLatin1String("tcp://127.0.0.1:65512"));
-        QTest::newRow("external") << QUrl() << QUrl();
 #ifdef __QNXNTO__
         QTest::newRow("qnx") << QUrl(QLatin1String("qnx:replica")) << QUrl(QLatin1String("qnx:registry"));
 #endif
+#ifndef SKIP_LOCAL
+        QTest::newRow("local") << QUrl(QLatin1String("local:replica_local_integration")) << QUrl(QLatin1String("local:registry_local_integration"));
+#endif
+        QTest::newRow("external") << QUrl() << QUrl();
     }
 
     void initTestCase()
@@ -1368,6 +1368,22 @@ private slots:
         QVERIFY(testServer.waitForFinished());
     }
 #endif
+
+    void tcpListenFailedTest()
+    {
+        QFETCH_GLOBAL(QUrl, registryUrl);
+
+        if (registryUrl.scheme() != QRemoteObjectStringLiterals::tcp())
+            QSKIP("Skipping test for local and external backends.");
+
+        // Need the Host or Registry running so that the port is in use.
+        setupRegistry();
+        QRemoteObjectHost badHost;
+        badHost.setHostUrl(registryUrl);
+        QCOMPARE(badHost.lastError(), QRemoteObjectNode::ListenFailed);
+
+    }
+
 };
 
 QTEST_MAIN(tst_Integration)
