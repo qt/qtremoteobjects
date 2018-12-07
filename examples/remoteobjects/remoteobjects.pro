@@ -5,8 +5,9 @@ SUBDIRS = \
     cppclient \
     modelviewclient \
     modelviewserver \
-    simpleswitch \
-    ssl
+    simpleswitch
+
+contains(QT_CONFIG, ssl): SUBDIRS += ssl
 
 qtHaveModule(quick) {
     SUBDIRS += \

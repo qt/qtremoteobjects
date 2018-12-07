@@ -19,8 +19,9 @@ SUBDIRS += \
     repparser \
     subclassreplica \
     sub_integration \
-    sub_localsockettestserver \
-    external_IODevice
+    sub_localsockettestserver
+
+contains(QT_CONFIG, ssl): SUBDIRS += external_IODevice
 
 qtHaveModule(qml): SUBDIRS += qml
 qtConfig(process): SUBDIRS += integration_multiprocess integration_external
