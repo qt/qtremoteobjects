@@ -1,3 +1,6 @@
+QT_FOR_CONFIG += network
+requires(qtConfig(ssl))
+
 REPC_REPLICA += timemodel.rep
 QT = remoteobjects remoteobjects-private core
 
