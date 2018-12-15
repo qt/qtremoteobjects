@@ -96,7 +96,8 @@ public:
         SourceNotRegistered,
         MissingObjectName,
         HostUrlInvalid,
-        ProtocolMismatch
+        ProtocolMismatch,
+        ListenFailed
     };
     Q_ENUM(ErrorCode)
 

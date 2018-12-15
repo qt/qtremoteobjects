@@ -109,8 +109,9 @@ private:
         socketClient->setPeerVerifyMode(QSslSocket::VerifyPeer);
         socketClient->connectToHostEncrypted(QStringLiteral("127.0.0.1"), 65511);
         if (!socketClient->waitForEncrypted(-1)) {
-            qFatal("Failed to connect to server %s",
+            qWarning("Failed to connect to server %s",
                    qPrintable(socketClient->errorString()));
+            exit(0);
         }
         return socketClient;
     }

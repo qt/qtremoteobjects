@@ -54,21 +54,10 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *paren
     : QObject(parent)
     , m_server(QtROServerFactory::instance()->isValid(address) ?
                QtROServerFactory::instance()->create(address, this) : nullptr)
+    , m_address(address)
 {
-    if (m_server && m_server->listen(address)) {
-        qRODebug(this) << "QRemoteObjectSourceIo is Listening" << address;
-    } else {
-        if (m_server) {
-            qROWarning(this) << "Listen failed for URL:" << address;
-            qROWarning(this) << m_server->serverError();
-        } else {
-            m_address = address;
-            qRODebug(this) << "Using" << address << "as external url.";
-        }
-        return;
-    }
-
-    connect(m_server.data(), &QConnectionAbstractServer::newConnection, this, &QRemoteObjectSourceIo::handleConnection);
+    if (m_server == nullptr)
+        qRODebug(this) << "Using" << m_address << "as external url.";
 }
 
 QRemoteObjectSourceIo::QRemoteObjectSourceIo(QObject *parent)
@@ -80,6 +69,20 @@ QRemoteObjectSourceIo::QRemoteObjectSourceIo(QObject *parent)
 QRemoteObjectSourceIo::~QRemoteObjectSourceIo()
 {
     qDeleteAll(m_sourceRoots.values());
+}
+
+bool QRemoteObjectSourceIo::startListening()
+{
+    if (!m_server->listen(m_address)) {
+        qROCritical(this) << "Listen failed for URL:" << m_address;
+        qROCritical(this) << m_server->serverError();
+        return false;
+    }
+
+    qRODebug(this) << "QRemoteObjectSourceIo is Listening" << m_address;
+    connect(m_server.data(), &QConnectionAbstractServer::newConnection, this,
+            &QRemoteObjectSourceIo::handleConnection);
+    return true;
 }
 
 bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const QMetaObject *meta, const QString &name, const QString &typeName)

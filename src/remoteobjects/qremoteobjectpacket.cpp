@@ -39,6 +39,8 @@
 
 #include "qremoteobjectpacket_p.h"
 
+#include <QAbstractItemModel>
+
 #include "qremoteobjectpendingcall.h"
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
@@ -404,10 +406,24 @@ void serializePongPacket(DataStreamPacket &ds, const QString &name)
     ds.finishPacket();
 }
 
+static ObjectType objectType(const QString &typeName)
+{
+    if (typeName == QLatin1String("QAbstractItemModelAdapter"))
+        return ObjectType::MODEL;
+    auto tid = QMetaType::type(typeName.toUtf8());
+    if (tid == QMetaType::UnknownType)
+        return ObjectType::CLASS;
+    QMetaType type(tid);
+    auto mo = type.metaObject();
+    if (mo && mo->inherits(&QAbstractItemModel::staticMetaObject))
+        return ObjectType::MODEL;
+    return ObjectType::CLASS;
+}
+
 QRO_::QRO_(QRemoteObjectSourceBase *source)
     : name(source->name())
     , typeName(source->m_api->typeName())
-    , type(source->m_adapter ? ObjectType::MODEL : ObjectType::CLASS)
+    , type(source->m_adapter ? ObjectType::MODEL : objectType(typeName))
     , isNull(source->m_object == nullptr)
     , classDefinition()
 {}

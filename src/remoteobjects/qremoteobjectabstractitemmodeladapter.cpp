@@ -71,7 +71,7 @@ QAbstractItemModelSourceAdapter::QAbstractItemModelSourceAdapter(QAbstractItemMo
       m_model(obj),
       m_availableRoles(roles)
 {
-    registerTypes();
+    QAbstractItemModelSourceAdapter::registerTypes();
     m_selectionModel = sel;
     connect(m_model, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)), this, SLOT(sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
     connect(m_model, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sourceRowsInserted(QModelIndex,int,int)));
@@ -85,22 +85,24 @@ QAbstractItemModelSourceAdapter::QAbstractItemModelSourceAdapter(QAbstractItemMo
 void QAbstractItemModelSourceAdapter::registerTypes()
 {
     static bool alreadyRegistered = false;
-    if (!alreadyRegistered) {
-        alreadyRegistered = true;
-        qRegisterMetaType<Qt::Orientation>();
-        qRegisterMetaType<QVector<Qt::Orientation> >();
-        qRegisterMetaTypeStreamOperators<ModelIndex>();
-        qRegisterMetaTypeStreamOperators<IndexList>();
-        qRegisterMetaTypeStreamOperators<DataEntries>();
-        qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
-        qRegisterMetaTypeStreamOperators<Qt::Orientation>();
-        qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
-        qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
-        qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
-        qRegisterMetaType<QSize>();
-        qRegisterMetaType<QIntHash>();
-        qRegisterMetaTypeStreamOperators<QIntHash>();
-    }
+    if (alreadyRegistered)
+        return;
+
+    alreadyRegistered = true;
+    qRegisterMetaType<QAbstractItemModel*>();
+    qRegisterMetaType<Qt::Orientation>();
+    qRegisterMetaType<QVector<Qt::Orientation> >();
+    qRegisterMetaTypeStreamOperators<ModelIndex>();
+    qRegisterMetaTypeStreamOperators<IndexList>();
+    qRegisterMetaTypeStreamOperators<DataEntries>();
+    qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
+    qRegisterMetaTypeStreamOperators<Qt::Orientation>();
+    qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
+    qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
+    qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
+    qRegisterMetaType<QSize>();
+    qRegisterMetaType<QIntHash>();
+    qRegisterMetaTypeStreamOperators<QIntHash>();
 }
 
 QItemSelectionModel* QAbstractItemModelSourceAdapter::selectionModel() const
