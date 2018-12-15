@@ -119,7 +119,7 @@ private:
 class QnxServerIo final : public ServerIoDevice
 {
 public:
-    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = nullptr);
+    explicit QnxServerIo(QSharedPointer<QIOQnxSource> conn, QObject *parent = nullptr);
 
     QIODevice *connection() const override;
 protected:
@@ -127,7 +127,7 @@ protected:
 
 private:
     //TODO Source or Replica
-    QIOQnxSource *m_connection;
+    QSharedPointer<QIOQnxSource> m_connection;
 };
 
 class QnxServerImpl final : public QConnectionAbstractServer

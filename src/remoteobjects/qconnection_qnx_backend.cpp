@@ -118,17 +118,16 @@ void QnxClientIo::onStateChanged(QAbstractSocket::SocketState state)
         initializeDataStream();
 }
 
-QnxServerIo::QnxServerIo(QIOQnxSource *conn, QObject *parent)
+QnxServerIo::QnxServerIo(QSharedPointer<QIOQnxSource> conn, QObject *parent)
     : ServerIoDevice(parent), m_connection(conn)
 {
-    m_connection->setParent(this);
-    connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
-    connect(conn, &QIOQnxSource::disconnected, this, &ServerIoDevice::disconnected);
+    connect(conn.data(), &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
+    connect(conn.data(), &QIOQnxSource::disconnected, this, &ServerIoDevice::disconnected);
 }
 
 QIODevice *QnxServerIo::connection() const
 {
-    return m_connection;
+    return m_connection.data();
 }
 
 void QnxServerIo::doClose()

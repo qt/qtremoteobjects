@@ -56,6 +56,7 @@
 
 #include <QAtomicInt>
 #include <QMutex>
+#include <QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
@@ -94,8 +95,8 @@ public:
     QString serverName;
     name_attach_t *attachStruct;
     QHash<int, QSet<int> > connections;
-    QHash<uint64_t, QIOQnxSource *> sources;
-    QList<QIOQnxSource *> pending;
+    QHash<uint64_t, QSharedPointer<QIOQnxSource>> sources;
+    QList<QSharedPointer<QIOQnxSource>> pending;
     QAtomicInt running;
     Thread<QQnxNativeServerPrivate> thread;
     mutable QMutex mutex;
