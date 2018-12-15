@@ -52,6 +52,7 @@
 //
 
 #include "qconnection_qnx_qiodevices.h"
+#include "qconnection_qnx_global_p.h"
 
 #include <QReadWriteLock>
 #include <QScopedPointer>

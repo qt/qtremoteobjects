@@ -99,7 +99,7 @@ class QnxClientIo final : public ClientIoDevice
 
 public:
     explicit QnxClientIo(QObject *parent = nullptr);
-    ~QnxClientIo();
+    ~QnxClientIo() override;
 
     QIODevice *connection() const override;
     void connectToServer() override;
@@ -136,7 +136,7 @@ class QnxServerImpl final : public QConnectionAbstractServer
 
 public:
     explicit QnxServerImpl(QObject *parent);
-    ~QnxServerImpl();
+    ~QnxServerImpl() override;
 
     bool hasPendingConnections() const override;
     ServerIoDevice *configureNewConnection() override;

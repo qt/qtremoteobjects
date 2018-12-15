@@ -51,8 +51,9 @@
 // We mean it.
 //
 
-#include "qconnection_qnx_server.h"
 #include "private/qobject_p.h"
+#include "qconnection_qnx_server.h"
+#include "qconnection_qnx_global_p.h"
 
 #include <QAtomicInt>
 #include <QMutex>
@@ -65,18 +66,9 @@ class QQnxNativeServerPrivate : public QObjectPrivate
     Q_DECLARE_PUBLIC(QQnxNativeServer)
 
 public:
-    QQnxNativeServerPrivate()
-        :
-        error(QAbstractSocket::UnknownSocketError)
-        , thread(this, QStringLiteral("NativeServer"))
-    {
-    }
+    QQnxNativeServerPrivate();
 
-    ~QQnxNativeServerPrivate()
-    {
-        if (thread.isRunning())
-            teardownServer();
-    }
+    ~QQnxNativeServerPrivate();
 
     void thread_func();
 

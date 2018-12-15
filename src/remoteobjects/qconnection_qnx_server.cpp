@@ -38,9 +38,7 @@
 ****************************************************************************/
 
 #include "qconnection_qnx_global_p.h"
-#include "qconnection_qnx_qiodevices.h"
 #include "qconnection_qnx_qiodevices_p.h"
-#include "qconnection_qnx_server.h"
 #include "qconnection_qnx_server_p.h"
 
 QT_BEGIN_NAMESPACE
@@ -135,6 +133,18 @@ void QQnxNativeServer::onSourceClosed()
     d->cleanupIOSource(conn);
 }
 
+QQnxNativeServerPrivate::QQnxNativeServerPrivate()
+    : error(QAbstractSocket::UnknownSocketError)
+    , thread(this, QStringLiteral("NativeServer"))
+{
+}
+
+QQnxNativeServerPrivate::~QQnxNativeServerPrivate()
+{
+    if (thread.isRunning())
+        teardownServer();
+}
+
 // method (run in a thread) to watch for connections and handle receiving data
 void QQnxNativeServerPrivate::thread_func()
 {
@@ -199,7 +209,7 @@ void QQnxNativeServerPrivate::thread_func()
                  */
                 const int coid = recv_buf.pulse.value.sival_int;
 
-                if (ConnectServerInfo(0, coid, NULL) != coid) {
+                if (ConnectServerInfo(0, coid, nullptr) != coid) {
                     const int scoid = recv_buf.pulse.scoid;
                     if (connections.value(scoid).contains(coid))
                         connections[scoid].remove(coid);
@@ -364,7 +374,7 @@ void QQnxNativeServerPrivate::thread_func()
                 io->d_func()->buffer.chop(toRead - res);
             io->d_func()->ibLock.unlock();
 
-            FATAL_ON_ERROR(MsgReply, rcvid, EOK, NULL, 0)
+            FATAL_ON_ERROR(MsgReply, rcvid, EOK, nullptr, 0)
 
             qCDebug(QT_REMOTEOBJECT) << "server received REPLICA_TX_RECV" << payload << toRead;
 
@@ -389,7 +399,7 @@ void QQnxNativeServerPrivate::thread_func()
 
 bool QQnxNativeServerPrivate::listen(const QString &name)
 {
-    attachStruct = name_attach(NULL, qPrintable(name), 0);
+    attachStruct = name_attach(nullptr, qPrintable(name), 0);
     if (attachStruct == nullptr) {
         qCDebug(QT_REMOTEOBJECT, "name_attach call failed");
         return false;
@@ -440,6 +450,9 @@ void QQnxNativeServerPrivate::teardownServer()
 void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid, pid_t toPid)
 {
     Q_Q(QQnxNativeServer);
+#ifndef USE_HAM
+    Q_UNUSED(toPid);
+#endif
     auto io = QSharedPointer<QIOQnxSource>(new QIOQnxSource(rcvid));
     io->moveToThread(q->thread());
     QObject::connect(io.data(), &QIOQnxSource::aboutToClose,
@@ -449,7 +462,7 @@ void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid, pid_t toPid)
     FATAL_ON_ERROR(MsgRead, rcvid, &(iop->m_event), sizeof(sigevent), sizeof(MsgType))
     int sentChannelId;
     FATAL_ON_ERROR(MsgRead, rcvid, &sentChannelId, sizeof(int), sizeof(MsgType)+sizeof(sigevent))
-    FATAL_ON_ERROR(MsgReply, rcvid, EOK, NULL, 0)
+    FATAL_ON_ERROR(MsgReply, rcvid, EOK, nullptr, 0)
 
     mutex.lock();
     sources.insert(uid, io);
