@@ -81,7 +81,7 @@ public:
 
     QVariantList* marshalArgs(int index, void **a);
     void handleMetaCall(int index, QMetaObject::Call call, void **a);
-    bool invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList& args, QVariant* returnValue = nullptr);
+    bool invoke(QMetaObject::Call c, int index, const QVariantList& args, QVariant* returnValue = nullptr);
     QByteArray m_objectChecksum;
     QMap<int, QPointer<QRemoteObjectSourceBase>> m_children;
     struct Private {

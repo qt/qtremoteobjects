@@ -273,41 +273,64 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
     return &m_marshalledArgs;
 }
 
-bool QRemoteObjectSourceBase::invoke(QMetaObject::Call c, bool forAdapter, int index, const QVariantList &args, QVariant* returnValue)
+bool QRemoteObjectSourceBase::invoke(QMetaObject::Call c, int index, const QVariantList &args, QVariant* returnValue)
 {
     int status = -1;
     int flags = 0;
-
+    bool forAdapter = (c == QMetaObject::InvokeMetaMethod ? m_api->isAdapterMethod(index) : m_api->isAdapterProperty(index));
+    int resolvedIndex = (c == QMetaObject::InvokeMetaMethod ? m_api->sourceMethodIndex(index) : m_api->sourcePropertyIndex(index));
+    if (resolvedIndex < 0)
+        return false;
     QVarLengthArray<void*, 10> param(args.size() + 1);
 
     if (c == QMetaObject::InvokeMetaMethod) {
+        QMetaMethod method;
+        if (!forAdapter)
+            method = parent()->metaObject()->method(resolvedIndex);
+
         if (returnValue) {
-            param[0] = returnValue->data();
+            if (!forAdapter && method.isValid() && method.returnType() == QMetaType::QVariant)
+                param[0] = const_cast<void*>(reinterpret_cast<const void*>(returnValue));
+            else
+                param[0] = returnValue->data();
         } else {
             param[0] = nullptr;
         }
 
+        auto argument = [&](int i) -> void * {
+            if ((forAdapter && m_api->methodParameterType(index, i) == QMetaType::QVariant) ||
+                    (method.isValid() && method.parameterType(i) == QMetaType::QVariant)) {
+                return const_cast<void*>(reinterpret_cast<const void*>(&args.at(i)));
+            }
+            return const_cast<void*>(args.at(i).data());
+        };
+
         for (int i = 0; i < args.size(); ++i) {
-            param[i + 1] = const_cast<void*>(args.at(i).data());
+            param[i + 1] = argument(i);
         }
-    } else if (c == QMetaObject::WriteProperty) {
+    } else if (c == QMetaObject::WriteProperty || c == QMetaObject::ReadProperty) {
+        bool isQVariant = !forAdapter && parent()->metaObject()->property(resolvedIndex).userType() == QMetaType::QVariant;
         for (int i = 0; i < args.size(); ++i) {
-            param[i] = const_cast<void*>(args.at(i).data());
+            if (isQVariant)
+                param[i] = const_cast<void*>(reinterpret_cast<const void*>(&args.at(i)));
+            else
+                param[i] = const_cast<void*>(args.at(i).data());
         }
-        Q_ASSERT(param.size() == 2); // for return-value and setter value
-        // check QMetaProperty::write for an explanation of these
-        param.append(&status);
-        param.append(&flags);
+        if (c == QMetaObject::WriteProperty) {
+            Q_ASSERT(param.size() == 2); // for return-value and setter value
+            // check QMetaProperty::write for an explanation of these
+            param.append(&status);
+            param.append(&flags);
+        }
     } else {
-        for (int i = 0; i < args.size(); ++i) {
-            param[i] = const_cast<void*>(args.at(i).data());
-        }
+        // Better safe than sorry
+        return false;
     }
     int r = -1;
     if (forAdapter)
-        r = m_adapter->qt_metacall(c, index, param.data());
+        r = m_adapter->qt_metacall(c, resolvedIndex, param.data());
     else
-        r = parent()->qt_metacall(c, index, param.data());
+        r = parent()->qt_metacall(c, resolvedIndex, param.data());
     return r == -1 && status == -1;
 }
 
