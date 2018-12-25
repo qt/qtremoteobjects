@@ -173,7 +173,7 @@ void QRemoteObjectReplicaImplementation::setState(QRemoteObjectReplica::State st
 
     const static int stateChangedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("stateChanged(State,State)");
     Q_ASSERT(stateChangedIndex != -1);
-    void *args[] = {0, &state, &oldState};
+    void *args[] = {nullptr, &state, &oldState};
     QMetaObject::activate(this, metaObject(), stateChangedIndex, args);
 }
 
@@ -237,7 +237,7 @@ void QRemoteObjectReplicaImplementation::emitInitialized()
 {
     const static int initializedIndex = QRemoteObjectReplica::staticMetaObject.indexOfMethod("initialized()");
     Q_ASSERT(initializedIndex != -1);
-    void *noArgs[] = {0};
+    void *noArgs[] = {nullptr};
     QMetaObject::activate(this, metaObject(), initializedIndex, noArgs);
 }
 
@@ -334,7 +334,7 @@ bool QConnectedReplicaImplementation::waitForSource(int timeout)
     QEventLoop loop;
     QMetaObject::connect(this, stateChangedIndex,
                          &loop, QEventLoop::staticMetaObject.indexOfMethod("quit()"),
-                         Qt::DirectConnection, 0);
+                         Qt::DirectConnection, nullptr);
 
     if (timeout >= 0) {
         QTimer::singleShot(timeout, &loop, SLOT(quit()));
@@ -496,7 +496,7 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
     {
         const QMetaMethod mm = m->method(i);
         if (mm.methodType() == QMetaMethod::Signal) {
-            const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);
+            const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, nullptr);
             qCDebug(QT_REMOTEOBJECT) << "  Rep connect"<<i<<res<<mm.name();
             Q_UNUSED(res);
         }
@@ -519,7 +519,7 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
             const QMetaMethod mm = metaObject->method(i);
             if (mm.methodType() == QMetaMethod::Signal) {
                 ++m_numSignals;
-                const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);
+                const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, nullptr);
                 qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<mm.name();
                 Q_UNUSED(res);
             }
@@ -528,7 +528,7 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
         qCDebug(QT_REMOTEOBJECT) << QStringLiteral("configurePrivate finished, signalOffset = %1, methodOffset = %2, #Signals = %3").arg(m_signalOffset).arg(m_methodOffset).arg(m_numSignals);
     } else { //We have initialized offsets, this is an additional Replica attaching
         for (int i = m_signalOffset; i < m_methodOffset; ++i) {
-            const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, 0);
+            const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, nullptr);
             qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<m_metaObject->method(i).name();
             Q_UNUSED(res);
         }
@@ -625,7 +625,7 @@ void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep
 */
 QRemoteObjectReplica::QRemoteObjectReplica(ConstructorType t)
     : QObject(nullptr)
-    , d_impl(t == DefaultConstructor ? new QStubReplicaImplementation : 0)
+    , d_impl(t == DefaultConstructor ? new QStubReplicaImplementation : nullptr)
 {
     qRegisterMetaType<State>("State");
 }

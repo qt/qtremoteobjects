@@ -99,7 +99,7 @@ class QnxClientIo final : public ClientIoDevice
 
 public:
     explicit QnxClientIo(QObject *parent = nullptr);
-    ~QnxClientIo();
+    ~QnxClientIo() override;
 
     QIODevice *connection() const override;
     void connectToServer() override;
@@ -119,7 +119,7 @@ private:
 class QnxServerIo final : public ServerIoDevice
 {
 public:
-    explicit QnxServerIo(QIOQnxSource *conn, QObject *parent = nullptr);
+    explicit QnxServerIo(QSharedPointer<QIOQnxSource> conn, QObject *parent = nullptr);
 
     QIODevice *connection() const override;
 protected:
@@ -127,7 +127,7 @@ protected:
 
 private:
     //TODO Source or Replica
-    QIOQnxSource *m_connection;
+    QSharedPointer<QIOQnxSource> m_connection;
 };
 
 class QnxServerImpl final : public QConnectionAbstractServer
@@ -136,7 +136,7 @@ class QnxServerImpl final : public QConnectionAbstractServer
 
 public:
     explicit QnxServerImpl(QObject *parent);
-    ~QnxServerImpl();
+    ~QnxServerImpl() override;
 
     bool hasPendingConnections() const override;
     ServerIoDevice *configureNewConnection() override;
