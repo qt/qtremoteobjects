@@ -51,11 +51,13 @@
 // We mean it.
 //
 
-#include "qconnection_qnx_server.h"
 #include "private/qobject_p.h"
+#include "qconnection_qnx_server.h"
+#include "qconnection_qnx_global_p.h"
 
 #include <QAtomicInt>
 #include <QMutex>
+#include <QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
@@ -64,18 +66,9 @@ class QQnxNativeServerPrivate : public QObjectPrivate
     Q_DECLARE_PUBLIC(QQnxNativeServer)
 
 public:
-    QQnxNativeServerPrivate()
-        :
-        error(QAbstractSocket::UnknownSocketError)
-        , thread(this, QStringLiteral("NativeServer"))
-    {
-    }
+    QQnxNativeServerPrivate();
 
-    ~QQnxNativeServerPrivate()
-    {
-        if (thread.isRunning())
-            teardownServer();
-    }
+    ~QQnxNativeServerPrivate();
 
     void thread_func();
 
@@ -94,8 +87,8 @@ public:
     QString serverName;
     name_attach_t *attachStruct;
     QHash<int, QSet<int> > connections;
-    QHash<uint64_t, QIOQnxSource *> sources;
-    QList<QIOQnxSource *> pending;
+    QHash<uint64_t, QSharedPointer<QIOQnxSource>> sources;
+    QList<QSharedPointer<QIOQnxSource>> pending;
     QAtomicInt running;
     Thread<QQnxNativeServerPrivate> thread;
     mutable QMutex mutex;
