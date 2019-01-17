@@ -55,12 +55,12 @@
 #include "qremoteobjectsource.h"
 #include "qconnectionfactories_p.h"
 
-#include <QtCore/QHash>
-#include <QtCore/QMap>
-#include <QtCore/QPair>
-#include <QtCore/QUrl>
-#include <QtCore/QVariant>
-#include <QtCore/QLoggingCategory>
+#include <QtCore/qhash.h>
+#include <QtCore/qmap.h>
+#include <QtCore/qpair.h>
+#include <QtCore/qurl.h>
+#include <QtCore/qvariant.h>
+#include <QtCore/qloggingcategory.h>
 
 #include <cstdlib>
 

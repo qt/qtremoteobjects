@@ -42,7 +42,7 @@
 #include "qremoteobjectnode_p.h"
 
 #include <QtCore/private/qobject_p.h>
-#include <QSettings>
+#include <QtCore/qsettings.h>
 
 QT_BEGIN_NAMESPACE
 

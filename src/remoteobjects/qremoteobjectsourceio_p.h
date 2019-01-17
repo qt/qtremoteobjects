@@ -55,8 +55,8 @@
 #include "qtremoteobjectglobal.h"
 #include "qremoteobjectpacket_p.h"
 
-#include <QIODevice>
-#include <QScopedPointer>
+#include <QtCore/qiodevice.h>
+#include <QtCore/qscopedpointer.h>
 
 QT_BEGIN_NAMESPACE
 

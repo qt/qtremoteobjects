@@ -39,7 +39,7 @@
 
 #include "qconnection_tcpip_backend_p.h"
 
-#include <QHostInfo>
+#include <QtNetwork/qhostinfo.h>
 
 QT_BEGIN_NAMESPACE
 

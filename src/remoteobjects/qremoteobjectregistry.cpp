@@ -41,8 +41,8 @@
 #include "qremoteobjectreplica_p.h"
 
 #include <private/qobject_p.h>
-#include <QSet>
-#include <QDataStream>
+#include <QtCore/qset.h>
+#include <QtCore/qdatastream.h>
 
 QT_BEGIN_NAMESPACE
 

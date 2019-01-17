@@ -56,8 +56,8 @@
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectnode.h"
 
-#include <QBasicTimer>
-#include <QMutex>
+#include <QtCore/qbasictimer.h>
+#include <QtCore/qmutex.h>
 
 QT_BEGIN_NAMESPACE
 

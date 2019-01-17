@@ -51,11 +51,10 @@
 // We mean it.
 //
 
-#include <QObject>
-#include <QMetaObject>
-#include <QMetaProperty>
-#include <QVector>
-#include <QPointer>
+#include <QtCore/qobject.h>
+#include <QtCore/qmetaobject.h>
+#include <QtCore/qvector.h>
+#include <QtCore/qpointer.h>
 #include "qremoteobjectsource.h"
 #include "qremoteobjectpacket_p.h"
 

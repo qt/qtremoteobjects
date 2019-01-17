@@ -51,10 +51,10 @@
 // We mean it.
 //
 
-#include <QAbstractSocket>
-#include <QDataStream>
-#include <QIODevice>
-#include <QPointer>
+#include <QtNetwork/qabstractsocket.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qiodevice.h>
+#include <QtCore/qpointer.h>
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 

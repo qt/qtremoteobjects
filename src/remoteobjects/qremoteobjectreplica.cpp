@@ -47,11 +47,11 @@
 #include "qconnectionfactories_p.h"
 #include "qremoteobjectsource_p.h"
 
-#include <QCoreApplication>
-#include <QDataStream>
-#include <QElapsedTimer>
-#include <QVariant>
-#include <QThread>
+#include <QtCore/qcoreapplication.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qelapsedtimer.h>
+#include <QtCore/qvariant.h>
+#include <QtCore/qthread.h>
 
 #include <limits>
 

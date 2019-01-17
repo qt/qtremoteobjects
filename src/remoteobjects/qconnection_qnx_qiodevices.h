@@ -40,7 +40,7 @@
 #ifndef QQNXNATIVEIO_H
 #define QQNXNATIVEIO_H
 
-#include <QAbstractSocket>
+#include <QtNetwork/qabstractsocket.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 QT_BEGIN_NAMESPACE

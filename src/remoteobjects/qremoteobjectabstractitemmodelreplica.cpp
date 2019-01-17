@@ -42,9 +42,9 @@
 
 #include "qremoteobjectnode.h"
 
-#include <QDebug>
-#include <QRect>
-#include <QPoint>
+#include <QtCore/qdebug.h>
+#include <QtCore/qrect.h>
+#include <QtCore/qpoint.h>
 
 QT_BEGIN_NAMESPACE
 

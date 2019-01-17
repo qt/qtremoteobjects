@@ -45,9 +45,9 @@
 #include "qremoteobjectsourceio_p.h"
 #include "qremoteobjectabstractitemmodeladapter_p.h"
 
-#include <QMetaProperty>
-#include <QVarLengthArray>
-#include <QAbstractItemModel>
+#include <QtCore/qmetaobject.h>
+#include <QtCore/qvarlengtharray.h>
+#include <QtCore/qabstractitemmodel.h>
 
 #include <algorithm>
 #include <iterator>

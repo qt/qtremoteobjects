@@ -53,8 +53,8 @@
 
 #include "qconnectionfactories_p.h"
 
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QtNetwork/qtcpserver.h>
+#include <QtNetwork/qtcpsocket.h>
 
 QT_BEGIN_NAMESPACE
 
