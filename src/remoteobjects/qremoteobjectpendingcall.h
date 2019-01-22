@@ -42,7 +42,7 @@
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
-#include <QVariant>
+#include <QtCore/qvariant.h>
 
 QT_BEGIN_NAMESPACE
 

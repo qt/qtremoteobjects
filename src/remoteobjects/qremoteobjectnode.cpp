@@ -50,7 +50,7 @@
 #include "qremoteobjectsource_p.h"
 #include "qremoteobjectabstractitemmodelreplica_p.h"
 #include "qremoteobjectabstractitemmodeladapter_p.h"
-#include <QAbstractItemModel>
+#include <QtCore/qabstractitemmodel.h>
 #include <memory>
 
 QT_BEGIN_NAMESPACE

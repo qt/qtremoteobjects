@@ -57,11 +57,11 @@
 
 #include "qremoteobjectpacket_p.h"
 
-#include <QPointer>
-#include <QVector>
-#include <QDataStream>
-#include <qcompilerdetection.h>
-#include <QTimer>
+#include <QtCore/qpointer.h>
+#include <QtCore/qvector.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qcompilerdetection.h>
+#include <QtCore/qtimer.h>
 
 QT_BEGIN_NAMESPACE
 

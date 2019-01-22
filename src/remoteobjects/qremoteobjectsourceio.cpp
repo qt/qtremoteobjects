@@ -44,7 +44,7 @@
 #include "qremoteobjectnode_p.h"
 #include "qtremoteobjectglobal.h"
 
-#include <QStringList>
+#include <QtCore/qstringlist.h>
 
 QT_BEGIN_NAMESPACE
 

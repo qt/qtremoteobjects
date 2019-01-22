@@ -42,7 +42,7 @@
 
 #include "qremoteobjectreplica_p.h"
 
-#include <QCoreApplication>
+#include <QtCore/qcoreapplication.h>
 
 #include <private/qobject_p.h>
 

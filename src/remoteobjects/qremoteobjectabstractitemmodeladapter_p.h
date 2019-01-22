@@ -54,7 +54,7 @@
 #include "qremoteobjectabstractitemmodeltypes.h"
 #include "qremoteobjectsource.h"
 
-#include <QSize>
+#include <QtCore/qsize.h>
 
 QT_BEGIN_NAMESPACE
 

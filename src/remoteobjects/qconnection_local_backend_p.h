@@ -53,8 +53,8 @@
 
 #include "qconnectionfactories_p.h"
 
-#include <QLocalServer>
-#include <QLocalSocket>
+#include <QtNetwork/qlocalserver.h>
+#include <QtNetwork/qlocalsocket.h>
 
 QT_BEGIN_NAMESPACE
 

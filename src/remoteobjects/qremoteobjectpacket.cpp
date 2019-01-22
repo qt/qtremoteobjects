@@ -39,7 +39,7 @@
 
 #include "qremoteobjectpacket_p.h"
 
-#include <QAbstractItemModel>
+#include <QtCore/qabstractitemmodel.h>
 
 #include "qremoteobjectpendingcall.h"
 #include "qremoteobjectsource.h"

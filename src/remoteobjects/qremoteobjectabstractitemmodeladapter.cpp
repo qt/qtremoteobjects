@@ -39,7 +39,7 @@
 
 #include "qremoteobjectabstractitemmodeladapter_p.h"
 
-#include <QItemSelectionModel>
+#include <QtCore/qitemselectionmodel.h>
 
 // consider evaluating performance difference with item data
 inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model, const QVector<int> &roles)

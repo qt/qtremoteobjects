@@ -55,9 +55,9 @@
 #include "qconnection_qnx_server.h"
 #include "qconnection_qnx_global_p.h"
 
-#include <QAtomicInt>
-#include <QMutex>
-#include <QSharedPointer>
+#include <QtCore/qatomic.h>
+#include <QtCore/qmutex.h>
+#include <QtCore/qsharedpointer.h>
 
 QT_BEGIN_NAMESPACE
 

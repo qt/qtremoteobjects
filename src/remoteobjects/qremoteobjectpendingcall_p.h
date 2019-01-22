@@ -53,7 +53,7 @@
 
 #include "qremoteobjectpendingcall.h"
 
-#include <QMutex>
+#include <QtCore/qmutex.h>
 
 QT_BEGIN_NAMESPACE
 

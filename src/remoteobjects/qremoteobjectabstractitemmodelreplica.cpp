@@ -42,9 +42,9 @@
 
 #include "qremoteobjectnode.h"
 
-#include <QDebug>
-#include <QRect>
-#include <QPoint>
+#include <QtCore/qdebug.h>
+#include <QtCore/qrect.h>
+#include <QtCore/qpoint.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -600,10 +600,12 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
             const ModelIndex resStart(std::min(curIndStart.row, dataIndStart.row), std::min(curIndStart.column, dataIndStart.column));
             const ModelIndex resEnd(std::max(curIndEnd.row, dataIndEnd.row), std::max(curIndEnd.column, dataIndEnd.column));
             QVector<int> roles = curData.roles;
-            if (!curData.roles.isEmpty())
-                Q_FOREACH (int role, data.roles)
+            if (!curData.roles.isEmpty()) {
+                Q_FOREACH (int role, data.roles) {
                     if (!curData.roles.contains(role))
                         roles.append(role);
+                }
+            }
             QRect firstRect( QPoint(curIndStart.row, curIndStart.column), QPoint(curIndEnd.row, curIndEnd.column));
             QRect secondRect( QPoint(dataIndStart.row, dataIndStart.column), QPoint(dataIndEnd.row, dataIndEnd.column));
 
