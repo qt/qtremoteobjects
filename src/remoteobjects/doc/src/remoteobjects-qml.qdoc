@@ -31,7 +31,7 @@
 \ingroup qmlmodules
 \brief Provides QML types for remote objects support.
 
-The QML types for \l{Qt Remoteobjects} provide the helper pieces needed to build a remote objects network.
+The QML types for \l{Qt Remote Objects} provide the helper pieces needed to build a remote objects network.
 They are typically used in conjunction with custom-registered replica types that make up a specific
 network.
 

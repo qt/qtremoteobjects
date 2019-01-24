@@ -81,7 +81,7 @@ the connection or have a way to discover that information. This is exactly the
 problem the registry was designed to solve.
 
 Qt Remote Objects also allows "External Schemas" to be used with the registry,
-which helps with connection setup. On the \l QRemoteObjectHostNode side, the
+which helps with connection setup. On the \l QRemoteObjectHost side, the
 user must set the hostUrl with the desired schema.
 
 \code
@@ -106,8 +106,8 @@ user must set the hostUrl with the desired schema.
 \endcode
 
 On the \l Replica side, the \l QRemoteObjectNode needs to register a callback
-to be used when the external schema is detected. The callback must be a \l
-RemoteObjectSchemaHandler.
+to be used when the external schema is detected. The callback must be a
+\l {QRemoteObjectNode::}{RemoteObjectSchemaHandler}.
 
 \code
     // Use standard tcp url for the registry
