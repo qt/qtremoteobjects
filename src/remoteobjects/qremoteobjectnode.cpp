@@ -337,7 +337,7 @@ void QRemoteObjectNode::registerExternalSchema(const QString &schema, QRemoteObj
     internally/automatically) connects to the provided registry (given by the
     \a registryUrl parameter, "local:registry" in this example). Whenever
     local:registry emits the \l remoteObjectAdded signal, the
-    \l QRemoteObjectSourceLocations is passed to the \a filter given to the proxy
+    \c QRemoteObjectSourceLocation is passed to the \a filter given to the proxy
     call. If this method returns true (the default filter simply returns true
     without any filtering), the object is acquired() from the internal node and
     enableRemoting() (once the replica is initialized) is called on proxyNode.
