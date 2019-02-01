@@ -800,13 +800,13 @@ void QInProcessReplicaImplementation::_q_send(QMetaObject::Call call, int index,
         if (resolvedIndex < 0)
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid invocation.  Index not found:" << index - m_methodOffset;
         else
-            connectionToSource->invoke(call, api->isAdapterMethod(index - m_methodOffset), resolvedIndex, args);
+            connectionToSource->invoke(call, index - m_methodOffset, args);
     } else {
         const int resolvedIndex = connectionToSource->m_api->sourcePropertyIndex(index - m_propertyOffset);
         if (resolvedIndex < 0)
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid property setter.  Index not found:" << index - m_propertyOffset;
         else
-            connectionToSource->invoke(call, api->isAdapterProperty(index - m_propertyOffset), resolvedIndex, args);
+            connectionToSource->invoke(call, index - m_propertyOffset, args);
     }
 }
 
@@ -826,7 +826,7 @@ QRemoteObjectPendingCall QInProcessReplicaImplementation::_q_sendWithReply(QMeta
         return QRemoteObjectPendingCall();
     }
 
-    connectionToSource->invoke(call, connectionToSource->m_api->isAdapterMethod(ReplicaIndex), resolvedIndex, args, &returnValue);
+    connectionToSource->invoke(call, ReplicaIndex, args, &returnValue);
     return QRemoteObjectPendingCall::fromCompletedCall(returnValue);
 }
 

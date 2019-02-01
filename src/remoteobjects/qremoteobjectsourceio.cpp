@@ -240,7 +240,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
                     QVariant returnValue(typeId, nullptr);
-                    source->invoke(QMetaObject::InvokeMetaMethod, source->m_api->isAdapterMethod(index), resolvedIndex, m_rxArgs, &returnValue);
+                    source->invoke(QMetaObject::InvokeMetaMethod, index, m_rxArgs, &returnValue);
                     // send reply if wanted
                     if (serialId >= 0) {
                         serializeInvokeReplyPacket(m_packet, m_rxName, serialId, returnValue);
@@ -257,7 +257,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         qRODebug(this) << "Adapter (write property) Invoke-->" << m_rxName << source->m_adapter->metaObject()->property(resolvedIndex).name();
                     else
                         qRODebug(this) << "Source (write property) Invoke-->" << m_rxName << source->m_object->metaObject()->property(resolvedIndex).name();
-                    source->invoke(QMetaObject::WriteProperty, source->m_api->isAdapterProperty(index), resolvedIndex, m_rxArgs);
+                    source->invoke(QMetaObject::WriteProperty, index, m_rxArgs);
                 }
             }
             break;
