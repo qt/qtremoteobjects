@@ -336,14 +336,14 @@ void QRemoteObjectNode::registerExternalSchema(const QString &schema, QRemoteObj
     This would (internally) create a node in proxyNode, which (again
     internally/automatically) connects to the provided registry (given by the
     \a registryUrl parameter, "local:registry" in this example). Whenever
-    local:registry emits the \l remoteObjectAdded signal, the \l
-    QRemoteObjectSourceLocation is passed to the \a filter given to the proxy
+    local:registry emits the \l remoteObjectAdded signal, the
+    \c QRemoteObjectSourceLocation is passed to the \a filter given to the proxy
     call. If this method returns true (the default filter simply returns true
     without any filtering), the object is acquired() from the internal node and
     enableRemoting() (once the replica is initialized) is called on proxyNode.
 
     If a \a hostUrl is provided (which is required to enable reverseProxy, but
-    not needed otherwise), the internal node will be a \l QRemoteObjectHostNode
+    not needed otherwise), the internal node will be a \l QRemoteObjectHost node
     configured with the provided address. If no \a hostUrl is provided, the
     internal node will be a QRemoteObjectNode (not HostNode).
 
@@ -429,8 +429,8 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
     network to be acquired(), reverseProxy() allows \l Source objects to be
     "pushed" to an otherwise inaccessible network.
 
-    Note: \l proxy() needs to be called before \l reverseProxy(), and a \a
-    hostUrl needs to be provided to \l proxy for \l reverseProxy() to work. The
+    Note: \l proxy() needs to be called before \l reverseProxy(), and a
+    \a hostUrl needs to be provided to \l proxy for \l reverseProxy() to work. The
     \l reverseProxy() method allows a separate \a filter to be applied. This
     reverseProxy specific filter will receive notifications of new \l Source
     objects on proxyNode and acquire them on the internal node if they pass the
@@ -1352,12 +1352,9 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     supported schema. This is the default value, and causes a Node error to be
     set if an unrecognized schema is provided.
     \value AllowExternalRegistration The provided schema is registered as an
-    \l {External Schemas} {External Schema}
+    \l {External Schemas}{External Schema}
 
-    \sa QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress =
-    QUrl(), AllowedSchemas allowedSchemas=BuiltInSchemasOnly, QObject *parent =
-    nullptr), setHostUrl(const QUrl &hostAddress, AllowedSchemas
-    allowedSchemas=BuiltInSchemasOnly)
+    \sa QRemoteObjectHost
 */
 
 /*!
@@ -1463,9 +1460,9 @@ QRemoteObjectHostBase::QRemoteObjectHostBase(QRemoteObjectHostBasePrivate &d, QO
     Constructs a new QRemoteObjectHost Node (i.e., a Node that supports
     exposing \l Source objects on the QtRO network) with the given \a parent.
     This constructor is meant specific to support QML in the future as it will
-    not be available to connect to until \l setHostUrl() is called.
+    not be available to connect to until \l {QRemoteObjectHost::}{setHostUrl}() is called.
 
-    \sa setHostUrl(), setRegistryUrl()
+    \sa {QRemoteObjectHost::}{setHostUrl}(), setRegistryUrl()
 */
 QRemoteObjectHost::QRemoteObjectHost(QObject *parent)
     : QRemoteObjectHostBase(*new QRemoteObjectHostPrivate, parent)
@@ -1481,7 +1478,7 @@ QRemoteObjectHost::QRemoteObjectHost(QObject *parent)
     {AllowExternalRegistration}) if the schema of the url should be used as an
     \l {External Schemas} {External Schema} by the registry.
 
-    \sa setHostUrl(), setRegistryUrl()
+    \sa {QRemoteObjectHost::}{setHostUrl}(), setRegistryUrl()
 */
 QRemoteObjectHost::QRemoteObjectHost(const QUrl &address, const QUrl &registryAddress,
                                      AllowedSchemas allowedSchemas, QObject *parent)
@@ -1625,7 +1622,7 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
     Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
     is not a Host node, it return an empty QUrl.
 
-    \sa setHostUrl()
+    \sa {QRemoteObjectHost}{setHostUrl}()
 */
 QUrl QRemoteObjectHost::hostUrl() const
 {
@@ -1853,7 +1850,7 @@ bool QRemoteObjectNode::connectToNode(const QUrl &address)
 
     In order to \l QRemoteObjectNode::acquire() \l Replica objects over \l
     {External QIODevices}, Qt Remote Objects needs access to the communications
-    channel (a \l QIODEvice) between the respective nodes. It is the
+    channel (a \l QIODevice) between the respective nodes. It is the
     addClientSideConnection() call that enables this, taking the \a ioDevice as
     input. Any acquire() call made without calling addClientSideConnection will
     still work, but the Node will not be able to initialize the \l Replica
@@ -2099,13 +2096,14 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
 
     In order to \l QRemoteObjectHost::enableRemoting() \l Source objects over
     \l {External QIODevices}, Qt Remote Objects needs access to the
-    communications channel (a \l QIODEvice) between the respective nodes. It is
+    communications channel (a \l QIODevice) between the respective nodes. It is
     the addHostSideConnection() call that enables this on the \l Source side,
     taking the \a ioDevice as input. Any enableRemoting() call will still work
     without calling addHostSideConnection, but the Node will not be able to
-    share the \l Source objects without being provided the connection to the
-    Replica node. Before calling this function you must call \l setHostUrl with
-    a unique URL and \l QRemoteObjectHost::AllowExternalRegistration.
+    share the \l Source objects without being provided the connection to
+    the Replica node. Before calling this function you must call
+    \l {QRemoteObjectHost::}{setHostUrl}() with a unique URL and
+    \l {QRemoteObjectHost::}{AllowExternalRegistration}.
 
     \sa addClientSideConnection
 */

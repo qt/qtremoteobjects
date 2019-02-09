@@ -212,7 +212,7 @@
 
     Another nuanced value is SOURCEONLYSETTER, which provides another way of
     specifying asymmetric behavior, where the \l Source (specifically the helper
-    class, \l SimpleSource) will have a public getter and setter for the
+    class, \c SimpleSource) will have a public getter and setter for the
     property, but it will be ReadOnly (with a notify signal) on the \l Replica
     side. Thus the property can be fully controlled from the \l Source side,
     but only observed from the \l Replica side. SOURCEONLYSETTER is the mode
