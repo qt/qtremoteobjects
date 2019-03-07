@@ -1597,6 +1597,12 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
         d->setLastError(HostUrlInvalid);
         return false;
     }
+
+    if (allowedSchemas == AllowedSchemas::AllowExternalRegistration && QtROServerFactory::instance()->isValid(hostAddress)) {
+        qWarning() << qPrintable(objectName()) << "Overriding a valid QtRO url (" << hostAddress << ") with AllowExternalRegistration is not allowed.";
+        d->setLastError(HostUrlInvalid);
+        return false;
+    }
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
 
     if (allowedSchemas == AllowedSchemas::BuiltInSchemasOnly && !d->remoteObjectIo->startListening()) {

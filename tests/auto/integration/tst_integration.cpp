@@ -1384,6 +1384,20 @@ private slots:
 
     }
 
+    void invalidExternalTest()
+    {
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        if (hostUrl.scheme() != QRemoteObjectStringLiterals::tcp())
+            QSKIP("Skipping test for tcp and external backends.");
+        QRemoteObjectHost srcNode;
+        QTest::ignoreMessage(QtWarningMsg, " Overriding a valid QtRO url ( QUrl(\"tcp://127.0.0.1:65511\") ) with AllowExternalRegistration is not allowed.");
+        srcNode.setHostUrl(hostUrl, QRemoteObjectHost::AllowExternalRegistration);
+        QCOMPARE(srcNode.lastError(), QRemoteObjectNode::HostUrlInvalid);
+        Engine e;
+        bool res = srcNode.enableRemoting(&e);
+        QVERIFY(res == false);
+    }
+
 };
 
 QTEST_MAIN(tst_Integration)
