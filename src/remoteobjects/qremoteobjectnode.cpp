@@ -1597,6 +1597,12 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
         d->setLastError(HostUrlInvalid);
         return false;
     }
+
+    if (allowedSchemas == AllowedSchemas::AllowExternalRegistration && QtROServerFactory::instance()->isValid(hostAddress)) {
+        qWarning() << qPrintable(objectName()) << "Overriding a valid QtRO url (" << hostAddress << ") with AllowExternalRegistration is not allowed.";
+        d->setLastError(HostUrlInvalid);
+        return false;
+    }
     d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
 
     if (allowedSchemas == AllowedSchemas::BuiltInSchemasOnly && !d->remoteObjectIo->startListening()) {
@@ -1757,9 +1763,10 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     Q_ASSERT(property.canConvert<QRO_>());
     QRO_ childInfo = property.value<QRO_>();
     qROPrivDebug() << "QRO_:" << childInfo.name << replicas.contains(childInfo.name) << replicas.keys();
-    if (replicas.contains(childInfo.name) && childInfo.isNull) {
+    if (childInfo.isNull) {
         // Either the source has changed the pointer and we need to update it, or the source pointer is a nullptr
-        replicas.remove(childInfo.name);
+        if (replicas.contains(childInfo.name))
+            replicas.remove(childInfo.name);
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue<QRemoteObjectDynamicReplica*>(nullptr);
         else
