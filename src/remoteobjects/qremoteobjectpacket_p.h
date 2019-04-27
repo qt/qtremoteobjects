@@ -112,7 +112,7 @@ public:
     ObjectType type;
     bool isNull;
     QByteArray classDefinition;
-    QVariantList parameters;
+    QByteArray parameters;
 };
 
 inline QDebug operator<<(QDebug dbg, const QRO_ &info)
@@ -171,7 +171,7 @@ private:
     Q_DISABLE_COPY(DataStreamPacket)
 };
 
-void serializeProperty(DataStreamPacket &, const QRemoteObjectSourceBase *source, int internalIndex);
+void serializeProperty(QDataStream &, const QRemoteObjectSourceBase *source, int internalIndex);
 QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property);
 
 void serializeHandshakePacket(DataStreamPacket &);

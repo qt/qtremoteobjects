@@ -72,7 +72,7 @@ public:
     void resetObject(QObject *newObject);
     int qt_metacall(QMetaObject::Call call, int methodId, void **a) final;
     QObject *m_object, *m_adapter;
-    const SourceApiMap * const m_api;
+    const SourceApiMap *m_api;
     QVariantList m_marshalledArgs;
     bool hasAdapter() const { return m_adapter; }
     virtual QString name() const = 0;
@@ -189,7 +189,7 @@ public:
     QByteArray objectSignature() const override { return m_objectSignature; }
 
     bool isDynamic() const override { return true; }
-private:
+
     int parameterCount(int objectIndex) const;
     int parameterType(int objectIndex, int paramIndex) const;
     const QByteArray signature(int objectIndex) const;

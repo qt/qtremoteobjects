@@ -470,6 +470,11 @@ void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const 
         d->setReplicaImplementation(nullptr, instance, name);
     } else {
         const QMetaObject *meta = instance->metaObject();
+        // This is a templated acquire, so we tell the Source we don't need
+        // them to send the class definition.  Thus we need to store the
+        // metaObject for this class - if this is a nested class, the QObject
+        // could be a nullptr or updated from the source,
+        d->dynamicTypeManager.addFromMetaObject(meta);
         d->setReplicaImplementation(meta, instance, name.isEmpty() ? ::name(meta) : name);
     }
 }
@@ -622,6 +627,7 @@ QRemoteObjectMetaObjectManager::~QRemoteObjectMetaObjectManager()
 
 const QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QString &type)
 {
+    qCDebug(QT_REMOTEOBJECT) << "metaObjectForType: looking for" << type << "static keys:" << staticTypes.keys() << "dynamic keys:" << dynamicTypes.keys();
     Q_ASSERT(staticTypes.contains(type) || dynamicTypes.contains(type));
     auto it = staticTypes.constFind(type);
     if (it != staticTypes.constEnd())
@@ -700,7 +706,6 @@ static void registerAllGadgets(IoDeviceBase *connection, QRemoteObjectPackets::G
 QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connection, QDataStream &in)
 {
     QMetaObjectBuilder builder;
-    builder.setClassName("QRemoteObjectDynamicReplica");
     builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
@@ -712,6 +717,8 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     quint32 numProperties = 0;
 
     in >> type;
+    builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, type.toLatin1());
+    builder.setClassName(type.toLatin1());
 
     in >> numEnums;
     for (quint32 i = 0; i < numEnums; ++i) {
@@ -804,13 +811,15 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     return meta;
 }
 
-void QRemoteObjectMetaObjectManager::addFromReplica(QConnectedReplicaImplementation *rep)
+void QRemoteObjectMetaObjectManager::addFromMetaObject(const QMetaObject *metaObject)
 {
-    QString className = QString::fromLatin1(rep->m_metaObject->className());
+    QString className = QLatin1String(metaObject->className());
+    if (!className.endsWith(QLatin1String("Replica")))
+        return;
     if (className == QStringLiteral("QRemoteObjectDynamicReplica") || staticTypes.contains(className))
         return;
     className.chop(7); //Remove 'Replica' from name
-    staticTypes.insert(className, rep->m_metaObject);
+    staticTypes.insert(className, metaObject);
 }
 
 void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectReplica *instance)
@@ -1082,7 +1091,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case Handshake:
             if (rxName != QtRemoteObjects::protocolVersion) {
-                qROPrivWarning() << "Protocol Mismatch, closing connection. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
+                qWarning() << "*** Protocol Mismatch, closing connection ***. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
                 setLastError(QRemoteObjectNode::ProtocolMismatch);
                 connection->close();
             } else {
@@ -1779,7 +1788,7 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
         if (rep->isInitialized()) {
             auto childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
             if (childRep && !childRep->isShortCircuit())
-                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(childRep.data()));
+                dynamicTypeManager.addFromMetaObject(childRep->metaObject());
         }
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));
@@ -1791,18 +1800,32 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     QSharedPointer<QConnectedReplicaImplementation> childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(childInfo.name).toStrongRef());
     if (childRep->connectionToSource.isNull())
         childRep->connectionToSource = rep->connectionToSource;
+    QVariantList parameters;
+    QDataStream ds(childInfo.parameters);
     if (childRep->needsDynamicInitialization()) {
-        if (childInfo.classDefinition.isEmpty())
-            childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(childInfo.typeName));
-        else {
+        if (childInfo.classDefinition.isEmpty()) {
+            auto typeName = childInfo.typeName;
+            if (typeName == QLatin1String("QObject")) {
+                // The sender would have included the class name if needed
+                // So the acquire must have been templated, and we have the typeName
+                typeName = QString::fromLatin1(rep->getProperty(index).typeName());
+                if (typeName.endsWith(QLatin1String("Replica*")))
+                    typeName.chop(8);
+            }
+            childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(typeName));
+        } else {
             QDataStream in(childInfo.classDefinition);
             childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(rep->connectionToSource, in));
         }
-        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
-        childRep->setDynamicProperties(childInfo.parameters);
+        if (!childInfo.parameters.isEmpty())
+            ds >> parameters;
+        handlePointerToQObjectProperties(childRep.data(), parameters);
+        childRep->setDynamicProperties(parameters);
     } else {
-        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
-        childRep->initialize(childInfo.parameters);
+        if (!childInfo.parameters.isEmpty())
+            ds >> parameters;
+        handlePointerToQObjectProperties(childRep.data(), parameters);
+        childRep->initialize(parameters);
     }
 
     return retval;

@@ -91,7 +91,7 @@ public:
 
     const QMetaObject *metaObjectForType(const QString &type);
     QMetaObject *addDynamicType(IoDeviceBase* connection, QDataStream &in);
-    void addFromReplica(QConnectedReplicaImplementation *rep);
+    void addFromMetaObject(const QMetaObject *);
 
 private:
     QHash<QString, QMetaObject*> dynamicTypes;
