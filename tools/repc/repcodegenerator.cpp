@@ -799,14 +799,21 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         int i = 0;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             auto type = typeForMode(property, mode);
-            out << "    " << type << " " << property.name << "() const" << endl;
-            out << "    {" << endl;
-            out << "        const QVariant variant = propAsVariant(" << i << ");" << endl;
-            out << "        if (!variant.canConvert<" << type << ">()) {" << endl;
-            out << "            qWarning() << \"QtRO cannot convert the property " << property.name << " to type " << type << "\";" << endl;
-            out << "        }" << endl;
-            out << "        return variant.value<" << type << " >();" << endl;
-            out << "    }" << endl;
+            if (type == QLatin1String("QVariant")) {
+                out << "    " << type << " " << property.name << "() const" << endl;
+                out << "    {" << endl;
+                out << "        return propAsVariant(" << i << ");" << endl;
+                out << "    }" << endl;
+            } else {
+                out << "    " << type << " " << property.name << "() const" << endl;
+                out << "    {" << endl;
+                out << "        const QVariant variant = propAsVariant(" << i << ");" << endl;
+                out << "        if (!variant.canConvert<" << type << ">()) {" << endl;
+                out << "            qWarning() << \"QtRO cannot convert the property " << property.name << " to type " << type << "\";" << endl;
+                out << "        }" << endl;
+                out << "        return variant.value<" << type << " >();" << endl;
+                out << "    }" << endl;
+            }
             i++;
             if (property.modifier == ASTProperty::ReadWrite) {
                 out << "" << endl;

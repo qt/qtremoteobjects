@@ -99,7 +99,7 @@ inline QDataStream& operator>>(QDataStream &stream, ObjectInfo &info)
 
 typedef QVector<ObjectInfo> ObjectInfoList;
 
-enum class ObjectType : quint8 { CLASS, MODEL };
+enum class ObjectType : quint8 { CLASS, MODEL, GADGET };
 
 // Use a short name, as QVariant::save writes the name every time a qvariant of
 // this type is serialized
@@ -108,6 +108,7 @@ class QRO_
 public:
     QRO_() : type(ObjectType::CLASS), isNull(true) {}
     explicit QRO_(QRemoteObjectSourceBase *source);
+    explicit QRO_(const QVariant &value);
     QString name, typeName;
     ObjectType type;
     bool isNull;

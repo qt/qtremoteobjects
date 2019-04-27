@@ -60,7 +60,9 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
     const QVariant value = property.read(target);
     if (property.isEnumType()) {
         ds << QVariant::fromValue<qint32>(value.toInt());
-    } else if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
+        return;
+    }
+    if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
         auto const childSource = source->m_children.value(internalIndex);
         auto valueAsPointerToQObject = qvariant_cast<QObject *>(value);
         if (childSource->m_object != valueAsPointerToQObject)
@@ -82,9 +84,20 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
         for (int internalIndex = 0; internalIndex < propertyCount; ++internalIndex)
             serializeProperty(params, childSource, internalIndex);
         ds << qro.parameters;
-    } else {
-        ds << value; // return original
+        return;
     }
+    if (source->d->isDynamic && property.userType() == QMetaType::QVariant &&
+        QMetaType::typeFlags(value.userType()).testFlag(QMetaType::IsGadget)) {
+        const auto typeName = QString::fromLatin1(QMetaType::typeName(value.userType()));
+        if (!source->d->sentTypes.contains(typeName)) {
+            QRO_ qro(value);
+            ds << QVariant::fromValue<QRO_>(qro);
+            ds << qro.parameters;
+            source->d->sentTypes.insert(typeName);
+            return;
+        }
+    }
+    ds << value; // return original
 }
 
 QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property)
@@ -473,10 +486,29 @@ QRO_::QRO_(QRemoteObjectSourceBase *source)
     , parameters()
 {}
 
+QRO_::QRO_(const QVariant &value)
+    : type(ObjectType::GADGET)
+    , isNull(false)
+{
+    auto meta = QMetaType::metaObjectForType(value.userType());
+    QDataStream out(&classDefinition, QIODevice::WriteOnly);
+    const int numProperties = meta->propertyCount();
+    const auto typeName = QByteArray(QMetaType::typeName(value.userType()));
+    out << typeName;
+    out << numProperties;
+    for (int i = 0; i < numProperties; ++i) {
+        const auto property = meta->property(i);
+        out << property.name();
+        out << property.typeName();
+    }
+    QDataStream ds(&parameters, QIODevice::WriteOnly);
+    ds << value;
+}
+
 QDataStream &operator<<(QDataStream &stream, const QRO_ &info)
 {
     stream << info.name << info.typeName << (quint8)(info.type) << info.classDefinition << info.isNull;
-    qCDebug(QT_REMOTEOBJECT) << "Serializing QRO_" << info.name << info.typeName << (info.type == ObjectType::CLASS ? "Class" : "Model")
+    qCDebug(QT_REMOTEOBJECT) << "Serializing QRO_" << info.name << info.typeName << (info.type == ObjectType::CLASS ? "Class" : info.type == ObjectType::MODEL ? "Model" : "Gadget")
                              << (info.isNull ? "nullptr" : "valid pointer") << (info.classDefinition.isEmpty() ? "no definitions" : "with definitions");
     // info.parameters will be filled in by serializeProperty
     return stream;

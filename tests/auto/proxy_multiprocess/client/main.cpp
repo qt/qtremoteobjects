@@ -60,10 +60,13 @@ private Q_SLOTS:
             QCOMPARE(m_rep->subClass()->i(), initialI);
             QVERIFY(m_rep->tracks() != nullptr);
             QVERIFY(tracksSpy.count() || tracksSpy.wait());
+            QCOMPARE(m_rep->variant(), QVariant::fromValue(42.0f));
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);
+            QCOMPARE(m_rep->variant(), QVariant());
         }
+
         qDebug() << "Verified expected initial states, sending start.";
         auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
@@ -74,6 +77,7 @@ private Q_SLOTS:
         QCOMPARE(m_rep->subClass()->myPOD(), updatedValue);
         QCOMPARE(m_rep->subClass()->i(), updatedI);
         QVERIFY(m_rep->tracks() != nullptr);
+        QCOMPARE(m_rep->variant(), QVariant::fromValue(podValue));
         qDebug() << "Verified expected final states, cleaning up.";
     }
 

@@ -703,6 +703,25 @@ static void registerAllGadgets(IoDeviceBase *connection, QRemoteObjectPackets::G
         registerGadget(connection, gadgets, gadgets.constBegin().key());
 }
 
+static void parseGadgets(IoDeviceBase *connection, QDataStream &in, quint32 numGadgets = 1)
+{
+    QRemoteObjectPackets::GadgetsData gadgets;
+    for (quint32 i = 0; i < numGadgets; ++i) {
+        QByteArray type;
+        in >> type;
+        quint32 numProperties;
+        in >> numProperties;
+        auto &properties = gadgets[type];
+        for (quint32 p = 0; p < numProperties; ++p) {
+            QRemoteObjectPackets::GadgetProperty prop;
+            in >> prop.name;
+            in >> prop.type;
+            properties.push_back(prop);
+        }
+    }
+    registerAllGadgets(connection, gadgets);
+}
+
 QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connection, QDataStream &in)
 {
     QMetaObjectBuilder builder;
@@ -745,21 +764,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
         }
     }
     in >> numGadgets;
-    QRemoteObjectPackets::GadgetsData gadgets;
-    for (quint32 i = 0; i < numGadgets; ++i) {
-        QByteArray type;
-        in >> type;
-        quint32 numProperties;
-        in >> numProperties;
-        auto &properties = gadgets[type];
-        for (quint32 p = 0; p < numProperties; ++p) {
-            QRemoteObjectPackets::GadgetProperty prop;
-            in >> prop.name;
-            in >> prop.type;
-            properties.push_back(prop);
-        }
-    }
-    registerAllGadgets(connection, gadgets);
+    parseGadgets(connection, in, numGadgets);
 
     int curIndex = 0;
 
@@ -1184,6 +1189,14 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     rep->setProperty(propertyIndex, handlePointerToQObjectProperty(connectedRep, propertyIndex, rxValue));
                 else {
                     const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
+                    if (property.userType() == QMetaType::QVariant && rxValue.canConvert<QRO_>()) {
+                        // This is a type that requires registration
+                        QRO_ typeInfo = rxValue.value<QRO_>();
+                        QDataStream in(typeInfo.classDefinition);
+                        parseGadgets(connection, in);
+                        QDataStream ds(typeInfo.parameters);
+                        ds >> rxValue;
+                    }
                     rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
                 }
             } else { //replica has been deleted, remove from list
@@ -1203,8 +1216,12 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 QVarLengthArray<void*, 10> param(rxArgs.size() + 1);
                 param[0] = null.data(); //Never a return value
                 if (rxArgs.size()) {
+                    auto signal = rep->m_metaObject->method(index+rep->m_signalOffset);
                     for (int i = 0; i < rxArgs.size(); i++) {
-                        param[i + 1] = const_cast<void *>(rxArgs[i].data());
+                        if (signal.parameterType(i) == QMetaType::QVariant)
+                            param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
+                        else
+                            param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
                     }
                 } else if (propertyIndex != -1) {
                     param.resize(2);

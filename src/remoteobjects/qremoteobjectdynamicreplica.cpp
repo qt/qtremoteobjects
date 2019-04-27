@@ -121,7 +121,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 {
     static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
 
-    auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
+    auto impl = qSharedPointerCast<QConnectedReplicaImplementation>(d_impl);
 
     int saved_id = id;
     id = QRemoteObjectReplica::qt_metacall(call, id, argv);
@@ -134,12 +134,19 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
         if (call == QMetaObject::WriteProperty) {
             QVariantList args;
-            args << QVariant(mp.userType(), argv[0]);
+            if (mp.userType() == QMetaType::QVariant)
+                args << *reinterpret_cast<QVariant*>(argv[0]);
+            else
+                args << QVariant(mp.userType(), argv[0]);
             QRemoteObjectReplica::send(QMetaObject::WriteProperty, saved_id, args);
         } else {
-            const QVariant value = propAsVariant(id);
-            QMetaType::destruct(mp.userType(), argv[0]);
-            QMetaType::construct(mp.userType(), argv[0], value.data());
+            if (mp.userType() == QMetaType::QVariant)
+                *reinterpret_cast<QVariant*>(argv[0]) = impl->m_propertyStorage[id];
+            else {
+                const QVariant value = propAsVariant(id);
+                QMetaType::destruct(mp.userType(), argv[0]);
+                QMetaType::construct(mp.userType(), argv[0], value.data());
+            }
             const bool readStatus = true;
             // Caller supports QVariant returns? Then we can also report errors
             // by storing an invalid variant.

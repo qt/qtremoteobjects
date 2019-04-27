@@ -1,4 +1,5 @@
 POD MyPOD(int i, float f, QString s)
+POD VariantPOD(int i, int j)
 
 class SubClass
 {
@@ -9,6 +10,7 @@ class SubClass
 class ParentClass
 {
     PROP(bool started = false)
+    PROP(QVariant variant)
 
     SLOT(bool start())
     SLOT(bool quit())

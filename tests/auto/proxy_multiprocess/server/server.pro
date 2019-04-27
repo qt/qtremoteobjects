@@ -13,6 +13,7 @@ SOURCES += main.cpp \
     mytestserver.cpp
 
 HEADERS += \
+    ../shared.h \
     mytestserver.h \
     $$OUT_PWD/rep_subclass_source.h
 
