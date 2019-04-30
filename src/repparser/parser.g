@@ -45,7 +45,7 @@
 %token semicolon "[semicolon];"
 %token class "[class]class[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token pod "[pod]POD[ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*\\((?<types>[^\\)]*)\\);?[ \\t]*"
-%token enum "[enum][ \\t]*ENUM[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \\t]*"
+%token enum "[enum][ \\t]*ENUM[ \t]+(?:(?<class>class[ \t]+))?(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \t]*(?::[ \t]*(?<type>[a-zA-Z0-9 _:]*[a-zA-Z0-9_])[ \t]*)?"
 %token enum_param "[enum_param][ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \\t]*(=[ \\t]*(?<value>-\\d+|0[xX][0-9A-Fa-f]+|\\d+))?[ \\t]*"
 %token prop "[prop][ \\t]*PROP[ \\t]*\\((?<args>[^\\)]+)\\);?[ \\t]*"
 %token use_enum "[use_enum]USE_ENUM[ \\t]*\\((?<name>[^\\)]*)\\);?[ \\t]*"
@@ -163,8 +163,10 @@ struct ASTEnum
     explicit ASTEnum(const QString &name = QString());
 
     QString name;
+    QString type;
     QList<ASTEnumParam> params;
     bool isSigned;
+    bool isScoped;
     int max;
 };
 Q_DECLARE_TYPEINFO(ASTEnum, Q_RELOCATABLE_TYPE);
@@ -378,7 +380,7 @@ QStringList ASTFunction::paramNames() const
 }
 
 ASTEnum::ASTEnum(const QString &name)
-    : name(name), isSigned(false), max(0)
+    : name(name), isSigned(false), isScoped(false), max(0)
 {
 }
 
@@ -759,9 +761,15 @@ EnumStart: enum;
     case $rule_number:
     {
         const QString name = captured().value(QLatin1String("name"));
+        const QString type = captured().value(QLatin1String("type"));
+        const QString _class = captured().value(QLatin1String("class"));
 
         // new Class declaration
         m_astEnum = ASTEnum(name);
+        if (!_class.isEmpty())
+            m_astEnum.isScoped = true;
+        if (!type.isEmpty())
+            m_astEnum.type = type;
         m_astEnumValue = -1;
     }
     break;
