@@ -51,6 +51,8 @@ private Q_SLOTS:
     void testPods();
     void testEnums_data();
     void testEnums();
+    void testTypedEnums_data();
+    void testTypedEnums();
     void testModels_data();
     void testModels();
     void testClasses_data();
@@ -380,6 +382,8 @@ void tst_Parser::testEnums()
         QCOMPARE(ast.enums.count(), 1);
         enums = ast.enums.first();
     }
+    QVERIFY(enums.isScoped == false);
+    QVERIFY(enums.type.isEmpty());
     const QList<ASTEnumParam> paramList = enums.params;
     const QStringList nameList = expectednames.split(QLatin1Char(';'));
     QVERIFY(nameList.count() == expectedvalues.count());
@@ -390,6 +394,70 @@ void tst_Parser::testEnums()
     }
     QCOMPARE(enums.max, expectedmax);
     QCOMPARE(enums.isSigned, expectedsigned);
+}
+
+void tst_Parser::testTypedEnums_data()
+{
+    QTest::addColumn<QString>("enumdeclaration");
+    QTest::addColumn<QString>("expectedtype");
+    QTest::addColumn<bool>("inclass");
+    QTest::addColumn<bool>("isscoped");
+
+    for (int i = 0; i <= 3; ++i) {
+        bool inclass = i % 2 == 1;
+        bool isscoped = i > 1;
+        QString identifier = inclass ? QLatin1String("%1 %2 in class") : QLatin1String("%1 %2 outside class");
+        QString scopeString = isscoped ? QLatin1String("Scoped") : QLatin1String("Non-scoped");
+        QTest::newRow(identifier.arg(scopeString, "no type").toLatin1()) << "preset {presetNumber}" << QString() << inclass << isscoped;
+        QTest::newRow(identifier.arg(scopeString, "quint16").toLatin1()) << "preset : quint16 {presetNumber}" << "quint16" << inclass << isscoped;
+        QTest::newRow(identifier.arg(scopeString, "qint64").toLatin1()) << "preset : qint64 {presetNumber}" << "qint64" << inclass << isscoped;
+        QTest::newRow(identifier.arg(scopeString, "unsigned char").toLatin1()) << "preset: unsigned char {presetNumber}" << "unsigned char" << inclass << isscoped;
+    }
+}
+
+void tst_Parser::testTypedEnums()
+{
+    QFETCH(QString, enumdeclaration);
+    QFETCH(QString, expectedtype);
+    QFETCH(bool, inclass);
+    QFETCH(bool, isscoped);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    if (!inclass)
+        stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration << Qt::endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    if (inclass)
+        stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+    ASTEnum enums;
+    if (inclass) {
+        const ASTClass astClass = ast.classes.first();
+        QCOMPARE(astClass.enums.count(), 1);
+        enums = astClass.enums.first();
+    } else {
+        QCOMPARE(ast.enums.count(), 1);
+        enums = ast.enums.first();
+    }
+    QVERIFY(enums.isScoped == isscoped);
+    QCOMPARE(enums.type, expectedtype);
+    const QList<ASTEnumParam> paramList = enums.params;
+    QVERIFY(paramList.count() == 1);
+    for (int i=0; i < paramList.count(); ++i) {
+        QCOMPARE(paramList.at(i).name, "presetNumber");
+        QCOMPARE(paramList.at(i).value, 0);
+    }
+    QCOMPARE(enums.max, 0);
+    QCOMPARE(enums.isSigned, false);
 }
 
 void tst_Parser::testModels_data()

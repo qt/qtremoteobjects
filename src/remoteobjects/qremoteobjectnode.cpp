@@ -853,9 +853,6 @@ static TypeInfo *enumMetaType(const QByteArray &name, uint size, const QMetaObje
 static TypeInfo *registerEnum(const QByteArray &name, uint size=4u)
 {
     TypeInfo *result = nullptr;
-    // When we add support for enum classes, we will need to set this to something like
-    // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
-    // That is a new feature, though.
     if (QMetaType::fromName(name).isValid())
         return result;
     switch (size) {

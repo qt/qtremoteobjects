@@ -63,15 +63,11 @@ private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
     QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
     QString generateMetaTypeRegistrationForPending(const QSet<QString> &metaTypes);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QList<QString> &enums);
 
     void generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride = true);
     void generatePOD(QTextStream &out, const POD &pod);
-    void generateENUMs(QTextStream &out, const QList<ASTEnum> &enums, const QString &className);
+    void generateEnumGadget(QTextStream &out, const ASTEnum &en, const QString &className);
     void generateDeclarationsForEnums(QTextStream &out, const QList<ASTEnum> &enums, bool generateQENUM=true);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QList<ASTEnum> &enums, const QString &className);
-    void generateConversionFunctionsForEnums(QTextStream &out, const QList<ASTEnum> &enums);
-    void generateENUM(QTextStream &out, const ASTEnum &en);
     QString formatQPropertyDeclarations(const POD &pod);
     QString formatConstructors(const POD &pod);
     QString formatPropertyGettersAndSetters(const POD &pod);

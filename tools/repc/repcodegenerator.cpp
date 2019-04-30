@@ -76,6 +76,17 @@ static bool isClassEnum(const ASTClass &classContext, const QString &typeName)
     return false;
 }
 
+static bool hasScopedEnum(const ASTClass &classContext)
+{
+    for (const ASTEnum &astEnum : classContext.enums) {
+        if (astEnum.isScoped) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static QString fullyQualifiedTypeName(const ASTClass& classContext, const QString &className, const QString &typeName)
 {
     if (isClassEnum(classContext, typeName)) {
@@ -215,7 +226,7 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 
     generateHeader(mode, stream, ast);
     for (const ASTEnum &en : ast.enums)
-        generateENUM(stream, en);
+        generateEnumGadget(stream, en, QStringLiteral("%1Enum").arg(en.name));
     for (const POD &pod : ast.pods)
         generatePOD(stream, pod);
 
@@ -230,6 +241,8 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
     for (const ASTClass &astClass : ast.classes) {
         QSet<QString> classMetaTypes;
         QSet<QString> pendingMetaTypes;
+        for (const ASTEnum &en : astClass.enums)
+            classMetaTypes << en.name;
         for (const ASTProperty &property : astClass.properties) {
             if (property.isPointer)
                 continue;
@@ -265,8 +278,6 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
             }
         }
     }
-
-    generateStreamOperatorsForEnums(stream, ast.enumUses);
 
     stream << Qt::endl;
     if (!fileName.isEmpty())
@@ -488,6 +499,8 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
 
 QString getEnumType(const ASTEnum &en)
 {
+    if (en.isScoped && !en.type.isEmpty())
+        return en.type;
     if (en.isSigned) {
         if (en.max < 0x7F)
             return QStringLiteral("qint8");
@@ -510,83 +523,37 @@ void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QLis
         out << "    // QObject class in order to use .rep enums over QtRO for" << Qt::endl;
         out << "    // non-repc generated QObjects." << Qt::endl;
     }
+
     for (const ASTEnum &en : enums) {
         m_globalTypes[en.name] = enumSignature(en);
-        out << "    enum " << en.name << " {" << Qt::endl;
+        out << "    enum " << (en.isScoped ? "class " : "") << en.name << (en.type.isEmpty() ? "" : " : ") << en.type << " {\n";
         for (const ASTEnumParam &p : en.params)
-            out << "        " << p.name << " = " << p.value << "," << Qt::endl;
+            out << "        " << p.name << " = " << p.value << ",\n";
 
-        out << "    };" << Qt::endl;
+        out << "    };\n";
 
-        if (generateQENUM)
-            out << "    Q_ENUM(" << en.name << ")" << Qt::endl;
+        if (generateQENUM) {
+            out << "    Q_ENUM(" << en.name << ")\n";
+        }
     }
 }
 
-void RepCodeGenerator::generateENUMs(QTextStream &out, const QList<ASTEnum> &enums, const QString &className)
+void RepCodeGenerator::generateEnumGadget(QTextStream &out, const ASTEnum &en, const QString &className)
 {
     out << "class " << className << "\n"
            "{\n"
-           "    Q_GADGET\n"
-           "    " << className << "();\n"
+           "    Q_GADGET\n";
+    if (en.isScoped)
+        out << "    Q_CLASSINFO(\"RegisterEnumClassesUnscoped\", \"false\")\n";
+    out << "    " << className << "();\n"
            "\n"
            "public:\n";
 
+    auto enums = QList<ASTEnum>() << en;
     generateDeclarationsForEnums(out, enums);
-    generateConversionFunctionsForEnums(out, enums);
 
     out << "};\n\n";
 
-    generateStreamOperatorsForEnums(out, enums, className);
-}
-
-void RepCodeGenerator::generateConversionFunctionsForEnums(QTextStream &out, const QList<ASTEnum> &enums)
-{
-    for (const ASTEnum &en : enums)
-    {
-        const QString type = getEnumType(en);
-        out << "    static inline " << en.name << " to" << en.name << "(" << type << " i, bool *ok = nullptr)\n"
-               "    {\n"
-               "        if (ok)\n"
-               "            *ok = true;\n"
-               "        switch (i) {\n";
-            for (const ASTEnumParam &p : en.params)
-                out << "        case " << p.value << ": return " << p.name << ";\n";
-        out << "        default:\n"
-               "            if (ok)\n"
-               "                *ok = false;\n"
-               "            return " << en.params.at(0).name << ";\n"
-               "        }\n"
-               "    }\n";
-    }
-}
-
-void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QList<ASTEnum> &enums, const QString &className)
-{
-    for (const ASTEnum &en : enums)
-    {
-        const QString type = getEnumType(en);
-        out <<  "inline QDataStream &operator<<(QDataStream &ds, const " << className << "::" << en.name << " &obj)\n"
-                "{\n"
-                "    " << type << " val = obj;\n"
-                "    ds << val;\n"
-                "    return ds;\n"
-                "}\n\n"
-
-                "inline QDataStream &operator>>(QDataStream &ds, " << className << "::" << en.name << " &obj) {\n"
-                "    bool ok;\n"
-                "    " << type << " val;\n"
-                "    ds >> val;\n"
-                "    obj = " << className << "::to" << en.name << "(val, &ok);\n"
-                "    if (!ok)\n        qWarning() << \"QtRO received an invalid enum value for type" << en.name << ", value =\" << val;\n"
-                "    return ds;\n"
-                "}\n\n";
-    }
-}
-
-void RepCodeGenerator::generateENUM(QTextStream &out, const ASTEnum &en)
-{
-    generateENUMs(out, (QList<ASTEnum>() << en), QStringLiteral("%1Enum").arg(en.name));
 }
 
 QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &metaTypes)
@@ -621,28 +588,6 @@ QString RepCodeGenerator::generateMetaTypeRegistrationForPending(const QSet<QStr
     return out;
 }
 
-void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QList<QString> &enumUses)
-{
-    out << "QT_BEGIN_NAMESPACE" << Qt::endl;
-    for (const QString &enumName : enumUses) {
-        out << "inline QDataStream &operator<<(QDataStream &out, " << enumName << " value)" << Qt::endl;
-        out << "{" << Qt::endl;
-        out << "    out << static_cast<qint32>(value);" << Qt::endl;
-        out << "    return out;" << Qt::endl;
-        out << "}" << Qt::endl;
-        out << Qt::endl;
-        out << "inline QDataStream &operator>>(QDataStream &in, " << enumName << " &value)" << Qt::endl;
-        out << "{" << Qt::endl;
-        out << "    qint32 intValue = 0;" << Qt::endl;
-        out << "    in >> intValue;" << Qt::endl;
-        out << "    value = static_cast<" << enumName << ">(intValue);" << Qt::endl;
-        out << "    return in;" << Qt::endl;
-        out << "}" << Qt::endl;
-        out << Qt::endl;
-    }
-    out << "QT_END_NAMESPACE" << Qt::endl << Qt::endl;
-}
-
 void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass &astClass, const QString &metaTypeRegistrationCode)
 {
     const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : mode == SOURCE ? QStringLiteral("Source") : QStringLiteral("SimpleSource")));
@@ -653,8 +598,10 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     else
         out << "class " << className << " : public QObject" << Qt::endl;
 
-    out << "{" << Qt::endl;
-    out << "    Q_OBJECT" << Qt::endl;
+    out << "{\n";
+    out << "    Q_OBJECT\n";
+    if (hasScopedEnum(astClass)) // See https://bugreports.qt.io/browse/QTBUG-73360
+        out << "    Q_CLASSINFO(\"RegisterEnumClassesUnscoped\", \"false\")\n";
     if (mode != SIMPLE_SOURCE) {
         out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << Qt::endl;
         out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \"" << QLatin1String(classSignature(astClass)) << "\")" << Qt::endl;
@@ -835,9 +782,6 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     }
     out << "" << Qt::endl;
 
-    if (mode != SIMPLE_SOURCE)
-        generateConversionFunctionsForEnums(out, astClass.enums);
-
     //Next output getter/setter
     if (mode == REPLICA) {
         int i = 0;
@@ -1003,13 +947,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     if (mode != SIMPLE_SOURCE)
         out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << Qt::endl;
 
-    out << "};" << Qt::endl;
-    out << "" << Qt::endl;
-
-    if (mode != SIMPLE_SOURCE)
-        generateStreamOperatorsForEnums(out, astClass.enums, className);
-
-    out << "" << Qt::endl;
+    out << "};\n\n";
 }
 
 void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astClass)
