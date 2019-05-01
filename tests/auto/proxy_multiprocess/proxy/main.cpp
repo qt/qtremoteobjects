@@ -41,7 +41,11 @@ private Q_SLOTS:
         m_hostNode->setHostUrl(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
         m_hostNode->proxy(QUrl("local:testRegistry"));
 
-        QTest::qWait(500);
+        // our proxied object should be added, and then later removed when the server shuts down
+        QSignalSpy addSpy(m_hostNode.data(), &QRemoteObjectNode::remoteObjectAdded);
+        QSignalSpy removeSpy(m_hostNode.data(), &QRemoteObjectNode::remoteObjectRemoved);
+        QVERIFY(addSpy.wait());
+        QVERIFY(removeSpy.wait());
     }
 
 private:

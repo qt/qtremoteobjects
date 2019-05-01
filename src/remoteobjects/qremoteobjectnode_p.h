@@ -116,6 +116,9 @@ public:
     QRemoteObjectHostBase::RemoteObjectNameFilter proxyFilter;
     QRemoteObjectHostBase::RemoteObjectNameFilter reverseFilter;
     QHash<QString, ProxyReplicaInfo*> proxiedReplicas;
+
+private:
+    void disableAndDeleteObject(ProxyReplicaInfo* info);
 };
 
 struct ProxyReplicaInfo

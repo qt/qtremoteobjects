@@ -2207,6 +2207,16 @@ ProxyInfo::ProxyInfo(QRemoteObjectNode *node, QRemoteObjectHostBase *parent,
             ++i;
         }
     });
+
+    connect(registry, &QRemoteObjectRegistry::stateChanged, this,
+            [this](QRemoteObjectRegistry::State state, QRemoteObjectRegistry::State /*oldState*/) {
+        if (state != QRemoteObjectRegistry::Suspect)
+            return;
+        // unproxy all objects
+        for (ProxyReplicaInfo* info : proxiedReplicas)
+            disableAndDeleteObject(info);
+        proxiedReplicas.clear();
+    });
 }
 
 ProxyInfo::~ProxyInfo() {
@@ -2299,16 +2309,22 @@ void ProxyInfo::unproxyObject(const QRemoteObjectSourceLocation &entry)
     if (proxiedReplicas.contains(name)) {
         qCDebug(QT_REMOTEOBJECT)  << "Stopping proxy for" << name;
         auto const info = proxiedReplicas.take(name);
-        if (info->direction == ProxyDirection::Forward)
-            this->parentNode->disableRemoting(info->replica);
-        else {
-            QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
-            Q_ASSERT(host);
-            host->disableRemoting(info->replica);
-        }
-        delete info;
+        disableAndDeleteObject(info);
     }
 }
+
+void ProxyInfo::disableAndDeleteObject(ProxyReplicaInfo* info)
+{
+    if (info->direction == ProxyDirection::Forward)
+        this->parentNode->disableRemoting(info->replica);
+    else {
+        QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
+        Q_ASSERT(host);
+        host->disableRemoting(info->replica);
+    }
+    delete info;
+}
+
 
 QT_END_NAMESPACE
 
