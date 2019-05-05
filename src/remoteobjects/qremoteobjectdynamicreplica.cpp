@@ -78,15 +78,27 @@ QRemoteObjectDynamicReplica::~QRemoteObjectDynamicReplica()
 
 /*!
     \internal
-    Returns a pointer to the dynamically generated meta-object of this object, or 0 if the object is not initialized.  This function overrides the QObject::metaObject() virtual function to provide the same functionality for dynamic replicas.
+    Returns a pointer to the dynamically generated meta-object of this object, or
+    QRemoteObjectDynamicReplica's metaObject if the object is not initialized.  This
+    function overrides the QObject::metaObject() virtual function to provide the same
+    functionality for dynamic replicas.
 
     \sa QObject::metaObject(), {Replica Initialization}
 */
 const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 {
     auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
+    // Returning nullptr will likely result in a crash if this type is used before the
+    // definition is received.  Note: QRemoteObjectDynamicReplica doesn't include the
+    // QObject macro, so it's metaobject would resolve to QRemoteObjectReplica::metaObject()
+    // if we weren't overriding it.
+    if (!impl->m_metaObject) {
+        qWarning() << "Dynamic metaobject is not assigned, returning generic Replica metaObject.";
+        qWarning() << "This may cause issues if used for more than checking the Replica state.";
+        return QRemoteObjectReplica::metaObject();
+    }
 
-    return impl->m_metaObject ? impl->m_metaObject : QRemoteObjectReplica::metaObject();
+    return impl->m_metaObject;
 }
 
 /*!

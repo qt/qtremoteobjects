@@ -1229,6 +1229,8 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     param[1] = paramValue.data();
                 }
                 qROPrivDebug() << "Replica Invoke-->" << rxName << rep->m_metaObject->method(index+rep->m_signalOffset).name() << index << rep->m_signalOffset;
+                // We activate on rep->metaobject() so the private metacall is used, not m_metaobject (which
+                // is the class thie replica looks like)
                 QMetaObject::activate(rep.data(), rep->metaObject(), index+rep->m_signalOffset, param.data());
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -1804,8 +1806,10 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     if (newReplica) {
         if (rep->isInitialized()) {
             auto childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
-            if (childRep && !childRep->isShortCircuit())
-                dynamicTypeManager.addFromMetaObject(childRep->metaObject());
+            if (childRep && !childRep->isShortCircuit()) {
+                qCDebug(QT_REMOTEOBJECT) << "Checking if dynamic type should be added to dynamicTypeManager (type =" << childRep->m_metaObject->className() << ")";
+                dynamicTypeManager.addFromMetaObject(childRep->m_metaObject);
+            }
         }
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));
