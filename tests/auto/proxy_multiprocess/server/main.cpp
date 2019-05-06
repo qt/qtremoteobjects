@@ -55,6 +55,7 @@ private Q_SLOTS:
         if (objectMode == QLatin1Literal("ObjectPointer")) {
             parent.setSubClass(&subclass);
             parent.setTracks(&model);
+            parent.setMyEnum(ParentClassSource::bar);
             parent.setVariant(QVariant::fromValue(42.0f));
         }
 
@@ -80,6 +81,7 @@ private Q_SLOTS:
         parent.setSubClass(&updatedSubclass);
         if (objectMode == QLatin1Literal("NullPointer"))
             parent.setTracks(&model);
+        parent.setMyEnum(ParentClassSource::foobar);
         parent.setVariant(QVariant::fromValue(podValue));
 
         emit parent.advance();

@@ -45,6 +45,7 @@
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
 
+//#define QTRO_VERBOSE_PROTOCOL
 QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
@@ -285,24 +286,43 @@ void recurseForGadgets(GadgetsData &gadgets, const QRemoteObjectSourceBase *sour
 void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
+    bool dynamic = source->m_api->isDynamic();
+    const QByteArray classname(source->m_api->typeName().toLatin1());
+    const QByteArray sourcename = QByteArray(classname).append("Source");
+    auto replace = [&classname, &sourcename, dynamic](QByteArray &name) {
+        if (!dynamic) // Compiled classes likely have <ClassNameSource> that should be <ClassName>
+            name.replace(sourcename, classname);
+    };
 
     ds << source->m_api->typeName();
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug() << "Serializing definition for" << source->m_api->typeName();
+#endif
 
     //Now copy the property data
     const int numEnums = api->enumCount();
     const auto metaObject = source->m_object->metaObject();
     ds << quint32(numEnums);  //Number of Enums
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug() << "  Found" << numEnums << "enumeration types";
+#endif
     for (int i = 0; i < numEnums; ++i) {
         auto enumerator = metaObject->enumerator(api->sourceEnumIndex(i));
         Q_ASSERT(enumerator.isValid());
         ds << enumerator.name();
         ds << enumerator.isFlag();
         ds << enumerator.scope();
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug("  Enum %d (name = %s, isFlag = %s, scope = %s):", i, enumerator.name(), enumerator.isFlag() ? "true" : "false", enumerator.scope());
+#endif
         const int keyCount = enumerator.keyCount();
         ds << keyCount;
         for (int k = 0; k < keyCount; ++k) {
             ds << enumerator.key(k);
             ds << enumerator.value(k);
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug("    Key %d (name = %s, value = %d):", k, enumerator.key(k), enumerator.value(k));
+#endif
         }
     }
 
@@ -310,10 +330,20 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
         GadgetsData gadgets;
         recurseForGadgets(gadgets, source);
         ds << quint32(gadgets.size());
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "  Found" << gadgets.size() << "gadget/pod types";
+        int i = 0, j = 0;
+#endif
         for (auto it = gadgets.constBegin(); it != gadgets.constEnd(); ++it) {
             ds << it.key();
             ds << quint32(it.value().size());
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug("  Gadget %d (name = %s):", i++, it.key().constData());
+#endif
             for (const auto &prop : qAsConst(it.value())) {
+#ifdef QTRO_VERBOSE_PROTOCOL
+                qDebug("    Data member %d (name = %s, type = %s):", j++, prop.name.constData(), prop.type.constData());
+#endif
                 ds << prop.name;
                 ds << prop.type;
             }
@@ -327,8 +357,10 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
         const int index = api->sourceSignalIndex(i);
         Q_ASSERT(index >= 0);
         auto signature = api->signalSignature(i);
-        signature.replace("SimpleSource*)", "Replica*)");
-        signature.replace("Source*)", "Replica*)");
+        replace(signature);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "  Signal" << i << "(signature =" << signature << "parameter names =" << api->signalParameterNames(i) << ")";
+#endif
         ds << signature;
         ds << api->signalParameterNames(i);
     }
@@ -338,6 +370,9 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
     for (int i = 0; i < numMethods; ++i) {
         const int index = api->sourceMethodIndex(i);
         Q_ASSERT(index >= 0);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "  Slot" << i << "(signature =" << api->methodSignature(i) << "parameter names =" << api->methodParameterNames(i) << "return type =" << api->typeName(i) << ")";
+#endif
         ds << api->methodSignature(i);
         ds << api->typeName(i);
         ds << api->methodParameterNames(i);
@@ -352,18 +387,33 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
         const auto target = api->isAdapterProperty(i) ? source->m_adapter : source->m_object;
         const auto metaProperty = target->metaObject()->property(index);
         ds << metaProperty.name();
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "  Property" << i << "name =" << metaProperty.name();
+#endif
         if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::PointerToQObject)) {
             auto type = objectType(QLatin1String(metaProperty.typeName()));
             ds << (type == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
-        } else
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "    Type:" << (type == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
+#endif
+        } else {
             ds << metaProperty.typeName();
-        if (metaProperty.notifySignalIndex() == -1)
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "    Type:" << metaProperty.typeName();
+#endif
+        }
+        if (metaProperty.notifySignalIndex() == -1) {
             ds << QByteArray();
-        else {
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "    Notification signal: None";
+#endif
+        } else {
             auto signature = metaProperty.notifySignal().methodSignature();
-            signature.replace("SimpleSource*)", "Replica*)");
-            signature.replace("Source*)", "Replica*)");
+            replace(signature);
             ds << signature;
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "    Notification signal:" << signature;
+#endif
         }
     }
 }
@@ -496,13 +546,22 @@ QRO_::QRO_(const QVariant &value)
     const auto typeName = QByteArray(QMetaType::typeName(value.userType()));
     out << typeName;
     out << numProperties;
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug("Serializing POD definition to QRO_ (name = %s)", typeName.constData());
+#endif
     for (int i = 0; i < numProperties; ++i) {
         const auto property = meta->property(i);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug("  Data member %d (name = %s, type = %s):", i, property.name(), property.typeName());
+#endif
         out << property.name();
         out << property.typeName();
     }
     QDataStream ds(&parameters, QIODevice::WriteOnly);
     ds << value;
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug() << "  Value:" << value;
+#endif
 }
 
 QDataStream &operator<<(QDataStream &stream, const QRO_ &info)

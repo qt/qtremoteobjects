@@ -60,10 +60,12 @@ private Q_SLOTS:
             QCOMPARE(m_rep->subClass()->i(), initialI);
             QVERIFY(m_rep->tracks() != nullptr);
             QVERIFY(tracksSpy.count() || tracksSpy.wait());
+            QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::bar));
             QCOMPARE(m_rep->variant(), QVariant::fromValue(42.0f));
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);
+            QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::foo));
             QCOMPARE(m_rep->variant(), QVariant());
         }
 
@@ -77,6 +79,7 @@ private Q_SLOTS:
         QCOMPARE(m_rep->subClass()->myPOD(), updatedValue);
         QCOMPARE(m_rep->subClass()->i(), updatedI);
         QVERIFY(m_rep->tracks() != nullptr);
+        QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::foobar));
         QCOMPARE(m_rep->variant(), QVariant::fromValue(podValue));
         qDebug() << "Verified expected final states, cleaning up.";
     }
