@@ -117,6 +117,13 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
     return ObjectType::staticMetaObject.indexOfMethod(methodName);
 }
 
+template <class ObjectType>
+static inline QByteArray qtro_enum_signature(const char *enumName)
+{
+    const auto qme = ObjectType::staticMetaObject.enumerator(ObjectType::staticMetaObject.indexOfEnumerator(enumName));
+    return QByteArrayLiteral("1::2").replace("1", qme.scope()).replace("2", qme.name());
+}
+
 QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
 
 }

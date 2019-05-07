@@ -470,6 +470,11 @@ void QRemoteObjectNode::initializeReplica(QRemoteObjectReplica *instance, const 
         d->setReplicaImplementation(nullptr, instance, name);
     } else {
         const QMetaObject *meta = instance->metaObject();
+        // This is a templated acquire, so we tell the Source we don't need
+        // them to send the class definition.  Thus we need to store the
+        // metaObject for this class - if this is a nested class, the QObject
+        // could be a nullptr or updated from the source,
+        d->dynamicTypeManager.addFromMetaObject(meta);
         d->setReplicaImplementation(meta, instance, name.isEmpty() ? ::name(meta) : name);
     }
 }
@@ -622,6 +627,7 @@ QRemoteObjectMetaObjectManager::~QRemoteObjectMetaObjectManager()
 
 const QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QString &type)
 {
+    qCDebug(QT_REMOTEOBJECT) << "metaObjectForType: looking for" << type << "static keys:" << staticTypes.keys() << "dynamic keys:" << dynamicTypes.keys();
     Q_ASSERT(staticTypes.contains(type) || dynamicTypes.contains(type));
     auto it = staticTypes.constFind(type);
     if (it != staticTypes.constEnd())
@@ -697,10 +703,28 @@ static void registerAllGadgets(IoDeviceBase *connection, QRemoteObjectPackets::G
         registerGadget(connection, gadgets, gadgets.constBegin().key());
 }
 
+static void parseGadgets(IoDeviceBase *connection, QDataStream &in, quint32 numGadgets = 1)
+{
+    QRemoteObjectPackets::GadgetsData gadgets;
+    for (quint32 i = 0; i < numGadgets; ++i) {
+        QByteArray type;
+        in >> type;
+        quint32 numProperties;
+        in >> numProperties;
+        auto &properties = gadgets[type];
+        for (quint32 p = 0; p < numProperties; ++p) {
+            QRemoteObjectPackets::GadgetProperty prop;
+            in >> prop.name;
+            in >> prop.type;
+            properties.push_back(prop);
+        }
+    }
+    registerAllGadgets(connection, gadgets);
+}
+
 QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connection, QDataStream &in)
 {
     QMetaObjectBuilder builder;
-    builder.setClassName("QRemoteObjectDynamicReplica");
     builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
@@ -712,6 +736,8 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     quint32 numProperties = 0;
 
     in >> type;
+    builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, type.toLatin1());
+    builder.setClassName(type.toLatin1());
 
     in >> numEnums;
     for (quint32 i = 0; i < numEnums; ++i) {
@@ -738,21 +764,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
         }
     }
     in >> numGadgets;
-    QRemoteObjectPackets::GadgetsData gadgets;
-    for (quint32 i = 0; i < numGadgets; ++i) {
-        QByteArray type;
-        in >> type;
-        quint32 numProperties;
-        in >> numProperties;
-        auto &properties = gadgets[type];
-        for (quint32 p = 0; p < numProperties; ++p) {
-            QRemoteObjectPackets::GadgetProperty prop;
-            in >> prop.name;
-            in >> prop.type;
-            properties.push_back(prop);
-        }
-    }
-    registerAllGadgets(connection, gadgets);
+    parseGadgets(connection, in, numGadgets);
 
     int curIndex = 0;
 
@@ -804,13 +816,15 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     return meta;
 }
 
-void QRemoteObjectMetaObjectManager::addFromReplica(QConnectedReplicaImplementation *rep)
+void QRemoteObjectMetaObjectManager::addFromMetaObject(const QMetaObject *metaObject)
 {
-    QString className = QString::fromLatin1(rep->m_metaObject->className());
+    QString className = QLatin1String(metaObject->className());
+    if (!className.endsWith(QLatin1String("Replica")))
+        return;
     if (className == QStringLiteral("QRemoteObjectDynamicReplica") || staticTypes.contains(className))
         return;
     className.chop(7); //Remove 'Replica' from name
-    staticTypes.insert(className, rep->m_metaObject);
+    staticTypes.insert(className, metaObject);
 }
 
 void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectReplica *instance)
@@ -1082,7 +1096,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
         case Handshake:
             if (rxName != QtRemoteObjects::protocolVersion) {
-                qROPrivWarning() << "Protocol Mismatch, closing connection. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
+                qWarning() << "*** Protocol Mismatch, closing connection ***. Got" << rxObjects << "expected" << QtRemoteObjects::protocolVersion;
                 setLastError(QRemoteObjectNode::ProtocolMismatch);
                 connection->close();
             } else {
@@ -1175,6 +1189,14 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     rep->setProperty(propertyIndex, handlePointerToQObjectProperty(connectedRep, propertyIndex, rxValue));
                 else {
                     const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
+                    if (property.userType() == QMetaType::QVariant && rxValue.canConvert<QRO_>()) {
+                        // This is a type that requires registration
+                        QRO_ typeInfo = rxValue.value<QRO_>();
+                        QDataStream in(typeInfo.classDefinition);
+                        parseGadgets(connection, in);
+                        QDataStream ds(typeInfo.parameters);
+                        ds >> rxValue;
+                    }
                     rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
                 }
             } else { //replica has been deleted, remove from list
@@ -1194,8 +1216,12 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 QVarLengthArray<void*, 10> param(rxArgs.size() + 1);
                 param[0] = null.data(); //Never a return value
                 if (rxArgs.size()) {
+                    auto signal = rep->m_metaObject->method(index+rep->m_signalOffset);
                     for (int i = 0; i < rxArgs.size(); i++) {
-                        param[i + 1] = const_cast<void *>(rxArgs[i].data());
+                        if (signal.parameterType(i) == QMetaType::QVariant)
+                            param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
+                        else
+                            param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
                     }
                 } else if (propertyIndex != -1) {
                     param.resize(2);
@@ -1203,6 +1229,8 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     param[1] = paramValue.data();
                 }
                 qROPrivDebug() << "Replica Invoke-->" << rxName << rep->m_metaObject->method(index+rep->m_signalOffset).name() << index << rep->m_signalOffset;
+                // We activate on rep->metaobject() so the private metacall is used, not m_metaobject (which
+                // is the class thie replica looks like)
                 QMetaObject::activate(rep.data(), rep->metaObject(), index+rep->m_signalOffset, param.data());
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -1778,8 +1806,10 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     if (newReplica) {
         if (rep->isInitialized()) {
             auto childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.take(childInfo.name));
-            if (childRep && !childRep->isShortCircuit())
-                dynamicTypeManager.addFromReplica(static_cast<QConnectedReplicaImplementation *>(childRep.data()));
+            if (childRep && !childRep->isShortCircuit()) {
+                qCDebug(QT_REMOTEOBJECT) << "Checking if dynamic type should be added to dynamicTypeManager (type =" << childRep->m_metaObject->className() << ")";
+                dynamicTypeManager.addFromMetaObject(childRep->m_metaObject);
+            }
         }
         if (childInfo.type == ObjectType::CLASS)
             retval = QVariant::fromValue(q->acquireDynamic(childInfo.name));
@@ -1791,18 +1821,32 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
     QSharedPointer<QConnectedReplicaImplementation> childRep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(childInfo.name).toStrongRef());
     if (childRep->connectionToSource.isNull())
         childRep->connectionToSource = rep->connectionToSource;
+    QVariantList parameters;
+    QDataStream ds(childInfo.parameters);
     if (childRep->needsDynamicInitialization()) {
-        if (childInfo.classDefinition.isEmpty())
-            childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(childInfo.typeName));
-        else {
+        if (childInfo.classDefinition.isEmpty()) {
+            auto typeName = childInfo.typeName;
+            if (typeName == QLatin1String("QObject")) {
+                // The sender would have included the class name if needed
+                // So the acquire must have been templated, and we have the typeName
+                typeName = QString::fromLatin1(rep->getProperty(index).typeName());
+                if (typeName.endsWith(QLatin1String("Replica*")))
+                    typeName.chop(8);
+            }
+            childRep->setDynamicMetaObject(dynamicTypeManager.metaObjectForType(typeName));
+        } else {
             QDataStream in(childInfo.classDefinition);
             childRep->setDynamicMetaObject(dynamicTypeManager.addDynamicType(rep->connectionToSource, in));
         }
-        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
-        childRep->setDynamicProperties(childInfo.parameters);
+        if (!childInfo.parameters.isEmpty())
+            ds >> parameters;
+        handlePointerToQObjectProperties(childRep.data(), parameters);
+        childRep->setDynamicProperties(parameters);
     } else {
-        handlePointerToQObjectProperties(childRep.data(), childInfo.parameters);
-        childRep->initialize(childInfo.parameters);
+        if (!childInfo.parameters.isEmpty())
+            ds >> parameters;
+        handlePointerToQObjectProperties(childRep.data(), parameters);
+        childRep->initialize(parameters);
     }
 
     return retval;
@@ -2184,6 +2228,16 @@ ProxyInfo::ProxyInfo(QRemoteObjectNode *node, QRemoteObjectHostBase *parent,
             ++i;
         }
     });
+
+    connect(registry, &QRemoteObjectRegistry::stateChanged, this,
+            [this](QRemoteObjectRegistry::State state, QRemoteObjectRegistry::State /*oldState*/) {
+        if (state != QRemoteObjectRegistry::Suspect)
+            return;
+        // unproxy all objects
+        for (ProxyReplicaInfo* info : proxiedReplicas)
+            disableAndDeleteObject(info);
+        proxiedReplicas.clear();
+    });
 }
 
 ProxyInfo::~ProxyInfo() {
@@ -2276,16 +2330,22 @@ void ProxyInfo::unproxyObject(const QRemoteObjectSourceLocation &entry)
     if (proxiedReplicas.contains(name)) {
         qCDebug(QT_REMOTEOBJECT)  << "Stopping proxy for" << name;
         auto const info = proxiedReplicas.take(name);
-        if (info->direction == ProxyDirection::Forward)
-            this->parentNode->disableRemoting(info->replica);
-        else {
-            QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
-            Q_ASSERT(host);
-            host->disableRemoting(info->replica);
-        }
-        delete info;
+        disableAndDeleteObject(info);
     }
 }
+
+void ProxyInfo::disableAndDeleteObject(ProxyReplicaInfo* info)
+{
+    if (info->direction == ProxyDirection::Forward)
+        this->parentNode->disableRemoting(info->replica);
+    else {
+        QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
+        Q_ASSERT(host);
+        host->disableRemoting(info->replica);
+    }
+    delete info;
+}
+
 
 QT_END_NAMESPACE
 

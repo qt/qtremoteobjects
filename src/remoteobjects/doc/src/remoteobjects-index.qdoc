@@ -97,6 +97,7 @@ QT += remoteobjects
     \li \l {Qt Remote Objects Compiler}
     \li \l {Remote Object Interaction}
     \li \l {Troubleshooting Qt Remote Objects}
+    \li \l {Qt Remote Objects Protocol Versioning}
  \endlist
 
 \section2 Reference

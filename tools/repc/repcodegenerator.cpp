@@ -799,14 +799,21 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         int i = 0;
         Q_FOREACH (const ASTProperty &property, astClass.properties) {
             auto type = typeForMode(property, mode);
-            out << "    " << type << " " << property.name << "() const" << endl;
-            out << "    {" << endl;
-            out << "        const QVariant variant = propAsVariant(" << i << ");" << endl;
-            out << "        if (!variant.canConvert<" << type << ">()) {" << endl;
-            out << "            qWarning() << \"QtRO cannot convert the property " << property.name << " to type " << type << "\";" << endl;
-            out << "        }" << endl;
-            out << "        return variant.value<" << type << " >();" << endl;
-            out << "    }" << endl;
+            if (type == QLatin1String("QVariant")) {
+                out << "    " << type << " " << property.name << "() const" << endl;
+                out << "    {" << endl;
+                out << "        return propAsVariant(" << i << ");" << endl;
+                out << "    }" << endl;
+            } else {
+                out << "    " << type << " " << property.name << "() const" << endl;
+                out << "    {" << endl;
+                out << "        const QVariant variant = propAsVariant(" << i << ");" << endl;
+                out << "        if (!variant.canConvert<" << type << ">()) {" << endl;
+                out << "            qWarning() << \"QtRO cannot convert the property " << property.name << " to type " << type << "\";" << endl;
+                out << "        }" << endl;
+                out << "        return variant.value<" << type << " >();" << endl;
+                out << "    }" << endl;
+            }
             i++;
             if (property.modifier == ASTProperty::ReadWrite) {
                 out << "" << endl;
@@ -1172,14 +1179,31 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    {") << endl;
     if (signalCount+changedCount > 0) {
         out << QStringLiteral("        switch (index) {") << endl;
-        for (int i = 0; i < changedCount; ++i)
-            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2Changed(%3)\");")
-                   .arg(QString::number(i), onChangeProperties.at(i).name, typeForMode(onChangeProperties.at(i), SOURCE)) << endl;
+        for (int i = 0; i < changedCount; ++i) {
+            const ASTProperty &prop = onChangeProperties.at(i);
+            if (isClassEnum(astClass, prop.type))
+                out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2Changed($1)\").replace(\"$1\", QtPrivate::qtro_enum_signature<ObjectType>(\"%3\"));")
+                    .arg(QString::number(i), prop.name, prop.type) << endl;
+            else
+                out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2Changed(%3)\");")
+                    .arg(QString::number(i), prop.name, typeForMode(prop, SOURCE)) << endl;
+        }
         for (int i = 0; i < signalCount; ++i)
         {
             const ASTFunction &sig = astClass.signalsList.at(i);
-            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\");")
-                                      .arg(QString::number(i+changedCount), sig.name, sig.paramsAsString(ASTFunction::Normalized)) << endl;
+            auto paramsAsString = sig.paramsAsString(ASTFunction::Normalized);
+            const auto paramsAsList = paramsAsString.split(QLatin1String(","));
+            int enumCount = 0;
+            QString enumString;
+            for (int j = 0; j < paramsAsList.count(); j++) {
+                auto const p = paramsAsList.at(j);
+                if (isClassEnum(astClass, p)) {
+                    paramsAsString.replace(paramsAsString.indexOf(p), p.size(), QStringLiteral("$%1").arg(enumCount));
+                    enumString.append(QString::fromLatin1(".replace(\"$%1\", QtPrivate::qtro_enum_signature<ObjectType>(\"%2\"))").arg(enumCount++).arg(paramsAsList.at(j)));
+                }
+            }
+            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\")%4;")
+                                    .arg(QString::number(i+changedCount), sig.name, paramsAsString, enumString) << endl;
         }
         out << QStringLiteral("        }") << endl;
     } else
@@ -1203,14 +1227,29 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         for (int i = 0; i < pushCount; ++i)
         {
             const ASTProperty &prop = pushProps.at(i);
-            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"push%2(%3)\");")
-                                      .arg(QString::number(i), cap(prop.name), prop.type) << endl;
+            if (isClassEnum(astClass, prop.type))
+                out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"push%2($1)\").replace(\"$1\", QtPrivate::qtro_enum_signature<ObjectType>(\"%3\"));")
+                    .arg(QString::number(i), prop.name, prop.type) << endl;
+            else
+                out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"push%2(%3)\");")
+                                        .arg(QString::number(i), cap(prop.name), prop.type) << endl;
         }
         for (int i = 0; i < slotCount; ++i)
         {
             const ASTFunction &slot = astClass.slotsList.at(i);
-            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\");")
-                                      .arg(QString::number(i+pushCount), slot.name, slot.paramsAsString(ASTFunction::Normalized)) << endl;
+            auto paramsAsString = slot.paramsAsString(ASTFunction::Normalized);
+            const auto paramsAsList = paramsAsString.split(QLatin1String(","));
+            int enumCount = 0;
+            QString enumString;
+            for (int j = 0; j < paramsAsList.count(); j++) {
+                auto const p = paramsAsList.at(j);
+                if (isClassEnum(astClass, p)) {
+                    paramsAsString.replace(paramsAsString.indexOf(p), p.size(), QStringLiteral("$%1").arg(enumCount));
+                    enumString.append(QString::fromLatin1(".replace(\"$%1\", QtPrivate::qtro_enum_signature<ObjectType>(\"%2\"))").arg(enumCount++).arg(paramsAsList.at(j)));
+                }
+            }
+            out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2(%3)\")%4;")
+                                    .arg(QString::number(i+pushCount), slot.name, paramsAsString, enumString) << endl;
         }
         out << QStringLiteral("        }") << endl;
     } else
