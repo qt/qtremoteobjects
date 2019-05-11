@@ -78,15 +78,27 @@ QRemoteObjectDynamicReplica::~QRemoteObjectDynamicReplica()
 
 /*!
     \internal
-    Returns a pointer to the dynamically generated meta-object of this object, or 0 if the object is not initialized.  This function overrides the QObject::metaObject() virtual function to provide the same functionality for dynamic replicas.
+    Returns a pointer to the dynamically generated meta-object of this object, or
+    QRemoteObjectDynamicReplica's metaObject if the object is not initialized.  This
+    function overrides the QObject::metaObject() virtual function to provide the same
+    functionality for dynamic replicas.
 
     \sa QObject::metaObject(), {Replica Initialization}
 */
 const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 {
     auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
+    // Returning nullptr will likely result in a crash if this type is used before the
+    // definition is received.  Note: QRemoteObjectDynamicReplica doesn't include the
+    // QObject macro, so it's metaobject would resolve to QRemoteObjectReplica::metaObject()
+    // if we weren't overriding it.
+    if (!impl->m_metaObject) {
+        qWarning() << "Dynamic metaobject is not assigned, returning generic Replica metaObject.";
+        qWarning() << "This may cause issues if used for more than checking the Replica state.";
+        return QRemoteObjectReplica::metaObject();
+    }
 
-    return impl->m_metaObject ? impl->m_metaObject : QRemoteObjectReplica::metaObject();
+    return impl->m_metaObject;
 }
 
 /*!
@@ -121,7 +133,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 {
     static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
 
-    auto impl = qSharedPointerCast<QRemoteObjectReplicaImplementation>(d_impl);
+    auto impl = qSharedPointerCast<QConnectedReplicaImplementation>(d_impl);
 
     int saved_id = id;
     id = QRemoteObjectReplica::qt_metacall(call, id, argv);
@@ -134,12 +146,19 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
         if (call == QMetaObject::WriteProperty) {
             QVariantList args;
-            args << QVariant(mp.userType(), argv[0]);
+            if (mp.userType() == QMetaType::QVariant)
+                args << *reinterpret_cast<QVariant*>(argv[0]);
+            else
+                args << QVariant(mp.userType(), argv[0]);
             QRemoteObjectReplica::send(QMetaObject::WriteProperty, saved_id, args);
         } else {
-            const QVariant value = propAsVariant(id);
-            QMetaType::destruct(mp.userType(), argv[0]);
-            QMetaType::construct(mp.userType(), argv[0], value.data());
+            if (mp.userType() == QMetaType::QVariant)
+                *reinterpret_cast<QVariant*>(argv[0]) = impl->m_propertyStorage[id];
+            else {
+                const QVariant value = propAsVariant(id);
+                QMetaType::destruct(mp.userType(), argv[0]);
+                QMetaType::construct(mp.userType(), argv[0], value.data());
+            }
             const bool readStatus = true;
             // Caller supports QVariant returns? Then we can also report errors
             // by storing an invalid variant.
