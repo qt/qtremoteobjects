@@ -72,6 +72,8 @@ private Q_SLOTS:
         qDebug() << "Verified expected initial states, sending start.";
         auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
+        QVERIFY(reply.error() == QRemoteObjectPendingCall::NoError);
+        QCOMPARE(reply.returnValue(), QVariant::fromValue(true));
 
         QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
         QVERIFY(advanceSpy.wait());
@@ -87,7 +89,10 @@ private Q_SLOTS:
     void cleanupTestCase()
     {
         auto reply = m_rep->quit();
-        QVERIFY(reply.waitForFinished());
+        // Don't verify the wait result, depending on the timing of the server and proxy
+        // closing it may return false.  We just need this process to stay alive long
+        // enough for the packets to be sent.
+        reply.waitForFinished(5000);
     }
 
 private:
