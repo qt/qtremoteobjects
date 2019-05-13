@@ -2,6 +2,7 @@ Makefile
 Makefile.*
 release/
 debug/
+.vscode/
 *.o
 *.so.*
 *.dll
