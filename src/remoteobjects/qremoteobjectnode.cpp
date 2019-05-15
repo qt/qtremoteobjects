@@ -758,6 +758,19 @@ static void parseGadgets(IoDeviceBase *connection, QDataStream &in, quint32 numG
     registerAllGadgets(connection, gadgets);
 }
 
+static void registerEnum(const QByteArray &name, int size=4)
+{
+    // When we add support for enum classes, we will need to set this to something like
+    // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
+    // That is a new feature, though.
+    if (QMetaType::isRegistered(QMetaType::type(name)))
+        return;
+    static const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+    int id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
+                                     &EnumConstructor<qint32>, size, flags, nullptr);
+    qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << id << name;
+}
+
 QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connection, QDataStream &in)
 {
     QMetaObjectBuilder builder;
@@ -800,6 +813,12 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
             in >> value;
             enumBuilder.addKey(key, value);
         }
+    }
+    in >> numEnums; // Qt enums
+    for (quint32 i = 0; i < numEnums; ++i) {
+        QByteArray enumName;
+        in >> enumName;
+        registerEnum(enumName); // All Qt enums have default type int
     }
     in >> numGadgets;
     parseGadgets(connection, in, numGadgets);
@@ -857,19 +876,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     for (int i = numEnums; i > 0; i--) {
         auto const enumMeta = meta->enumerator(totalEnumCount - i);
         const QByteArray registeredName = QByteArray(type).append("::").append(enumMeta.name());
-        // When we add support for enum classes, we will need to set this to something like
-        // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
-        // That is a new feature, though.
-        if (QMetaType::isRegistered(QMetaType::type(registeredName)))
-            continue;
-        const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
-        int enumTypeId = -1;
-        int size = 4; // This could have different values once we support typed scoped enums
-        enumTypeId = QMetaType::registerType(registeredName.constData(), nullptr, nullptr,
-                                             &EnumDestructor<qint32>, &EnumConstructor<qint32>, size, flags, nullptr);
-        // Below line will register load/save if needed.
-        // QMetaType::registerStreamOperators(enumTypeId, &EnumSaveOperator<qint32>, &EnumLoadOperator<qint32>);
-        qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << enumTypeId << enumMeta.enumName() << enumMeta.name() << enumMeta.scope();
+        registerEnum(registeredName);
     }
     dynamicTypes.insert(typeString, meta);
     return meta;
@@ -1256,7 +1263,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         QDataStream ds(typeInfo.parameters);
                         ds >> rxValue;
                     }
-                    rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
+                    rep->setProperty(propertyIndex, decodeVariant(rxValue, property.userType()));
                 }
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -1280,8 +1287,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         if (signal.parameterType(i) == QMetaType::QVariant)
                             param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
                         else {
-                            if (QMetaType::typeFlags(signal.parameterType(i)).testFlag(QMetaType::IsEnumeration))
-                                rxArgs[i].convert(signal.parameterType(i));
+                            decodeVariant(rxArgs[i], signal.parameterType(i));
                             param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
                         }
                     }
