@@ -83,6 +83,7 @@ private Q_SLOTS:
             parent.setTracks(&model);
         parent.setMyEnum(ParentClassSource::foobar);
         parent.setVariant(QVariant::fromValue(podValue));
+        emit parent.enum2(ParentClassSource::foo, ParentClassSource::bar);
 
         emit parent.advance();
 

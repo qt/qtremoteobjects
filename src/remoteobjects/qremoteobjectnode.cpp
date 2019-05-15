@@ -118,6 +118,42 @@ static void GadgetLoadOperator(QDataStream &in, void *data)
         in >> prop;
 }
 
+// Like the Q_GADGET static methods above, we need constructor/destructor methods
+// in order to use dynamically defined enums with QVariant or as signal/slot
+// parameters (i.e., the queued connection mechanism, which QtRO leverages).
+//
+// We will need the enum methods to support different sizes when typed scope enum
+// support is added, so might as well use that now.
+template<typename T>
+static void EnumDestructor(void *ptr)
+{
+    static_cast<T*>(ptr)->~T();
+}
+
+template<typename T>
+static void *EnumConstructor(void *where, const void *copy)
+{
+    T *ret = where ? new(where) T : new T;
+    if (copy)
+        *ret = *static_cast<const T*>(copy);
+    return ret;
+}
+
+// Not used, but keeping these in case we end up with a need for save/load.
+template<typename T>
+static void EnumSaveOperator(QDataStream & out, const void *data)
+{
+    const T value = *static_cast<const T *>(data);
+    out << value;
+}
+
+template<typename T>
+static void EnumLoadOperator(QDataStream &in, void *data)
+{
+    T value = *static_cast<T *>(data);
+    in >> value;
+}
+
 static QString name(const QMetaObject * const mobj)
 {
     const int ind = mobj->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
@@ -728,16 +764,18 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
-    QString type;
+    QString typeString;
+    QByteArray type;
     quint32 numEnums = 0;
     quint32 numGadgets = 0;
     quint32 numSignals = 0;
     quint32 numMethods = 0;
     quint32 numProperties = 0;
 
-    in >> type;
-    builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, type.toLatin1());
-    builder.setClassName(type.toLatin1());
+    in >> typeString;
+    type = typeString.toLatin1();
+    builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, type);
+    builder.setClassName(type);
 
     in >> numEnums;
     for (quint32 i = 0; i < numEnums; ++i) {
@@ -812,7 +850,28 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     }
 
     auto meta = builder.toMetaObject();
-    dynamicTypes.insert(type, meta);
+    // Our type likely has enumerations from the inherited base classes, such as the Replica State
+    // We only want to register the new enumerations, and since we just added them, we know they
+    // are the last indices.  Thus a backwards count seems most efficient.
+    const int totalEnumCount = meta->enumeratorCount();
+    for (int i = numEnums; i > 0; i--) {
+        auto const enumMeta = meta->enumerator(totalEnumCount - i);
+        const QByteArray registeredName = QByteArray(type).append("::").append(enumMeta.name());
+        // When we add support for enum classes, we will need to set this to something like
+        // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
+        // That is a new feature, though.
+        if (QMetaType::isRegistered(QMetaType::type(registeredName)))
+            continue;
+        const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+        int enumTypeId = -1;
+        int size = 4; // This could have different values once we support typed scoped enums
+        enumTypeId = QMetaType::registerType(registeredName.constData(), nullptr, nullptr,
+                                             &EnumDestructor<qint32>, &EnumConstructor<qint32>, size, flags, nullptr);
+        // Below line will register load/save if needed.
+        // QMetaType::registerStreamOperators(enumTypeId, &EnumSaveOperator<qint32>, &EnumLoadOperator<qint32>);
+        qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << enumTypeId << enumMeta.enumName() << enumMeta.name() << enumMeta.scope();
+    }
+    dynamicTypes.insert(typeString, meta);
     return meta;
 }
 
@@ -1220,8 +1279,11 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     for (int i = 0; i < rxArgs.size(); i++) {
                         if (signal.parameterType(i) == QMetaType::QVariant)
                             param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
-                        else
+                        else {
+                            if (QMetaType::typeFlags(signal.parameterType(i)).testFlag(QMetaType::IsEnumeration))
+                                rxArgs[i].convert(signal.parameterType(i));
                             param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
+                        }
                     }
                 } else if (propertyIndex != -1) {
                     param.resize(2);

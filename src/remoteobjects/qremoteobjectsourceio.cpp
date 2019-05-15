@@ -235,8 +235,15 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     }
                     if (source->m_api->isAdapterMethod(index))
                         qRODebug(this) << "Adapter (method) Invoke-->" << m_rxName << source->m_adapter->metaObject()->method(resolvedIndex).name();
-                    else
-                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << source->m_object->metaObject()->method(resolvedIndex).name();
+                    else {
+                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << source->m_object->metaObject()->method(resolvedIndex).methodSignature();
+                        auto method = source->m_object->metaObject()->method(resolvedIndex);
+                        const int parameterCount = method.parameterCount();
+                        for (int i = 0; i < parameterCount; i++) {
+                            if (QMetaType::typeFlags(method.parameterType(i)).testFlag(QMetaType::IsEnumeration))
+                                m_rxArgs[i].convert(method.parameterType(i));
+                        }
+                    }
                     int typeId = QMetaType::type(source->m_api->typeName(index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
@@ -260,6 +267,8 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                                 watcher->deleteLater();
                             });
                         } else {
+                            if (QMetaType::typeFlags(returnValue.userType()).testFlag(QMetaType::IsEnumeration))
+                                returnValue = QVariant::fromValue<qint32>(returnValue.toInt());
                             serializeInvokeReplyPacket(m_packet, m_rxName, serialId, returnValue);
                             connection->write(m_packet.array, m_packet.size);
                         }

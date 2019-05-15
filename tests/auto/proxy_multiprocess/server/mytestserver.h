@@ -47,6 +47,7 @@ public:
 public Q_SLOTS:
     bool start() override;
     bool quit() override;
+    MyEnum enumSlot(QPoint p, MyEnum myEnum) override;
 
 Q_SIGNALS:
     void quitApp();

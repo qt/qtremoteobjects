@@ -1,3 +1,5 @@
+#include <QPoint>
+
 POD MyPOD(int i, float f, QString s)
 POD VariantPOD(int i, int j)
 
@@ -9,17 +11,16 @@ class SubClass
 
 class ParentClass
 {
-    // We need several Enums to test dynamic registration
-    ENUM MyEnumProp {foo=1, bar=3, foobar=6}
-    ENUM MyEnumSignal {a=1, b, c}
+    ENUM MyEnum {foo=1, bar=3, foobar=6}
     PROP(bool started = false)
-    PROP(MyEnumProp myEnum=foo)
+    PROP(MyEnum myEnum=foo)
     PROP(QVariant variant)
 
     SLOT(bool start())
     SLOT(bool quit())
     SIGNAL(advance())
-    SIGNAL(enum2(MyEnumSignal myEnumSignal, MyEnumSignal sig2))
+    SIGNAL(enum2(MyEnum myEnum1, MyEnum myEnum2))
+    SLOT(MyEnum enumSlot(QPoint point, MyEnum myEnum))
 
     CLASS subClass(SubClass)
     MODEL tracks(display)

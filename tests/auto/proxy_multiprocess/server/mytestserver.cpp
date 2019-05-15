@@ -29,7 +29,6 @@
 #include <qdebug.h>
 
 #include "mytestserver.h"
-#include "rep_subclass_source.h"
 
 MyTestServer::MyTestServer(QObject *parent)
     : ParentClassSimpleSource(parent)
@@ -52,4 +51,11 @@ bool MyTestServer::quit()
 {
     emit quitApp();
     return true;
+}
+
+ParentClassSource::MyEnum MyTestServer::enumSlot(QPoint p, MyEnum myEnum)
+{
+    Q_UNUSED(p)
+    Q_UNUSED(myEnum)
+    return ParentClassSource::foobar;
 }

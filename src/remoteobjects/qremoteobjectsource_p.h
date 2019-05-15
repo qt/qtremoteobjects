@@ -134,6 +134,7 @@ public:
     ~DynamicApiMap() override {}
     QString name() const override { return m_name; }
     QString typeName() const override { return m_typeName; }
+    QByteArray className() const override { return QByteArray(m_metaObject->className()); }
     int enumCount() const override { return m_enumCount; }
     int propertyCount() const override { return m_properties.size(); }
     int signalCount() const override { return m_signals.size(); }

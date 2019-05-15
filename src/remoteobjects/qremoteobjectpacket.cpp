@@ -286,12 +286,14 @@ void recurseForGadgets(GadgetsData &gadgets, const QRemoteObjectSourceBase *sour
 void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
-    bool dynamic = source->m_api->isDynamic();
-    const QByteArray classname(source->m_api->typeName().toLatin1());
-    const QByteArray sourcename = QByteArray(classname).append("Source");
-    auto replace = [&classname, &sourcename, dynamic](QByteArray &name) {
-        if (!dynamic) // Compiled classes likely have <ClassNameSource> that should be <ClassName>
-            name.replace(sourcename, classname);
+    const QByteArray desiredClassName(api->typeName().toLatin1());
+    const QByteArray originalClassName = api->className();
+    // The dynamic class will be called typeName on the receiving side of this definition
+    // However, there are types like enums that have the QObject's class name.  Replace()
+    // will convert a parameter such as "ParentClassSource::MyEnum" to "ParentClass::MyEnum"
+    // so the type can be properly resolved and registered.
+    auto replace = [&originalClassName, &desiredClassName](QByteArray &name) {
+        name.replace(originalClassName, desiredClassName);
     };
 
     ds << source->m_api->typeName();
@@ -370,11 +372,15 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
     for (int i = 0; i < numMethods; ++i) {
         const int index = api->sourceMethodIndex(i);
         Q_ASSERT(index >= 0);
+        auto signature = api->methodSignature(i);
+        replace(signature);
+        auto typeName = api->typeName(i);
+        replace(typeName);
 #ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug() << "  Slot" << i << "(signature =" << api->methodSignature(i) << "parameter names =" << api->methodParameterNames(i) << "return type =" << api->typeName(i) << ")";
+        qDebug() << "  Slot" << i << "(signature =" << signature << "parameter names =" << api->methodParameterNames(i) << "return type =" << typeName << ")";
 #endif
-        ds << api->methodSignature(i);
-        ds << api->typeName(i);
+        ds << signature;
+        ds << typeName;
         ds << api->methodParameterNames(i);
     }
 
@@ -567,8 +573,7 @@ QRO_::QRO_(const QVariant &value)
 QDataStream &operator<<(QDataStream &stream, const QRO_ &info)
 {
     stream << info.name << info.typeName << (quint8)(info.type) << info.classDefinition << info.isNull;
-    qCDebug(QT_REMOTEOBJECT) << "Serializing QRO_" << info.name << info.typeName << (info.type == ObjectType::CLASS ? "Class" : info.type == ObjectType::MODEL ? "Model" : "Gadget")
-                             << (info.isNull ? "nullptr" : "valid pointer") << (info.classDefinition.isEmpty() ? "no definitions" : "with definitions");
+    qCDebug(QT_REMOTEOBJECT) << "Serializing " << info;
     // info.parameters will be filled in by serializeProperty
     return stream;
 }
@@ -578,8 +583,7 @@ QDataStream &operator>>(QDataStream &stream, QRO_ &info)
     quint8 tmpType;
     stream >> info.name >> info.typeName >> tmpType >> info.classDefinition >> info.isNull;
     info.type = static_cast<ObjectType>(tmpType);
-    qCDebug(QT_REMOTEOBJECT) << "Deserializing QRO_" << info.name << info.typeName << (info.isNull ? "nullptr" : "valid pointer")
-                             << (info.classDefinition.isEmpty() ? "no definitions" : "with definitions");
+    qCDebug(QT_REMOTEOBJECT) << "Deserializing " << info;
     if (!info.isNull)
         stream >> info.parameters;
     return stream;
