@@ -44,13 +44,66 @@
 #include "qremoteobjectpendingcall.h"
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
+#include <cstring>
 
 //#define QTRO_VERBOSE_PROTOCOL
 QT_BEGIN_NAMESPACE
 
+
+// Add methods so we can use QMetaEnum in a set
+// Note for both functions we are skipping string comparisons/hashes.  Since the
+// metaObjects are the same, we can just use the address of the string.
+inline bool operator==(const QMetaEnum e1, const QMetaEnum e2)
+{
+    return e1.enclosingMetaObject() == e2.enclosingMetaObject()
+           && e1.name() == e2.name()
+           && e1.enumName() == e2.enumName()
+           && e1.scope() == e2.scope();
+}
+
+inline uint qHash(const QMetaEnum &key, uint seed=0) Q_DECL_NOTHROW
+{
+    return qHash(key.enclosingMetaObject(), seed) ^ qHash(static_cast<const void *>(key.name()), seed)
+           ^ qHash(static_cast<const void *>(key.enumName()), seed) ^ qHash(static_cast<const void *>(key.scope()), seed);
+}
+
 using namespace QtRemoteObjects;
 
 namespace QRemoteObjectPackets {
+
+// QDataStream sends QVariants of custom types by sending their typename, allowing decode
+// on the receiving side.  For QtRO and enums, this won't work, as the enums have different
+// scopes.  E.g., the examples have ParentClassSource::MyEnum and ParentClassReplica::MyEnum.
+// Dynamic types will be created as ParentClass::MyEnum.  So instead, we change the variants
+// to integers (encodeVariant) when sending them.  On the receive side, the we know the
+// types of properties and the signatures for methods, so we can use that information to
+// decode the integer variant into an enum variant (via decodeVariant).
+const QVariant encodeVariant(const QVariant &value)
+{
+    if (QMetaType::typeFlags(value.userType()).testFlag(QMetaType::IsEnumeration)) {
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Converting from enum to integer type" << value << value.value<qint32>();
+#endif
+        auto converted = QVariant(value);
+        converted.convert(2); // typeId for int from qmetatype.h
+        return converted;
+    }
+    return value;
+}
+
+QVariant &decodeVariant(QVariant &value, int type)
+{
+    if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
+#ifdef QTRO_VERBOSE_PROTOCOL
+        int asInt = value.value<qint32>();
+#endif
+        value.convert(type);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Converting to enum from integer type" << value << asInt;
+#endif
+    }
+    return value;
+}
 
 void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, int internalIndex)
 {
@@ -59,10 +112,6 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
     const auto target = source->m_api->isAdapterProperty(internalIndex) ? source->m_adapter : source->m_object;
     const auto property = target->metaObject()->property(propertyIndex);
     const QVariant value = property.read(target);
-    if (property.isEnumType()) {
-        ds << QVariant::fromValue<qint32>(value.toInt());
-        return;
-    }
     if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
         auto const childSource = source->m_children.value(internalIndex);
         auto valueAsPointerToQObject = qvariant_cast<QObject *>(value);
@@ -98,17 +147,7 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
             return;
         }
     }
-    ds << value; // return original
-}
-
-QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property)
-{
-    if (property.isEnumType()) {
-        const qint32 enumValue = in.toInt();
-        return QVariant(property.userType(), &enumValue);
-    } else {
-        return in; // return original
-    }
+    ds << encodeVariant(value);
 }
 
 void serializeHandshakePacket(DataStreamPacket &ds)
@@ -224,7 +263,23 @@ static ObjectType objectType(const QString &typeName)
     return ObjectType::CLASS;
 }
 
-void recurseForGadgets(GadgetsData &gadgets, const QRemoteObjectSourceBase *source)
+// Same method as in QVariant.cpp, as it isn't publicly exposed...
+static QMetaEnum metaEnumFromType(int type)
+{
+    QMetaType t(type);
+    if (t.flags() & QMetaType::IsEnumeration) {
+        if (const QMetaObject *metaObject = t.metaObject()) {
+            const char *enumName = QMetaType::typeName(type);
+            const char *lastColon = std::strrchr(enumName, ':');
+            if (lastColon)
+                enumName = lastColon + 1;
+            return metaObject->enumerator(metaObject->indexOfEnumerator(enumName));
+        }
+    }
+    return QMetaEnum();
+}
+
+void recurseForGadgets(GadgetsData &gadgets, QSet<QMetaEnum> &enums, const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
 
@@ -236,6 +291,13 @@ void recurseForGadgets(GadgetsData &gadgets, const QRemoteObjectSourceBase *sour
         const int params = api->signalParameterCount(si);
         for (int pi = 0; pi < params; ++pi) {
             const int type = api->signalParameterType(si, pi);
+            if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
+                QMetaEnum meta = metaEnumFromType(type);
+                if (source->m_object->inherits(meta.enclosingMetaObject()->className()))
+                    continue; // Enum is part of this object, it will be found below
+                enums.insert(meta);
+                continue;
+            }
             if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
                 continue;
             const auto mo = QMetaType::metaObjectForType(type);
@@ -250,6 +312,13 @@ void recurseForGadgets(GadgetsData &gadgets, const QRemoteObjectSourceBase *sour
         const int params = api->methodParameterCount(mi);
         for (int pi = 0; pi < params; ++pi) {
             const int type = api->methodParameterType(mi, pi);
+            if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
+                QMetaEnum meta = metaEnumFromType(type);
+                if (source->m_object->inherits(meta.enclosingMetaObject()->className()))
+                    continue; // Enum is part of this object, it will be found below
+                enums.insert(meta);
+                continue;
+            }
             if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
                 continue;
             const auto mo = QMetaType::metaObjectForType(type);
@@ -264,12 +333,19 @@ void recurseForGadgets(GadgetsData &gadgets, const QRemoteObjectSourceBase *sour
         Q_ASSERT(index >= 0);
         const auto target = api->isAdapterProperty(pi) ? source->m_adapter : source->m_object;
         const auto metaProperty = target->metaObject()->property(index);
+        if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::IsEnumeration)) {
+            QMetaEnum meta = metaProperty.enumerator();
+            if (source->m_object->inherits(meta.enclosingMetaObject()->className()))
+                continue; // Enum is part of this object, it will be found below
+            enums.insert(meta);
+            continue;
+        }
         if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::PointerToQObject)) {
             auto const type = objectType(QString::fromLatin1(metaProperty.typeName()));
             if (type == ObjectType::CLASS) {
                 auto const childSource = source->m_children.value(pi);
                 if (childSource->m_object)
-                    recurseForGadgets(gadgets, childSource);
+                    recurseForGadgets(gadgets, enums, childSource);
             }
         }
         const int type = metaProperty.userType();
@@ -330,7 +406,17 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
 
     if (source->d->isDynamic) {
         GadgetsData gadgets;
-        recurseForGadgets(gadgets, source);
+        QSet<QMetaEnum> enums;
+        recurseForGadgets(gadgets, enums, source);
+        ds << quint32(enums.size());
+        for (const auto metaEnum : enums) {
+            bool qtEnum = metaEnum.enclosingMetaObject() == qt_getQtMetaObject(); // Are the other Qt metaclasses for enums?
+            if (qtEnum) {
+                QByteArray enumName(metaEnum.scope());
+                enumName.append("::", 2).append(metaEnum.name());
+                ds << enumName;
+            }
+        }
         ds << quint32(gadgets.size());
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "  Found" << gadgets.size() << "gadget/pod types";
@@ -453,12 +539,8 @@ void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, 
     ds << index;
 
     ds << (quint32)args.size();
-    foreach (const auto &arg, args) {
-        if (QMetaType::typeFlags(arg.userType()).testFlag(QMetaType::IsEnumeration))
-            ds << QVariant::fromValue<qint32>(arg.toInt());
-        else
-            ds << arg;
-    }
+    foreach (const auto &arg, args)
+        ds << encodeVariant(arg);
 
     ds << serialId;
     ds << propertyIndex;

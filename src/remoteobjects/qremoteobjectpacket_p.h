@@ -175,8 +175,10 @@ private:
     Q_DISABLE_COPY(DataStreamPacket)
 };
 
+const QVariant encodeVariant(const QVariant &value);
+QVariant &decodeVariant(QVariant &value, int type);
+
 void serializeProperty(QDataStream &, const QRemoteObjectSourceBase *source, int internalIndex);
-QVariant deserializedProperty(const QVariant &in, const QMetaProperty &property);
 
 void serializeHandshakePacket(DataStreamPacket &);
 void serializeInitPacket(DataStreamPacket &, const QRemoteObjectRootSource*);

@@ -1,5 +1,7 @@
 #include <QPoint>
 
+USE_ENUM(Qt::DateFormat)
+
 POD MyPOD(int i, float f, QString s)
 POD VariantPOD(int i, int j)
 
@@ -15,12 +17,16 @@ class ParentClass
     PROP(bool started = false)
     PROP(MyEnum myEnum=foo)
     PROP(QVariant variant)
+    PROP(Qt::DateFormat date = Qt::ISODate)
 
     SLOT(bool start())
     SLOT(bool quit())
     SIGNAL(advance())
     SIGNAL(enum2(MyEnum myEnum1, MyEnum myEnum2))
     SLOT(MyEnum enumSlot(QPoint point, MyEnum myEnum))
+
+    SIGNAL(updateDate(Qt::DateFormat date1, Qt::DateFormat date2))
+    SLOT(Qt::DateFormat dateSlot(Qt::DateFormat date))
 
     CLASS subClass(SubClass)
     MODEL tracks(display)
