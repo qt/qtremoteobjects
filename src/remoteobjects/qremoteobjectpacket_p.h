@@ -72,6 +72,8 @@ class QRemoteObjectRootSource;
 
 namespace QRemoteObjectPackets {
 
+Q_NAMESPACE
+
 class DataStreamPacket;
 
 struct ObjectInfo
@@ -100,6 +102,7 @@ inline QDataStream& operator>>(QDataStream &stream, ObjectInfo &info)
 typedef QVector<ObjectInfo> ObjectInfoList;
 
 enum class ObjectType : quint8 { CLASS, MODEL, GADGET };
+Q_ENUM_NS(ObjectType)
 
 // Use a short name, as QVariant::save writes the name every time a qvariant of
 // this type is serialized
@@ -118,9 +121,9 @@ public:
 
 inline QDebug operator<<(QDebug dbg, const QRO_ &info)
 {
-    dbg.nospace() << "QRO_(name: " << info.name << "typeName: " << info.typeName << "type: " << (info.type == ObjectType::CLASS ? "Class" : "Model")
-                  << ", valid: " << (info.isNull ? "true" : "false")
-                  << ", paremeters: {" << info.parameters <<")";
+    dbg.nospace() << "QRO_(name: " << info.name << ", typeName: " << info.typeName << ", type: " << info.type
+                  << ", valid: " << (info.isNull ? "true" : "false") << ", paremeters: {" << info.parameters <<")"
+                  << (info.classDefinition.isEmpty() ? " no definitions)" : " with definitions)");
     return dbg.space();
 }
 

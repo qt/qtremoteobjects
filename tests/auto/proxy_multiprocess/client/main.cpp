@@ -69,14 +69,26 @@ private Q_SLOTS:
             QCOMPARE(m_rep->variant(), QVariant());
         }
 
+        QPoint p(1, 2);
+        auto enumReply = m_rep->enumSlot(p, ParentClassReplica::bar);
+        QVERIFY(enumReply.waitForFinished());
+        QCOMPARE(enumReply.error(), QRemoteObjectPendingCall::NoError);
+        QCOMPARE(enumReply.returnValue(), QVariant::fromValue(ParentClassReplica::foobar));
+
         qDebug() << "Verified expected initial states, sending start.";
+        QSignalSpy enumSpy(m_rep.data(), &ParentClassReplica::enum2);
+        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
         auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
         QVERIFY(reply.error() == QRemoteObjectPendingCall::NoError);
         QCOMPARE(reply.returnValue(), QVariant::fromValue(true));
+        QVERIFY(enumSpy.wait());
+        QCOMPARE(enumSpy.count(), 1);
+        const auto arguments = enumSpy.takeFirst();
+        QCOMPARE(arguments.at(0), QVariant::fromValue(ParentClassReplica::foo));
+        QCOMPARE(arguments.at(1), QVariant::fromValue(ParentClassReplica::bar));
 
-        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
-        QVERIFY(advanceSpy.wait());
+        QVERIFY(advanceSpy.count() || advanceSpy.wait());
         QVERIFY(m_rep->subClass() != nullptr);
         QCOMPARE(m_rep->subClass()->myPOD(), updatedValue);
         QCOMPARE(m_rep->subClass()->i(), updatedI);

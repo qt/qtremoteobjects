@@ -171,6 +171,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
         id = -1;
     } else if (call == QMetaObject::InvokeMetaMethod) {
         if (id < impl->m_numSignals) {
+            qCDebug(QT_REMOTEOBJECT) << "DynamicReplica Activate" << impl->m_metaObject->method(saved_id).methodSignature();
             // signal relay from Source world to Replica
             QMetaObject::activate(this, impl->m_metaObject, id, argv);
 
