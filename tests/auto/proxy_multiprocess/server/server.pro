@@ -14,6 +14,7 @@ SOURCES += main.cpp \
 
 HEADERS += \
     ../shared.h \
+    ../namespace.h \
     mytestserver.h \
     $$OUT_PWD/rep_subclass_source.h
 

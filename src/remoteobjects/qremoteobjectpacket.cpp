@@ -224,32 +224,7 @@ void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectRootSou
     ds.finishPacket();
 }
 
-static void mergeData(GadgetsData &a, const GadgetsData &b)
-{
-    for (auto it = b.constBegin(); it != b.constEnd(); ++it)
-        a[it.key()] = it.value();
-}
-
-static GadgetsData gadgetData(const QMetaObject *mo)
-{
-    if (!mo)
-        return {};
-    GadgetsData res;
-    auto & properties = res[mo->className()];
-    const int numProperties = mo->propertyCount();
-    for (int i = 0; i < numProperties; ++i) {
-        const auto property = mo->property(i);
-        GadgetProperty data;
-        data.name = property.name();
-        data.type = property.typeName();
-        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::IsGadget))
-            mergeData(res, gadgetData(QMetaType::metaObjectForType(property.userType())));
-        properties.push_back(data);
-    }
-    return res;
-}
-
-static ObjectType objectType(const QString &typeName)
+static ObjectType getObjectType(const QString &typeName)
 {
     if (typeName == QLatin1String("QAbstractItemModelAdapter"))
         return ObjectType::MODEL;
@@ -279,7 +254,35 @@ static QMetaEnum metaEnumFromType(int type)
     return QMetaEnum();
 }
 
-void recurseForGadgets(GadgetsData &gadgets, QSet<QMetaEnum> &enums, const QRemoteObjectSourceBase *source)
+static bool checkEnum(int type, QSet<QMetaEnum> &enums)
+{
+    if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
+        QMetaEnum meta = metaEnumFromType(type);
+        enums.insert(meta);
+        return true;
+    }
+    return false;
+}
+
+static void recurseMetaobject(const QMetaObject *mo, QSet<const QMetaObject *> &gadgets, QSet<QMetaEnum> &enums)
+{
+    if (!mo || gadgets.contains(mo))
+        return;
+    gadgets.insert(mo);
+    const int numProperties = mo->propertyCount();
+    for (int i = 0; i < numProperties; ++i) {
+        const auto property = mo->property(i);
+        if (checkEnum(property.userType(), enums))
+            continue;
+        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::IsGadget))
+            recurseMetaobject(QMetaType::metaObjectForType(property.userType()), gadgets, enums);
+    }
+}
+
+// A Source may only use a subset of the metaobjects properties/signals/slots, so we only search
+// the ones in the API.  For nested pointer types, we will have another api to limit the search.
+// For nested PODs/enums, we search the entire qobject (using the recurseMetaobject call()).
+void recurseForGadgets(QSet<const QMetaObject *> &gadgets, QSet<QMetaEnum> &enums, const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
 
@@ -291,19 +294,14 @@ void recurseForGadgets(GadgetsData &gadgets, QSet<QMetaEnum> &enums, const QRemo
         const int params = api->signalParameterCount(si);
         for (int pi = 0; pi < params; ++pi) {
             const int type = api->signalParameterType(si, pi);
-            if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
-                QMetaEnum meta = metaEnumFromType(type);
-                if (source->m_object->inherits(meta.enclosingMetaObject()->className()))
-                    continue; // Enum is part of this object, it will be found below
-                enums.insert(meta);
+            if (checkEnum(type, enums))
                 continue;
-            }
             if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
                 continue;
             const auto mo = QMetaType::metaObjectForType(type);
             if (source->d->sentTypes.contains(QLatin1String(mo->className())))
                 continue;
-            mergeData(gadgets, gadgetData(mo));
+            recurseMetaobject(mo, gadgets, enums);
             source->d->sentTypes.insert(QLatin1String(mo->className()));
         }
     }
@@ -312,19 +310,14 @@ void recurseForGadgets(GadgetsData &gadgets, QSet<QMetaEnum> &enums, const QRemo
         const int params = api->methodParameterCount(mi);
         for (int pi = 0; pi < params; ++pi) {
             const int type = api->methodParameterType(mi, pi);
-            if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
-                QMetaEnum meta = metaEnumFromType(type);
-                if (source->m_object->inherits(meta.enclosingMetaObject()->className()))
-                    continue; // Enum is part of this object, it will be found below
-                enums.insert(meta);
+            if (checkEnum(type, enums))
                 continue;
-            }
             if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
                 continue;
             const auto mo = QMetaType::metaObjectForType(type);
             if (source->d->sentTypes.contains(QLatin1String(mo->className())))
                 continue;
-            mergeData(gadgets, gadgetData(mo));
+            recurseMetaobject(mo, gadgets, enums);
             source->d->sentTypes.insert(QLatin1String(mo->className()));
         }
     }
@@ -333,29 +326,113 @@ void recurseForGadgets(GadgetsData &gadgets, QSet<QMetaEnum> &enums, const QRemo
         Q_ASSERT(index >= 0);
         const auto target = api->isAdapterProperty(pi) ? source->m_adapter : source->m_object;
         const auto metaProperty = target->metaObject()->property(index);
-        if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::IsEnumeration)) {
-            QMetaEnum meta = metaProperty.enumerator();
-            if (source->m_object->inherits(meta.enclosingMetaObject()->className()))
-                continue; // Enum is part of this object, it will be found below
-            enums.insert(meta);
+        const int type = metaProperty.userType();
+        if (checkEnum(type, enums))
             continue;
-        }
-        if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::PointerToQObject)) {
-            auto const type = objectType(QString::fromLatin1(metaProperty.typeName()));
-            if (type == ObjectType::CLASS) {
+        if (QMetaType::typeFlags(type).testFlag(QMetaType::PointerToQObject)) {
+            auto const objectType = getObjectType(QString::fromLatin1(metaProperty.typeName()));
+            if (objectType == ObjectType::CLASS) {
                 auto const childSource = source->m_children.value(pi);
                 if (childSource->m_object)
                     recurseForGadgets(gadgets, enums, childSource);
             }
         }
-        const int type = metaProperty.userType();
         if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
             continue;
         const auto mo = QMetaType::metaObjectForType(type);
         if (source->d->sentTypes.contains(QLatin1String(mo->className())))
             continue;
-        mergeData(gadgets, gadgetData(mo));
+        recurseMetaobject(mo, gadgets, enums);
         source->d->sentTypes.insert(QLatin1String(mo->className()));
+    }
+}
+
+static bool checkForEnumsInSource(const QMetaObject *meta, const QRemoteObjectSourceBase *source)
+{
+    if (source->m_object->inherits(meta->className()))
+        return true;
+    for (const auto child : source->m_children) {
+        if (child->m_object && checkForEnumsInSource(meta, child))
+            return true;
+    }
+    return false;
+}
+
+static void serializeEnum(QDataStream &ds, const QMetaEnum &enumerator)
+{
+    ds << QByteArray::fromRawData(enumerator.name(), qstrlen(enumerator.name()));
+    ds << enumerator.isFlag();
+    ds << enumerator.isScoped();
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug("  Enum (name = %s, isFlag = %s, isScoped = %s):", enumerator.name(), enumerator.isFlag() ? "true" : "false", enumerator.isScoped() ? "true" : "false");
+#endif
+    const int keyCount = enumerator.keyCount();
+    ds << keyCount;
+    for (int k = 0; k < keyCount; ++k) {
+        ds << QByteArray::fromRawData(enumerator.key(k), qstrlen(enumerator.key(k)));
+        ds << enumerator.value(k);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug("    Key %d (name = %s, value = %d):", k, enumerator.key(k), enumerator.value(k));
+#endif
+    }
+}
+
+static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &gadgets, const QSet<QMetaEnum> &enums, const QRemoteObjectSourceBase *source=nullptr)
+{
+    // Determine how to handle the enums found
+    QSet<QMetaEnum> qtEnums;
+    QSet<const QMetaObject *> dynamicEnumMetaObjects;
+    for (const auto metaEnum : enums) {
+        auto const metaObject = metaEnum.enclosingMetaObject();
+        if (gadgets.contains(metaObject)) // Part of a gadget will we serialize
+            continue;
+        // This checks if the enum is defined in our object heirarchy, in which case it will
+        // already have been serialized.
+        if (source && checkForEnumsInSource(metaObject, source->d->root))
+            continue;
+        // qtEnums are enumerations already known by Qt, so we only need register them.
+        // We don't need to send all of the key/value data.
+        if (metaObject == qt_getQtMetaObject()) // Are the other Qt metaclasses for enums?
+            qtEnums.insert(metaEnum);
+        else
+            dynamicEnumMetaObjects.insert(metaEnum.enclosingMetaObject());
+    }
+    ds << quint32(qtEnums.size());
+    for (const auto metaEnum : qtEnums) {
+        QByteArray enumName(metaEnum.scope());
+        enumName.append("::", 2).append(metaEnum.name());
+        ds << enumName;
+    }
+    const auto allMetaObjects = gadgets + dynamicEnumMetaObjects;
+    ds << quint32(allMetaObjects.size());
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug() << "  Found" << gadgets.size() << "gadget/pod and" << (allMetaObjects.size() - gadgets.size()) << "enum types";
+    int i = 0;
+#endif
+    // There isn't an easy way to update a metaobject incrementally, so we
+    // send all of the metaobject's enums, but no properties, when an external
+    // enum is requested.
+    for (auto const meta : allMetaObjects) {
+        ds << QByteArray::fromRawData(meta->className(), qstrlen(meta->className()));
+        int propertyCount = gadgets.contains(meta) ? meta->propertyCount() : 0;
+        ds << quint32(propertyCount);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug("  Gadget %d (name = %s, # properties = %d, # enums = %d):", i++, meta->className(), propertyCount, meta->enumeratorCount());
+#endif
+        for (int j = 0; j < propertyCount; j++) {
+            auto prop = meta->property(j);
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug("    Data member %d (name = %s, type = %s):", j, prop.name(), prop.typeName());
+#endif
+            ds << QByteArray::fromRawData(prop.name(), qstrlen(prop.name()));
+            ds << QByteArray::fromRawData(prop.typeName(), qstrlen(prop.typeName()));
+        }
+        int enumCount = meta->enumeratorCount();
+        ds << enumCount;
+        for (int j = 0; j < enumCount; j++) {
+            auto const enumMeta = meta->enumerator(j);
+            serializeEnum(ds, enumMeta);
+        }
     }
 }
 
@@ -387,57 +464,16 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
     for (int i = 0; i < numEnums; ++i) {
         auto enumerator = metaObject->enumerator(api->sourceEnumIndex(i));
         Q_ASSERT(enumerator.isValid());
-        ds << enumerator.name();
-        ds << enumerator.isFlag();
-        ds << enumerator.scope();
-#ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug("  Enum %d (name = %s, isFlag = %s, scope = %s):", i, enumerator.name(), enumerator.isFlag() ? "true" : "false", enumerator.scope());
-#endif
-        const int keyCount = enumerator.keyCount();
-        ds << keyCount;
-        for (int k = 0; k < keyCount; ++k) {
-            ds << enumerator.key(k);
-            ds << enumerator.value(k);
-#ifdef QTRO_VERBOSE_PROTOCOL
-            qDebug("    Key %d (name = %s, value = %d):", k, enumerator.key(k), enumerator.value(k));
-#endif
-        }
+        serializeEnum(ds, enumerator);
     }
 
     if (source->d->isDynamic) {
-        GadgetsData gadgets;
+        QSet<const QMetaObject *> gadgets;
         QSet<QMetaEnum> enums;
         recurseForGadgets(gadgets, enums, source);
-        ds << quint32(enums.size());
-        for (const auto metaEnum : enums) {
-            bool qtEnum = metaEnum.enclosingMetaObject() == qt_getQtMetaObject(); // Are the other Qt metaclasses for enums?
-            if (qtEnum) {
-                QByteArray enumName(metaEnum.scope());
-                enumName.append("::", 2).append(metaEnum.name());
-                ds << enumName;
-            }
-        }
-        ds << quint32(gadgets.size());
-#ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug() << "  Found" << gadgets.size() << "gadget/pod types";
-        int i = 0, j = 0;
-#endif
-        for (auto it = gadgets.constBegin(); it != gadgets.constEnd(); ++it) {
-            ds << it.key();
-            ds << quint32(it.value().size());
-#ifdef QTRO_VERBOSE_PROTOCOL
-            qDebug("  Gadget %d (name = %s):", i++, it.key().constData());
-#endif
-            for (const auto &prop : qAsConst(it.value())) {
-#ifdef QTRO_VERBOSE_PROTOCOL
-                qDebug("    Data member %d (name = %s, type = %s):", j++, prop.name.constData(), prop.type.constData());
-#endif
-                ds << prop.name;
-                ds << prop.type;
-            }
-        }
+        serializeGadgets(ds, gadgets, enums, source);
     } else
-        ds << quint32(0);
+        ds << quint32(0) << quint32(0); // qtEnums, numGadgets
 
     const int numSignals = api->signalCount();
     ds << quint32(numSignals);  //Number of signals
@@ -483,10 +519,10 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
         qDebug() << "  Property" << i << "name =" << metaProperty.name();
 #endif
         if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::PointerToQObject)) {
-            auto type = objectType(QLatin1String(metaProperty.typeName()));
-            ds << (type == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
+            auto objectType = getObjectType(QLatin1String(metaProperty.typeName()));
+            ds << (objectType == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
 #ifdef QTRO_VERBOSE_PROTOCOL
-            qDebug() << "    Type:" << (type == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
+            qDebug() << "    Type:" << (objectType == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
 #endif
         } else {
             ds << metaProperty.typeName();
@@ -618,7 +654,7 @@ void serializePongPacket(DataStreamPacket &ds, const QString &name)
 QRO_::QRO_(QRemoteObjectSourceBase *source)
     : name(source->name())
     , typeName(source->m_api->typeName())
-    , type(source->m_adapter ? ObjectType::MODEL : objectType(typeName))
+    , type(source->m_adapter ? ObjectType::MODEL : getObjectType(typeName))
     , isNull(source->m_object == nullptr)
     , classDefinition()
     , parameters()
@@ -631,7 +667,8 @@ QRO_::QRO_(const QVariant &value)
     auto meta = QMetaType::metaObjectForType(value.userType());
     QDataStream out(&classDefinition, QIODevice::WriteOnly);
     const int numProperties = meta->propertyCount();
-    const auto typeName = QByteArray(QMetaType::typeName(value.userType()));
+    const auto typeName = QByteArray::fromRawData(QMetaType::typeName(value.userType()), qstrlen(QMetaType::typeName(value.userType())));
+    out << quint32(0) << quint32(1);
     out << typeName;
     out << numProperties;
 #ifdef QTRO_VERBOSE_PROTOCOL
@@ -642,8 +679,8 @@ QRO_::QRO_(const QVariant &value)
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug("  Data member %d (name = %s, type = %s):", i, property.name(), property.typeName());
 #endif
-        out << property.name();
-        out << property.typeName();
+        out << QByteArray::fromRawData(property.name(), qstrlen(property.name()));
+        out << QByteArray::fromRawData(property.typeName(), qstrlen(property.typeName()));
     }
     QDataStream ds(&parameters, QIODevice::WriteOnly);
     ds << value;

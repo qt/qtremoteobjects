@@ -1,6 +1,8 @@
 #include <QPoint>
+#include "../namespace.h"
 
 USE_ENUM(Qt::DateFormat)
+USE_ENUM(NS::NamespaceEnum)
 
 POD MyPOD(int i, float f, QString s)
 POD VariantPOD(int i, int j)
@@ -18,6 +20,7 @@ class ParentClass
     PROP(MyEnum myEnum=foo)
     PROP(QVariant variant)
     PROP(Qt::DateFormat date = Qt::ISODate)
+    PROP(NS::NamespaceEnum nsEnum = NS::Alpha)
 
     SLOT(bool start())
     SLOT(bool quit())
