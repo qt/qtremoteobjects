@@ -146,7 +146,7 @@ QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceA
 
 QRemoteObjectRootSource::QRemoteObjectRootSource(QObject *obj, const SourceApiMap *api,
                                                  QObject *adapter, QRemoteObjectSourceIo *sourceIo)
-    : QRemoteObjectSourceBase(obj, new Private(sourceIo), api, adapter)
+    : QRemoteObjectSourceBase(obj, new Private(sourceIo, this), api, adapter)
     , m_name(api->name())
 {
     d->m_sourceIo->registerSource(this);

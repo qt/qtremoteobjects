@@ -12,6 +12,7 @@ REPC_REPLICA = ../subclass.rep
 SOURCES += main.cpp \
 
 HEADERS += \
-    ../shared.h
+    ../shared.h \
+    ../namespace.h
 
 INCLUDEPATH += $$PWD

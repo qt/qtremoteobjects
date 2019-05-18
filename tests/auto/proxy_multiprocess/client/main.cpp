@@ -62,12 +62,14 @@ private Q_SLOTS:
             QVERIFY(tracksSpy.count() || tracksSpy.wait());
             QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::bar));
             QCOMPARE(m_rep->date(), QVariant::fromValue(Qt::SystemLocaleShortDate));
+            QCOMPARE(m_rep->nsEnum(), QVariant::fromValue(NS::Bravo));
             QCOMPARE(m_rep->variant(), QVariant::fromValue(42.0f));
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);
             QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::foo));
             QCOMPARE(m_rep->date(), QVariant::fromValue(Qt::ISODate));
+            QCOMPARE(m_rep->nsEnum(), QVariant::fromValue(NS::Alpha));
             QCOMPARE(m_rep->variant(), QVariant());
         }
 
@@ -97,6 +99,7 @@ private Q_SLOTS:
         QVERIFY(m_rep->tracks() != nullptr);
         QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::foobar));
         QCOMPARE(m_rep->date(), QVariant::fromValue(Qt::SystemLocaleLongDate));
+        QCOMPARE(m_rep->nsEnum(), QVariant::fromValue(NS::Charlie));
         QCOMPARE(m_rep->variant(), QVariant::fromValue(podValue));
         qDebug() << "Verified expected final states, cleaning up.";
     }

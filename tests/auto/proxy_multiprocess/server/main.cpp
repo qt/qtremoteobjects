@@ -57,6 +57,7 @@ private Q_SLOTS:
             parent.setTracks(&model);
             parent.setMyEnum(ParentClassSource::bar);
             parent.setDate(Qt::SystemLocaleShortDate);
+            parent.setNsEnum(NS::Bravo);
             parent.setVariant(QVariant::fromValue(42.0f));
         }
 
@@ -84,6 +85,7 @@ private Q_SLOTS:
             parent.setTracks(&model);
         parent.setMyEnum(ParentClassSource::foobar);
         parent.setDate(Qt::SystemLocaleLongDate);
+        parent.setNsEnum(NS::Charlie);
         parent.setVariant(QVariant::fromValue(podValue));
         emit parent.enum2(ParentClassSource::foo, ParentClassSource::bar);
 
