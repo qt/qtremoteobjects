@@ -703,7 +703,7 @@ struct EnumPair {
 struct EnumData {
     QByteArray name;
     bool isFlag, isScoped;
-    quint32 keyCount;
+    quint32 keyCount, size;
     QVector<EnumPair> values;
 };
 
@@ -727,9 +727,30 @@ static void registerEnum(const QByteArray &name, const QMetaObject *meta, int si
     if (QMetaType::isRegistered(QMetaType::type(name)))
         return;
     static const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
-    int id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
-                                     &EnumConstructor<qint32>, size, flags, meta);
-    qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << id << name;
+    int id;
+    switch (size) {
+    case 1: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint8>,
+                                                 &EnumConstructor<qint8>, size, flags, meta);
+        break;
+    case 2: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint16>,
+                                                 &EnumConstructor<qint16>, size, flags, meta);
+        break;
+    case 4: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
+                                                 &EnumConstructor<qint32>, size, flags, meta);
+        break;
+    // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
+//    case 8: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint64>,
+//                                                 &EnumConstructor<qint64>, size, flags, meta);
+//        break;
+    default:
+        qWarning() << "Invalid enum detected" << name << "with size" << size << ".  Defaulting to register as int.";
+        id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
+                                                 &EnumConstructor<qint32>, size, flags, meta);
+    }
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug() << "Registering new enum with id" << id << name << "size:" << size;
+#endif
+    qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << id << name << "size:" << size;
 }
 
 static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
@@ -768,7 +789,7 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
    const auto enumCount = meta->enumeratorCount();
    for (int i = 0; i < enumCount; i++) {
        const QByteArray registeredName = QByteArray(typeName).append("::").append(meta->enumerator(i).name());
-       registerEnum(registeredName, meta);
+       registerEnum(registeredName, meta, gadget.enums.at(i).size);
    }
    QMetaType::TypeFlags flags = QMetaType::IsGadget;
    int gadgetTypeId;
@@ -806,6 +827,7 @@ static void deserializeEnum(QDataStream &ds, EnumData &enumData)
     ds >> enumData.name;
     ds >> enumData.isFlag;
     ds >> enumData.isScoped;
+    ds >> enumData.size;
     ds >> enumData.keyCount;
     for (quint32 i = 0; i < enumData.keyCount; i++) {
         EnumPair pair;
@@ -871,12 +893,14 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     builder.setClassName(type);
 
     in >> numEnums;
+    QVector<quint32> enumSizes(numEnums);
     for (quint32 i = 0; i < numEnums; ++i) {
         EnumData enumData;
         deserializeEnum(in, enumData);
         auto enumBuilder = builder.addEnumerator(enumData.name);
         enumBuilder.setIsFlag(enumData.isFlag);
         enumBuilder.setIsScoped(enumData.isScoped);
+        enumSizes[i] = enumData.size;
 
         for (quint32 k = 0; k < enumData.keyCount; ++k) {
             const auto pair = enumData.values.at(k);
@@ -935,10 +959,11 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     // We only want to register the new enumerations, and since we just added them, we know they
     // are the last indices.  Thus a backwards count seems most efficient.
     const int totalEnumCount = meta->enumeratorCount();
+    int incrementingIndex = 0;
     for (int i = numEnums; i > 0; i--) {
         auto const enumMeta = meta->enumerator(totalEnumCount - i);
         const QByteArray registeredName = QByteArray(type).append("::").append(enumMeta.name());
-        registerEnum(registeredName, meta);
+        registerEnum(registeredName, meta, enumSizes.at(incrementingIndex++));
     }
     dynamicTypes.insert(typeString, meta);
     return meta;
