@@ -81,11 +81,21 @@ namespace QRemoteObjectPackets {
 const QVariant encodeVariant(const QVariant &value)
 {
     if (QMetaType::typeFlags(value.userType()).testFlag(QMetaType::IsEnumeration)) {
-#ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug() << "Converting from enum to integer type" << value << value.value<qint32>();
-#endif
         auto converted = QVariant(value);
-        converted.convert(2); // typeId for int from qmetatype.h
+        const auto size = QMetaType(value.userType()).sizeOf();
+        switch (size) {
+        case 1: converted.convert(QMetaType::Char); break;
+        case 2: converted.convert(QMetaType::Short); break;
+        case 4: converted.convert(QMetaType::Int); break;
+        // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
+//        case 8: converted.convert(QMetaType::Long); break; // typeId for long from qmetatype.h
+        default:
+            qWarning() << "Invalid enum detected" << QMetaType::typeName(value.userType()) << "with size" << size;
+            converted.convert(QMetaType::Int);
+        }
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Converting from enum to integer type" << size << converted << value;
+#endif
         return converted;
     }
     return value;
@@ -95,11 +105,11 @@ QVariant &decodeVariant(QVariant &value, int type)
 {
     if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
 #ifdef QTRO_VERBOSE_PROTOCOL
-        int asInt = value.value<qint32>();
+        QVariant encoded(value);
 #endif
         value.convert(type);
 #ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug() << "Converting to enum from integer type" << value << asInt;
+        qDebug() << "Converting to enum from integer type" << value << encoded;
 #endif
     }
     return value;
@@ -363,8 +373,11 @@ static void serializeEnum(QDataStream &ds, const QMetaEnum &enumerator)
     ds << QByteArray::fromRawData(enumerator.name(), qstrlen(enumerator.name()));
     ds << enumerator.isFlag();
     ds << enumerator.isScoped();
+    const auto typeName = QByteArray(enumerator.scope()).append("::").append(enumerator.name());
+    quint32 size = QMetaType(QMetaType::type(typeName.constData())).sizeOf();
+    ds << size;
 #ifdef QTRO_VERBOSE_PROTOCOL
-    qDebug("  Enum (name = %s, isFlag = %s, isScoped = %s):", enumerator.name(), enumerator.isFlag() ? "true" : "false", enumerator.isScoped() ? "true" : "false");
+    qDebug("  Enum (name = %s, size = %d, isFlag = %s, isScoped = %s):", enumerator.name(), size, enumerator.isFlag() ? "true" : "false", enumerator.isScoped() ? "true" : "false");
 #endif
     const int keyCount = enumerator.keyCount();
     ds << keyCount;
