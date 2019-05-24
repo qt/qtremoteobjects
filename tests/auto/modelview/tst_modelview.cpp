@@ -207,7 +207,10 @@ void compareIndex(const QModelIndex &sourceIndex, const QModelIndex &replicaInde
         QCOMPARE(replicaColumnCount, sourceColumnCount);
     for (int i = 0; i < sourceRowCount; ++i) {
         for (int j = 0; j < sourceColumnCount; ++j) {
-            compareIndex(sourceIndex.child(i, j), replicaIndex.child(i, j), roles);
+            auto sourceChild = sourceModel->index(i, j, sourceIndex);
+            auto replicaChild = replicaModel->index(i, j, replicaIndex);
+            compareIndex(sourceChild, replicaChild, roles);
+
         }
     }
 }
