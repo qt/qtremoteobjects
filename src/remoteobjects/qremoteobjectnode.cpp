@@ -118,6 +118,42 @@ static void GadgetLoadOperator(QDataStream &in, void *data)
         in >> prop;
 }
 
+// Like the Q_GADGET static methods above, we need constructor/destructor methods
+// in order to use dynamically defined enums with QVariant or as signal/slot
+// parameters (i.e., the queued connection mechanism, which QtRO leverages).
+//
+// We will need the enum methods to support different sizes when typed scope enum
+// support is added, so might as well use that now.
+template<typename T>
+static void EnumDestructor(void *ptr)
+{
+    static_cast<T*>(ptr)->~T();
+}
+
+template<typename T>
+static void *EnumConstructor(void *where, const void *copy)
+{
+    T *ret = where ? new(where) T : new T;
+    if (copy)
+        *ret = *static_cast<const T*>(copy);
+    return ret;
+}
+
+// Not used, but keeping these in case we end up with a need for save/load.
+template<typename T>
+static void EnumSaveOperator(QDataStream & out, const void *data)
+{
+    const T value = *static_cast<const T *>(data);
+    out << value;
+}
+
+template<typename T>
+static void EnumLoadOperator(QDataStream &in, void *data)
+{
+    T value = *static_cast<T *>(data);
+    in >> value;
+}
+
 static QString name(const QMetaObject * const mobj)
 {
     const int ind = mobj->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
@@ -659,9 +695,67 @@ static void trackConnection(int typeId, IoDeviceBase *connection)
     QObject::connect(connection, &IoDeviceBase::destroyed, unregisterIfNotUsed);
 }
 
-static int registerGadget(IoDeviceBase *connection, QRemoteObjectPackets::GadgetsData &gadgets, QByteArray typeName)
+struct EnumPair {
+    QByteArray name;
+    int value;
+};
+
+struct EnumData {
+    QByteArray name;
+    bool isFlag, isScoped;
+    quint32 keyCount, size;
+    QVector<EnumPair> values;
+};
+
+struct GadgetProperty {
+    QByteArray name;
+    QByteArray type;
+};
+
+struct GadgetData {
+    QVector<GadgetProperty> properties;
+    QVector<EnumData> enums;
+};
+
+using Gadgets = QHash<QByteArray, GadgetData>;
+
+static void registerEnum(const QByteArray &name, const QMetaObject *meta, int size=4)
 {
-   const auto &properties = gadgets.take(typeName);
+    // When we add support for enum classes, we will need to set this to something like
+    // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
+    // That is a new feature, though.
+    if (QMetaType::isRegistered(QMetaType::type(name)))
+        return;
+    static const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+    int id;
+    switch (size) {
+    case 1: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint8>,
+                                                 &EnumConstructor<qint8>, size, flags, meta);
+        break;
+    case 2: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint16>,
+                                                 &EnumConstructor<qint16>, size, flags, meta);
+        break;
+    case 4: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
+                                                 &EnumConstructor<qint32>, size, flags, meta);
+        break;
+    // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
+//    case 8: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint64>,
+//                                                 &EnumConstructor<qint64>, size, flags, meta);
+//        break;
+    default:
+        qWarning() << "Invalid enum detected" << name << "with size" << size << ".  Defaulting to register as int.";
+        id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
+                                                 &EnumConstructor<qint32>, size, flags, meta);
+    }
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug() << "Registering new enum with id" << id << name << "size:" << size;
+#endif
+    qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << id << name << "size:" << size;
+}
+
+static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
+{
+   const auto &gadget = gadgets.take(typeName);
    int typeId = QMetaType::type(typeName);
    if (typeId != QMetaType::UnknownType) {
        trackConnection(typeId, connection);
@@ -672,51 +766,109 @@ static int registerGadget(IoDeviceBase *connection, QRemoteObjectPackets::Gadget
    gadgetBuilder.setClassName(typeName);
    gadgetBuilder.setFlags(QMetaObjectBuilder::DynamicMetaObject | QMetaObjectBuilder::PropertyAccessInStaticMetaCall);
    GadgetType gadgetType;
-   for (const auto &prop : properties) {
+   for (const auto &prop : gadget.properties) {
        int propertyType = QMetaType::type(prop.type);
        if (!propertyType && gadgets.contains(prop.type))
-           propertyType = registerGadget(connection, gadgets, prop.type);
+           propertyType = registerGadgets(connection, gadgets, prop.type);
        gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
        auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
        dynamicProperty.setWritable(true);
        dynamicProperty.setReadable(true);
    }
+   for (const auto &enumData: gadget.enums) {
+       auto enumBuilder = gadgetBuilder.addEnumerator(enumData.name);
+       enumBuilder.setIsFlag(enumData.isFlag);
+       enumBuilder.setIsScoped(enumData.isScoped);
+
+       for (quint32 k = 0; k < enumData.keyCount; ++k) {
+           const auto pair = enumData.values.at(k);
+           enumBuilder.addKey(pair.name, pair.value);
+       }
+   }
    auto meta = gadgetBuilder.toMetaObject();
-   meta->d.static_metacall = &GadgetsStaticMetacallFunction;
-   meta->d.superdata = nullptr;
-   const auto flags = QMetaType::IsGadget | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
-   int gadgetTypeId = QMetaType::registerType(typeName.constData(),
+   const auto enumCount = meta->enumeratorCount();
+   for (int i = 0; i < enumCount; i++) {
+       const QByteArray registeredName = QByteArray(typeName).append("::").append(meta->enumerator(i).name());
+       registerEnum(registeredName, meta, gadget.enums.at(i).size);
+   }
+   QMetaType::TypeFlags flags = QMetaType::IsGadget;
+   int gadgetTypeId;
+   if (meta->propertyCount()) {
+       meta->d.static_metacall = &GadgetsStaticMetacallFunction;
+       meta->d.superdata = nullptr;
+       flags |= QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+       gadgetTypeId = QMetaType::registerType(typeName.constData(),
                                               &GadgetTypedDestructor,
                                               &GadgetTypedConstructor,
                                               sizeof(GadgetType),
                                               flags, meta);
-   QMetaType::registerStreamOperators(gadgetTypeId, &GadgetSaveOperator, &GadgetLoadOperator);
+       QMetaType::registerStreamOperators(gadgetTypeId, &GadgetSaveOperator, &GadgetLoadOperator);
+   } else {
+       gadgetTypeId = QMetaType::registerType(typeName.constData(),
+                                              nullptr,
+                                              nullptr,
+                                              sizeof(GadgetType),
+                                              flags, meta);
+   }
    trackConnection(gadgetTypeId, connection);
    QMutexLocker lock(&s_managedTypesMutex);
    s_managedTypes[gadgetTypeId] = qMakePair(gadgetType, std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }});
    return gadgetTypeId;
 }
 
-static void registerAllGadgets(IoDeviceBase *connection, QRemoteObjectPackets::GadgetsData &gadgets)
+static void registerAllGadgets(IoDeviceBase *connection, Gadgets &gadgets)
 {
     while (!gadgets.isEmpty())
-        registerGadget(connection, gadgets, gadgets.constBegin().key());
+        registerGadgets(connection, gadgets, gadgets.constBegin().key());
 }
 
-static void parseGadgets(IoDeviceBase *connection, QDataStream &in, quint32 numGadgets = 1)
+static void deserializeEnum(QDataStream &ds, EnumData &enumData)
 {
-    QRemoteObjectPackets::GadgetsData gadgets;
+    ds >> enumData.name;
+    ds >> enumData.isFlag;
+    ds >> enumData.isScoped;
+    ds >> enumData.size;
+    ds >> enumData.keyCount;
+    for (quint32 i = 0; i < enumData.keyCount; i++) {
+        EnumPair pair;
+        ds >> pair.name;
+        ds >> pair.value;
+        enumData.values.push_back(pair);
+    }
+}
+
+static void parseGadgets(IoDeviceBase *connection, QDataStream &in)
+{
+    quint32 qtEnums, numGadgets;
+    in >> qtEnums; // Qt enums - just need registration
+    for (quint32 i = 0; i < qtEnums; ++i) {
+        QByteArray enumName;
+        in >> enumName;
+        QMetaType t(QMetaType::type(enumName.constData()));
+        registerEnum(enumName, t.metaObject()); // All Qt enums have default type int
+    }
+    in >> numGadgets;
+    if (numGadgets == 0)
+        return;
+    Gadgets gadgets;
     for (quint32 i = 0; i < numGadgets; ++i) {
         QByteArray type;
         in >> type;
-        quint32 numProperties;
+        quint32 numProperties, numEnums;
         in >> numProperties;
-        auto &properties = gadgets[type];
+        auto &properties = gadgets[type].properties;
         for (quint32 p = 0; p < numProperties; ++p) {
-            QRemoteObjectPackets::GadgetProperty prop;
+            GadgetProperty prop;
             in >> prop.name;
             in >> prop.type;
             properties.push_back(prop);
+        }
+        in >> numEnums;
+        auto &enums = gadgets[type].enums;
+        for (quint32 e = 0; e < numEnums; ++e) {
+            EnumData enumData;
+            deserializeEnum(in, enumData);
+            enums.push_back(enumData);
         }
     }
     registerAllGadgets(connection, gadgets);
@@ -728,43 +880,34 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
     builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
 
-    QString type;
+    QString typeString;
+    QByteArray type;
     quint32 numEnums = 0;
-    quint32 numGadgets = 0;
     quint32 numSignals = 0;
     quint32 numMethods = 0;
     quint32 numProperties = 0;
 
-    in >> type;
-    builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, type.toLatin1());
-    builder.setClassName(type.toLatin1());
+    in >> typeString;
+    type = typeString.toLatin1();
+    builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, type);
+    builder.setClassName(type);
 
     in >> numEnums;
+    QVector<quint32> enumSizes(numEnums);
     for (quint32 i = 0; i < numEnums; ++i) {
-        QByteArray name;
-        in >> name;
-        auto enumBuilder = builder.addEnumerator(name);
-        bool isFlag;
-        in >> isFlag;
-        enumBuilder.setIsFlag(isFlag);
+        EnumData enumData;
+        deserializeEnum(in, enumData);
+        auto enumBuilder = builder.addEnumerator(enumData.name);
+        enumBuilder.setIsFlag(enumData.isFlag);
+        enumBuilder.setIsScoped(enumData.isScoped);
+        enumSizes[i] = enumData.size;
 
-        QByteArray scopeName;
-        in >> scopeName; // scope
-        // TODO uncomment this line after https://bugreports.qt.io/browse/QTBUG-64081 is implemented
-        //enumBuilder.setScope(scopeName);
-
-        int keyCount;
-        in >> keyCount;
-        for (int k = 0; k < keyCount; ++k) {
-            QByteArray key;
-            int value;
-            in >> key;
-            in >> value;
-            enumBuilder.addKey(key, value);
+        for (quint32 k = 0; k < enumData.keyCount; ++k) {
+            const auto pair = enumData.values.at(k);
+            enumBuilder.addKey(pair.name, pair.value);
         }
     }
-    in >> numGadgets;
-    parseGadgets(connection, in, numGadgets);
+    parseGadgets(connection, in);
 
     int curIndex = 0;
 
@@ -812,7 +955,17 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     }
 
     auto meta = builder.toMetaObject();
-    dynamicTypes.insert(type, meta);
+    // Our type likely has enumerations from the inherited base classes, such as the Replica State
+    // We only want to register the new enumerations, and since we just added them, we know they
+    // are the last indices.  Thus a backwards count seems most efficient.
+    const int totalEnumCount = meta->enumeratorCount();
+    int incrementingIndex = 0;
+    for (int i = numEnums; i > 0; i--) {
+        auto const enumMeta = meta->enumerator(totalEnumCount - i);
+        const QByteArray registeredName = QByteArray(type).append("::").append(enumMeta.name());
+        registerEnum(registeredName, meta, enumSizes.at(incrementingIndex++));
+    }
+    dynamicTypes.insert(typeString, meta);
     return meta;
 }
 
@@ -1197,7 +1350,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         QDataStream ds(typeInfo.parameters);
                         ds >> rxValue;
                     }
-                    rep->setProperty(propertyIndex, deserializedProperty(rxValue, property));
+                    rep->setProperty(propertyIndex, decodeVariant(rxValue, property.userType()));
                 }
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -1220,8 +1373,10 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     for (int i = 0; i < rxArgs.size(); i++) {
                         if (signal.parameterType(i) == QMetaType::QVariant)
                             param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
-                        else
+                        else {
+                            decodeVariant(rxArgs[i], signal.parameterType(i));
                             param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
+                        }
                     }
                 } else if (propertyIndex != -1) {
                     param.resize(2);

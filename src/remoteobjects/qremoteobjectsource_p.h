@@ -84,7 +84,7 @@ public:
     QByteArray m_objectChecksum;
     QMap<int, QPointer<QRemoteObjectSourceBase>> m_children;
     struct Private {
-        Private(QRemoteObjectSourceIo *io) : m_sourceIo(io), isDynamic(false) {}
+        Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root) : m_sourceIo(io), isDynamic(false), root(root) {}
         QRemoteObjectSourceIo *m_sourceIo;
         QVector<IoDeviceBase*> m_listeners;
         QRemoteObjectPackets::DataStreamPacket m_packet;
@@ -92,6 +92,7 @@ public:
         // Types needed during recursively sending a root to a new listener
         QSet<QString> sentTypes;
         bool isDynamic;
+        QRemoteObjectRootSource *root;
     };
     Private *d;
     static const int qobjectPropertyOffset;
@@ -134,6 +135,7 @@ public:
     ~DynamicApiMap() override {}
     QString name() const override { return m_name; }
     QString typeName() const override { return m_typeName; }
+    QByteArray className() const override { return QByteArray(m_metaObject->className()); }
     int enumCount() const override { return m_enumCount; }
     int propertyCount() const override { return m_properties.size(); }
     int signalCount() const override { return m_signals.size(); }
