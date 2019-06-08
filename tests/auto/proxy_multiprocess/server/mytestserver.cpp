@@ -29,7 +29,6 @@
 #include <qdebug.h>
 
 #include "mytestserver.h"
-#include "rep_subclass_source.h"
 
 MyTestServer::MyTestServer(QObject *parent)
     : ParentClassSimpleSource(parent)
@@ -52,4 +51,17 @@ bool MyTestServer::quit()
 {
     emit quitApp();
     return true;
+}
+
+ParentClassSource::MyEnum MyTestServer::enumSlot(QPoint p, MyEnum myEnum)
+{
+    Q_UNUSED(p)
+    Q_UNUSED(myEnum)
+    return ParentClassSource::foobar;
+}
+
+Qt::DateFormat MyTestServer::dateSlot(Qt::DateFormat date)
+{
+    Q_UNUSED(date)
+    return Qt::SystemLocaleDate;
 }

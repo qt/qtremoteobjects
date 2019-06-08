@@ -60,28 +60,49 @@ private Q_SLOTS:
             QCOMPARE(m_rep->subClass()->i(), initialI);
             QVERIFY(m_rep->tracks() != nullptr);
             QVERIFY(tracksSpy.count() || tracksSpy.wait());
-            QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::bar));
+            QCOMPARE(m_rep->myEnum(), ParentClassReplica::bar);
+            QCOMPARE(m_rep->date(), Qt::SystemLocaleShortDate);
+            QCOMPARE(m_rep->nsEnum(), NS::Bravo);
+            QCOMPARE(m_rep->ns2Enum(), NS2::NamespaceEnum::Bravo);
             QCOMPARE(m_rep->variant(), QVariant::fromValue(42.0f));
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);
-            QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::foo));
+            QCOMPARE(m_rep->myEnum(), ParentClassReplica::foo);
+            QCOMPARE(m_rep->date(), Qt::ISODate);
+            QCOMPARE(m_rep->nsEnum(), NS::Alpha);
+            QCOMPARE(m_rep->ns2Enum(), NS2::NamespaceEnum::Alpha);
             QCOMPARE(m_rep->variant(), QVariant());
         }
 
+        QPoint p(1, 2);
+        auto enumReply = m_rep->enumSlot(p, ParentClassReplica::bar);
+        QVERIFY(enumReply.waitForFinished());
+        QCOMPARE(enumReply.error(), QRemoteObjectPendingCall::NoError);
+        QCOMPARE(enumReply.returnValue(), QVariant::fromValue(ParentClassReplica::foobar));
+
         qDebug() << "Verified expected initial states, sending start.";
+        QSignalSpy enumSpy(m_rep.data(), &ParentClassReplica::enum2);
+        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
         auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
         QVERIFY(reply.error() == QRemoteObjectPendingCall::NoError);
         QCOMPARE(reply.returnValue(), QVariant::fromValue(true));
+        QVERIFY(enumSpy.wait());
+        QCOMPARE(enumSpy.count(), 1);
+        const auto arguments = enumSpy.takeFirst();
+        QCOMPARE(arguments.at(0), QVariant::fromValue(ParentClassReplica::foo));
+        QCOMPARE(arguments.at(1), QVariant::fromValue(ParentClassReplica::bar));
 
-        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
-        QVERIFY(advanceSpy.wait());
+        QVERIFY(advanceSpy.count() || advanceSpy.wait());
         QVERIFY(m_rep->subClass() != nullptr);
         QCOMPARE(m_rep->subClass()->myPOD(), updatedValue);
         QCOMPARE(m_rep->subClass()->i(), updatedI);
         QVERIFY(m_rep->tracks() != nullptr);
-        QCOMPARE(m_rep->myEnum(), QVariant::fromValue(ParentClassReplica::foobar));
+        QCOMPARE(m_rep->myEnum(), ParentClassReplica::foobar);
+        QCOMPARE(m_rep->date(), Qt::SystemLocaleLongDate);
+        QCOMPARE(m_rep->nsEnum(), NS::Charlie);
+        QCOMPARE(m_rep->ns2Enum(), NS2::NamespaceEnum::Charlie);
         QCOMPARE(m_rep->variant(), QVariant::fromValue(podValue));
         qDebug() << "Verified expected final states, cleaning up.";
     }

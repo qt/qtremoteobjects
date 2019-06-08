@@ -171,6 +171,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
         id = -1;
     } else if (call == QMetaObject::InvokeMetaMethod) {
         if (id < impl->m_numSignals) {
+            qCDebug(QT_REMOTEOBJECT) << "DynamicReplica Activate" << impl->m_metaObject->method(saved_id).methodSignature();
             // signal relay from Source world to Replica
             QMetaObject::activate(this, impl->m_metaObject, id, argv);
 
@@ -183,10 +184,21 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
             QVariantList args;
             args.reserve(typeSize);
             for (int i = 0; i < typeSize; ++i) {
-                if (impl->m_metaObject->indexOfEnumerator(types[i].constData()) != -1)
-                    args.push_back(QVariant(QMetaType::Int, argv[i + 1]));
-                else
-                    args.push_back(QVariant(QMetaType::type(types[i].constData()), argv[i + 1]));
+                const int type = QMetaType::type(types[i].constData());
+                if (impl->m_metaObject->indexOfEnumerator(types[i].constData()) != -1) {
+                    const auto size = QMetaType(type).sizeOf();
+                    switch (size) {
+                    case 1: args.push_back(QVariant(QMetaType::Char, argv[i + 1])); break;
+                    case 2: args.push_back(QVariant(QMetaType::Short, argv[i + 1])); break;
+                    case 4: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
+                    // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
+//                    case 8: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
+                    default:
+                        qWarning() << "Invalid enum detected (Dynamic Replica)" << QMetaType::typeName(type) << "with size" << size;
+                        args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
+                    }
+                } else
+                    args.push_back(QVariant(type, argv[i + 1]));
             }
 
             if (debugArgs) {

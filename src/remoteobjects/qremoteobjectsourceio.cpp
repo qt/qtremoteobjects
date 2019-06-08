@@ -235,8 +235,13 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     }
                     if (source->m_api->isAdapterMethod(index))
                         qRODebug(this) << "Adapter (method) Invoke-->" << m_rxName << source->m_adapter->metaObject()->method(resolvedIndex).name();
-                    else
-                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << source->m_object->metaObject()->method(resolvedIndex).name();
+                    else {
+                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << source->m_object->metaObject()->method(resolvedIndex).methodSignature();
+                        auto method = source->m_object->metaObject()->method(resolvedIndex);
+                        const int parameterCount = method.parameterCount();
+                        for (int i = 0; i < parameterCount; i++)
+                            decodeVariant(m_rxArgs[i], method.parameterType(i));
+                    }
                     int typeId = QMetaType::type(source->m_api->typeName(index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
@@ -254,13 +259,13 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                             QRemoteObjectPendingCallWatcher *watcher = new QRemoteObjectPendingCallWatcher(call, connection);
                             QObject::connect(watcher, &QRemoteObjectPendingCallWatcher::finished, connection, [this, serialId, connection, watcher]() {
                                 if (watcher->error() == QRemoteObjectPendingCall::NoError) {
-                                    serializeInvokeReplyPacket(this->m_packet, this->m_rxName, serialId, watcher->returnValue());
+                                    serializeInvokeReplyPacket(this->m_packet, this->m_rxName, serialId, encodeVariant(watcher->returnValue()));
                                     connection->write(m_packet.array, m_packet.size);
                                 }
                                 watcher->deleteLater();
                             });
                         } else {
-                            serializeInvokeReplyPacket(m_packet, m_rxName, serialId, returnValue);
+                            serializeInvokeReplyPacket(m_packet, m_rxName, serialId, encodeVariant(returnValue));
                             connection->write(m_packet.array, m_packet.size);
                         }
                     }
