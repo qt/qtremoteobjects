@@ -47,6 +47,8 @@ public:
 public Q_SLOTS:
     bool start() override;
     bool quit() override;
+    MyEnum enumSlot(QPoint p, MyEnum myEnum) override;
+    Qt::DateFormat dateSlot(Qt::DateFormat date) override;
 
 Q_SIGNALS:
     void quitApp();

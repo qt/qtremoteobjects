@@ -146,7 +146,7 @@ QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceA
 
 QRemoteObjectRootSource::QRemoteObjectRootSource(QObject *obj, const SourceApiMap *api,
                                                  QObject *adapter, QRemoteObjectSourceIo *sourceIo)
-    : QRemoteObjectSourceBase(obj, new Private(sourceIo), api, adapter)
+    : QRemoteObjectSourceBase(obj, new Private(sourceIo, this), api, adapter)
     , m_name(api->name())
 {
     d->m_sourceIo->registerSource(this);
@@ -365,7 +365,9 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
     }
 
     qCDebug(QT_REMOTEOBJECT) << "# Listeners" << d->m_listeners.length();
-    qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object << call << index << *marshalArgs(index, a);
+    qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object
+                             << (call == 0 ? QLatin1String("InvokeMetaMethod") : QStringLiteral("Non-invoked call: %d").arg(call))
+                             << m_api->signalSignature(index) << *marshalArgs(index, a);
 
     serializeInvokePacket(d->m_packet, name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
     d->m_packet.baseAddress = 0;
