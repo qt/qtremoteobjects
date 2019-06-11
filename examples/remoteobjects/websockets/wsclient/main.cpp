@@ -54,6 +54,11 @@
 #include <QAbstractItemModelReplica>
 #include <QWebSocket>
 
+#ifndef QT_NO_SSL
+# include <QFile>
+# include <QSslConfiguration>
+# include <QSslKey>
+#endif
 #include "websocketiodevice.h"
 
 int main(int argc, char **argv)
@@ -70,6 +75,22 @@ int main(int argc, char **argv)
 
     QScopedPointer<QWebSocket> webSocket{new QWebSocket};
     WebSocketIoDevice socket(webSocket.data());
+#ifndef QT_NO_SSL
+    // Always use secure connections when available
+    QSslConfiguration sslConf;
+    QFile certFile(QStringLiteral(":/sslcert/client.crt"));
+    if (!certFile.open(QIODevice::ReadOnly))
+        qFatal("Can't open client.crt file");
+    sslConf.setLocalCertificate(QSslCertificate{certFile.readAll()});
+
+    QFile keyFile(QStringLiteral(":/sslcert/client.key"));
+    if (!keyFile.open(QIODevice::ReadOnly))
+        qFatal("Can't open client.key file");
+    sslConf.setPrivateKey(QSslKey{keyFile.readAll(), QSsl::Rsa});
+
+    sslConf.setPeerVerifyMode(QSslSocket::VerifyPeer);
+    webSocket->setSslConfiguration(sslConf);
+#endif
     QRemoteObjectNode node;
     node.addClientSideConnection(&socket);
     node.setHeartbeatInterval(1000);

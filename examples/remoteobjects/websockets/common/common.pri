@@ -7,3 +7,5 @@ HEADERS += \
 
 SOURCES += \
     $$PWD/websocketiodevice.cpp
+
+RESOURCES += $$PWD/cert/cert.qrc

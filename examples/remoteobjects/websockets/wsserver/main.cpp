@@ -56,6 +56,12 @@
 #include <QWebSocket>
 #include <QWebSocketServer>
 
+#ifndef QT_NO_SSL
+# include <QFile>
+# include <QSslConfiguration>
+# include <QSslKey>
+#endif
+
 #include "websocketiodevice.h"
 
 struct TimerHandler : public QObject
@@ -149,7 +155,7 @@ int main(int argc, char *argv[])
     roles << Qt::DisplayRole << Qt::BackgroundRole;
 
     QWebSocketServer webSockServer{QStringLiteral("WS QtRO"), QWebSocketServer::NonSecureMode};
-    webSockServer.listen(QHostAddress::LocalHost, 8088);
+    webSockServer.listen(QHostAddress::Any, 8088);
 
     QRemoteObjectHost hostNode;
     hostNode.setHostUrl(webSockServer.serverAddress().toString(), QRemoteObjectHost::AllowExternalRegistration);
@@ -158,6 +164,23 @@ int main(int argc, char *argv[])
 
     QObject::connect(&webSockServer, &QWebSocketServer::newConnection, &hostNode, [&hostNode, &webSockServer]{
         while (auto conn = webSockServer.nextPendingConnection()) {
+#ifndef QT_NO_SSL
+            // Always use secure connections when available
+            QSslConfiguration sslConf;
+            QFile certFile(QStringLiteral(":/sslcert/server.crt"));
+            if (!certFile.open(QIODevice::ReadOnly))
+                qFatal("Can't open client.crt file");
+            sslConf.setLocalCertificate(QSslCertificate{certFile.readAll()});
+
+            QFile keyFile(QStringLiteral(":/sslcert/server.key"));
+            if (!keyFile.open(QIODevice::ReadOnly))
+                qFatal("Can't open client.key file");
+            sslConf.setPrivateKey(QSslKey{keyFile.readAll(), QSsl::Rsa});
+
+            sslConf.setPeerVerifyMode(QSslSocket::VerifyPeer);
+            conn->setSslConfiguration(sslConf);
+            QObject::connect(conn, &QWebSocket::sslErrors, conn, &QWebSocket::deleteLater);
+#endif
             QObject::connect(conn, &QWebSocket::disconnected, conn, &QWebSocket::deleteLater);
             QObject::connect(conn,  QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), conn, &QWebSocket::deleteLater);
             auto ioDevice = new WebSocketIoDevice(conn);
