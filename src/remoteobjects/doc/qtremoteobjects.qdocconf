@@ -26,7 +26,8 @@ depends += qtcore \
            qtnetwork \
            qtdoc \
            qtcmake \
-           qmake
+           qmake \
+           qtbluetooth
 
 tagfile                 = ../../../doc/qtremoteobjects/qtremoteobjects.tags
 
