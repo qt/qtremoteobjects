@@ -418,9 +418,10 @@ void QQnxNativeServerPrivate::cleanupIOSource(QIOQnxSource *conn)
     QHashIterator<uint64_t, QSharedPointer<QIOQnxSource>> i(sources);
     while (i.hasNext()) {
         i.next();
-        if (i.value().data() == conn)
+        if (i.value().data() == conn) {
             io = sources.take(i.key());
-        break;
+            break;
+        }
     }
     mutex.unlock();
     if (!io.isNull()) {
