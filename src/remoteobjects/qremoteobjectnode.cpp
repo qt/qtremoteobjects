@@ -1108,9 +1108,8 @@ void QRemoteObjectNodePrivate::onRegistryInitialized()
 {
     qROPrivDebug() << "Registry Initialized" << remoteObjectAddresses();
 
-    QHashIterator<QString, QRemoteObjectSourceLocationInfo> i(remoteObjectAddresses());
-    while (i.hasNext()) {
-        i.next();
+    const auto remotes = remoteObjectAddresses();
+    for (auto i = remotes.cbegin(), end = remotes.cend(); i != end; ++i) {
         if (replicas.contains(i.key())) //We have a replica waiting on this remoteObject
         {
             QSharedPointer<QReplicaImplementationInterface> rep = replicas.value(i.key()).toStrongRef();

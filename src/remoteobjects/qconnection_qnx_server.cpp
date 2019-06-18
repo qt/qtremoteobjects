@@ -415,11 +415,10 @@ void QQnxNativeServerPrivate::cleanupIOSource(QIOQnxSource *conn)
 {
     QSharedPointer<QIOQnxSource> io;
     mutex.lock();
-    QHashIterator<uint64_t, QSharedPointer<QIOQnxSource>> i(sources);
-    while (i.hasNext()) {
-        i.next();
+    for (auto i = sources.begin(), end = sources.end(); i != end; ++i) {
         if (i.value().data() == conn) {
-            io = sources.take(i.key());
+            io = std::move(i.value());
+            sources.erase(i);
             break;
         }
     }

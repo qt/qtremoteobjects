@@ -450,11 +450,10 @@ int QRegexParser<_Parser, _Table>::nextToken()
             setErrorString(QStringLiteral("Error generating tokens from file, next characters >%1<").arg(m_buffer.mid(m_loc, 15)));
             return -1;
         } else {
-            QMapIterator<int, QString> iter(m_names.at(best));
-            if (iter.hasNext())
+            const QMap<int, QString> &map = m_names.at(best);
+            if (!map.isEmpty())
                 m_captured.clear();
-            while (iter.hasNext()) {
-                iter.next();
+            for (auto iter = map.cbegin(), end = map.cend(); iter != end; ++iter) {
 #ifdef QT_BOOTSTRAPPED
                 m_captured.insert(iter.value(), m_regexes.at(best).cap(iter.key()));
 #else
