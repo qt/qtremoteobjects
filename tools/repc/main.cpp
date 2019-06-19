@@ -212,7 +212,8 @@ int main(int argc, char **argv)
         const QFileInfo includePath(QLatin1String(RO_INSTALL_HEADERS));
         pp.includes += Preprocessor::IncludePath(QFile::encodeName(includePath.canonicalFilePath()));
         pp.includes += Preprocessor::IncludePath(QFile::encodeName(includePath.canonicalPath()));
-        foreach (const QString &path, parser.values(includePathOption))
+        const auto paths = parser.values(includePathOption);
+        for (const QString &path : paths)
             pp.includes += Preprocessor::IncludePath(QFile::encodeName(path));
 
         pp.macros["Q_MOC_RUN"];
