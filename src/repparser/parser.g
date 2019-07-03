@@ -352,7 +352,7 @@ ASTFunction::ASTFunction(const QString &name, const QString &returnType)
 QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 {
     QString str;
-    foreach (const ASTDeclaration &param, params) {
+    for (const ASTDeclaration &param : params) {
         QString paramStr = param.asString(format != Normalized);
         if (format == Normalized) {
             paramStr = QString::fromLatin1(::normalizeType(paramStr.toLatin1().constData()));
@@ -370,9 +370,9 @@ QString ASTFunction::paramsAsString(ParamsAsStringFormat format) const
 QStringList ASTFunction::paramNames() const
 {
     QStringList names;
-    foreach (const ASTDeclaration &param, params) {
+    names.reserve(params.size());
+    for (const ASTDeclaration &param : params)
         names << param.name;
-    }
     return names;
 }
 
@@ -628,14 +628,13 @@ void RepParser::TypeParser::generateFunctionParameter(QString variableName, cons
 
 void RepParser::TypeParser::appendParams(ASTFunction &slot)
 {
-    Q_FOREACH (const ASTDeclaration &arg, arguments) {
+    for (const ASTDeclaration &arg : qAsConst(arguments))
         slot.params << arg;
-    }
 }
 
 void RepParser::TypeParser::appendPods(POD &pods)
 {
-    Q_FOREACH (const ASTDeclaration &arg, arguments) {
+    for (const ASTDeclaration &arg : qAsConst(arguments)) {
         PODAttribute attr;
         attr.type = arg.type;
         attr.name = arg.name;

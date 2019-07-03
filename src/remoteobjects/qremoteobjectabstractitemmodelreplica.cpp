@@ -151,9 +151,8 @@ inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &rol
         if (roles.isEmpty()) {
             entry.data.clear();
         } else {
-            Q_FOREACH (int role, roles) {
+            for (int role : roles)
                 entry.data.remove(role);
-            }
         }
     }
 }
@@ -601,7 +600,7 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
             const ModelIndex resEnd(std::max(curIndEnd.row, dataIndEnd.row), std::max(curIndEnd.column, dataIndEnd.column));
             QVector<int> roles = curData.roles;
             if (!curData.roles.isEmpty()) {
-                Q_FOREACH (int role, data.roles) {
+                for (int role : data.roles) {
                     if (!curData.roles.contains(role))
                         roles.append(role);
                 }
@@ -673,7 +672,7 @@ void QAbstractItemModelReplicaImplementation::fetchPendingHeaderData()
     QVector<int> roles;
     QVector<int> sections;
     QVector<Qt::Orientation> orientations;
-    Q_FOREACH (const RequestedHeaderData &data, m_requestedHeaderData) {
+    for (const RequestedHeaderData &data : qAsConst(m_requestedHeaderData)) {
         roles.push_back(data.role);
         sections.push_back(data.section);
         orientations.push_back(data.orientation);

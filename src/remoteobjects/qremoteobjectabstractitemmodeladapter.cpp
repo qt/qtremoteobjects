@@ -45,7 +45,8 @@
 inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model, const QVector<int> &roles)
 {
     QVariantList result;
-    Q_FOREACH (int role, roles)
+    result.reserve(roles.size());
+    for (int role : roles)
         result << model->data(index, role);
     return result;
 }
@@ -56,8 +57,8 @@ inline QVector<int> filterRoles(const QVector<int> &roles, const QVector<int> &a
         return availableRoles;
 
     QVector<int> neededRoles;
-    foreach (int inRole, roles) {
-        foreach (int availableRole, availableRoles)
+    for (int inRole : roles) {
+        for (int availableRole : availableRoles)
             if (inRole == availableRole) {
                 neededRoles << inRole;
                 continue;

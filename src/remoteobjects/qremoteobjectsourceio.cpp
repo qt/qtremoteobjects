@@ -313,7 +313,8 @@ void QRemoteObjectSourceIo::newConnection(IoDeviceBase *conn)
     conn->write(m_packet.array, m_packet.size);
 
     QRemoteObjectPackets::ObjectInfoList infos;
-    foreach (auto remoteObject, m_sourceRoots) {
+    infos.reserve(m_sourceRoots.size());
+    for (auto remoteObject : qAsConst(m_sourceRoots)) {
         infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName(), remoteObject->m_api->objectSignature()};
     }
     serializeObjectListPacket(m_packet, infos);

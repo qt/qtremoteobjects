@@ -1127,7 +1127,8 @@ void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
 {
     Q_Q(QRemoteObjectNode);
 
-    Q_FOREACH (const QString &remoteObject, ioDevice->remoteObjects()) {
+    const auto remoteObjects = ioDevice->remoteObjects();
+    for (const QString &remoteObject : remoteObjects) {
         connectedSources.remove(remoteObject);
         ioDevice->removeSource(remoteObject);
         if (replicas.contains(remoteObject)) { //We have a replica waiting on this remoteObject

@@ -283,7 +283,8 @@ QRegexParser<_Parser, _Table>::QRegexParser(int maxMatchLen) : d(new Data()), m_
 #ifndef QT_BOOTSTRAPPED
                 pat.optimize();
                 int counter = 0;
-                Q_FOREACH (const QString &name, pat.namedCaptureGroups()) {
+                const auto namedCaptureGroups = pat.namedCaptureGroups();
+                for (const QString &name : namedCaptureGroups) {
                     if (!name.isEmpty())
                         names.insert(counter, name);
                     ++counter;
@@ -399,7 +400,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
 #  endif
                 int i = 0;
                 regexCandidates[nextChar] = QList<int>();
-                Q_FOREACH (const QRegularExpression &re, m_regexes)
+                for (const QRegularExpression &re : qAsConst(m_regexes))
                 {
                     QRegularExpressionMatch match = re.match(tmp, 0, QRegularExpression::PartialPreferFirstMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
                     //qDebug() << nextChar << tmp << match.hasMatch() << match.hasPartialMatch() << re.pattern();
@@ -408,7 +409,8 @@ int QRegexParser<_Parser, _Table>::nextToken()
                     i++;
                 }
             }
-            Q_FOREACH (int i, regexCandidates.value(nextChar))
+            const auto indices = regexCandidates.value(nextChar);
+            for (int i : indices)
             {
                 //Seems like I should be able to run the regex on the entire string, but performance is horrible
                 //unless I use a substring.
@@ -432,7 +434,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
 #else
         {
             int i = 0;
-            Q_FOREACH (const QRegExp &r, m_regexes)
+            for (const QRegExp &r : qAsConst(m_regexes))
             {
                 if (r.indexIn(m_buffer, m_loc, QRegExp::CaretAtOffset) == m_loc) {
                     if (m_debug)
@@ -462,7 +464,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             }
             if (m_debug) {
                 qDebug() << "Match candidates:";
-                Q_FOREACH (const MatchCandidate &m, candidates) {
+                for (const MatchCandidate &m : qAsConst(candidates)) {
                     QLatin1String result = m.index == best ? QLatin1String(" * ") : QLatin1String("   ");
                     qDebug() << qPrintable(result) << qPrintable(m.name) << qPrintable(escapeString(m.matchText));
                 }
