@@ -570,7 +570,7 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
 
     std::vector<RequestedData> finalRequests;
     RequestedData curData;
-    Q_FOREACH (const RequestedData &data, m_requestedData) {
+    for (const RequestedData &data : qExchange(m_requestedData, {})) {
         qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "REQUESTED start=" << data.start << "end=" << data.end << "roles=" << data.roles;
 
         Q_ASSERT(!data.start.isEmpty());
@@ -644,7 +644,6 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
         m_pendingRequests.push_back(watcher);
         connect(watcher, &RowWatcher::finished, this, &QAbstractItemModelReplicaImplementation::requestedData);
     }
-    m_requestedData.clear();
 }
 
 void QAbstractItemModelReplicaImplementation::onModelReset()

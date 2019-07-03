@@ -292,9 +292,8 @@ void QRemoteObjectReplicaImplementation::setDynamicProperties(const QVariantList
 void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &values)
 {
     QRemoteObjectReplicaImplementation::setDynamicProperties(values);
-    foreach (QRemoteObjectReplica *obj, m_parentsNeedingConnect)
+    for (QRemoteObjectReplica *obj : qExchange(m_parentsNeedingConnect, {}))
         configurePrivate(obj);
-    m_parentsNeedingConnect.clear();
 
     Q_ASSERT(m_state.loadAcquire() < QRemoteObjectReplica::Valid);
     setState(QRemoteObjectReplica::Valid);
