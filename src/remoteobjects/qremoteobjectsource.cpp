@@ -252,7 +252,10 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
         delete it;
     }
     d->m_sourceIo->unregisterSource(this);
-    Q_FOREACH (IoDeviceBase *io, d->m_listeners) {
+    // removeListener tries to modify d->m_listeners, this is O(N²),
+    // so clear d->m_listeners prior to calling unregister (consume loop).
+    // We can do this, because we don't care about the return value of removeListener() here.
+    for (IoDeviceBase *io : qExchange(d->m_listeners, {})) {
         removeListener(io, true);
     }
     delete d;
