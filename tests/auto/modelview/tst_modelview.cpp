@@ -733,7 +733,7 @@ void TestModelView::testFlags()
     for (int i = 10; i < 20; ++i) {
         QStandardItem* firstItem = m_sourceModel.item(i, 0);
         QStandardItem* secondItem = m_sourceModel.item(i, 1);
-        firstItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled | Qt::ItemIsTristate);
+        firstItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled | Qt::ItemIsAutoTristate);
         secondItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled);
     }
     bool signalsReceived = false;
