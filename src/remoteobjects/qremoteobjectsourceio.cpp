@@ -161,7 +161,7 @@ void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 
     qRODebug(this) << "OnServerDisconnect";
 
-    Q_FOREACH (QRemoteObjectRootSource *root, m_sourceRoots)
+    for (QRemoteObjectRootSource *root : qAsConst(m_sourceRoots))
         root->removeListener(connection);
 
     const QUrl location = m_registryMapping.value(connection);

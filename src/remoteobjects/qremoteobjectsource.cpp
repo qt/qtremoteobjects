@@ -375,7 +375,7 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
     serializeInvokePacket(d->m_packet, name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
     d->m_packet.baseAddress = 0;
 
-    Q_FOREACH (IoDeviceBase *io, d->m_listeners)
+    for (IoDeviceBase *io : qAsConst(d->m_listeners))
         io->write(d->m_packet.array, d->m_packet.size);
 }
 

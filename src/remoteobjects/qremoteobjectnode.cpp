@@ -233,11 +233,15 @@ QRemoteObjectSourceLocations QRemoteObjectRegistryHostPrivate::remoteObjectAddre
 void QRemoteObjectNode::timerEvent(QTimerEvent*)
 {
     Q_D(QRemoteObjectNode);
-    Q_FOREACH (ClientIoDevice *conn, d->pendingReconnect) {
-        if (conn->isOpen())
-            d->pendingReconnect.remove(conn);
-        else
+
+    for (auto it = d->pendingReconnect.begin(), end = d->pendingReconnect.end(); it != end; /*erasing*/) {
+        const auto &conn = *it;
+        if (conn->isOpen()) {
+            it = d->pendingReconnect.erase(it);
+        } else {
             conn->connectToServer();
+            ++it;
+        }
     }
 
     if (d->pendingReconnect.isEmpty())
@@ -1263,7 +1267,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             // We need to make sure all of the source objects are in connectedSources before we add connections,
             // otherwise nested QObjects could fail (we want to acquire children before parents, and the object
             // list is unordered)
-            Q_FOREACH (const auto &remoteObject, rxObjects) {
+            for (const auto &remoteObject : qAsConst(rxObjects)) {
                 qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
                 if (!connectedSources.contains(remoteObject.name)) {
                     connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName, remoteObject.signature};
@@ -1273,7 +1277,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         handleReplicaConnection(remoteObject.name);
                 }
             }
-            Q_FOREACH (const auto &remoteObject, rxObjects) {
+            for (const auto &remoteObject : qAsConst(rxObjects)) {
                 if (replicas.contains(remoteObject.name)) //We have a replica waiting on this remoteObject
                     handleReplicaConnection(remoteObject.name);
             }
