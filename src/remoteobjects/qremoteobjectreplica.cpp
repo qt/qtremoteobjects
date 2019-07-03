@@ -158,15 +158,15 @@ bool QRemoteObjectReplicaImplementation::needsDynamicInitialization() const
 
 void QRemoteObjectReplicaImplementation::setState(QRemoteObjectReplica::State state)
 {
-    if (m_state != QRemoteObjectReplica::Suspect && m_state >= state)
+    if (m_state.loadAcquire() != QRemoteObjectReplica::Suspect && m_state.loadAcquire() >= state)
         return;
 
-    int oldState = m_state;
-    m_state = state;
+    int oldState = m_state.loadAcquire();
+    m_state.storeRelease(state);
 
     // We should emit initialized before emitting any changed signals in case connections are made in a
     // Slot responding to initialized/validChanged.
-    if (m_state == QRemoteObjectReplica::Valid) {
+    if (m_state.loadAcquire() == QRemoteObjectReplica::Valid) {
         // we're initialized now, emit signal
         emitInitialized();
     }
@@ -213,7 +213,7 @@ void QConnectedReplicaImplementation::initialize(QVariantList &values)
         qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name() << values.at(i).typeName() << values.at(i).toString();
     }
 
-    Q_ASSERT(m_state < QRemoteObjectReplica::Valid || m_state == QRemoteObjectReplica::Suspect);
+    Q_ASSERT(m_state.loadAcquire() < QRemoteObjectReplica::Valid || m_state.loadAcquire() == QRemoteObjectReplica::Suspect);
     setState(QRemoteObjectReplica::Valid);
 
     void *args[] = {nullptr, nullptr};
@@ -296,7 +296,7 @@ void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &v
         configurePrivate(obj);
     m_parentsNeedingConnect.clear();
 
-    Q_ASSERT(m_state < QRemoteObjectReplica::Valid);
+    Q_ASSERT(m_state.loadAcquire() < QRemoteObjectReplica::Valid);
     setState(QRemoteObjectReplica::Valid);
 
     void *args[] = {nullptr, nullptr};
@@ -314,7 +314,7 @@ void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &v
 
 bool QConnectedReplicaImplementation::isInitialized() const
 {
-    return  m_state > QRemoteObjectReplica::Default && m_state != QRemoteObjectReplica::SignatureMismatch;
+    return  m_state.loadAcquire() > QRemoteObjectReplica::Default && m_state.loadAcquire() != QRemoteObjectReplica::SignatureMismatch;
 }
 
 bool QConnectedReplicaImplementation::waitForSource(int timeout)
