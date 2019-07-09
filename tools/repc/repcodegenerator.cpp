@@ -36,6 +36,8 @@
 #include <QCryptographicHash>
 #include <QRegExp>
 
+using namespace Qt;
+
 QT_BEGIN_NAMESPACE
 
 template <typename C>
