@@ -89,10 +89,6 @@ struct InsertedRow
         : m_index(index)
         , m_start(start)
         , m_end(end){}
-    InsertedRow(const InsertedRow &other)
-        : m_index(other.m_index)
-        , m_start(other.m_start)
-        , m_end(other.m_end){}
     bool match(const QList<QVariant> &signal) const
     {
         if (signal.size() != 3)
