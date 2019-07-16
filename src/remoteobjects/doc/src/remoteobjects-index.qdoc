@@ -71,24 +71,47 @@ creating it yourself, possibly use the status signals
 (\l {QRemoteObjectReplica::} {isReplicaValid()}), but then interact with the
 object like you would with any other QObject-based type.
 
-\section1 Get Started
+\section1 Use Case: GPS
 
-To enable \e {Qt Remote Objects} in a project, add this directive into
-the C++ files:
+Consider a sensor such as a Global Positioning System (GPS) receiver. In
+QtRO terms:
 
-\code
-#include <QtRemoteObjects>
-\endcode
+\list
+    \li The \l{Source} would be the process that directly interacts with the
+        GPS hardware and derives your current location.
+    \li The location would be exposed as QObject properties; the periodic
+        updates to the location would update these properties and emit property
+        changed signals.
+    \li \l{Replica}{Replicas} would be created in other processes and would
+        always know your current location, but wouldn't need any of the logic
+        to compute the location from the sensor data.
+    \li Connecting to the location changed signal on the Replica would work as
+        expected: the signal emitted from the Source would trigger the signal
+        emission on every Replica.
+\endlist
 
-To link against the \e {Qt Remote Objects} module, add this line to the project file:
-\code
-QT += remoteobjects
-\endcode
+\section1 Use Case: Printer Access
+
+Consider a service that provides access to a printer. In QtRO terms:
+
+\list
+    \li The \l{Source} would be the process controlling the printer directly.
+    \li The ink levels and printer status would be monitored by QObject
+        properties. Updates to these properties would emit property changed
+        signals.
+    \li The key feature -- being able to print something -- needs to be passed
+        back to the printer. Incidentally, this aligns with the Qt slot mechanism,
+        which QtRO uses as the way for \l{Replica}{Replicas} to make calls on the
+        Source. In effect, properties and signals go from Source to Replicas;
+        slots go from Replica to Source.
+    \li When a print request is accepted, the printer status would change,
+        triggering a change in the status property. This would then be reported
+        to all Replicas.
+\endlist
 
 \section1 Guides
  \list
     \li \l {Overview Qt Remote Objects}
-    \li \l {Using Qt Remote Objects}
     \li \l {Qt Remote Objects Nodes}
     \li \l {Source Objects}{Qt Remote Objects Source Objects}
     \li \l {Replica Objects}{Qt Remote Objects Replica Objects}
@@ -102,8 +125,10 @@ QT += remoteobjects
 
 \section2 Reference
 
-\l {Qt Remote Objects C++ Classes}
-\l {Qt Remote Objects QML Types}
+\list
+    \li \l {Qt Remote Objects C++ Classes}
+    \li \l {Qt Remote Objects QML Types}
+\endlist
 
 \section1 Licenses
 
