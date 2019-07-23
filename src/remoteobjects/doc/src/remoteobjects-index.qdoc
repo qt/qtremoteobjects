@@ -111,7 +111,7 @@ Consider a service that provides access to a printer. In QtRO terms:
 
 \section1 Guides
  \list
-    \li \l {Overview Qt Remote Objects}
+    \li \l {Getting Started with Qt Remote Objects}
     \li \l {Qt Remote Objects Nodes}
     \li \l {Source Objects}{Qt Remote Objects Source Objects}
     \li \l {Replica Objects}{Qt Remote Objects Replica Objects}
