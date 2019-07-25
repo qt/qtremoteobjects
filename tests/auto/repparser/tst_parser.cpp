@@ -82,7 +82,7 @@ void tst_Parser::testBasic()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << content << endl;
+    stream << content << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -142,10 +142,10 @@ void tst_Parser::testProperties()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << "class TestClass" << endl;
-    stream << "{" << endl;
-    stream << propertyDeclaration << endl;
-    stream << "};" << endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << propertyDeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -195,10 +195,10 @@ void tst_Parser::testSlots()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << "class TestClass" << endl;
-    stream << "{" << endl;
-    stream << slotDeclaration << endl;
-    stream << "};" << endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << slotDeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     if (voidWarning)
@@ -237,10 +237,10 @@ void tst_Parser::testSignals()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << "class TestClass" << endl;
-    stream << "{" << endl;
-    stream << signalDeclaration << endl;
-    stream << "};" << endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << signalDeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -283,10 +283,10 @@ void tst_Parser::testPods()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << podsdeclaration << endl;
-    stream << "class TestClass" << endl;
-    stream << "{" << endl;
-    stream << "};" << endl;
+    stream << podsdeclaration << Qt::endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -347,12 +347,12 @@ void tst_Parser::testEnums()
     file.open();
     QTextStream stream(&file);
     if (!inclass)
-        stream << enumdeclaration << endl;
-    stream << "class TestClass" << endl;
-    stream << "{" << endl;
+        stream << enumdeclaration << Qt::endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
     if (inclass)
-        stream << enumdeclaration << endl;
-    stream << "};" << endl;
+        stream << enumdeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -399,10 +399,10 @@ void tst_Parser::testModels()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << "class TestClass" << endl;
-    stream << "{" << endl;
-    stream << modelDeclaration << endl;
-    stream << "};" << endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << modelDeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -439,14 +439,14 @@ void tst_Parser::testClasses()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << "class subObject" << endl;
-    stream << "{" << endl;
-    stream << "    PROP(int value)" << endl;
-    stream << "};" << endl;
-    stream << "class parentObject" << endl;
-    stream << "{" << endl;
-    stream << classDeclaration << endl;
-    stream << "};" << endl;
+    stream << "class subObject" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << "    PROP(int value)" << Qt::endl;
+    stream << "};" << Qt::endl;
+    stream << "class parentObject" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << classDeclaration << Qt::endl;
+    stream << "};" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -495,7 +495,7 @@ void tst_Parser::testInvalid()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    stream << content << endl;
+    stream << content << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
