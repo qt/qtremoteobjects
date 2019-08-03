@@ -1018,7 +1018,7 @@ void TestModelView::testServerInsertDataTree()
 }
 
 #ifdef SLOW_MODELTEST
-#define MODELTEST_WAIT_TIME 15000
+#define MODELTEST_WAIT_TIME 25000
 #else
 #define MODELTEST_WAIT_TIME
 #endif
