@@ -978,7 +978,7 @@ void QRemoteObjectMetaObjectManager::addFromMetaObject(const QMetaObject *metaOb
     QString className = QLatin1String(metaObject->className());
     if (!className.endsWith(QLatin1String("Replica")))
         return;
-    if (className == QStringLiteral("QRemoteObjectDynamicReplica") || staticTypes.contains(className))
+    if (className == QLatin1String("QRemoteObjectDynamicReplica") || staticTypes.contains(className))
         return;
     className.chop(7); //Remove 'Replica' from name
     staticTypes.insert(className, metaObject);
@@ -1273,7 +1273,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                     connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName, remoteObject.signature};
                     connection->addSource(remoteObject.name);
                     // Make sure we handle Registry first if it is available
-                    if (remoteObject.name == QStringLiteral("Registry") && replicas.contains(remoteObject.name))
+                    if (remoteObject.name == QLatin1String("Registry") && replicas.contains(remoteObject.name))
                         handleReplicaConnection(remoteObject.name);
                 }
             }
@@ -2226,7 +2226,7 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *api =
         new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(name);
     if (!this->objectName().isEmpty())
-        adapter->setObjectName(this->objectName().append(QStringLiteral("Adapter")));
+        adapter->setObjectName(this->objectName().append(QLatin1String("Adapter")));
     return enableRemoting(model, api, adapter);
 }
 

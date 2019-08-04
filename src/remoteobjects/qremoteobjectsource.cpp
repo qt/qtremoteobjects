@@ -454,7 +454,7 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
                 if (typeName.isNull()) {
                     typeName = QString::fromLatin1(propertyMeta->className());
                     // TODO better way to ensure we have consistent typenames between source/replicas?
-                    if (typeName.endsWith(QStringLiteral("Source")))
+                    if (typeName.endsWith(QLatin1String("Source")))
                         typeName.chop(6);
                 }
 

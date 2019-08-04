@@ -139,7 +139,7 @@ private:
 
     inline QString escapeString(QString s)
     {
-        return s.replace(QLatin1Char('\n'), QStringLiteral("\\n")).replace(QLatin1Char('\t'), QStringLiteral("\\t"));
+        return s.replace(QLatin1Char('\n'), QLatin1String("\\n")).replace(QLatin1Char('\t'), QLatin1String("\\t"));
     }
 
     QSharedDataPointer<Data> d;
@@ -449,7 +449,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
         }
 #endif
         if (best < 0) {
-            setErrorString(QStringLiteral("Error generating tokens from file, next characters >%1<").arg(m_buffer.mid(m_loc, 15)));
+            setErrorString(QLatin1String("Error generating tokens from file, next characters >%1<").arg(m_buffer.midRef(m_loc, 15)));
             return -1;
         } else {
             const QMap<int, QString> &map = m_names.at(best);
