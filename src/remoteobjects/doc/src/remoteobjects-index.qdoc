@@ -114,7 +114,7 @@ Consider a service that provides access to a printer. In QtRO terms:
     \li \l {Getting Started with Qt Remote Objects}
     \li \l {Qt Remote Objects Nodes}{Nodes}
     \li \l {Qt Remote Objects Source}{Sources}
-    \li \l {Qt Remote Objects Replica Objects}{Replicas}
+    \li \l {Qt Remote Objects Replica}{Replicas}
     \li \l {Qt Remote Objects Registry}{Registry}
     \li \l {Qt Remote Objects - External QIODevices}{External QIODevices}
     \li \l {Qt Remote Objects Compiler}{Compiler}
