@@ -112,15 +112,15 @@ Consider a service that provides access to a printer. In QtRO terms:
 \section1 Guides
  \list
     \li \l {Getting Started with Qt Remote Objects}
-    \li \l {Qt Remote Objects Nodes}
-    \li \l {Source Objects}{Qt Remote Objects Source Objects}
-    \li \l {Replica Objects}{Qt Remote Objects Replica Objects}
-    \li \l {Qt Remote Objects Registry}
-    \li \l {Qt Remote Objects - External QIODevices}
-    \li \l {Qt Remote Objects Compiler}
+    \li \l {Qt Remote Objects Nodes}{Nodes}
+    \li \l {Qt Remote Objects Source}{Sources}
+    \li \l {Qt Remote Objects Replica}{Replicas}
+    \li \l {Qt Remote Objects Registry}{Registry}
+    \li \l {Qt Remote Objects - External QIODevices}{External QIODevices}
+    \li \l {Qt Remote Objects Compiler}{Compiler}
     \li \l {Remote Object Interaction}
-    \li \l {Troubleshooting Qt Remote Objects}
-    \li \l {Qt Remote Objects Protocol Versioning}
+    \li \l {Troubleshooting Qt Remote Objects}{Troubleshooting}
+    \li \l {Qt Remote Objects Protocol Versioning}{Protocol Versioning}
  \endlist
 
 \section2 Reference
