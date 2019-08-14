@@ -65,6 +65,8 @@ private Q_SLOTS:
             QCOMPARE(m_rep->nsEnum(), NS::Bravo);
             QCOMPARE(m_rep->ns2Enum(), NS2::NamespaceEnum::Bravo);
             QCOMPARE(m_rep->variant(), QVariant::fromValue(42.0f));
+            QCOMPARE(m_rep->simpleList(), QList<QString>() << "one" << "two");
+            QCOMPARE(m_rep->podList(), QList<MyPOD>() << initialValue << initialValue);
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);

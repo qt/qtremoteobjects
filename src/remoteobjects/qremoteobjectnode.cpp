@@ -39,6 +39,7 @@
 
 #include "private/qmetaobjectbuilder_p.h"
 
+#include "qremoteobjectcontainers_p.h"
 #include "qremoteobjectnode.h"
 #include "qremoteobjectnode_p.h"
 
@@ -1754,6 +1755,8 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QRemoteObjectNode::ErrorCode>();
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaType<QRemoteObjectPackets::QRO_>();
+    qRegisterMetaType<QRemoteObjectPackets::QSQ_>();
+    qRegisterMetaType<QtROSequentialContainer>();
     // To support dynamic MODELs, we need to make sure the types are registered
     QAbstractItemModelSourceAdapter::registerTypes();
 }
