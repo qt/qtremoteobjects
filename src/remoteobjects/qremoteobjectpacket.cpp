@@ -39,6 +39,7 @@
 
 #include <QtCore/qabstractitemmodel.h>
 
+#include "qremoteobjectcontainers_p.h"
 #include "qremoteobjectpendingcall.h"
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
@@ -66,6 +67,21 @@ inline size_t qHash(const QMetaEnum &key, size_t seed=0) Q_DECL_NOTHROW
 {
     return qHash(key.enclosingMetaObject(), seed) ^ qHash(static_cast<const void *>(key.name()), seed)
            ^ qHash(static_cast<const void *>(key.enumName()), seed) ^ qHash(static_cast<const void *>(key.scope()), seed);
+}
+
+static bool isSequentialGadgetType(QMetaType metaType)
+{
+    if (QMetaType::canConvert(metaType, QMetaType::fromType<QSequentialIterable>())) {
+        static QHash<int, bool> lookup;
+        if (!lookup.contains(metaType.id())) {
+            auto stubVariant = QVariant(metaType, nullptr);
+            auto asIterable = stubVariant.value<QSequentialIterable>();
+            auto valueMetaType = asIterable.metaContainer().valueMetaType();
+            lookup[metaType.id()] = valueMetaType.flags().testFlag(QMetaType::IsGadget);
+        }
+        return lookup[metaType.id()];
+    }
+    return false;
 }
 
 using namespace QtRemoteObjects;
@@ -100,6 +116,21 @@ QVariant encodeVariant(const QVariant &value)
 #endif
         return converted;
     }
+    if (isSequentialGadgetType(metaType)) { // Doesn't include QtROSequentialContainer
+        // TODO Way to create the QVariant without copying the QSQ_?
+        QSQ_ sequence(value);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Encoding sequential container" << metaType.name() << "to QSQ_ to transmit";
+#endif
+        return QVariant::fromValue<QSQ_>(sequence);
+    }
+    if (metaType == QMetaType::fromType<QtROSequentialContainer>()) {
+        QSQ_ sequence(value);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Encoding QtROSequentialContainer container to QSQ_ to transmit";
+#endif
+        return QVariant::fromValue<QSQ_>(sequence);
+    }
     return value;
 }
 
@@ -113,6 +144,58 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "Converting to enum from integer type" << value << encoded;
 #endif
+    } else if (value.metaType() == QMetaType::fromType<QRemoteObjectPackets::QSQ_>()) {
+        const auto *qsq_ = static_cast<const QRemoteObjectPackets::QSQ_ *>(value.constData());
+        QDataStream in(qsq_->values);
+        auto containerType = QMetaType::fromName(qsq_->typeName.constData());
+        bool isRegistered = containerType.isRegistered();
+        if (isRegistered) {
+            QVariant seq{containerType, nullptr};
+            if (!seq.canView<QSequentialIterable>()) {
+                qWarning() << "Unsupported container" << qsq_->typeName.constData()
+                           << "(not viewable)";
+                return QVariant();
+            }
+            QSequentialIterable seqIter = seq.view<QSequentialIterable>();
+            if (!seqIter.metaContainer().canAddValue()) {
+                qWarning() << "Unsupported container" << qsq_->typeName.constData()
+                           << "(Unable to add values)";
+                return QVariant();
+            }
+            QByteArray valueTypeName;
+            quint32 count;
+            in >> valueTypeName;
+            in >> count;
+            QMetaType valueType = QMetaType::fromName(valueTypeName.constData());
+            QVariant tmp{valueType, nullptr};
+            for (quint32 i = 0; i < count; i++) {
+                if (!valueType.load(in, tmp.data())) {
+                    if (seqIter.metaContainer().canRemoveValue() || i == 0) {
+                        for (quint32 ii = 0; ii < i; ii++)
+                            seqIter.removeValue();
+                        qWarning("QSQ_: unable to load type '%s', returning an empty list.\n", valueTypeName.constData());
+                    } else {
+                        qWarning("QSQ_: unable to load type '%s', returning a partial list.\n", valueTypeName.constData());
+                    }
+                    break;
+                }
+                seqIter.addValue(tmp);
+            }
+            value = seq;
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "Decoding QSQ_ to sequential container" << containerType.name()
+                     << valueTypeName;
+#endif
+        } else {
+            QtROSequentialContainer container{};
+            in >> container;
+            container.m_typeName = qsq_->typeName;
+            value = QVariant(QMetaType::fromType<QtROSequentialContainer>(), &container);
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "Decoding QSQ_ to QtROSequentialContainer of"
+                     << container.m_valueTypeName;
+#endif
+        }
     }
     return std::move(value);
 }
@@ -496,6 +579,12 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
         Q_ASSERT(index >= 0);
         auto signature = api->signalSignature(i);
         replace(signature);
+        const int count = api->signalParameterCount(i);
+        for (int pi = 0; pi < count; ++pi) {
+            const auto metaType = QMetaType(api->signalParameterType(i, pi));
+            if (isSequentialGadgetType(metaType))
+                signature.replace(metaType.name(), "QtROSequentialContainer");
+        }
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "  Signal" << i << "(signature =" << signature << "parameter names =" << api->signalParameterNames(i) << ")";
 #endif
@@ -510,6 +599,12 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
         Q_ASSERT(index >= 0);
         auto signature = api->methodSignature(i);
         replace(signature);
+        const int count = api->methodParameterCount(i);
+        for (int pi = 0; pi < count; ++pi) {
+            const auto metaType = QMetaType(api->methodParameterType(i, pi));
+            if (isSequentialGadgetType(metaType))
+                signature.replace(metaType.name(), "QtROSequentialContainer");
+        }
         auto typeName = api->typeName(i);
         replace(typeName);
 #ifdef QTRO_VERBOSE_PROTOCOL
@@ -539,10 +634,17 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
             qDebug() << "    Type:" << (objectType == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
 #endif
         } else {
-            ds << metaProperty.typeName();
+            if (isSequentialGadgetType(metaProperty.metaType())) {
+                ds << "QtROSequentialContainer";
 #ifdef QTRO_VERBOSE_PROTOCOL
-            qDebug() << "    Type:" << metaProperty.typeName();
+                qDebug() << "    Type:" << "QtROSequentialContainer";
 #endif
+            } else {
+                ds << metaProperty.typeName();
+#ifdef QTRO_VERBOSE_PROTOCOL
+                qDebug() << "    Type:" << metaProperty.typeName();
+#endif
+            }
         }
         if (metaProperty.notifySignalIndex() == -1) {
             ds << QByteArray();
@@ -721,6 +823,56 @@ QDataStream &operator>>(QDataStream &stream, QRO_ &info)
     qCDebug(QT_REMOTEOBJECT) << "Deserializing " << info;
     if (!info.isNull)
         stream >> info.parameters;
+    return stream;
+}
+
+QSQ_::QSQ_(const QVariant &variant)
+{
+    QSequentialIterable sequence;
+    QMetaType valueType;
+    if (variant.metaType() == QMetaType::fromType<QtROSequentialContainer>()) {
+        auto container = static_cast<const QtROSequentialContainer *>(variant.constData());
+        typeName = container->m_typeName;
+        valueType = container->m_valueType;
+        valueTypeName = container->m_valueTypeName;
+        sequence = QSequentialIterable(reinterpret_cast<const QVariantList *>(variant.constData()));
+    } else {
+        sequence = variant.value<QSequentialIterable>();
+        typeName = QByteArray(variant.metaType().name());
+        valueType = sequence.metaContainer().valueMetaType();
+        valueTypeName = QByteArray(valueType.name());
+    }
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug("Serializing POD sequence to QSQ_ (type = %s, valueType = %s) with size = %lld",
+           typeName.constData(), valueTypeName.constData(), sequence.size());
+#endif
+    QDataStream ds(&values, QIODevice::WriteOnly);
+    ds << valueTypeName;
+    auto pos = ds.device()->pos();
+    ds << quint32(sequence.size());
+    for (const auto &v : sequence) {
+        if (!valueType.save(ds, v.data())) {
+            ds.device()->seek(pos);
+            ds.resetStatus();
+            ds << quint32(0);
+            values.resize(ds.device()->pos());
+            qWarning("QSQ_: unable to save type '%s', sending empty list.\n", valueType.name());
+            break;
+        }
+    }
+}
+
+QDataStream &operator<<(QDataStream &stream, const QSQ_ &sequence)
+{
+    stream << sequence.typeName << sequence.valueTypeName << sequence.values;
+    qCDebug(QT_REMOTEOBJECT) << "Serializing " << sequence;
+    return stream;
+}
+
+QDataStream &operator>>(QDataStream &stream, QSQ_ &sequence)
+{
+    stream >> sequence.typeName >> sequence.valueTypeName >> sequence.values;
+    qCDebug(QT_REMOTEOBJECT) << "Deserializing " << sequence;
     return stream;
 }
 

@@ -60,6 +60,8 @@ private Q_SLOTS:
             parent.setNsEnum(NS::Bravo);
             parent.setNs2Enum(NS2::NamespaceEnum::Bravo);
             parent.setVariant(QVariant::fromValue(42.0f));
+            parent.setSimpleList(QList<QString>() << "one" << "two");
+            parent.setPodList(QList<MyPOD>() << initialValue << initialValue);
         }
 
         if (templated)

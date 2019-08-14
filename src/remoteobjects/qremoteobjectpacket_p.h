@@ -58,6 +58,7 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qpair.h>
+#include <QtCore/qsequentialiterable.h>
 #include <QtCore/qurl.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qloggingcategory.h>
@@ -131,6 +132,32 @@ inline QDebug operator<<(QDebug dbg, const QRO_ &info)
 QDataStream& operator<<(QDataStream &stream, const QRO_ &info);
 
 QDataStream& operator>>(QDataStream &stream, QRO_ &info);
+
+// Class for transmitting sequence data.  Needed because containers for custom
+// types (and even primitive types in Qt5) are not registered with the metaObject
+// system.  This wrapper allows us to create the desired container if it is
+// registered, or a QtROSequentialContainer if it is not.  QtROSequentialContainer
+// is derived from QVariantList, so it can be used from QML similar to the API
+// type.
+class QSQ_
+{
+public:
+    QSQ_() {}
+    explicit QSQ_(const QVariant &lst);
+    QByteArray typeName, valueTypeName;
+    QByteArray values;
+};
+
+inline QDebug operator<<(QDebug dbg, const QSQ_ &seq)
+{
+    dbg.nospace() << "QSQ_(typeName: " << seq.typeName << ", valueType: " << seq.valueTypeName
+                  << ", values: {" << seq.values <<")";
+    return dbg.space();
+}
+
+QDataStream& operator<<(QDataStream &stream, const QSQ_ &info);
+
+QDataStream& operator>>(QDataStream &stream, QSQ_ &info);
 
 //Helper class for creating a QByteArray from a QRemoteObjectPacket
 class DataStreamPacket : public QDataStream

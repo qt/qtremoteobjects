@@ -23,6 +23,8 @@ class ParentClass
     PROP(Qt::DateFormat date = Qt::ISODate)
     PROP(NS::NamespaceEnum nsEnum = NS::Alpha)
     PROP(NS2::NamespaceEnum ns2Enum = NS2::NamespaceEnum::Alpha)
+    PROP(QList<QString> simpleList)
+    PROP(QList<MyPOD> podList)
 
     SLOT(bool start())
     SLOT(bool quit())
