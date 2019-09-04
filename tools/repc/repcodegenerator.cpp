@@ -205,6 +205,7 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 
     for (const ASTClass &astClass : ast.classes) {
         QSet<QString> classMetaTypes;
+        QSet<QString> pendingMetaTypes;
         for (const ASTProperty &property : astClass.properties) {
             if (property.isPointer)
                 continue;
@@ -212,6 +213,7 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
         }
         const auto extractClassMetaTypes = [&](const ASTFunction &function) {
             classMetaTypes << function.returnType;
+            pendingMetaTypes << function.returnType;
             for (const ASTDeclaration &decl : function.params) {
                 classMetaTypes << decl.type;
             }
@@ -220,15 +222,19 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
             extractClassMetaTypes(function);
         for (const ASTFunction &function : astClass.slotsList)
             extractClassMetaTypes(function);
-        QString classMetaTypeRegistrationCode = metaTypeRegistrationCode + generateMetaTypeRegistration(classMetaTypes);
+
+        const QString classMetaTypeRegistrationCode = metaTypeRegistrationCode
+                + generateMetaTypeRegistration(classMetaTypes);
+        const QString replicaMetaTypeRegistrationCode = classMetaTypeRegistrationCode
+                + generateMetaTypeRegistrationForPending(pendingMetaTypes);
 
         if (mode == MERGED) {
-            generateClass(REPLICA, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(REPLICA, stream, astClass, replicaMetaTypeRegistrationCode);
             generateClass(SOURCE, stream, astClass, classMetaTypeRegistrationCode);
             generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
             generateSourceAPI(stream, astClass);
         } else {
-            generateClass(mode, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(mode, stream, astClass, mode == REPLICA ? replicaMetaTypeRegistrationCode : classMetaTypeRegistrationCode);
             if (mode == SOURCE) {
                 generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
                 generateSourceAPI(stream, astClass);
@@ -563,6 +569,23 @@ QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &meta
     }
     return out;
 }
+
+QString RepCodeGenerator::generateMetaTypeRegistrationForPending(const QSet<QString> &metaTypes)
+{
+    QString out;
+    if (!metaTypes.isEmpty())
+        out += QLatin1String("        qRegisterMetaType<QRemoteObjectPendingCall>();\n");
+    const QString qRegisterMetaType = QStringLiteral("        qRegisterMetaType<QRemoteObjectPendingReply<%1>>();\n");
+    const QString qRegisterConverterConditional = QStringLiteral("        if (!QMetaType::hasRegisteredConverterFunction<QRemoteObjectPendingReply<%1>, QRemoteObjectPendingCall>())\n");
+    const QString qRegisterConverter = QStringLiteral("            QMetaType::registerConverter<QRemoteObjectPendingReply<%1>, QRemoteObjectPendingCall>();\n");
+    for (const QString &metaType : metaTypes) {
+        out += qRegisterMetaType.arg(metaType);
+        out += qRegisterConverterConditional.arg(metaType);
+        out += qRegisterConverter.arg(metaType);
+    }
+    return out;
+}
+
 
 QString RepCodeGenerator::generateMetaTypeRegistrationForEnums(const QVector<QString> &enumUses)
 {
