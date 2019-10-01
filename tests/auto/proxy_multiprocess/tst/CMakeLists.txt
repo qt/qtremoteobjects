@@ -1,0 +1,13 @@
+# Generated from tst.pro.
+
+#####################################################################
+## tst_proxy_multiprocess Test:
+#####################################################################
+
+add_qt_test(tst_proxy_multiprocess
+    OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
+    SOURCES
+        tst_proxy_multiprocess.cpp
+    PUBLIC_LIBRARIES
+        Qt::RemoteObjects
+)

@@ -1,0 +1,15 @@
+# Generated from localsockettestserver.pro.
+
+#####################################################################
+## localsockettestserver Binary:
+#####################################################################
+
+add_qt_executable(localsockettestserver
+    SOURCES
+        main.cpp
+    PUBLIC_LIBRARIES
+        Qt::RemoteObjects
+)
+
+#### Keys ignored in scope 1:.:.:localsockettestserver.pro:<TRUE>:
+# TEMPLATE = "app"
