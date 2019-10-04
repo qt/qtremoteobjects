@@ -131,7 +131,9 @@ class QtRemoteObjectsPlugin : public QQmlExtensionPlugin
 public:
     void registerTypes(const char *uri) override
     {
-        qmlRegisterModule(uri, 5, QT_VERSION_MINOR);
+        // The minor version used to be the current Qt 5 minor. For compatibility it is the last
+        // Qt 5 release.
+        qmlRegisterModule(uri, 5, 15);
 
         qmlRegisterUncreatableType<QRemoteObjectAbstractPersistedStore>(uri, 5, 12, "PersistedStore", "Cannot create PersistedStore");
 
