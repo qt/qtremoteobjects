@@ -96,7 +96,7 @@ private slots:
         env.insert("RunMode", QVariant::fromValue(runMode).toString());
         env.insert("ObjectMode", QVariant::fromValue(objectMode).toString());
         serverProc.setProcessEnvironment(env);
-        serverProc.start(findExecutable("server", {
+        serverProc.start(findExecutable("restart_server", {
             QCoreApplication::applicationDirPath() + "/../server/"
         }));
         QVERIFY(serverProc.waitForStarted());
@@ -108,7 +108,7 @@ private slots:
         QProcess clientProc;
         clientProc.setProcessChannelMode(QProcess::ForwardedChannels);
         clientProc.setProcessEnvironment(env);
-        clientProc.start(findExecutable("client", {
+        clientProc.start(findExecutable("restart_client", {
             QCoreApplication::applicationDirPath() + "/../client/"
         }));
         QVERIFY(clientProc.waitForStarted());
@@ -123,7 +123,7 @@ private slots:
                 QCOMPARE(serverProc.exitCode(), 0);
             qDebug() << "Restarting server";
             serverProc.setProcessEnvironment(env);
-            serverProc.start(findExecutable("server", {
+            serverProc.start(findExecutable("restart_server", {
                 QCoreApplication::applicationDirPath() + "/../server/"
             }));
             QVERIFY(serverProc.waitForStarted());
