@@ -15,6 +15,5 @@ SOURCES += main.cpp \
 
 HEADERS += \
     mytestserver.h
-    $$OUT_PWD/rep_MyInterface_source.h
 
 INCLUDEPATH += $$PWD

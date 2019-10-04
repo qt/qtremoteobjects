@@ -14,6 +14,5 @@ SOURCES += main.cpp \
 
 HEADERS += \
     mytestserver.h
-    $$OUT_PWD/rep_subclass_source.h
 
 INCLUDEPATH += $$PWD
