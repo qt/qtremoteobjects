@@ -84,3 +84,22 @@ import QtRemoteObjects 5.\1
 
 \section1 QML Types
 */
+
+/*!
+\qmltype QtRemoteObjects
+\inqmlmodule QtRemoteObjects
+\since 5.14
+\brief The QtRemoteObjects global object provides useful functions for working with remote
+       types in QML.
+*/
+
+/*!
+    \qmlmethod Promise QtRemoteObjects::QtRemoteObjects::watch(QRemoteObjectPendingCall reply, int timeout = 30000)
+    Encapsulates the return value from a replica in a JavaScript Promise.
+
+    \qml
+    QtRemoteObjects.watch(replica.fetchDetails(identifier))
+                   .then(function(value) { details = value },
+                         function(error) { console.log("error fetching details:", error) })
+    \endqml
+*/
