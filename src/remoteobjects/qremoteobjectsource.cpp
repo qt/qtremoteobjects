@@ -113,7 +113,10 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
             if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
                 auto propertyMeta = QMetaType::metaObjectForType(property.userType());
                 QObject *child = property.read(m_object).value<QObject *>();
-                if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
+                const QMetaObject *meta = child ? child->metaObject() : propertyMeta;
+                if (!meta)
+                    continue;
+                if (meta->inherits(&QAbstractItemModel::staticMetaObject)) {
                     const auto modelInfo = api->m_models.at(modelIndex++);
                     QAbstractItemModel *model = qobject_cast<QAbstractItemModel *>(child);
                     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *modelApi =
@@ -455,13 +458,20 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
     const int propCount = metaObject->propertyCount();
     const int propOffset = metaObject->propertyOffset();
     m_properties.reserve(propCount-propOffset);
-    int i = 0;
-    for (i = propOffset; i < propCount; ++i) {
+    QSet<int> invalidSignals;
+    for (int i = propOffset; i < propCount; ++i) {
         const QMetaProperty property = metaObject->property(i);
         if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
             auto propertyMeta = QMetaType::metaObjectForType(property.userType());
             QObject *child = property.read(object).value<QObject *>();
-            if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
+            const QMetaObject *meta = child ? child->metaObject() : propertyMeta;
+            if (!meta) {
+                const int notifyIndex = metaObject->property(i).notifySignalIndex();
+                if (notifyIndex != -1)
+                    invalidSignals << notifyIndex;
+                continue;
+            }
+            if (meta->inherits(&QAbstractItemModel::staticMetaObject)) {
                 const QByteArray name = QByteArray::fromRawData(property.name(),
                                                                 qstrlen(property.name()));
                 const QByteArray infoName = name.toUpper() + QByteArrayLiteral("_ROLES");
@@ -475,12 +485,15 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
                                        QString::fromLatin1(property.name()),
                                        roleInfo});
             } else {
-                const QMetaObject *meta = child ? child->metaObject() : propertyMeta;
                 QString typeName = QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(meta);
                 if (typeName.isNull()) {
-                    typeName = QString::fromLatin1(propertyMeta->className());
+                    typeName = QString::fromLatin1(meta->className());
+                    if (typeName.contains(QLatin1String("QQuick")))
+                        typeName.remove(QLatin1String("QQuick"));
+                    else if (int index = typeName.indexOf(QLatin1String("_QMLTYPE_")))
+                        typeName.truncate(index);
                     // TODO better way to ensure we have consistent typenames between source/replicas?
-                    if (typeName.endsWith(QLatin1String("Source")))
+                    else if (typeName.endsWith(QLatin1String("Source")))
                         typeName.chop(6);
                 }
 
@@ -499,11 +512,13 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
     }
     const int methodCount = metaObject->methodCount();
     const int methodOffset = metaObject->methodOffset();
-    for (i = methodOffset; i < methodCount; ++i) {
+    for (int i = methodOffset; i < methodCount; ++i) {
         const QMetaMethod mm = metaObject->method(i);
         const QMetaMethod::MethodType m = mm.methodType();
         if (m == QMetaMethod::Signal) {
-            if (m_signals.indexOf(i) >= 0) //Already added as a property notifier
+            if (m_signals.indexOf(i) >= 0)  // Already added as a property notifier
+                continue;
+            if (invalidSignals.contains(i)) // QObject with no metatype
                 continue;
             m_signals << i;
         } else if (m == QMetaMethod::Slot || m == QMetaMethod::Method)
