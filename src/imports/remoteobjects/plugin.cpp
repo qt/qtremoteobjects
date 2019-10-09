@@ -55,6 +55,8 @@ struct QtQmlRemoteObjectsResponse {
     QTimer *timer;
 };
 
+
+// documentation updates for this class can be made in remoteobjects-qml.qdoc
 class QtQmlRemoteObjects : public QObject
 {
     Q_OBJECT
