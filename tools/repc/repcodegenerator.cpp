@@ -207,6 +207,7 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 
     for (const ASTClass &astClass : ast.classes) {
         QSet<QString> classMetaTypes;
+        QSet<QString> pendingMetaTypes;
         for (const ASTProperty &property : astClass.properties) {
             if (property.isPointer)
                 continue;
@@ -214,6 +215,7 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
         }
         const auto extractClassMetaTypes = [&](const ASTFunction &function) {
             classMetaTypes << function.returnType;
+            pendingMetaTypes << function.returnType;
             for (const ASTDeclaration &decl : function.params) {
                 classMetaTypes << decl.type;
             }
@@ -222,15 +224,19 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
             extractClassMetaTypes(function);
         for (const ASTFunction &function : astClass.slotsList)
             extractClassMetaTypes(function);
-        QString classMetaTypeRegistrationCode = metaTypeRegistrationCode + generateMetaTypeRegistration(classMetaTypes);
+
+        const QString classMetaTypeRegistrationCode = metaTypeRegistrationCode
+                + generateMetaTypeRegistration(classMetaTypes);
+        const QString replicaMetaTypeRegistrationCode = classMetaTypeRegistrationCode
+                + generateMetaTypeRegistrationForPending(pendingMetaTypes);
 
         if (mode == MERGED) {
-            generateClass(REPLICA, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(REPLICA, stream, astClass, replicaMetaTypeRegistrationCode);
             generateClass(SOURCE, stream, astClass, classMetaTypeRegistrationCode);
             generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
             generateSourceAPI(stream, astClass);
         } else {
-            generateClass(mode, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(mode, stream, astClass, mode == REPLICA ? replicaMetaTypeRegistrationCode : classMetaTypeRegistrationCode);
             if (mode == SOURCE) {
                 generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
                 generateSourceAPI(stream, astClass);
@@ -392,7 +398,11 @@ QString RepCodeGenerator::typeForMode(const ASTProperty &property, RepCodeGenera
 
 void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride)
 {
-    out << "    virtual void set" << cap(property.name) << "(" << typeForMode(property, SIMPLE_SOURCE) << " " << property.name << ")";
+    if (!generateOverride)
+        out << "    virtual ";
+    else
+        out << "    ";
+    out << "void set" << cap(property.name) << "(" << typeForMode(property, SIMPLE_SOURCE) << " " << property.name << ")";
     if (generateOverride)
         out << " override";
     out << endl;
@@ -470,13 +480,8 @@ void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVec
 
         out << "    };" << endl;
 
-        if (generateQENUM) {
-            out << "#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))" << endl;
+        if (generateQENUM)
             out << "    Q_ENUM(" << en.name << ")" << endl;
-            out << "#else" << endl;
-            out << "    Q_ENUMS(" << en.name << ")" << endl;
-            out << "#endif" << endl;
-        }
     }
 }
 
@@ -494,13 +499,6 @@ void RepCodeGenerator::generateENUMs(QTextStream &out, const QVector<ASTEnum> &e
 
     out << "};\n\n";
 
-    if (!enums.isEmpty()) {
-        out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))\n";
-        for (const ASTEnum &en : enums)
-            out << "    Q_DECLARE_METATYPE(" << className <<"::" << en.name << ")\n";
-        out <<  "#endif\n\n";
-    }
-
     generateStreamOperatorsForEnums(out, enums, className);
 }
 
@@ -509,7 +507,7 @@ void RepCodeGenerator::generateConversionFunctionsForEnums(QTextStream &out, con
     for (const ASTEnum &en : enums)
     {
         const QString type = getEnumType(en);
-        out << "    static inline " << en.name << " to" << en.name << "(" << type << " i, bool *ok = 0)\n"
+        out << "    static inline " << en.name << " to" << en.name << "(" << type << " i, bool *ok = nullptr)\n"
                "    {\n"
                "        if (ok)\n"
                "            *ok = true;\n"
@@ -573,6 +571,23 @@ QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &meta
     }
     return out;
 }
+
+QString RepCodeGenerator::generateMetaTypeRegistrationForPending(const QSet<QString> &metaTypes)
+{
+    QString out;
+    if (!metaTypes.isEmpty())
+        out += QLatin1String("        qRegisterMetaType<QRemoteObjectPendingCall>();\n");
+    const QString qRegisterMetaType = QStringLiteral("        qRegisterMetaType<QRemoteObjectPendingReply<%1>>();\n");
+    const QString qRegisterConverterConditional = QStringLiteral("        if (!QMetaType::hasRegisteredConverterFunction<QRemoteObjectPendingReply<%1>, QRemoteObjectPendingCall>())\n");
+    const QString qRegisterConverter = QStringLiteral("            QMetaType::registerConverter<QRemoteObjectPendingReply<%1>, QRemoteObjectPendingCall>();\n");
+    for (const QString &metaType : metaTypes) {
+        out += qRegisterMetaType.arg(metaType);
+        out += qRegisterConverterConditional.arg(metaType);
+        out += qRegisterConverter.arg(metaType);
+    }
+    return out;
+}
+
 
 QString RepCodeGenerator::generateMetaTypeRegistrationForEnums(const QVector<QString> &enumUses)
 {
@@ -783,7 +798,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "public:" << endl;
 
     if (mode == REPLICA && astClass.hasPersisted) {
-        out << "    virtual ~" << className << "() {" << endl;
+        out << "    ~" << className << "() override {" << endl;
         out << "        QVariantList persisted;" << endl;
         for (int i = 0; i < astClass.properties.size(); i++) {
             if (astClass.properties.at(i).persisted) {
@@ -793,7 +808,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "        persistProperties(\"" << astClass.name << "\", \"" << classSignature(astClass) << "\", persisted);" << endl;
         out << "    }" << endl;
     } else {
-        out << "    virtual ~" << className << "() {}" << endl;
+        out << "    ~" << className << "() override = default;" << endl;
     }
     out << "" << endl;
 
@@ -968,15 +983,8 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "};" << endl;
     out << "" << endl;
 
-    if (mode != SIMPLE_SOURCE) {
-        out << "#if (QT_VERSION < QT_VERSION_CHECK(5, 5, 0))" << endl;
-        for (const ASTEnum &en : astClass.enums)
-            out << "    Q_DECLARE_METATYPE(" << className << "::" << en.name << ")" << endl;
-        out <<  "#endif" << endl;
-        out << "" << endl;
-
+    if (mode != SIMPLE_SOURCE)
         generateStreamOperatorsForEnums(out, astClass.enums, className);
-    }
 
     out << "" << endl;
 }

@@ -89,10 +89,6 @@ struct InsertedRow
         : m_index(index)
         , m_start(start)
         , m_end(end){}
-    InsertedRow(const InsertedRow &other)
-        : m_index(other.m_index)
-        , m_start(other.m_start)
-        , m_end(other.m_end){}
     bool match(const QList<QVariant> &signal) const
     {
         if (signal.size() != 3)
@@ -737,7 +733,7 @@ void TestModelView::testFlags()
     for (int i = 10; i < 20; ++i) {
         QStandardItem* firstItem = m_sourceModel.item(i, 0);
         QStandardItem* secondItem = m_sourceModel.item(i, 1);
-        firstItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled | Qt::ItemIsTristate);
+        firstItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled | Qt::ItemIsAutoTristate);
         secondItem->setFlags(firstItem->flags() | Qt::ItemIsEnabled);
     }
     bool signalsReceived = false;
@@ -1022,7 +1018,7 @@ void TestModelView::testServerInsertDataTree()
 }
 
 #ifdef SLOW_MODELTEST
-#define MODELTEST_WAIT_TIME 15000
+#define MODELTEST_WAIT_TIME 25000
 #else
 #define MODELTEST_WAIT_TIME
 #endif
