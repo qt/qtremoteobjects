@@ -744,6 +744,7 @@ static void registerEnum(const QByteArray &name, const QMetaObject *meta, int si
 //        break;
     default:
         qWarning() << "Invalid enum detected" << name << "with size" << size << ".  Defaulting to register as int.";
+        size = 4;
         id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
                                                  &EnumConstructor<qint32>, size, flags, meta);
     }
