@@ -255,7 +255,7 @@ QVector<IndexValuePair> QAbstractItemModelSourceAdapter::fetchTree(const QModelI
     const int columnCount = m_model->columnCount(parent);
     if (!columnCount || !rowCount)
         return entries;
-    entries.reserve(std::min(size_t(rowCount * columnCount), size));
+    entries.reserve(std::min(rowCount * columnCount, int(size)));
     for (int row = 0; row < rowCount && size > 0; ++row)
         for (int column = 0; column < columnCount && size > 0; ++column) {
             const auto index = m_model->index(row, column, parent);
