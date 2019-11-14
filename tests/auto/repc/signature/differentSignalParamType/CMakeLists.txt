@@ -4,7 +4,7 @@
 ## differentSignalParamType Binary:
 #####################################################################
 
-add_qt_executable(differentSignalParamType
+qt_add_executable(differentSignalParamType
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

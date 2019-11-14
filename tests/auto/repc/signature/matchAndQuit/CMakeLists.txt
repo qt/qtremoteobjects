@@ -4,7 +4,7 @@
 ## matchAndQuit Binary:
 #####################################################################
 
-add_qt_executable(matchAndQuit
+qt_add_executable(matchAndQuit
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp

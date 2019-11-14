@@ -4,7 +4,7 @@
 ## tst_pods Test:
 #####################################################################
 
-add_qt_test(tst_pods
+qt_add_test(tst_pods
     SOURCES
         tst_pods.cpp
     PUBLIC_LIBRARIES

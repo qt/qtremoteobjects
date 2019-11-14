@@ -4,7 +4,7 @@
 ## tst_modelview Test:
 #####################################################################
 
-add_qt_test(tst_modelview
+qt_add_test(tst_modelview
     SOURCES
         modeltest.cpp modeltest.h
         tst_modelview.cpp
@@ -16,12 +16,12 @@ add_qt_test(tst_modelview
 ## Scopes:
 #####################################################################
 
-extend_target(tst_modelview CONDITION boot2qt
+qt_extend_target(tst_modelview CONDITION boot2qt
     DEFINES
         SLOW_MODELTEST
 )
 
-extend_target(tst_modelview CONDITION mingw
+qt_extend_target(tst_modelview CONDITION mingw
     DEFINES
         SLOW_MODELTEST
 )

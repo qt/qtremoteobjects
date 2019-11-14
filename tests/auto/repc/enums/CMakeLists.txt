@@ -4,7 +4,7 @@
 ## tst_enums Test:
 #####################################################################
 
-add_qt_test(tst_enums
+qt_add_test(tst_enums
     SOURCES
         tst_enums.cpp
     PUBLIC_LIBRARIES

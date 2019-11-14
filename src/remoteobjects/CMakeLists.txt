@@ -4,7 +4,7 @@
 ## RemoteObjects Module:
 #####################################################################
 
-add_qt_module(RemoteObjects
+qt_add_module(RemoteObjects
     QMAKE_MODULE_CONFIG remoteobjects_repc
     SOURCES
         qconnection_local_backend.cpp qconnection_local_backend_p.h
@@ -43,12 +43,11 @@ add_qt_module(RemoteObjects
 # MODULE = "remoteobjects"
 # MODULE_CONFIG = "remoteobjects_repc"
 # OTHER_FILES = "doc/qtremoteobjects.qdocconf" "doc/src/remoteobjects-cpp.qdoc" "doc/src/remoteobjects-index.qdoc" "doc/src/remoteobjects-overview.qdoc" "doc/src/remoteobjects-repc.qdoc"
-# _LOADED = "qt_module"
 
 ## Scopes:
 #####################################################################
 
-extend_target(RemoteObjects CONDITION QNX
+qt_extend_target(RemoteObjects CONDITION QNX
     SOURCES
         qconnection_qnx_backend.cpp qconnection_qnx_backend_p.h
         qconnection_qnx_global_p.h
@@ -56,11 +55,11 @@ extend_target(RemoteObjects CONDITION QNX
         qconnection_qnx_server.cpp qconnection_qnx_server.h qconnection_qnx_server_p.h
 )
 
-extend_target(RemoteObjects CONDITION (QNX) AND (DEFINES ___contains___USE_HAM)
+qt_extend_target(RemoteObjects CONDITION (QNX) AND (DEFINES ___contains___USE_HAM)
     PUBLIC_LIBRARIES
         ham
 )
-add_qt_docs(RemoteObjects
+qt_add_docs(RemoteObjects
     doc/qtremoteobjects.qdocconf
 )
 

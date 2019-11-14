@@ -4,7 +4,7 @@
 ## tst_signature Test:
 #####################################################################
 
-add_qt_test(tst_signature
+qt_add_test(tst_signature
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         tst_signature.cpp

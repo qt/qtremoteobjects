@@ -1,24 +1,18 @@
 # Generated from pods.pro.
 
 #####################################################################
-## tst_pods Test:
+## tst_repc_pods Test:
 #####################################################################
 
-add_qt_test(tst_pods
+qt_add_test(tst_repc_pods
     SOURCES
         tst_pods.cpp
     PUBLIC_LIBRARIES
         Qt::RemoteObjects
 )
-qt6_add_repc_replica(tst_pods
+qt6_add_repc_replica(tst_repc_pods
     pods.rep
 )
 
-#### Keys ignored in scope 1:.:.:pods.pro:<TRUE>:
-# QTRO_SOURCE_TREE = "${CMAKE_SOURCE_DIR}"
-
 ## Scopes:
 #####################################################################
-
-#### Keys ignored in scope 2:.:.:pods.pro:QT_CONFIG___contains___c++11:
-# QTRO_SOURCE_TREE = "${CMAKE_SOURCE_DIR}"

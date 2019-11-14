@@ -4,7 +4,7 @@
 ## proxy Binary:
 #####################################################################
 
-add_qt_executable(proxy
+qt_add_executable(proxy
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp

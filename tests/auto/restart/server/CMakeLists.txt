@@ -4,7 +4,7 @@
 ## restart_server Binary:
 #####################################################################
 
-add_qt_executable(restart_server
+qt_add_executable(restart_server
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp

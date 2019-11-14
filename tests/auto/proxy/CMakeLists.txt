@@ -4,7 +4,7 @@
 ## tst_proxy Test:
 #####################################################################
 
-add_qt_test(tst_proxy
+qt_add_test(tst_proxy
     SOURCES
         tst_proxy.cpp
     PUBLIC_LIBRARIES

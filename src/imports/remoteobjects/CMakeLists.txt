@@ -4,7 +4,7 @@
 ## qtremoteobjects Plugin:
 #####################################################################
 
-add_qml_module(qtremoteobjects
+qt_add_qml_module(qtremoteobjects
     URI "QtRemoteObjects"
     VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}" # special case
     CLASSNAME QtRemoteObjectsPlugin
@@ -24,4 +24,3 @@ add_qml_module(qtremoteobjects
 # CXX_MODULE = "qml"
 # IMPORT_VERSION = "5.$$QT_MINOR_VERSION"
 # TARGETPATH = "QtRemoteObjects"
-# _LOADED = "qml_plugin"

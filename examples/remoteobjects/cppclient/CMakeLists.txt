@@ -14,7 +14,7 @@ set(INSTALL_EXAMPLEDIR "examples/remoteobjects/cppclient")
 find_package(Qt6 COMPONENTS Core)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_qt_gui_executable(CppClient
+add_executable(CppClient
     main.cpp
 )
 target_link_libraries(CppClient PUBLIC

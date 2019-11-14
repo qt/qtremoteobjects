@@ -4,7 +4,7 @@
 ## integration_multiprocess_client Binary:
 #####################################################################
 
-add_qt_executable(integration_multiprocess_client
+qt_add_executable(integration_multiprocess_client
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp

@@ -4,7 +4,7 @@
 ## differentPropertyType Binary:
 #####################################################################
 
-add_qt_executable(differentPropertyType
+qt_add_executable(differentPropertyType
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

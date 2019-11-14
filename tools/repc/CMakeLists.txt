@@ -4,7 +4,7 @@
 ## repc Tool:
 #####################################################################
 
-add_qt_tool(repc
+qt_add_tool(repc
     TOOLS_TARGET RemoteObjects # special case
     SOURCES
         cppcodegenerator.cpp cppcodegenerator.h
@@ -40,13 +40,12 @@ qt_process_qlalr(
 
 #### Keys ignored in scope 1:.:.:repc.pro:<TRUE>:
 # QMAKE_TARGET_DESCRIPTION = "Qt Remote Objects Compiler"
-# _LOADED = "qt_tool"
 # _OPTION = "host_build"
 
 ## Scopes:
 #####################################################################
 
-extend_target(repc CONDITION MSVC
+qt_extend_target(repc CONDITION MSVC
     COMPILE_OPTIONS
         /wd4129
 )

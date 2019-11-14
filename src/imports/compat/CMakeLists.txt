@@ -4,7 +4,7 @@
 ## qtqmlremoteobjects Plugin:
 #####################################################################
 
-add_qml_module(qtqmlremoteobjects
+qt_add_qml_module(qtqmlremoteobjects
     URI "QtQml.RemoteObjects"
     VERSION "1.0"
     CLASSNAME QtQmlRemoteObjectsPlugin
@@ -22,4 +22,3 @@ add_qml_module(qtqmlremoteobjects
 # CXX_MODULE = "qml"
 # IMPORT_VERSION = "1.0"
 # TARGETPATH = "QtQml/RemoteObjects"
-# _LOADED = "qml_plugin"

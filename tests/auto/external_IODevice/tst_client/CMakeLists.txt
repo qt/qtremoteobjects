@@ -4,7 +4,7 @@
 ## tst_external_IODevice Test:
 #####################################################################
 
-add_qt_test(tst_external_IODevice
+qt_add_test(tst_external_IODevice
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         tst_client.cpp
@@ -44,7 +44,7 @@ set(cert_resource_files
     "server.key"
 )
 
-add_qt_resource(tst_external_IODevice "cert"
+qt_add_resource(tst_external_IODevice "cert"
     PREFIX
         "/sslcert"
     BASE

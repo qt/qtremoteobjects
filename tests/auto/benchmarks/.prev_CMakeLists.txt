@@ -4,7 +4,7 @@
 ## tst_benchmarkstest Test:
 #####################################################################
 
-add_qt_test(tst_benchmarkstest
+qt_add_test(tst_benchmarkstest
     SOURCES
         tst_benchmarkstest.cpp
     DEFINES

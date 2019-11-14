@@ -4,7 +4,7 @@
 ## differentGlobalEnum Binary:
 #####################################################################
 
-add_qt_executable(differentGlobalEnum
+qt_add_executable(differentGlobalEnum
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

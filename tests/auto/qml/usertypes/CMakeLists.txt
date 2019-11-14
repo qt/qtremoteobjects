@@ -4,7 +4,7 @@
 ## tst_usertypes Test:
 #####################################################################
 
-add_qt_test(tst_usertypes
+qt_add_test(tst_usertypes
     SOURCES
         tst_usertypes.cpp
     DEFINES

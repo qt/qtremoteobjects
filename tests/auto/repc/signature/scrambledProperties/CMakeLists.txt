@@ -4,7 +4,7 @@
 ## scrambledProperties Binary:
 #####################################################################
 
-add_qt_executable(scrambledProperties
+qt_add_executable(scrambledProperties
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

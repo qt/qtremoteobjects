@@ -4,7 +4,7 @@
 ## localsockettestserver Binary:
 #####################################################################
 
-add_qt_executable(localsockettestserver
+qt_add_executable(localsockettestserver
     SOURCES
         main.cpp
     PUBLIC_LIBRARIES

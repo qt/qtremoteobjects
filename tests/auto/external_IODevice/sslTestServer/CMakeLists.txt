@@ -4,7 +4,7 @@
 ## sslTestServer Binary:
 #####################################################################
 
-add_qt_executable(sslTestServer
+qt_add_executable(sslTestServer
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp
@@ -49,7 +49,7 @@ set(cert_resource_files
     "server.key"
 )
 
-add_qt_resource(sslTestServer "cert"
+qt_add_resource(sslTestServer "cert"
     PREFIX
         "/sslcert"
     BASE

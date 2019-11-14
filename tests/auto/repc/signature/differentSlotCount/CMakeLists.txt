@@ -4,7 +4,7 @@
 ## differentSlotCount Binary:
 #####################################################################
 
-add_qt_executable(differentSlotCount
+qt_add_executable(differentSlotCount
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

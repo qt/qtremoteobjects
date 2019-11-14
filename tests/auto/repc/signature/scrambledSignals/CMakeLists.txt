@@ -4,7 +4,7 @@
 ## scrambledSignals Binary:
 #####################################################################
 
-add_qt_executable(scrambledSignals
+qt_add_executable(scrambledSignals
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

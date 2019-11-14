@@ -17,7 +17,7 @@ find_package(Qt6 COMPONENTS Widgets)
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS WebSockets)
 
-add_qt_gui_executable(wsserver
+add_executable(wsserver
     ../common/websocketiodevice.cpp ../common/websocketiodevice.h
     main.cpp
 )
