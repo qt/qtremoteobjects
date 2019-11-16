@@ -157,6 +157,8 @@ bool QRemoteObjectPendingCall::isFinished() const
 
 /*!
     Blocks for up to \a timeout milliseconds, until the remote call has finished.
+
+    Returns \c true on success, \c false otherwise.
 */
 bool QRemoteObjectPendingCall::waitForFinished(int timeout)
 {
@@ -248,7 +250,8 @@ void QRemoteObjectPendingCallWatcher::waitForFinished()
 /*!
     \fn QRemoteObjectPendingCallWatcher::finished(QRemoteObjectPendingCallWatcher *self)
 
-    This signal is emitted when the remote call has finished. A finished call will include a
+    This signal is emitted when the remote call has finished. \a self is the pointer to
+    the watcher object that emitted the signal. A finished call will include a
     returnValue or error.
 */
 
