@@ -86,6 +86,7 @@ bool QQnxNativeIoPrivate::establishConnection()
 
     sigevent tx_pulse;
     SIGEV_PULSE_INIT(&tx_pulse, connection, SIGEV_PULSE_PRIO_INHERIT, SOURCE_TX_RQ, 0);
+    SIGEV_MAKE_UPDATEABLE(&tx_pulse);
     qCDebug(QT_REMOTEOBJECT) << "in establish" << tx_pulse.sigev_code << SOURCE_TX_RQ;
 
     const int id = name_open(qPrintable(serverName), 0);
