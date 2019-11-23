@@ -421,7 +421,7 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
 
 /*!
     \since 5.11
-    \brief Forward Remote Objects to another network
+    \brief Forwards remote objects to another network.
 
     The reverseProxy() function allows the \l proxy() functionality to be
     extended, in effect mirroring the proxy functionality in the "reverse"
@@ -477,6 +477,8 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
     reverseProxy specific filter will receive notifications of new \l Source
     objects on proxyNode and acquire them on the internal node if they pass the
     reverseFilter.
+
+    Returns \c true on success, \c false otherwise.
 
     \sa proxy()
 */
@@ -1816,7 +1818,7 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
 
 /*!
     Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
-    is not a Host node, it return an empty QUrl.
+    is not a Host node, returns an empty QUrl.
 
     \sa setHostUrl()
 */
@@ -2097,7 +2099,7 @@ void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
 */
 
 /*!
-    \fn void remoteObjectRemoved(const QRemoteObjectSourceLocation &loc)
+    \fn void QRemoteObjectNode::remoteObjectRemoved(const QRemoteObjectSourceLocation &loc)
 
     This signal is emitted whenever there is a known \l {Source} object is
     removed from the Registry. The signal will not be emitted if there is no
@@ -2335,8 +2337,8 @@ void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
 /*!
  Returns a pointer to a Replica which is specifically derived from \l
  QAbstractItemModel. The \a name provided must match the name used with the
- matching \l {QRemoteObjectHostBase::enableRemoting} {enableRemoting} that put
- the Model on the network. The returned \c model will be empty until it is
+ matching \l {QRemoteObjectHostBase::}{enableRemoting} that put
+ the Model on the network. The returned model will be empty until it is
  initialized with the \l Source.
  */
 QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name, QtRemoteObjects::InitialAction action, const QVector<int> &rolesHint)
