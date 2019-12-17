@@ -703,12 +703,13 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 const ASTProperty &property = astClass.properties.at(index);
                 if (!property.isPointer)
                     continue;
+                const QString acquireName = astClass.name + QLatin1String("::") + property.name;
                 if (astClass.subClassPropertyIndices.contains(index))
                     out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquire<%2Replica>(QRemoteObjectStringLiterals::CLASS().arg(\"%3\"))));")
-                                              .arg(QString::number(index), property.type, property.name) << Qt::endl;
+                                              .arg(QString::number(index), property.type, acquireName) << Qt::endl;
                 else
                     out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(QRemoteObjectStringLiterals::MODEL().arg(\"%2\"))));")
-                                              .arg(QString::number(index), property.name) << Qt::endl;
+                                              .arg(QString::number(index), acquireName) << Qt::endl;
                 out << "        Q_EMIT " << property.name << "Changed(" << property.name << "()" << ");" << Qt::endl;
 
             }
@@ -724,12 +725,13 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             const ASTProperty &property = astClass.properties.at(index);
             if (!property.isPointer)
                 continue;
+            const QString acquireName = astClass.name + QLatin1String("::") + property.name;
             if (astClass.subClassPropertyIndices.contains(index))
                 out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquire<%2Replica>(QRemoteObjectStringLiterals::CLASS().arg(\"%3\"))));")
-                                          .arg(QString::number(index), property.type, property.name) << Qt::endl;
+                                          .arg(QString::number(index), property.type, acquireName) << Qt::endl;
             else
                 out << QString::fromLatin1("        setChild(%1, QVariant::fromValue(node->acquireModel(QRemoteObjectStringLiterals::MODEL().arg(\"%2\"))));")
-                                          .arg(QString::number(index), property.name) << Qt::endl;
+                                          .arg(QString::number(index), acquireName) << Qt::endl;
         }
         out << "    }" << Qt::endl;
 

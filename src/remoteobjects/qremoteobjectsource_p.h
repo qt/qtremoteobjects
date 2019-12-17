@@ -104,7 +104,7 @@ protected:
 class QRemoteObjectSource : public QRemoteObjectSourceBase
 {
 public:
-    explicit QRemoteObjectSource(QObject *object, Private *d, const SourceApiMap *, QObject *adapter);
+    explicit QRemoteObjectSource(QObject *object, Private *d, const SourceApiMap *, QObject *adapter, const QString &parentName);
     ~QRemoteObjectSource() override;
 
     bool isRoot() const override { return false; }

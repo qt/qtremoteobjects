@@ -117,7 +117,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *modelApi =
                         new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(modelInfo.name);
                     if (!model)
-                        m_children.insert(i, new QRemoteObjectSource(nullptr, d, modelApi, nullptr));
+                        m_children.insert(i, new QRemoteObjectSource(nullptr, d, modelApi, nullptr, api->name()));
                     else {
                         roles.clear();
                         const auto knownRoles = model->roleNames();
@@ -133,20 +133,21 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                         }
                         auto adapter = new QAbstractItemModelSourceAdapter(model, nullptr,
                                                                            roles.isEmpty() ? knownRoles.keys().toVector() : roles);
-                        m_children.insert(i, new QRemoteObjectSource(model, d, modelApi, adapter));
+                        m_children.insert(i, new QRemoteObjectSource(model, d, modelApi, adapter, api->name()));
                     }
                 } else {
                     const auto classApi = api->m_subclasses.at(subclassIndex++);
-                    m_children.insert(i, new QRemoteObjectSource(child, d, classApi, nullptr));
+                    m_children.insert(i, new QRemoteObjectSource(child, d, classApi, nullptr, api->name()));
                 }
             }
         }
     }
 }
 
-QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceApiMap *api, QObject *adapter)
+QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceApiMap *api, QObject *adapter, const QString &parentName)
     : QRemoteObjectSourceBase(obj, d, api, adapter)
-    , m_name(api->typeName() == QLatin1String("QAbstractItemModelAdapter") ? MODEL().arg(api->name()) : CLASS().arg(api->name()))
+    , m_name(api->typeName() == QLatin1String("QAbstractItemModelAdapter") ? MODEL().arg(parentName + QLatin1String("::") + api->name()) :
+                                                                             CLASS().arg(parentName + QLatin1String("::") + api->name()))
 {
     if (obj)
         d->m_sourceIo->registerSource(this);

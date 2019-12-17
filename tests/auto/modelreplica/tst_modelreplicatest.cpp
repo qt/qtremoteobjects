@@ -64,6 +64,12 @@ void ModelreplicaTest::basicFunctions()
     else
         host.enableRemoting(&source);
 
+    auto model2 = new QStringListModel();
+    model2->setStringList(QStringList() << "Track4" << "Track5");
+    OtherMediaSimpleSource source2;
+    source2.setTracks(model2);
+    host.enableRemoting(&source2);
+
     QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
     const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
     QSignalSpy tracksSpy(replica->tracks(), &QAbstractItemModelReplica::initialized);
@@ -86,6 +92,14 @@ void ModelreplicaTest::basicFunctions()
     {
         QCOMPARE(model->data(model->index(i), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
     }
+
+    // ensure the tracks objects are distinct
+    const QScopedPointer<OtherMediaReplica> otherReplica(client.acquire<OtherMediaReplica>());
+    QSignalSpy otherTracksSpy(otherReplica->tracks(), &QAbstractItemModelReplica::initialized);
+    QVERIFY(otherReplica->waitForSource(300));
+    QVERIFY(otherTracksSpy.wait());
+    QCOMPARE(otherReplica->tracks()->availableRoles().count(), 2);
+
 }
 
 void ModelreplicaTest::nullModel()

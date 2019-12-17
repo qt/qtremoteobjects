@@ -5,3 +5,8 @@ class Media
     PROP(state playState)
     MODEL tracks(display)
 }
+
+class OtherMedia
+{
+    MODEL tracks(display,decoration)
+}
