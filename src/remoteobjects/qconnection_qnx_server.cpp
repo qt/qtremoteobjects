@@ -235,9 +235,11 @@ void QQnxNativeServerPrivate::thread_func()
             }
                 break;
             case _PULSE_CODE_UNBLOCK:
-                // did we forget to Reply to our client?
-                qCWarning(QT_REMOTEOBJECT) << "got an unblock pulse, did you forget to reply to your client?";
-                WARN_ON_ERROR(MsgError, recv_buf.pulse.value.sival_int, EINTR)
+                if (running.load()) {
+                    // did we forget to Reply to our client?
+                    qCWarning(QT_REMOTEOBJECT) << "got an unblock pulse, did you forget to reply to your client?";
+                    WARN_ON_ERROR(MsgError, recv_buf.pulse.value.sival_int, EINTR)
+                }
                 break;
             default:
                 qCWarning(QT_REMOTEOBJECT) << "unexpected pulse code: " << recv_buf.pulse.code << __FILE__ << __LINE__;
@@ -404,6 +406,11 @@ bool QQnxNativeServerPrivate::listen(const QString &name)
         qCDebug(QT_REMOTEOBJECT, "name_attach call failed");
         return false;
     }
+    terminateCoid = ConnectAttach(ND_LOCAL_NODE, 0, attachStruct->chid, _NTO_SIDE_CHANNEL, 0);
+    if (terminateCoid == -1) {
+        qCDebug(QT_REMOTEOBJECT, "ConnectAttach failed");
+        return false;
+    }
 
     running.ref();
     thread.start();
@@ -435,7 +442,8 @@ void QQnxNativeServerPrivate::teardownServer()
         return;
 
     running.deref();
-    ChannelDestroy(attachStruct->chid);
+    MsgSendPulse(terminateCoid, SIGEV_PULSE_PRIO_INHERIT, _PULSE_CODE_UNBLOCK, 0);
+    ConnectDetach(terminateCoid);
     thread.wait();
 
     //Existing QIOQnxSources will be deleted along with object
