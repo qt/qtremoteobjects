@@ -57,6 +57,7 @@
 %token stop "[stop][ \\t]*\\};?[ \\t]*"
 %token comma "[comma],"
 %token comment "[comment](?<comment>[ \\t]*//[^\\n]*\\n)"
+%token mcomment "[mcomment,M](?<comment>/\\*(.*?)\\*/)"
 %token preprocessor_directive "[preprocessor_directive](?<preprocessor_directive>#[ \\t]*[^\\n]*\\n)"
 %token newline "[newline](\\r)?\\n"
 
@@ -665,7 +666,7 @@ Types: Type | Type Types;
 
 Newlines: newline | newline Newlines;
 Comments: Comment | Comment Comments;
-Comment: comment | comment Newlines;
+Comment: comment | comment Newlines | mcomment | mcomment Newlines;
 Type: PreprocessorDirective | PreprocessorDirective Newlines;
 Type: Pod | Pod Newlines;
 Type: Class;
