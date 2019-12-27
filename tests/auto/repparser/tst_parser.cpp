@@ -49,6 +49,8 @@ private Q_SLOTS:
     void testSignals();
     void testPods_data();
     void testPods();
+    void testPods2_data();
+    void testPods2();
     void testEnums_data();
     void testEnums();
     void testTypedEnums_data();
@@ -311,6 +313,61 @@ void tst_Parser::testPods()
     QCOMPARE(ast.pods.count(), 1);
     const POD pods = ast.pods.first();
     const QList<PODAttribute> podsList = pods.attributes;
+    const QStringList typeList = expectedtypes.split(QLatin1Char(';'));
+    const QStringList variableList = expectedvariables.split(QLatin1Char(';'));
+    QVERIFY(typeList.count() == variableList.count());
+    QVERIFY(podsList.count() == variableList.count());
+    for (int i=0; i < podsList.count(); ++i) {
+        QCOMPARE(podsList.at(i).name, variableList.at(i));
+        QCOMPARE(podsList.at(i).type, typeList.at(i));
+    }
+}
+
+void tst_Parser::testPods2_data()
+{
+    QTest::addColumn<QString>("podsdeclaration");
+    QTest::addColumn<QString>("expectedtypes");
+    QTest::addColumn<QString>("expectedvariables");
+
+    //Variable/Type separate by ";"
+    QTest::newRow("one pod") << "POD preset{int presetNumber}" << "int" << "presetNumber";
+    QTest::newRow("two pod") << "POD preset{int presetNumber, double foo}" << "int;double" << "presetNumber;foo";
+    QTest::newRow("two pod with space") << "POD preset { int presetNumber , double foo } " << "int;double" << "presetNumber;foo";
+    QTest::newRow("two pod multiline") << "POD preset{\nint presetNumber,\ndouble foo\n}" << "int;double" << "presetNumber;foo";
+    //Template
+    QTest::newRow("pod template") << "POD preset{QMap<QString,int> foo} " << "QMap<QString,int>" << "foo";
+    QTest::newRow("pod template (QList)") << "POD preset{QList<QString> foo} " << "QList<QString>" << "foo";
+    QTest::newRow("two pod template") << "POD preset{QMap<QString,int> foo, QMap<double,int> bla} " << "QMap<QString,int>;QMap<double,int>" << "foo;bla";
+    QTest::newRow("two pod template with space") << "POD preset{ QMap<QString  ,  int >  foo ,   QMap<  double , int > bla } " << "QMap<QString,int>;QMap<double,int>" << "foo;bla";
+    //Enum
+    QTest::newRow("enum multiline") << "POD preset{ENUM val {val1 = 1,\nval2,\nval3=12}\nval value,\ndouble foo\n}" << "val;double" << "value;foo";
+
+}
+
+void tst_Parser::testPods2()
+{
+    QFETCH(QString, podsdeclaration);
+    QFETCH(QString, expectedtypes);
+    QFETCH(QString, expectedvariables);
+
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << podsdeclaration << Qt::endl;
+    stream << "class TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << "};" << Qt::endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+    QCOMPARE(ast.classes.count(), 1);
+
+    QCOMPARE(ast.pods.count(), 1);
+    const POD pods = ast.pods.first();
+    const QVector<PODAttribute> podsList = pods.attributes;
     const QStringList typeList = expectedtypes.split(QLatin1Char(';'));
     const QStringList variableList = expectedvariables.split(QLatin1Char(';'));
     QVERIFY(typeList.count() == variableList.count());

@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include <QtCore/qabstractitemmodel.h>
+#include <QtCore/qbytearrayview.h>
 
 #include "qremoteobjectcontainers_p.h"
 #include "qremoteobjectpendingcall.h"
@@ -441,16 +442,34 @@ static ObjectType getObjectType(const QString &typeName)
     return ObjectType::CLASS;
 }
 
-// Same method as in QVariant.cpp, as it isn't publicly exposed...
+static QByteArrayView resolveEnumName(QMetaType t, bool &isFlag)
+{
+    // Takes types like `MyPOD::Position` or `QFlags<MyPOD::Position>` and returns 'Position`
+    QByteArrayView enumName(t.name());
+    isFlag = enumName.startsWith("QFlags<");
+    auto lastColon = enumName.lastIndexOf(':');
+    if (lastColon >= 0)
+        enumName = QByteArrayView(t.name() + lastColon + 1);
+    if (isFlag)
+        enumName.chop(1);
+    return enumName;
+}
+
 static QMetaEnum metaEnumFromType(QMetaType t)
 {
-    if (t.flags() & QMetaType::IsEnumeration) {
-        if (const QMetaObject *metaObject = t.metaObject()) {
-            const char *enumName = t.name();
-            const char *lastColon = std::strrchr(enumName, ':');
-            if (lastColon)
-                enumName = lastColon + 1;
-            return metaObject->enumerator(metaObject->indexOfEnumerator(enumName));
+    if (t.flags().testFlag(QMetaType::IsEnumeration)) {
+        if (const QMetaObject *m = t.metaObject()) {
+            bool isFlag;
+            auto enumName = resolveEnumName(t, isFlag);
+            if (isFlag) {
+                for (int i = m->enumeratorOffset(); i < m->enumeratorCount(); i++) {
+                    auto testType = m->enumerator(i);
+                    if (testType.isFlag() &&
+                        enumName.compare(QByteArrayView(testType.enumName())) == 0)
+                        return testType;
+                }
+            }
+            return m->enumerator(m->indexOfEnumerator(enumName.data()));
         }
     }
     return QMetaEnum();
@@ -624,7 +643,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
         int propertyCount = gadgets.contains(meta) ? meta->propertyCount() : 0;
         ds << quint32(propertyCount);
 #ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug("  Gadget %d (name = %s, # properties = %d, # enums = %d):", i++, meta->className(), propertyCount, meta->enumeratorCount());
+        qDebug("  Gadget %d (name = %s, # properties = %d, # enums = %d):", i++, meta->className(), propertyCount, meta->enumeratorCount() - meta->enumeratorOffset());
 #endif
         for (int j = 0; j < propertyCount; j++) {
             auto prop = meta->property(j);
@@ -634,9 +653,9 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
             ds << QByteArray::fromRawData(prop.name(), qsizetype(qstrlen(prop.name())));
             ds << QByteArray::fromRawData(prop.typeName(), qsizetype(qstrlen(prop.typeName())));
         }
-        int enumCount = meta->enumeratorCount();
+        int enumCount = meta->enumeratorCount() - meta->enumeratorOffset();
         ds << quint32(enumCount);
-        for (int j = 0; j < enumCount; j++) {
+        for (int j = meta->enumeratorOffset(); j < meta->enumeratorCount(); j++) {
             auto const enumMeta = meta->enumerator(j);
             serializeEnum(ds, enumMeta);
         }
@@ -915,7 +934,12 @@ QRO_::QRO_(const QVariant &value)
         out << QByteArray::fromRawData(property.name(), qsizetype(qstrlen(property.name())));
         out << QByteArray::fromRawData(property.typeName(), qsizetype(qstrlen(property.typeName())));
     }
-    out << quint32(0); // PODs have no enums
+    int enumCount = meta->enumeratorCount() - meta->enumeratorOffset();
+    out << quint32(enumCount);
+    for (int j = meta->enumeratorOffset(); j < meta->enumeratorCount(); j++) {
+        auto const enumMeta = meta->enumerator(j);
+        serializeEnum(out, enumMeta);
+    }
     QDataStream ds(&parameters, QIODevice::WriteOnly);
     ds << value;
 #ifdef QTRO_VERBOSE_PROTOCOL
