@@ -997,7 +997,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         // Include enum definition in SourceAPI
         generateDeclarationsForEnums(out, astClass.enums, false);
     }
-    out << QString::fromLatin1("    %1(ObjectType *object, const QString &name = QStringLiteral(\"%2\"))").arg(className, astClass.name) << Qt::endl;
+    out << QString::fromLatin1("    %1(ObjectType *object, const QString &name = QLatin1String(\"%2\"))").arg(className, astClass.name) << Qt::endl;
     out << QStringLiteral("        : SourceApiMap(), m_name(name)") << Qt::endl;
     out << QStringLiteral("    {") << Qt::endl;
     if (!astClass.hasPointerObjects())
