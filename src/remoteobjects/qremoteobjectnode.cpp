@@ -1640,6 +1640,19 @@ QRemoteObjectNode::QRemoteObjectNode(QRemoteObjectNodePrivate &dptr, QObject *pa
 }
 
 /*!
+    \qmltype Host
+    \instantiates QRemoteObjectHost
+    \inqmlmodule QtRemoteObjects
+    \brief A host node on a Qt Remote Objects network.
+
+    The Host type provides an entry point to a Qt Remote Objects network. A network
+    can be as simple as two nodes, or an arbitrarily complex set of processes and devices.
+
+    Hosts have the same capabilities as Nodes, but they can also be connected to and can
+    share source objects on the network.
+*/
+
+/*!
     \internal This is a base class for both QRemoteObjectHost and
     QRemoteObjectRegistryHost to provide the shared features/functions for
     sharing \l Source objects.
@@ -1817,6 +1830,21 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
 }
 
 /*!
+    \qmlproperty url Host::hostUrl
+
+    The host address for the node.
+
+    This is the address where source objects remoted by this node will reside.
+*/
+
+/*!
+    \property QRemoteObjectHost::hostUrl
+    \brief The host address for the node.
+
+    This is the address where source objects remoted by this node will reside.
+*/
+
+/*!
     Returns the host address for the QRemoteObjectNode as a QUrl. If the Node
     is not a Host node, returns an empty QUrl.
 
@@ -1839,7 +1867,10 @@ QUrl QRemoteObjectHost::hostUrl() const
 */
 bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas)
 {
-    return QRemoteObjectHostBase::setHostUrl(hostAddress, allowedSchemas);
+    bool success = QRemoteObjectHostBase::setHostUrl(hostAddress, allowedSchemas);
+    if (success)
+        emit hostUrlChanged();
+    return success;
 }
 
 /*!
@@ -2163,6 +2194,24 @@ QRemoteObjectDynamicReplica *QRemoteObjectNode::acquireDynamic(const QString &na
 }
 
 /*!
+    \qmlmethod void Host::enableRemoting(object object, string name)
+    Enables a host node to dynamically provide remote access to the QObject \a
+    object. Client nodes connected to the node hosting this object may obtain
+    Replicas of this Source.
+
+    The \a name defines the lookup-name under which the QObject can be acquired
+    using \l QRemoteObjectNode::acquire() . If not explicitly set then the name
+    given in the QCLASSINFO_REMOTEOBJECT_TYPE will be used. If no such macro
+    was defined for the QObject then the \l QObject::objectName() is used.
+
+    Returns \c false if the current node is a client node, or if the QObject is already
+    registered to be remoted, and \c true if remoting is successfully enabled
+    for the dynamic QObject.
+
+    \sa disableRemoting()
+*/
+
+/*!
     Enables a host node to dynamically provide remote access to the QObject \a
     object. Client nodes connected to the node
     hosting this object may obtain Replicas of this Source.
@@ -2282,6 +2331,18 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const SourceApiMap *
     Q_D(QRemoteObjectHostBase);
     return d->remoteObjectIo->enableRemoting(object, api, adapter);
 }
+
+/*!
+    \qmlmethod void Host::disableRemoting(object remoteObject)
+    Disables remote access for the QObject \a remoteObject. Returns \c false if
+    the current node is a client node or if the \a remoteObject is not
+    registered, and returns \c true if remoting is successfully disabled for
+    the Source object.
+
+    \warning Replicas of this object will no longer be valid after calling this method.
+
+    \sa enableRemoting()
+*/
 
 /*!
     Disables remote access for the QObject \a remoteObject. Returns \c false if
