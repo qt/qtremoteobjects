@@ -405,7 +405,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
             continue;
         // qtEnums are enumerations already known by Qt, so we only need register them.
         // We don't need to send all of the key/value data.
-        if (metaObject == qt_getQtMetaObject()) // Are the other Qt metaclasses for enums?
+        if (metaObject == &Qt::staticMetaObject) // Are the other Qt metaclasses for enums?
             qtEnums.insert(metaEnum);
         else
             dynamicEnumMetaObjects.insert(metaEnum.enclosingMetaObject());

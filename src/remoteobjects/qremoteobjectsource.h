@@ -106,8 +106,10 @@ static inline void qtro_method_test(Func1, Func2)
 // so we should be fine with only the listed version with the fields we use.
 inline const QByteArray apiStringData(const QMetaObject *mo, int index)
 {
-    const QByteArrayDataPtr data = { const_cast<QByteArrayData*>(&mo->d.stringdata[index]) };
-    return data;
+    uint offset = mo->d.stringdata[2*index];
+    uint length = mo->d.stringdata[2*index + 1];
+    const char *string = reinterpret_cast<const char *>(mo->d.stringdata) + offset;
+    return QByteArray::fromRawData(string, length);
 }
 
 inline bool apiMethodMatch(const QMetaObject *m, int handle,
