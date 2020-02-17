@@ -189,6 +189,8 @@ public:
     typedef std::function<bool(const QString &, const QString &)> RemoteObjectNameFilter;
     bool proxy(const QUrl &registryUrl, const QUrl &hostUrl={},
                RemoteObjectNameFilter filter=[](const QString &, const QString &) {return true; });
+    // ### Qt 6: Fix -> This should only be part of the QRemoteObjectRegistryHost type, since the
+    // reverse aspect requires the registry.
     bool reverseProxy(RemoteObjectNameFilter filter=[](const QString &, const QString &) {return true; });
 
 protected:
