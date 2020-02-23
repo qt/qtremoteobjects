@@ -201,7 +201,7 @@ void QConnectedReplicaImplementation::initialize(QVariantList &values)
     qCDebug(QT_REMOTEOBJECT) << "initialize()" << m_propertyStorage.size();
     const int nParam = values.size();
     QVarLengthArray<int> changedProperties(nParam);
-    const int offset = m_metaObject->propertyOffset();
+    const int offset = m_propertyOffset;
     for (int i = 0; i < nParam; ++i) {
         qCDebug(QT_REMOTEOBJECT) << "  in loop" << i << m_propertyStorage.size();
         changedProperties[i] = -1;

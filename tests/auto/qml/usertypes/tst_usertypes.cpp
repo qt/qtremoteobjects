@@ -56,6 +56,7 @@ public:
 
 private Q_SLOTS:
     void extraPropertyInQml();
+    void extraPropertyInQml2();
     void extraPropertyInQmlComplex();
     void modelInQml();
     void subObjectInQml();
@@ -83,6 +84,24 @@ void tst_usertypes::extraPropertyInQml()
     QVERIFY(obj);
 
     QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").value<int>(), 10, 300);
+}
+
+void tst_usertypes::extraPropertyInQml2()
+{
+    qmlRegisterType<SimpleClockReplica>("usertypes", 1, 0, "SimpleClockReplica");
+
+    QRemoteObjectRegistryHost host(QUrl("local:test2"));
+    SimpleClockSimpleSource clock;
+    clock.setHour(10);
+    host.enableRemoting(&clock);
+
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/extraprop2.qml");
+    QObject *obj = c.create();
+    QVERIFY(obj);
+
+    QTRY_COMPARE_WITH_TIMEOUT(obj->property("hour").value<int>(), 10, 300);
+    QCOMPARE(obj->property("result").value<int>(), 10);
 }
 
 void tst_usertypes::extraPropertyInQmlComplex()
