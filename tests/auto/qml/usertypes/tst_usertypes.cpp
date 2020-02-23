@@ -63,6 +63,7 @@ private Q_SLOTS:
     void complexInQml_data();
     void complexInQml();
     void watcherInQml();
+    void twoReplicas();
 };
 
 tst_usertypes::tst_usertypes()
@@ -252,6 +253,24 @@ void tst_usertypes::watcherInQml()
     auto map = obj->property("result").value<QMap<QString,QString>>();
     QCOMPARE(map.value("one"), QString::fromLatin1("1"));
     QCOMPARE(obj->property("hasError").value<bool>(), false);
+}
+
+void tst_usertypes::twoReplicas()
+{
+    qmlRegisterType<SimpleClockReplica>("usertypes", 1, 0, "SimpleClockReplica");
+
+    QRemoteObjectRegistryHost host(QUrl("local:testTwoReplicas"));
+    SimpleClockSimpleSource clock;
+    clock.setHour(7);
+    host.enableRemoting(&clock);
+
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/twoReplicas.qml");
+    QObject *obj = c.create();
+    QVERIFY(obj);
+
+    QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").value<int>(), 7, 300);
+    QTRY_COMPARE_WITH_TIMEOUT(obj->property("result2").value<int>(), 7, 500);
 }
 
 QTEST_MAIN(tst_usertypes)

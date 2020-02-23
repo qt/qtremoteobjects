@@ -546,9 +546,29 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
 
 void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep)
 {
-    if (m_metaObject)
+    if (m_metaObject) {
+        // see QRemoteObjectReplicaImplementation::configurePrivate
+        const bool firstReplicaInstance = (m_methodOffset == 0);
+
         QRemoteObjectReplicaImplementation::configurePrivate(rep);
-    else
+
+        // ensure that notify signals are emitted for the new replica, when
+        // we are initializing an nth replica of the same type
+        if (!firstReplicaInstance) {
+            const int offset = m_propertyOffset;
+            const int nParam = m_propertyStorage.count();
+            void *args[] = {nullptr, nullptr};
+            for (int i = 0; i < nParam; ++i) {
+                const int notifyIndex = m_metaObject->property(i+offset).notifySignalIndex();
+                if (notifyIndex < 0)
+                    continue;
+                qCDebug(QT_REMOTEOBJECT) << " Before activate" << notifyIndex << m_metaObject->property(i+offset).name();
+                args[1] = m_propertyStorage[i].data();
+                // NOTE: this over-emits (assumes all values have changed)
+                QMetaObject::activate(rep, rep->metaObject(), notifyIndex - m_signalOffset, args);
+            }
+        }
+    } else
         m_parentsNeedingConnect.append(rep);
 }
 
