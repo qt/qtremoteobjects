@@ -1475,7 +1475,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     can use the QRemoteObjectRegistry to simplify connections.
 
     The QRemoteObjectRegistry is a special replica available to every node that
-    connects to the uegistry Url. It knows how to connect to every
+    connects to the registry Url. It knows how to connect to every
     QRemoteObjectSource object on the network.
 
     \sa QRemoteObjectNode, QRemoteObjectRegistryHost
