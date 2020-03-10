@@ -2194,12 +2194,12 @@ QRemoteObjectDynamicReplica *QRemoteObjectNode::acquireDynamic(const QString &na
 }
 
 /*!
-    \qmlmethod void Host::enableRemoting(object object, string name)
+    \qmlmethod bool Host::enableRemoting(object object, string name)
     Enables a host node to dynamically provide remote access to the QObject \a
     object. Client nodes connected to the node hosting this object may obtain
     Replicas of this Source.
 
-    The \a name defines the lookup-name under which the QObject can be acquired
+    The optional \a name defines the lookup-name under which the QObject can be acquired
     using \l QRemoteObjectNode::acquire() . If not explicitly set then the name
     given in the QCLASSINFO_REMOTEOBJECT_TYPE will be used. If no such macro
     was defined for the QObject then the \l QObject::objectName() is used.
@@ -2216,7 +2216,7 @@ QRemoteObjectDynamicReplica *QRemoteObjectNode::acquireDynamic(const QString &na
     object. Client nodes connected to the node
     hosting this object may obtain Replicas of this Source.
 
-    The \a name defines the lookup-name under which the QObject can be acquired
+    The optional \a name defines the lookup-name under which the QObject can be acquired
     using \l QRemoteObjectNode::acquire() . If not explicitly set then the name
     given in the QCLASSINFO_REMOTEOBJECT_TYPE will be used. If no such macro
     was defined for the QObject then the \l QObject::objectName() is used.
@@ -2333,7 +2333,7 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const SourceApiMap *
 }
 
 /*!
-    \qmlmethod void Host::disableRemoting(object remoteObject)
+    \qmlmethod bool Host::disableRemoting(object remoteObject)
     Disables remote access for the QObject \a remoteObject. Returns \c false if
     the current node is a client node or if the \a remoteObject is not
     registered, and returns \c true if remoting is successfully disabled for
