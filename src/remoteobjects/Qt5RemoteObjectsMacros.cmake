@@ -57,6 +57,8 @@ if(NOT Qt5RemoteObjects_REPC_EXECUTABLE)
 endif()
 
 macro(qt5_generate_repc outfiles infile outputtype)
+    set(_QT5_INTERNAL_SCOPE ON)
+
     # get include dirs and flags
     get_filename_component(abs_infile ${infile} ABSOLUTE)
     get_filename_component(infile_name "${infile}" NAME)
