@@ -75,7 +75,10 @@ macro(qt5_generate_repc outfiles infile outputtype)
         DEPENDS ${abs_infile}
         COMMAND ${Qt5RemoteObjects_REPC_EXECUTABLE} ${abs_infile} ${_repc_args} ${_outfile_header}
         VERBATIM)
-    set_source_files_properties(${_outfile_header} PROPERTIES GENERATED TRUE)
+    set_source_files_properties(${_outfile_header} PROPERTIES
+                                                GENERATED TRUE
+                                                SKIP_AUTOMOC ON
+                                                SKIP_AUTOUIC ON)
 
     qt5_get_moc_flags(_moc_flags)
     # Make sure we get the compiler flags from the Qt5::RemoteObjects target (for includes)
