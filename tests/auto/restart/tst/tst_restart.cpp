@@ -98,7 +98,7 @@ private slots:
         serverProc.setProcessEnvironment(env);
         serverProc.start(findExecutable("restart_server", {
             QCoreApplication::applicationDirPath() + "/../server/"
-        }));
+        }), QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
@@ -110,7 +110,7 @@ private slots:
         clientProc.setProcessEnvironment(env);
         clientProc.start(findExecutable("restart_client", {
             QCoreApplication::applicationDirPath() + "/../client/"
-        }));
+        }), QStringList());
         QVERIFY(clientProc.waitForStarted());
 
         if (serverRestart) {
@@ -125,7 +125,7 @@ private slots:
             serverProc.setProcessEnvironment(env);
             serverProc.start(findExecutable("restart_server", {
                 QCoreApplication::applicationDirPath() + "/../server/"
-            }));
+            }), QStringList());
             QVERIFY(serverProc.waitForStarted());
         }
 

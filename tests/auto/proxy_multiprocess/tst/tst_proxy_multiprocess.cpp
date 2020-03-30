@@ -91,7 +91,7 @@ private slots:
         serverProc.setProcessEnvironment(env);
         serverProc.start(findExecutable("proxy_multiprocess_server", {
             QCoreApplication::applicationDirPath() + "/../server/"
-        }));
+        }), QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
@@ -104,7 +104,7 @@ private slots:
         clientProc.setProcessEnvironment(env);
         clientProc.start(findExecutable("proxy_multiprocess_client", {
             QCoreApplication::applicationDirPath() + "/../client/"
-        }));
+        }), QStringList());
         QVERIFY(clientProc.waitForStarted());
 
         // wait for client start
@@ -116,7 +116,7 @@ private slots:
         proxyProc.setProcessChannelMode(QProcess::ForwardedChannels);
         proxyProc.start(findExecutable("proxy", {
             QCoreApplication::applicationDirPath() + "/../proxy/"
-        }));
+        }), QStringList());
         QVERIFY(proxyProc.waitForStarted());
 
         // wait for proxy start

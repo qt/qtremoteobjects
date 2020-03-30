@@ -46,7 +46,7 @@ LocalClientIo::LocalClientIo(QObject *parent)
     , m_socket(new QLocalSocket(this))
 {
     connect(m_socket, &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
-    connect(m_socket, static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, &LocalClientIo::onError);
+    connect(m_socket, &QLocalSocket::errorOccurred, this, &LocalClientIo::onError);
     connect(m_socket, &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
 }
 

@@ -59,7 +59,7 @@ private slots:
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
         serverProc.start(findExecutable("sslTestServer", {
             QCoreApplication::applicationDirPath() + "/../sslTestServer/"
-        }));
+        }), QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
