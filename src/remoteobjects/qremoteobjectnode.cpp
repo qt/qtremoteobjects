@@ -52,6 +52,7 @@
 #include "qremoteobjectabstractitemmodeladapter_p.h"
 #include <QtCore/qabstractitemmodel.h>
 #include <memory>
+#include <algorithm>
 
 QT_BEGIN_NAMESPACE
 
@@ -59,9 +60,17 @@ using namespace QtRemoteObjects;
 using namespace QRemoteObjectStringLiterals;
 
 using GadgetType = QVector<QVariant>;
-using RegisteredType = QPair<GadgetType, std::shared_ptr<QMetaObject>>;
+
+struct ManagedGadgetTypeEntry
+{
+    GadgetType gadgetType;
+    QMetaType gadgetMetaType;
+    QVector<QMetaType> enumMetaTypes;
+    std::shared_ptr<QMetaObject> metaObject;
+};
+
 static QMutex s_managedTypesMutex;
-static QHash<int, RegisteredType> s_managedTypes;
+static QHash<int, ManagedGadgetTypeEntry> s_managedTypes;
 static QHash<int, QSet<IoDeviceBase*>> s_trackedConnections;
 
 static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
@@ -82,26 +91,24 @@ static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int
     }
 }
 
-static void GadgetTypedDestructor(int, void *ptr)
+static void GadgetTypedDestructor(const QtPrivate::QMetaTypeInterface *, void *ptr)
 {
     reinterpret_cast<GadgetType*>(ptr)->~GadgetType();
 }
 
-static void *GadgetTypedConstructor(int type, void *where, const void *copy)
+static void GadgetTypedConstructor(const QtPrivate::QMetaTypeInterface *, void *where)
 {
-    GadgetType *ret = where ? new(where) GadgetType : new GadgetType;
-    if (copy) {
-        *ret = *reinterpret_cast<const GadgetType*>(copy);
-    } else {
-        QMutexLocker lock(&s_managedTypesMutex);
-        auto it = s_managedTypes.find(type);
-        if (it == s_managedTypes.end()) {
-            delete ret;
-            return nullptr;
-        }
-        *ret = it->first;
-    }
-    return ret;
+    new(where) GadgetType;
+}
+
+static void GadgetTypedCopyConstructor(const QtPrivate::QMetaTypeInterface *, void *where, const void *copy)
+{
+    new(where) GadgetType(*reinterpret_cast<const GadgetType*>(copy));
+}
+
+static void GadgetTypedMoveConstructor(const QtPrivate::QMetaTypeInterface *, void *where, void *copy)
+{
+    new(where) GadgetType(std::move(*reinterpret_cast<GadgetType*>(copy)));
 }
 
 static void GadgetSaveOperator(QDataStream & out, const void *data)
@@ -125,18 +132,27 @@ static void GadgetLoadOperator(QDataStream &in, void *data)
 // We will need the enum methods to support different sizes when typed scope enum
 // support is added, so might as well use that now.
 template<typename T>
-static void EnumDestructor(void *ptr)
+static void EnumDestructor(const QtPrivate::QMetaTypeInterface *, void *ptr)
 {
     static_cast<T*>(ptr)->~T();
 }
 
 template<typename T>
-static void *EnumConstructor(void *where, const void *copy)
+static void EnumConstructor(const QtPrivate::QMetaTypeInterface *, void *where)
 {
-    T *ret = where ? new(where) T : new T;
-    if (copy)
-        *ret = *static_cast<const T*>(copy);
-    return ret;
+    new(where) T;
+}
+
+template<typename T>
+static void EnumCopyConstructor(const QtPrivate::QMetaTypeInterface *, void *where, const void *copy)
+{
+    new(where) T(*static_cast<const T*>(copy));
+}
+
+template<typename T>
+static void EnumMoveConstructor(const QtPrivate::QMetaTypeInterface *, void *where, void *copy)
+{
+    new(where) T(std::move(*static_cast<T*>(copy)));
 }
 
 // Not used, but keeping these in case we end up with a need for save/load.
@@ -692,8 +708,7 @@ static void trackConnection(int typeId, IoDeviceBase *connection)
         s_trackedConnections[typeId].remove(connection);
         if (s_trackedConnections[typeId].isEmpty()) {
             s_trackedConnections.remove(typeId);
-            s_managedTypes.remove(typeId);
-            QMetaType::unregisterType(typeId);
+            s_managedTypes.remove(typeId); // Destroys the meta types, unregistering them.
         }
     };
 
@@ -725,26 +740,53 @@ struct GadgetData {
     QVector<EnumData> enums;
 };
 
+static const char *strDup(const QByteArray &s)
+{
+    auto result = new char[s.size() + 1];
+    auto end = std::copy(s.cbegin(), s.cend(), result);
+    *end = 0;
+    return result;
+}
+
 using Gadgets = QHash<QByteArray, GadgetData>;
 
-static void registerEnum(const QByteArray &name, const QMetaObject *meta, int size=4)
+template <class Int>
+static QMetaType enumMetaType(const QByteArray &name, const QMetaObject *meta, uint size)
 {
+    using TypeInfo = QtPrivate::QMetaTypeInterface;
+
+    static const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction
+                              | QMetaType::NeedsDestruction;
+
+    auto typeInfo = new TypeInfo {
+        0, size, alignof(Int), uint(flags), meta, strDup(name), 0,
+        Q_BASIC_ATOMIC_INITIALIZER(0),
+        [](TypeInfo *self) { delete [] self->name; delete self; },
+        EnumConstructor<Int>,
+        EnumCopyConstructor<Int>,
+        EnumMoveConstructor<Int>,
+        EnumDestructor<Int>,
+        nullptr };
+    return QMetaType(typeInfo);
+}
+
+static QMetaType registerEnum(const QByteArray &name, const QMetaObject *meta, uint size=4u)
+{
+    QMetaType result;
     // When we add support for enum classes, we will need to set this to something like
     // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
     // That is a new feature, though.
     if (QMetaType::isRegistered(QMetaType::type(name)))
-        return;
-    static const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
-    int id;
+        return result;
     switch (size) {
-    case 1: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint8>,
-                                                 &EnumConstructor<qint8>, size, flags, meta);
+    case 1:
+        result = enumMetaType<qint8>(name, meta, size);
         break;
-    case 2: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint16>,
-                                                 &EnumConstructor<qint16>, size, flags, meta);
+    case 2:
+        result = enumMetaType<qint16>(name, meta, size);
         break;
-    case 4: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
-                                                 &EnumConstructor<qint32>, size, flags, meta);
+    case 4:
+        result = enumMetaType<qint32>(name, meta, size);
         break;
     // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
 //    case 8: id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint64>,
@@ -753,17 +795,20 @@ static void registerEnum(const QByteArray &name, const QMetaObject *meta, int si
     default:
         qWarning() << "Invalid enum detected" << name << "with size" << size << ".  Defaulting to register as int.";
         size = 4;
-        id = QMetaType::registerType(name.constData(), nullptr, nullptr, &EnumDestructor<qint32>,
-                                                 &EnumConstructor<qint32>, size, flags, meta);
+        result = enumMetaType<qint32>(name, meta, size);
+        break;
     }
 #ifdef QTRO_VERBOSE_PROTOCOL
     qDebug() << "Registering new enum with id" << id << name << "size:" << size;
 #endif
-    qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << id << name << "size:" << size;
+    qCDebug(QT_REMOTEOBJECT) << "Registering new enum with id" << result.id() << name << "size:" << size;
+    return result;
 }
 
 static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
 {
+   using TypeInfo = QtPrivate::QMetaTypeInterface;
+
    const auto &gadget = gadgets.take(typeName);
    int typeId = QMetaType::type(typeName);
    if (typeId != QMetaType::UnknownType) {
@@ -771,15 +816,16 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
        return typeId;
    }
 
+   ManagedGadgetTypeEntry entry;
+
    QMetaObjectBuilder gadgetBuilder;
    gadgetBuilder.setClassName(typeName);
    gadgetBuilder.setFlags(QMetaObjectBuilder::DynamicMetaObject | QMetaObjectBuilder::PropertyAccessInStaticMetaCall);
-   GadgetType gadgetType;
    for (const auto &prop : gadget.properties) {
        int propertyType = QMetaType::type(prop.type);
        if (!propertyType && gadgets.contains(prop.type))
            propertyType = registerGadgets(connection, gadgets, prop.type);
-       gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
+       entry.gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
        auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
        dynamicProperty.setWritable(true);
        dynamicProperty.setReadable(true);
@@ -795,33 +841,48 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
        }
    }
    auto meta = gadgetBuilder.toMetaObject();
+   entry.metaObject = std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }};
+
    const auto enumCount = meta->enumeratorCount();
    for (int i = 0; i < enumCount; i++) {
        const QByteArray registeredName = QByteArray(typeName).append("::").append(meta->enumerator(i).name());
-       registerEnum(registeredName, meta, gadget.enums.at(i).size);
+       auto metaType = registerEnum(registeredName, meta, gadget.enums.at(i).size);
+       if (metaType.isValid())
+           entry.enumMetaTypes.append(metaType);
    }
    QMetaType::TypeFlags flags = QMetaType::IsGadget;
-   int gadgetTypeId;
    if (meta->propertyCount()) {
        meta->d.static_metacall = &GadgetsStaticMetacallFunction;
        meta->d.superdata = nullptr;
        flags |= QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
-       gadgetTypeId = QMetaType::registerType(typeName.constData(),
-                                              &GadgetTypedDestructor,
-                                              &GadgetTypedConstructor,
-                                              sizeof(GadgetType),
-                                              flags, meta);
-       QMetaType::registerStreamOperators(gadgetTypeId, &GadgetSaveOperator, &GadgetLoadOperator);
+       auto typeInfo = new TypeInfo {
+           0, sizeof(GadgetType), alignof(GadgetType), uint(flags), meta,
+           strDup(typeName), 0,
+           Q_BASIC_ATOMIC_INITIALIZER(0),
+           [](TypeInfo *self) { delete [] self->name; delete self; },
+           GadgetTypedConstructor,
+           GadgetTypedCopyConstructor,
+           GadgetTypedMoveConstructor,
+           GadgetTypedDestructor,
+           nullptr };
+       entry.gadgetMetaType = QMetaType(typeInfo);
+       QMetaType::registerStreamOperators(entry.gadgetMetaType.id(), &GadgetSaveOperator, &GadgetLoadOperator);
    } else {
-       gadgetTypeId = QMetaType::registerType(typeName.constData(),
-                                              nullptr,
-                                              nullptr,
-                                              sizeof(GadgetType),
-                                              flags, meta);
+       auto typeInfo = new TypeInfo {
+           0, sizeof(GadgetType), alignof(GadgetType), uint(flags), meta, strDup(typeName), 0,
+           Q_BASIC_ATOMIC_INITIALIZER(0),
+           [](TypeInfo *self) { delete [] self->name; delete self; },
+           nullptr,
+           nullptr,
+           nullptr,
+           nullptr,
+           nullptr };
+       entry.gadgetMetaType = QMetaType(typeInfo);
    }
+   const int gadgetTypeId = entry.gadgetMetaType.id();
    trackConnection(gadgetTypeId, connection);
    QMutexLocker lock(&s_managedTypesMutex);
-   s_managedTypes[gadgetTypeId] = qMakePair(gadgetType, std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }});
+   s_managedTypes.insert(gadgetTypeId, entry);
    return gadgetTypeId;
 }
 

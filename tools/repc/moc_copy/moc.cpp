@@ -41,7 +41,7 @@
 QT_BEGIN_NAMESPACE
 
 // only moc needs this function
-static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
+static QByteArray normalizeType(const QByteArray &ba)
 {
     const char *s = ba.constData();
     int len = ba.size();
@@ -62,7 +62,7 @@ static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
         }
     }
     *d = '\0';
-    QByteArray result = normalizeTypeInternal(buf, d, fixScope);
+    QByteArray result = normalizeTypeInternal(buf, d);
     if (buf != stackbuf)
         delete [] buf;
     return result;

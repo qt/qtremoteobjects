@@ -106,9 +106,7 @@ public:
                 qmlWarning(this) << "could not find callback for watcher.";
                 return;
             }
-
-            QJSValue v;
-            QJSValuePrivate::setVariant(&v, self->returnValue());
+            QJSValue v =  qmlEngine(this)->toScriptValue(self->returnValue());
             i.value().promise.property("resolve").call(QJSValueList() << v);
 
             delete i.key();

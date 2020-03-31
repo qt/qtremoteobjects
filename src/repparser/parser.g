@@ -294,7 +294,7 @@ QT_END_NAMESPACE
 // We cannot depend on QMetaObject::normalizedSignature,
 // since repc is linked against Qt5Bootstrap (which doesn't offer QMetaObject) when cross-compiling
 // Thus, just use internal API which is exported in private headers, as moc does
-static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
+static QByteArray normalizeType(const QByteArray &ba)
 {
     const char *s = ba.constData();
     int len = ba.size();
@@ -315,7 +315,7 @@ static QByteArray normalizeType(const QByteArray &ba, bool fixScope = false)
         }
     }
     *d = '\0';
-    QByteArray result = normalizeTypeInternal(buf, d, fixScope);
+    QByteArray result = normalizeTypeInternal(buf, d);
     if (buf != stackbuf)
         delete [] buf;
     return result;

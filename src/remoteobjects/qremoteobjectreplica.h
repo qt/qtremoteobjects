@@ -44,6 +44,8 @@
 
 #include <QtCore/qsharedpointer.h>
 
+Q_MOC_INCLUDE(<QtRemoteObjects/qremoteobjectnode.h>)
+
 QT_BEGIN_NAMESPACE
 
 class QObjectPrivate;

@@ -152,7 +152,7 @@ struct QMetaTypeId< QRemoteObjectPendingReply<T> >
         if (typeName.endsWith('>'))
             typeName.append(' ');
         typeName.append('>');
-        const int newId = qRegisterNormalizedMetaType< QRemoteObjectPendingReply<T> >(
+        const int newId = qRegisterMetaType< QRemoteObjectPendingReply<T> >(
                         typeName,
                         reinterpret_cast< QRemoteObjectPendingReply<T> *>(quintptr(-1)));
         metatype_id.storeRelease(newId);
