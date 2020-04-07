@@ -84,7 +84,7 @@ private slots:
         }
         serverProc.start(findExecutable("integration_multiprocess_server", {
             QCoreApplication::applicationDirPath() + "/../server/"
-        }));
+        }), QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
@@ -95,7 +95,7 @@ private slots:
         clientProc.setProcessChannelMode(QProcess::ForwardedChannels);
         clientProc.start(findExecutable("integration_multiprocess_client", {
             QCoreApplication::applicationDirPath() + "/../client/"
-        }));
+        }), QStringList());
         QVERIFY(clientProc.waitForStarted());
 
         QVERIFY(clientProc.waitForFinished());

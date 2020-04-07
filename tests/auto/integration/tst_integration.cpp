@@ -1351,7 +1351,7 @@ private slots:
         replica.reset(localSocketTestClient.acquireDynamic(objectname));
 
         QProcess testServer;
-        testServer.start(progName);
+        testServer.start(progName, QStringList());
         QVERIFY(testServer.waitForStarted());
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
         replica->waitForSource(1000);
@@ -1370,7 +1370,7 @@ private slots:
         });
 
         QProcess testServer;
-        testServer.start(progName);
+        testServer.start(progName, QStringList());
         QVERIFY(testServer.waitForStarted());
         QFileInfo info(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
         QVERIFY(info.exists());
@@ -1386,7 +1386,7 @@ private slots:
         QScopedPointer<QRemoteObjectDynamicReplica> replica;
         replica.reset(localSocketTestClient.acquireDynamic(objectname));
 
-        testServer.start(progName);
+        testServer.start(progName, QStringList());
         QVERIFY(testServer.waitForStarted());
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
         replica->waitForSource(1000);

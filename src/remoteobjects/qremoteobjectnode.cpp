@@ -453,9 +453,10 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
     // myInternalHost is a node only visible on the device...
     QRemoteObjectHost myInternalHost("local:MyHost");
 
-    // Regular host node, listening on port 12123, so visible to other
-    // devices
-    QRemoteObjectHost proxyNode("tcp://localhost:12123");
+    // RegistryHost node, listening on port 12123, so visible to other
+    // devices.  The node must be a RegistryHost, so the Sources on
+    // the "outside" network can be forwarded to the inner network.
+    QRemoteObjectRegistryHost proxyNode("tcp://localhost:12123");
 
     // Enable proxying objects from nodes on the local machine's internal
     // QtRO bus.  Note the hostUrl parameter is now needed.
@@ -2536,7 +2537,11 @@ ProxyInfo::~ProxyInfo() {
 
 bool ProxyInfo::setReverseProxy(QRemoteObjectHostBase::RemoteObjectNameFilter filter)
 {
-    const auto registry = proxyNode->registry();
+    if (qobject_cast<QRemoteObjectRegistryHost *>(parentNode) == nullptr) {
+        qWarning() << "Setting up reverseProxy() can only be done on a Registry node.";
+        return false;
+    }
+    const auto registry = parentNode->registry();
     this->reverseFilter = filter;
 
     connect(registry, &QRemoteObjectRegistry::remoteObjectAdded, this,
@@ -2561,12 +2566,17 @@ bool ProxyInfo::setReverseProxy(QRemoteObjectHostBase::RemoteObjectNameFilter fi
 void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirection direction)
 {
     const QString name = entry.first;
-    Q_ASSERT(!proxiedReplicas.contains(name));
     const QString typeName = entry.second.typeName;
 
     if (direction == ProxyDirection::Forward) {
+        // If we are using the reverse proxy, this can be called when reverse proxy objects are added
+        // Don't try to proxy those back.  We can detect this because the hosting node will be our proxyNode.
+        auto host = qobject_cast<QRemoteObjectHost *>(proxyNode);
+        if (host && entry.second.hostUrl == host->hostUrl())
+            return;
         if (!proxyFilter(name, typeName))
             return;
+        Q_ASSERT(!proxiedReplicas.contains(name));
 
         qCDebug(QT_REMOTEOBJECT) << "Starting proxy for" << name << "from" << entry.second.hostUrl;
 
@@ -2582,8 +2592,15 @@ void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirec
                     [rep, name, this]() { this->parentNode->enableRemoting(rep, name); });
         }
     } else {
+        // If we are using the reverse proxy, this can be called when proxy objects are added
+        // Don't try to proxy those back.  We can detect this because the hosting node will be the parentNode.
+        // Since we know the parentNode has to be a RegistryNode for reverse proxy to work, we compare against
+        // the registryUrl().
+        if (entry.second.hostUrl == parentNode->registryUrl())
+            return;
         if (!reverseFilter(name, typeName))
             return;
+        Q_ASSERT(!proxiedReplicas.contains(name));
 
         qCDebug(QT_REMOTEOBJECT) << "Starting reverse proxy for" << name << "from" << entry.second.hostUrl;
 

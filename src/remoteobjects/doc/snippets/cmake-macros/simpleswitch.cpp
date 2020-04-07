@@ -48,85 +48,36 @@
 **
 ****************************************************************************/
 
-#include <QCoreApplication>
-#include <QHostAddress>
-#include <QSslSocket>
-#include <QSslConfiguration>
-#include <QSslKey>
-#include <QTimer>
-#include "rep_timemodel_replica.h"
+#include "simpleswitch.h"
 
-#include <QRemoteObjectNode>
-
-class tester : public QObject
+// constructor
+SimpleSwitch::SimpleSwitch(QObject *parent) : SimpleSwitchSimpleSource(parent)
 {
-    Q_OBJECT
-public:
-    tester() : QObject(nullptr)
-    {
-        QRemoteObjectNode m_client;
-        auto socket = setupConnection();
-        connect(socket, &QSslSocket::errorOccurred,
-                socket, [](QAbstractSocket::SocketError error){
-            qDebug() << "QSslSocket::error" << error;
-        }) ;
-        m_client.addClientSideConnection(socket);
-
-        ptr1.reset(m_client.acquire< MinuteTimerReplica >());
-        ptr2.reset(m_client.acquire< MinuteTimerReplica >());
-        ptr3.reset(m_client.acquire< MinuteTimerReplica >());
-        QTimer::singleShot(0,this,SLOT(clear()));
-        QTimer::singleShot(1,this,SLOT(clear()));
-        QTimer::singleShot(10000,this,SLOT(clear()));
-        QTimer::singleShot(11000,this,SLOT(clear()));
-    }
-public slots:
-    void clear()
-    {
-        static int i = 0;
-        if (i == 0) {
-            i++;
-            ptr1.reset();
-        } else if (i == 1) {
-            i++;
-            ptr2.reset();
-        } else if (i == 2) {
-            i++;
-            ptr3.reset();
-        } else {
-            qApp->quit();
-        }
-    }
-
-private:
-    QScopedPointer<MinuteTimerReplica> ptr1, ptr2, ptr3;
-
-    QSslSocket *setupConnection()
-    {
-        auto socketClient = new QSslSocket;
-        socketClient->setLocalCertificate(QStringLiteral(":/sslcert/client.crt"));
-        socketClient->setPrivateKey(QStringLiteral(":/sslcert/client.key"));
-        socketClient->setPeerVerifyMode(QSslSocket::VerifyPeer);
-        socketClient->connectToHostEncrypted(QStringLiteral("127.0.0.1"), 65511);
-        if (!socketClient->waitForEncrypted(-1)) {
-            qWarning("Failed to connect to server %s",
-                   qPrintable(socketClient->errorString()));
-            exit(0);
-        }
-        return socketClient;
-    }
-};
-
-int main(int argc, char *argv[])
-{
-    QCoreApplication a(argc, argv);
-
-    auto config = QSslConfiguration::defaultConfiguration();
-    config.setCaCertificates(QSslCertificate::fromPath(QStringLiteral(":/sslcert/rootCA.pem")));
-    QSslConfiguration::setDefaultConfiguration(config);
-
-    tester t;
-    return a.exec();
+    stateChangeTimer = new QTimer(this); // Initialize timer
+    QObject::connect(stateChangeTimer, SIGNAL(timeout()), this, SLOT(timeout_slot())); // connect timeout() signal from stateChangeTimer to timeout_slot() of simpleSwitch
+    stateChangeTimer->start(2000); // Start timer and set timout to 2 seconds
+    qDebug() << "Source Node Started";
 }
 
-#include "main.moc"
+//destructor
+SimpleSwitch::~SimpleSwitch()
+{
+    stateChangeTimer->stop();
+}
+
+void SimpleSwitch::server_slot(bool clientState)
+{
+    qDebug() << "Replica state is " << clientState; // print switch state echoed back by client
+}
+
+void SimpleSwitch::timeout_slot(void)
+{
+    // slot called on timer timeout
+    if (currState()) // check if current state is true, currState() is defined in repc generated rep_simpleswitch_source.h
+        setCurrState(false); // set state to false
+    else
+        setCurrState(true); // set state to true
+    qDebug() << "Source State is "<<currState();
+
+}
+
