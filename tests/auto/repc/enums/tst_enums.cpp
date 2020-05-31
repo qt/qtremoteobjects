@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 Ford Motor Company
+** Copyright (C) 2017-2020 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -46,13 +46,13 @@ void tst_Enums::testMarshalling()
     QDataStream ds(&ba, QIODevice::ReadWrite);
 
     {
-        const Qt::DateFormat format1 = Qt::TextDate;
-        const Qt::DateFormat format2 = Qt::ISODate;
-        const Qt::DateFormat format3 = Qt::SystemLocaleShortDate;
-        const Qt::DateFormat format4 = Qt::SystemLocaleLongDate;
-        const Qt::DateFormat format5 = Qt::DefaultLocaleShortDate;
-        const Qt::DateFormat format6 = Qt::DefaultLocaleLongDate;
-        const Qt::DateFormat format7 = Qt::SystemLocaleDate;
+        const Qt::DayOfWeek format1 = Qt::Monday;
+        const Qt::DayOfWeek format2 = Qt::Tuesday;
+        const Qt::DayOfWeek format3 = Qt::Wednesday;
+        const Qt::DayOfWeek format4 = Qt::Thursday;
+        const Qt::DayOfWeek format5 = Qt::Friday;
+        const Qt::DayOfWeek format6 = Qt::Saturday;
+        const Qt::DayOfWeek format7 = Qt::Sunday;
 
         ds << format1 << format2 << format3 << format4 << format5 << format6 << format7;
     }
@@ -60,17 +60,17 @@ void tst_Enums::testMarshalling()
     ds.device()->seek(0);
 
     {
-        Qt::DateFormat format1, format2, format3, format4, format5, format6, format7;
+        Qt::DayOfWeek format1, format2, format3, format4, format5, format6, format7;
 
         ds >> format1 >> format2 >> format3 >> format4 >> format5 >> format6 >> format7;
 
-        QCOMPARE(format1, Qt::TextDate);
-        QCOMPARE(format2, Qt::ISODate);
-        QCOMPARE(format3, Qt::SystemLocaleShortDate);
-        QCOMPARE(format4, Qt::SystemLocaleLongDate);
-        QCOMPARE(format5, Qt::DefaultLocaleShortDate);
-        QCOMPARE(format6, Qt::DefaultLocaleLongDate);
-        QCOMPARE(format7, Qt::SystemLocaleDate);
+        QCOMPARE(format1, Qt::Monday);
+        QCOMPARE(format2, Qt::Tuesday);
+        QCOMPARE(format3, Qt::Wednesday);
+        QCOMPARE(format4, Qt::Thursday);
+        QCOMPARE(format5, Qt::Friday);
+        QCOMPARE(format6, Qt::Saturday);
+        QCOMPARE(format7, Qt::Sunday);
     }
 }
 

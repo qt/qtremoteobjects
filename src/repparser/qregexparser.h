@@ -1,5 +1,5 @@
 /****************************************************************************
-** Copyright (C) 2017 Ford Motor Company.
+** Copyright (C) 2017-2020 Ford Motor Company.
 ** All rights reserved.
 **
 ** Copyright (C) 2017 The Qt Company Ltd.
@@ -45,13 +45,7 @@
 #include <QtCore/qshareddata.h>
 #include <QtCore/qvarlengtharray.h>
 #include <QtCore/qvariant.h>
-#ifdef QT_BOOTSTRAPPED
-#  include <QtCore/qregexp.h>
-#  define REGEX QRegExp
-#else
-#  include <QtCore/qregularexpression.h>
-#  define REGEX QRegularExpression
-#endif
+#include <QtCore/qregularexpression.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qfile.h>
 #include <QtCore/qtextstream.h>
@@ -144,10 +138,8 @@ private:
 
     QSharedDataPointer<Data> d;
 
-    QList<REGEX> m_regexes;
-#ifndef QT_BOOTSTRAPPED
+    QList<QRegularExpression> m_regexes;
     QMap<QChar, QList<int> > regexCandidates;
-#endif
     QList<int> m_tokens;
     QString m_buffer, m_lastMatchText;
     int m_loc, m_lastNewlinePosition;
@@ -221,66 +213,31 @@ bool QRegexParser<_Parser, _Table>::parse()
 template <typename _Parser, typename _Table>
 QRegexParser<_Parser, _Table>::QRegexParser(int maxMatchLen) : d(new Data()), m_loc(0), m_lastNewlinePosition(0), m_lineno(1), m_debug(0), m_maxMatchLen(maxMatchLen)
 {
-    REGEX re(QStringLiteral("\\[([_a-zA-Z][_0-9a-zA-Z]*)(,\\s*M)?\\](.+)$"));
-#ifdef QT_BOOTSTRAPPED
-    REGEX nameMatch(QStringLiteral("\\((\\?<(.*)>).+\\)"));
-    nameMatch.setMinimal(true);
-#else
+    QRegularExpression re(QStringLiteral("\\[([_a-zA-Z][_0-9a-zA-Z]*)(,\\s*M)?\\](.+)$"));
     re.optimize();
-#endif
     QMap<QString, int> token_lookup;
     QMap<int, QString> names;
     for (int i = 1; i < _Table::lhs[0]; i++) {
         const QString text = QLatin1String(_Table::spell[i]);
         names.clear();
-#ifdef QT_BOOTSTRAPPED
-        if (re.indexIn(text) == 0) {
-            const QString token = re.cap(1);
-            const bool multiline = re.cap(2).length() > 0;
-            QString pattern = re.cap(3);
-            //We need to identify/remove any match names in the pattern, since
-            //QRegExp doesn't support that feature
-            int pos = 0, counter = 1, loc = nameMatch.indexIn(pattern, pos);
-            while (loc >= 0) {
-                const QString res = nameMatch.cap(2);
-                if (!res.isEmpty()) {
-                    names.insert(counter, res);
-                    pattern.remove(nameMatch.cap(1));
-                }
-                pos += loc + nameMatch.matchedLength() - nameMatch.cap(1).length();
-                loc = nameMatch.indexIn(pattern, pos);
-                ++counter;
-            }
-            //We need to use indexIn, but that will search past the location we
-            //pass in.  So prepend '^' and use QRegExp::CaretAtOffset.
-            if (pattern.at(0) != QChar(QLatin1Char('^')))
-                pattern.prepend(QChar(QLatin1Char('^')));
-#else
         QRegularExpressionMatch match = re.match(text, 0, QRegularExpression::NormalMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
         if (match.hasMatch()) {
             const QString token = match.captured(1);
             const bool multiline = match.captured(2).length() > 0;
             const QString pattern = match.captured(3);
-#endif
             m_tokenNames.append(token);
             int index = i;
             if (token_lookup.contains(token))
                 index = token_lookup[token];
             else
                 token_lookup[token] = i;
-#ifdef QT_BOOTSTRAPPED
-            if (multiline)
-                qWarning() << "The multiline grammar option is ignore in force_bootstrap mode.";
-#endif
-            REGEX pat(pattern);
-#ifndef QT_BOOTSTRAPPED
+            QRegularExpression pat(pattern);
             if (multiline)
                 pat.setPatternOptions(QRegularExpression::DotMatchesEverythingOption);
-#endif
+
             if (!pat.isValid())
                 qCritical() << "Pattern error for token #" << i << "for" << text << "pattern =" << pat << ":" << pat.errorString();
             else {
-#ifndef QT_BOOTSTRAPPED
                 pat.optimize();
                 int counter = 0;
                 const auto namedCaptureGroups = pat.namedCaptureGroups();
@@ -289,7 +246,6 @@ QRegexParser<_Parser, _Table>::QRegexParser(int maxMatchLen) : d(new Data()), m_
                         names.insert(counter, name);
                     ++counter;
                 }
-#endif
                 m_names.append(names);
                 m_regexes.append(pat);
                 if (token.startsWith(QLatin1String("ignore")))
@@ -343,7 +299,7 @@ void QRegexParser<_Parser, _Table>::setDebug()
 template <typename _Parser, typename _Table>
 int QRegexParser<_Parser, _Table>::nextToken()
 {
-    static const REGEX newline(QLatin1String("(\\n)"));
+    static const QRegularExpression newline(QLatin1String("(\\n)"));
     int token = -1;
     while (token < 0)
     {
@@ -353,15 +309,6 @@ int QRegexParser<_Parser, _Table>::nextToken()
         //Check m_lastMatchText for newlines and update m_lineno
         //This isn't necessary, but being able to provide the line # and character #
         //where the match is failing sure makes building/debugging grammars easier.
-#ifdef QT_BOOTSTRAPPED
-        int loc = 0, pos = newline.indexIn(m_lastMatchText, loc);
-        while (pos >= 0) {
-            m_lineno++;
-            loc += pos + 1;
-            m_lastNewlinePosition += pos + 1;
-            pos = newline.indexIn(m_lastMatchText, loc);
-        }
-#else //QT_BOOTSTRAPPED
         QRegularExpressionMatchIterator  matches = newline.globalMatch(m_lastMatchText);
         while (matches.hasNext()) {
             m_lineno++;
@@ -369,7 +316,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             if (!matches.hasNext())
                 m_lastNewlinePosition += match.capturedEnd();
         }
-#endif //!QT_BOOTSTRAPPED
+
         if (m_debug) {
             qDebug();
             qDebug() << "nextToken loop, line =" << m_lineno
@@ -377,77 +324,47 @@ int QRegexParser<_Parser, _Table>::nextToken()
                 << "next 5 characters =" << escapeString(m_buffer.mid(m_loc, 5));
         }
         int best = -1, maxLen = -1;
-#ifndef QT_BOOTSTRAPPED
         QRegularExpressionMatch bestRegex;
-#endif
 
         //Find the longest match.
         //If more than one are the same (longest) length, return the first one in
         //the order defined.
         QList<MatchCandidate> candidates;
-#ifndef QT_BOOTSTRAPPED
-        {
-            //We used PCRE's PartialMatch to eliminate most of the regexes by the first
-            //character, so we keep a regexCandidates map with the list of possible regexes
-            //based on initial characters found so far.
-            const QChar nextChar = m_buffer.at(m_loc);
-            //Populate the list if we haven't seeen this character before
-            if (!regexCandidates.contains(nextChar)) {
-#  if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
-                const QStringRef tmp = m_buffer.midRef(m_loc,1);
-#  else
-                const QString tmp = m_buffer.mid(m_loc,1);
-#  endif
-                int i = 0;
-                regexCandidates[nextChar] = QList<int>();
-                for (const QRegularExpression &re : qAsConst(m_regexes))
-                {
-                    QRegularExpressionMatch match = re.match(tmp, 0, QRegularExpression::PartialPreferFirstMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
-                    //qDebug() << nextChar << tmp << match.hasMatch() << match.hasPartialMatch() << re.pattern();
-                    if (match.hasMatch() || match.hasPartialMatch())
-                        regexCandidates[nextChar] << i;
-                    i++;
-                }
-            }
-            const auto indices = regexCandidates.value(nextChar);
-            for (int i : indices)
-            {
-                //Seems like I should be able to run the regex on the entire string, but performance is horrible
-                //unless I use a substring.
-                //QRegularExpressionMatch match = m_regexes[i].match(m_buffer, m_loc, QRegularExpression::NormalMatch, QRegularExpression::AnchoredMatchOption);
-#  if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
-                QRegularExpressionMatch match = m_regexes.at(i).match(m_buffer.midRef(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchoredMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
-#  else
-                QRegularExpressionMatch match = m_regexes.at(i).match(m_buffer.mid(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchoredMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
-#  endif
-                if (match.hasMatch()) {
-                    if (m_debug)
-                        candidates << MatchCandidate(m_tokenNames[i], match.captured(), i);
-                    if (match.capturedLength() > maxLen) {
-                        best = i;
-                        maxLen = match.capturedLength();
-                        bestRegex = match;
-                    }
-                }
-            }
-        }
-#else
-        {
+        //We used PCRE's PartialMatch to eliminate most of the regexes by the first
+        //character, so we keep a regexCandidates map with the list of possible regexes
+        //based on initial characters found so far.
+        const QChar nextChar = m_buffer.at(m_loc);
+        //Populate the list if we haven't seeen this character before
+        if (!regexCandidates.contains(nextChar)) {
+            const QStringRef tmp = m_buffer.midRef(m_loc,1);
             int i = 0;
-            for (const QRegExp &r : qAsConst(m_regexes))
+            regexCandidates[nextChar] = QList<int>();
+            for (const QRegularExpression &re : qAsConst(m_regexes))
             {
-                if (r.indexIn(m_buffer, m_loc, QRegExp::CaretAtOffset) == m_loc) {
-                    if (m_debug)
-                        candidates << MatchCandidate(m_tokenNames[i], r.cap(0), i);
-                    if (r.matchedLength() > maxLen) {
-                        best = i;
-                        maxLen = r.matchedLength();
-                    }
-                }
-                ++i;
+                QRegularExpressionMatch match = re.match(tmp, 0, QRegularExpression::PartialPreferFirstMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
+                //qDebug() << nextChar << tmp << match.hasMatch() << match.hasPartialMatch() << re.pattern();
+                if (match.hasMatch() || match.hasPartialMatch())
+                    regexCandidates[nextChar] << i;
+                i++;
             }
         }
-#endif
+        const auto indices = regexCandidates.value(nextChar);
+        for (int i : indices)
+        {
+            //Seems like I should be able to run the regex on the entire string, but performance is horrible
+            //unless I use a substring.
+            //QRegularExpressionMatch match = m_regexes[i].match(m_buffer, m_loc, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption);
+            QRegularExpressionMatch match = m_regexes.at(i).match(m_buffer.midRef(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
+            if (match.hasMatch()) {
+                if (m_debug)
+                    candidates << MatchCandidate(m_tokenNames[i], match.captured(), i);
+                if (match.capturedLength() > maxLen) {
+                    best = i;
+                    maxLen = match.capturedLength();
+                    bestRegex = match;
+                }
+            }
+        }
         if (best < 0) {
             setErrorString(QLatin1String("Error generating tokens from file, next characters >%1<").arg(m_buffer.midRef(m_loc, 15)));
             return -1;
@@ -455,13 +372,8 @@ int QRegexParser<_Parser, _Table>::nextToken()
             const QMap<int, QString> &map = m_names.at(best);
             if (!map.isEmpty())
                 m_captured.clear();
-            for (auto iter = map.cbegin(), end = map.cend(); iter != end; ++iter) {
-#ifdef QT_BOOTSTRAPPED
-                m_captured.insert(iter.value(), m_regexes.at(best).cap(iter.key()));
-#else
+            for (auto iter = map.cbegin(), end = map.cend(); iter != end; ++iter)
                 m_captured.insert(iter.value(), bestRegex.captured(iter.key()));
-#endif
-            }
             if (m_debug) {
                 qDebug() << "Match candidates:";
                 for (const MatchCandidate &m : qAsConst(candidates)) {
@@ -472,11 +384,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             m_loc += maxLen;
             if (m_tokens.at(best) >= 0)
                 token = m_tokens.at(best);
-#ifdef QT_BOOTSTRAPPED
-            m_lastMatchText = m_regexes.at(best).cap(0);
-#else
             m_lastMatchText = bestRegex.captured(0);
-#endif
         }
     }
     return token;

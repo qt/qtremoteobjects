@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------
 --
--- Copyright (C) 2014-2015 Ford Motor Company.
+-- Copyright (C) 2014-2020 Ford Motor Company.
 -- Contact: https://www.qt.io/licensing/
 --
 -- This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -70,7 +70,7 @@
 #include <qregexparser.h>
 #include <QStringList>
 #include <QVector>
-#include <QRegExp>
+#include <QRegularExpression>
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
@@ -413,7 +413,7 @@ void RepParser::reset()
 
 bool RepParser::parseModifierFlag(const QString &flag, ASTProperty::Modifier &modifier, bool &persisted)
 {
-    QRegExp regex(QStringLiteral("\\s*,\\s*"));
+    QRegularExpression regex(QStringLiteral("\\s*,\\s*"));
     QStringList flags = flag.split(regex);
     persisted = flags.removeAll(QStringLiteral("PERSISTED")) > 0;
     if (flags.length() == 0)
@@ -454,16 +454,16 @@ QString stripArgs(const QString &arguments)
     // This repc parser searches for the longest possible matches, which can be multiline.
     // This method "cleans" the string input, removing comments and converting to a single
     // line for subsequent parsing.
-    QStringList lines = arguments.split(QRegExp(QStringLiteral("\r?\n")));
+    QStringList lines = arguments.split(QRegularExpression(QStringLiteral("\r?\n")));
     for (auto & line : lines)
-        line.replace(QRegExp(QStringLiteral("//.*")),QString());
+        line.replace(QRegularExpression(QStringLiteral("//.*")),QString());
     return lines.join(QString());
 }
 
 bool RepParser::parseProperty(ASTClass &astClass, const QString &propertyDeclaration)
 {
     QString input = stripArgs(propertyDeclaration).trimmed();
-    const QRegExp whitespace(QStringLiteral("\\s"));
+    const QRegularExpression whitespace(QStringLiteral("\\s"));
 
     QString propertyType;
     QString propertyName;

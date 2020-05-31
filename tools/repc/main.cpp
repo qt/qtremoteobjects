@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 Ford Motor Company
+** Copyright (C) 2017-2020 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -41,7 +41,7 @@
 #include <cstdio>
 
 #define PROGRAM_NAME  "repc"
-#define REPC_VERSION  "0.1"
+#define REPC_VERSION  "1.0.0"
 
 enum Mode {
     InRep = 1,

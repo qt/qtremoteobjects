@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 Ford Motor Company
+** Copyright (C) 2017-2020 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -34,7 +34,7 @@
 #include <QMetaType>
 #include <QTextStream>
 #include <QCryptographicHash>
-#include <QRegExp>
+#include <QRegularExpression>
 
 using namespace Qt;
 
@@ -298,7 +298,7 @@ static QString formatTemplateStringArgTypeNameCapitalizedName(int numberOfTypeOc
 {
     QString out;
     const int LengthOfPlaceholderText = 2;
-    Q_ASSERT(templateString.count(QRegExp(QStringLiteral("%\\d"))) == numberOfNameOccurrences + numberOfTypeOccurrences);
+    Q_ASSERT(templateString.count(QRegularExpression(QStringLiteral("%\\d"))) == numberOfNameOccurrences + numberOfTypeOccurrences);
     const int expectedOutSize
             = numberOfNameOccurrences * accumulatedSizeOfNames(pod.attributes)
             + numberOfTypeOccurrences * accumulatedSizeOfTypes(pod.attributes)

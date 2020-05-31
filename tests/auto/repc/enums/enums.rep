@@ -1,5 +1,5 @@
 
-USE_ENUM(Qt::DateFormat)
+USE_ENUM(Qt::DayOfWeek)
 
 class TestInterface
 {

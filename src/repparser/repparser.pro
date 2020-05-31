@@ -30,3 +30,6 @@ PUBLIC_HEADERS += \
     $$PWD/qregexparser.h
 
 HEADERS += $$PUBLIC_HEADERS
+
+OTHER_FILES += \
+    $$PWD/parser.g
