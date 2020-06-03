@@ -48,7 +48,7 @@
 #         create C++ code from a list of .rep files. Per-directory preprocessor
 #         definitions are also added.
 #         infile should be a replicant template file (.rep)
-#         outputtype specifies output file type, it can be one of SOURCE|REPLICA
+#         outputtype specifies output file type, it can be one of SOURCE|REPLICA|MERGED
 #         Example usage: qt5_generate_repc(LIB_SRCS interface.rep SOURCE)
 #           for generating interface_source.h and adding it to LIB_SRCS
 
@@ -66,6 +66,9 @@ macro(qt5_generate_repc outfiles infile outputtype)
     if(${outputtype} STREQUAL "SOURCE")
         set(_outfile_base "rep_${_infile_base}_source")
         set(_repc_args -o source)
+    elseif(${outputtype} STREQUAL "MERGED")
+        set(_outfile_base "rep_${_infile_base}_merged")
+        set(_repc_args -o merged)
     else()
         set(_outfile_base "rep_${_infile_base}_replica")
         set(_repc_args -o replica)
