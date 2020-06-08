@@ -56,7 +56,6 @@ private Q_SLOTS:
         if (objectMode == QLatin1String("ObjectPointer")) {
             QSignalSpy tracksSpy(m_rep->tracks(), &QAbstractItemModelReplica::initialized);
             QVERIFY(m_rep->subClass() != nullptr);
-            QEXPECT_FAIL("", "Broken in Qt 6", Abort); // Qt 6 FIXME
             QCOMPARE(m_rep->subClass()->myPOD(), initialValue);
             QCOMPARE(m_rep->subClass()->i(), initialI);
             QVERIFY(m_rep->tracks() != nullptr);

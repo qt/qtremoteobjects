@@ -72,7 +72,6 @@ private slots:
     void testRun()
     {
         QFETCH(bool, templated);
-        QSKIP("Crashes in Qt 6", Abort); // Qt 6 FIXME
 
         qDebug() << "Starting server process";
         QProcess serverProc;

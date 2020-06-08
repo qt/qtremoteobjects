@@ -139,8 +139,6 @@ void ProxyTest::testProxy()
 
         //Compare Replica to Source
         QCOMPARE(rep->rpm(), engine.rpm());
-        if (useProxy) // Qt 6 FIXME
-            QEXPECT_FAIL("", "Enum meta type registration broken when using proxy", Abort);
         QCOMPARE((EngineReplica::EngineType)rep->type(), EngineReplica::Gas);
 
         //Change Replica and make sure change propagates to source
@@ -168,7 +166,6 @@ void ProxyTest::testProxy()
         const int typeIndex = metaObject->indexOfProperty("type");
         Q_ASSERT(typeIndex != -1);
         const QMetaProperty typeMeta =  metaObject->property(typeIndex);
-        QEXPECT_FAIL("", "Enum meta type registration broken", Abort);
         QCOMPARE(typeMeta.read(replica.data()).value<EngineReplica::EngineType>(), EngineReplica::Gas);
 
         //Change Replica and make sure change propagates to source

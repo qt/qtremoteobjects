@@ -80,7 +80,6 @@ private slots:
         QFETCH(bool, templated);
         QFETCH(ObjectMode, objectMode);
 
-        QSKIP("clientProc hangs in Qt 6", Abort); // Qt 6 FIXME
         qDebug() << "Starting server process";
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);

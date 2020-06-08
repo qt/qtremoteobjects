@@ -96,6 +96,8 @@ public:
 private:
     QHash<QString, QMetaObject*> dynamicTypes;
     QHash<QString, const QMetaObject*> staticTypes;
+    QHash<QtPrivate::QMetaTypeInterface *, QMetaType> enumsToBeAssignedMetaObject;
+    QHash<QMetaObject *, QList<QMetaType>> enumTypes;
 };
 
 struct ProxyReplicaInfo;
