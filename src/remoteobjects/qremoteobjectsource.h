@@ -112,15 +112,30 @@ inline const QByteArray apiStringData(const QMetaObject *mo, int index)
     return QByteArray::fromRawData(string, length);
 }
 
-inline bool apiMethodMatch(const QMetaObject *m, int handle,
+// From QMetaMethod in qmetaobject.h
+struct Data {
+    enum { Size = 6 };
+
+    uint name() const { return d[0]; }
+    uint argc() const { return d[1]; }
+    uint parameters() const { return d[2]; }
+    uint tag() const { return d[3]; }
+    uint flags() const { return d[4]; }
+    uint metaTypeOffset() const { return d[5]; }
+    bool operator==(const Data &other) const { return d == other.d; }
+
+    const uint *d;
+};
+
+inline bool apiMethodMatch(const QMetaObject *m, const Data &data,
                         const QByteArray &name, int argc,
                         const int *types)
 {
-    if (int(m->d.data[handle + 1]) != argc)
+    if (data.argc() != uint(argc))
         return false;
-    if (apiStringData(m, m->d.data[handle]) != name)
+    if (apiStringData(m, data.name()) != name)
         return false;
-    int paramsIndex = m->d.data[handle + 2] + 1;
+    int paramsIndex = data.parameters() + 1;
     for (int i = 0; i < argc; ++i) {
         uint typeInfo = m->d.data[paramsIndex + i];
         if (typeInfo & 0x80000000) { // Custom/named type, compare names
@@ -150,6 +165,12 @@ struct QMetaObjectPrivate
     int flags;
     int signalCount;
 };
+
+inline Data fromRelativeMethodIndex(const QMetaObject *mobj, int index)
+{
+    const auto priv = reinterpret_cast<const QMetaObjectPrivate*>(mobj->d.data);
+    return { mobj->d.data + priv->methodData + index * Data::Size };
+}
 
 template <class ObjectType, typename Func1, typename Func2>
 static inline int qtro_method_index(Func1, Func2, const char *methodName, int *count, int const **types)
@@ -186,8 +207,8 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
         int i = (priv->methodCount - 1);
         const int end = priv->signalCount;
         for (; i >= end; --i) {
-            int handle = priv->methodData + 5*i;
-            if (apiMethodMatch(m, handle, name, *count, *types))
+            const Data data = fromRelativeMethodIndex(m, i);
+            if (apiMethodMatch(m, data, name, *count, *types))
                 return i + m->methodOffset();
         }
     }
