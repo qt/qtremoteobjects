@@ -299,11 +299,12 @@ void QRegexParser<_Parser, _Table>::setDebug()
 template <typename _Parser, typename _Table>
 int QRegexParser<_Parser, _Table>::nextToken()
 {
+    const QStringView buffer { m_buffer };
     static const QRegularExpression newline(QLatin1String("(\\n)"));
     int token = -1;
     while (token < 0)
     {
-        if (m_loc == m_buffer.size())
+        if (m_loc == buffer.size())
             return _Table::EOF_SYMBOL;
 
         //Check m_lastMatchText for newlines and update m_lineno
@@ -321,7 +322,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             qDebug();
             qDebug() << "nextToken loop, line =" << m_lineno
                 << "line position =" << m_loc - m_lastNewlinePosition
-                << "next 5 characters =" << escapeString(m_buffer.mid(m_loc, 5));
+                << "next 5 characters =" << escapeString(buffer.mid(m_loc, 5).toString());
         }
         int best = -1, maxLen = -1;
         QRegularExpressionMatch bestRegex;
@@ -333,10 +334,10 @@ int QRegexParser<_Parser, _Table>::nextToken()
         //We used PCRE's PartialMatch to eliminate most of the regexes by the first
         //character, so we keep a regexCandidates map with the list of possible regexes
         //based on initial characters found so far.
-        const QChar nextChar = m_buffer.at(m_loc);
+        const QChar nextChar = buffer.at(m_loc);
         //Populate the list if we haven't seeen this character before
         if (!regexCandidates.contains(nextChar)) {
-            const QStringRef tmp = m_buffer.midRef(m_loc,1);
+            const QStringView tmp = buffer.mid(m_loc,1);
             int i = 0;
             regexCandidates[nextChar] = QList<int>();
             for (const QRegularExpression &re : qAsConst(m_regexes))
@@ -354,7 +355,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             //Seems like I should be able to run the regex on the entire string, but performance is horrible
             //unless I use a substring.
             //QRegularExpressionMatch match = m_regexes[i].match(m_buffer, m_loc, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption);
-            QRegularExpressionMatch match = m_regexes.at(i).match(m_buffer.midRef(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
+            QRegularExpressionMatch match = m_regexes.at(i).match(buffer.mid(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
             if (match.hasMatch()) {
                 if (m_debug)
                     candidates << MatchCandidate(m_tokenNames[i], match.captured(), i);
@@ -366,7 +367,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             }
         }
         if (best < 0) {
-            setErrorString(QLatin1String("Error generating tokens from file, next characters >%1<").arg(m_buffer.midRef(m_loc, 15)));
+            setErrorString(QLatin1String("Error generating tokens from file, next characters >%1<").arg(buffer.mid(m_loc, 15)));
             return -1;
         } else {
             const QMap<int, QString> &map = m_names.at(best);
