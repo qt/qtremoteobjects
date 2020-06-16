@@ -16,7 +16,7 @@ qt_add_test(tst_parser
 # QLALR Grammars:
 qt_process_qlalr(
     tst_parser
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/repparser/parser.g # special case
+    ${CMAKE_SOURCE_DIR}/src/repparser/parser.g
     ""
 )
 

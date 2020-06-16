@@ -13,17 +13,13 @@ qt_add_test(tst_benchmarkstest
         Qt::Network
         Qt::RemoteObjects
 )
-# special case begin
-set(other_files
+qt6_add_repc_source(tst_benchmarkstest
     ../repfiles/localdatacenter.rep
     ../repfiles/tcpdatacenter.rep
 )
-# special case end
-qt6_add_repc_source(tst_benchmarkstest
-    ${other_files} # special case
-)
 qt6_add_repc_replica(tst_benchmarkstest
-    ${other_files} # special case
+        ../repfiles/localdatacenter.rep
+        ../repfiles/tcpdatacenter.rep
 )
 
 #### Keys ignored in scope 1:.:.:benchmarks.pro:<TRUE>:
