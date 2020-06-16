@@ -11,12 +11,11 @@ qt_add_qml_module(qtremoteobjects
     SKIP_TYPE_REGISTRATION
     SOURCES
         plugin.cpp
-    LIBRARIES
-        Qt::QmlPrivate
     PUBLIC_LIBRARIES
         Qt::Core
         Qt::Gui
         Qt::Qml
+        Qt::QmlPrivate
         Qt::RemoteObjects
 )
 

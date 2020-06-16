@@ -9,7 +9,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(INSTALL_EXAMPLEDIR "examples/remoteobjects/simpleswitch/registryconnectedserver")
+if(NOT DEFINED INSTALL_EXAMPLESDIR)
+  set(INSTALL_EXAMPLESDIR "examples")
+endif()
+
+set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/simpleswitch/registryconnectedserver")
 
 find_package(Qt6 COMPONENTS Core)
 find_package(Qt6 COMPONENTS RemoteObjects)

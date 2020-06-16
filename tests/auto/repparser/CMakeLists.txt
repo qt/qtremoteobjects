@@ -8,8 +8,8 @@ qt_add_test(tst_parser
     SOURCES
         tst_parser.cpp
     INCLUDE_DIRECTORIES
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/repparser # special case
-    LIBRARIES
+        ${CMAKE_SOURCE_DIR}/src/repparser
+    PUBLIC_LIBRARIES
         Qt::CorePrivate
 )
 

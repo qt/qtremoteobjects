@@ -9,7 +9,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(INSTALL_EXAMPLEDIR "examples/remoteobjects/ssl/sslserver")
+if(NOT DEFINED INSTALL_EXAMPLESDIR)
+  set(INSTALL_EXAMPLESDIR "examples")
+endif()
+
+set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/ssl/sslserver")
 
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS Core)
@@ -19,13 +23,10 @@ add_executable(sslserver
     sslserver.cpp sslserver.h
     timemodel.cpp timemodel.h
 )
-target_link_libraries(sslserver PRIVATE
-    Qt::RemoteObjectsPrivate
-)
-
 target_link_libraries(sslserver PUBLIC
     Qt::Core
     Qt::RemoteObjects
+    Qt::RemoteObjectsPrivate
 )
 
 

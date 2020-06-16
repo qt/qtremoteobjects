@@ -14,6 +14,7 @@ qt_add_module(RepParser
 
 #### Keys ignored in scope 1:.:.:repparser.pro:<TRUE>:
 # MODULE = "repparser"
+# OTHER_FILES = "$$PWD/parser.g"
 # def_build = "debug"
 
 ## Scopes:

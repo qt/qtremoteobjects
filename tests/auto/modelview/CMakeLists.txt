@@ -21,7 +21,7 @@ qt_extend_target(tst_modelview CONDITION boot2qt
         SLOW_MODELTEST
 )
 
-qt_extend_target(tst_modelview CONDITION mingw
+qt_extend_target(tst_modelview CONDITION MINGW
     DEFINES
         SLOW_MODELTEST
 )

@@ -9,7 +9,7 @@ qt_add_test(tst_parser
         tst_parser.cpp
     INCLUDE_DIRECTORIES
         ${CMAKE_SOURCE_DIR}/src/repparser
-    LIBRARIES
+    PUBLIC_LIBRARIES
         Qt::CorePrivate
 )
 

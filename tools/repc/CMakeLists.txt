@@ -4,7 +4,9 @@
 ## repc Tool:
 #####################################################################
 
-qt_add_tool(repc
+qt_get_tool_target_name(target_name repc)
+qt_add_tool(${target_name}
+    TARGET_DESCRIPTION "Qt Remote Objects Compiler"
     TOOLS_TARGET RemoteObjects # special case
     SOURCES
         cppcodegenerator.cpp cppcodegenerator.h
@@ -27,7 +29,7 @@ qt_add_tool(repc
     INCLUDE_DIRECTORIES
         ${CMAKE_SOURCE_DIR}/src/repparser
         moc_copy
-    LIBRARIES
+    PUBLIC_LIBRARIES
         Qt::CorePrivate
 )
 
@@ -45,7 +47,7 @@ qt_process_qlalr(
 ## Scopes:
 #####################################################################
 
-qt_extend_target(repc CONDITION MSVC
+qt_extend_target(${target_name} CONDITION MSVC
     COMPILE_OPTIONS
         /wd4129
 )
