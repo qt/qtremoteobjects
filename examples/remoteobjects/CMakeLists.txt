@@ -1,0 +1,20 @@
+# Generated from remoteobjects.pro.
+
+add_subdirectory(server)
+add_subdirectory(cppclient)
+add_subdirectory(simpleswitch)
+add_subdirectory(websockets)
+if(TARGET Qt::Widgets)
+    add_subdirectory(modelviewclient)
+    add_subdirectory(modelviewserver)
+endif()
+if(QT_FEATURE_ssl) # special case
+    add_subdirectory(ssl)
+endif()
+if(TARGET Qt::Quick)
+    add_subdirectory(plugins)
+    add_subdirectory(clientapp)
+endif()
+if(TARGET Qt::Quick AND UNIX AND NOT ANDROID)
+    add_subdirectory(qmlmodelviewclient)
+endif()
