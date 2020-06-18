@@ -94,6 +94,7 @@ void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
     switch (error) {
     case QLocalSocket::ServerNotFoundError:
     case QLocalSocket::UnknownSocketError:
+    case QLocalSocket::PeerClosedError:
         //Host not there, wait and try again
         emit shouldReconnect(this);
         break;
