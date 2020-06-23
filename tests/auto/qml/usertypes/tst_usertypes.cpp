@@ -269,6 +269,10 @@ void tst_usertypes::hostInQml()
     node.connectToNode(QUrl("local:testHost"));
     SimpleClockReplica *replica = node.acquire<SimpleClockReplica>();
     QTRY_COMPARE_WITH_TIMEOUT(replica->state(), QRemoteObjectReplica::Valid, 300);
+
+    QSignalSpy spy(replica, &SimpleClockReplica::timeUpdated);
+    spy.wait();
+    QCOMPARE(spy.count(), 1);
 }
 
 void tst_usertypes::twoReplicas()

@@ -11,4 +11,10 @@ Item {
         hostUrl: "local:testHost"
         Component.onCompleted: enableRemoting(clock)
     }
+
+    Timer {
+        interval: 500
+        running: true
+        onTriggered: clock.timeUpdated(10, 30)
+    }
 }
