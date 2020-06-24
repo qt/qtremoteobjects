@@ -30,6 +30,7 @@
 \title Qt Remote Objects C++ Classes
 \brief Provides an easy to use mechanism for sharing a QObject's Properties, Signals, or Slots, between processes.
 \ingroup modules
+\qtcmakepackage Remoteobjects
 \qtvariable remoteobjects
 
     To include the definitions of the module's classes, use the following directive:
