@@ -29,22 +29,8 @@
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QProcess>
-#include <QStandardPaths>
 
-namespace {
-
-QString findExecutable(const QString &executableName, const QStringList &paths)
-{
-    const auto path = QStandardPaths::findExecutable(executableName, paths);
-    if (!path.isEmpty()) {
-        return path;
-    }
-
-    qWarning() << "Could not find executable:" << executableName << "in any of" << paths;
-    return QString();
-}
-
-}
+#include "../../../shared/testutils.h"
 
 class tst_Integration_MultiProcess: public QObject
 {
@@ -53,6 +39,7 @@ class tst_Integration_MultiProcess: public QObject
 private slots:
     void initTestCase()
     {
+        QVERIFY(TestUtils::init("tst"));
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
     }
 
@@ -81,9 +68,8 @@ private slots:
             env.insert("TEMPLATED_REMOTING", "true");
             serverProc.setProcessEnvironment(env);
         }
-        serverProc.start(findExecutable("integration_multiprocess_server", {
-            QCoreApplication::applicationDirPath() + "/../server/"
-        }), QStringList());
+        serverProc.start(TestUtils::findExecutable("integration_multiprocess_server", "/server"),
+                         QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
@@ -92,9 +78,8 @@ private slots:
         qDebug() << "Starting client process";
         QProcess clientProc;
         clientProc.setProcessChannelMode(QProcess::ForwardedChannels);
-        clientProc.start(findExecutable("integration_multiprocess_client", {
-            QCoreApplication::applicationDirPath() + "/../client/"
-        }), QStringList());
+        clientProc.start(TestUtils::findExecutable("integration_multiprocess_client", "/client"),
+                         QStringList());
         QVERIFY(clientProc.waitForStarted());
 
         QVERIFY(clientProc.waitForFinished());

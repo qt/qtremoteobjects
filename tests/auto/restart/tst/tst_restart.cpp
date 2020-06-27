@@ -29,22 +29,8 @@
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QProcess>
-#include <QStandardPaths>
 
-namespace {
-
-QString findExecutable(const QString &executableName, const QStringList &paths)
-{
-    const auto path = QStandardPaths::findExecutable(executableName, paths);
-    if (!path.isEmpty()) {
-        return path;
-    }
-
-    qWarning() << "Could not find executable:" << executableName << "in any of" << paths;
-    return QString();
-}
-
-}
+#include "../../../shared/testutils.h"
 
 class tst_Restart: public QObject
 {
@@ -59,6 +45,7 @@ public:
 private slots:
     void initTestCase()
     {
+        QVERIFY(TestUtils::init("tst"));
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
     }
 
@@ -101,9 +88,8 @@ private slots:
         env.insert("RunMode", QVariant::fromValue(runMode).toString());
         env.insert("ObjectMode", QVariant::fromValue(objectMode).toString());
         serverProc.setProcessEnvironment(env);
-        serverProc.start(findExecutable("restart_server", {
-            QCoreApplication::applicationDirPath() + "/../server/"
-        }), QStringList());
+        serverProc.start(TestUtils::findExecutable("restart_server", "/server"),
+                         QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
@@ -113,9 +99,8 @@ private slots:
         QProcess clientProc;
         clientProc.setProcessChannelMode(QProcess::ForwardedChannels);
         clientProc.setProcessEnvironment(env);
-        clientProc.start(findExecutable("restart_client", {
-            QCoreApplication::applicationDirPath() + "/../client/"
-        }), QStringList());
+        clientProc.start(TestUtils::findExecutable("restart_client", "/client"),
+                         QStringList());
         QVERIFY(clientProc.waitForStarted());
 
         if (serverRestart) {
@@ -128,9 +113,8 @@ private slots:
                 QCOMPARE(serverProc.exitCode(), 0);
             qDebug() << "Restarting server";
             serverProc.setProcessEnvironment(env);
-            serverProc.start(findExecutable("restart_server", {
-                QCoreApplication::applicationDirPath() + "/../server/"
-            }), QStringList());
+            serverProc.start(TestUtils::findExecutable("restart_server", "/server"),
+                             QStringList());
             QVERIFY(serverProc.waitForStarted());
         }
 

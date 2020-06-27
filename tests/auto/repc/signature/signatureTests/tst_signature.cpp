@@ -31,7 +31,6 @@
 #include <QtTest/QtTest>
 #include <QMetaType>
 #include <QProcess>
-#include <QStandardPaths>
 
 typedef QLatin1String _;
 class tst_Signature: public QObject
@@ -41,6 +40,7 @@ class tst_Signature: public QObject
 private slots:
     void initTestCase()
     {
+        QVERIFY(TestUtils::init("signatureTests"));
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
     }
 
@@ -55,9 +55,8 @@ private slots:
         qDebug() << "Starting signatureServer process";
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
-        serverProc.start(TestUtils::findExecutable("signatureServer", {
-            QCoreApplication::applicationDirPath() + "/../signatureServer/"
-        }), QStringList());
+        serverProc.start(TestUtils::findExecutable("signatureServer", "/signatureServer"),
+                         QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
@@ -86,9 +85,8 @@ private slots:
             qDebug() << "Starting" << test << "process";
             QProcess testProc;
             testProc.setProcessChannelMode(QProcess::ForwardedChannels);
-            testProc.start(TestUtils::findExecutable(test, {
-                QCoreApplication::applicationDirPath() + _("/../") + test + _("/")
-            }), QStringList());
+            testProc.start(TestUtils::findExecutable(test, "/" + test ),
+                           QStringList());
             QVERIFY(testProc.waitForStarted());
             QVERIFY(testProc.waitForFinished());
             QCOMPARE(testProc.exitCode(), 0);

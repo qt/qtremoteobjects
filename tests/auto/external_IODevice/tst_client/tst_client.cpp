@@ -31,20 +31,7 @@
 #include <QScopedPointer>
 #include "rep_pingpong_replica.h"
 
-namespace {
-
-QString findExecutable(const QString &executableName, const QStringList &paths)
-{
-    const auto path = QStandardPaths::findExecutable(executableName, paths);
-    if (!path.isEmpty()) {
-        return path;
-    }
-
-    qWarning() << "Could not find executable:" << executableName << "in any of" << paths;
-    return QString();
-}
-
-}
+#include "../../../shared/testutils.h"
 
 class tst_clientSSL: public QObject
 {
@@ -53,13 +40,16 @@ public:
     tst_clientSSL() = default;
 
 private slots:
+    void initTestCase()
+    {
+        QVERIFY(TestUtils::init("tst_client"));
+    }
     void testRun()
     {
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
-        serverProc.start(findExecutable("sslTestServer", {
-            QCoreApplication::applicationDirPath() + "/../sslTestServer/"
-        }), QStringList());
+        serverProc.start(TestUtils::findExecutable("sslTestServer", "/sslTestServer"),
+                         QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start

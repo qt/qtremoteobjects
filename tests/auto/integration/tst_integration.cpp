@@ -220,6 +220,7 @@ private slots:
 
     void initTestCase()
     {
+        QVERIFY(TestUtils::init("integration"));
         QLoggingCategory::setFilterRules("qt.remoteobjects.warning=false");
 
         // use different paths in QRemoteObjectSettingsStore
@@ -1331,9 +1332,7 @@ private slots:
         QFETCH_GLOBAL(QUrl, hostUrl);
         if (hostUrl.scheme() != QRemoteObjectStringLiterals::local())
             QSKIP("Skipping 'local' specific backend for non-local test.");
-        const auto progName = TestUtils::findExecutable("localsockettestserver", {
-            QCoreApplication::applicationDirPath() + "/../localsockettestserver"
-        });
+        const auto progName = TestUtils::findExecutable("localsockettestserver", "/localsockettestserver");
 
         //create a fake socket as killing doesn't produce a necessarily unusable socket
         QFile fake(QDir::temp().absoluteFilePath(QStringLiteral("crashMe")));
@@ -1365,9 +1364,7 @@ private slots:
         QFETCH_GLOBAL(QUrl, hostUrl);
         if (hostUrl.scheme() != QRemoteObjectStringLiterals::local())
             QSKIP("Skipping 'local' specific backend for non-local test.");
-        const auto progName = TestUtils::findExecutable("localsockettestserver", {
-            QCoreApplication::applicationDirPath() + "/../localsockettestserver"
-        });
+        const auto progName = TestUtils::findExecutable("localsockettestserver", "/localsockettestserver");
 
         QProcess testServer;
         testServer.start(progName, QStringList());
