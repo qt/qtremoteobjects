@@ -159,7 +159,7 @@ inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &rol
 
 void QAbstractItemModelReplicaImplementation::onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous)
 {
-    Q_UNUSED(previous)
+    Q_UNUSED(previous);
     IndexList currentIndex = toModelIndexList(current, q);
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentIndex;
     replicaSetCurrentIndex(currentIndex, QItemSelectionModel::Clear|QItemSelectionModel::Select|QItemSelectionModel::Current);

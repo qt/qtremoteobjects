@@ -55,13 +55,13 @@ bool MyTestServer::quit()
 
 ParentClassSource::MyEnum MyTestServer::enumSlot(QPoint p, MyEnum myEnum)
 {
-    Q_UNUSED(p)
-    Q_UNUSED(myEnum)
+    Q_UNUSED(p);
+    Q_UNUSED(myEnum);
     return ParentClassSource::foobar;
 }
 
 Qt::DateFormat MyTestServer::dateSlot(Qt::DateFormat date)
 {
-    Q_UNUSED(date)
+    Q_UNUSED(date);
     return Qt::RFC2822Date;
 }
