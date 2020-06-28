@@ -21,6 +21,12 @@ moc_*
 .pch
 *_wrapper.sh
 *.app
+*.prl
+*.pdb
+*.exe
+*_resource.rc
+*_resource.rc.tmp
+qt_lib_*_private*
 
 *.autosave
 
@@ -33,6 +39,8 @@ rep_*_replica.h
 /bin/
 /mkspecs/modules-inst/
 /mkspecs/modules/
+/src/repparser/timestamp
+/src/remoteobjects/.doc
 
 # test/example executables
 /examples/RemoteObjects/ClientApp/ClientApp
@@ -82,3 +90,19 @@ rep_*_replica.h
 # Compiled QML/JS code
 *.qmlc
 *.jsc
+
+# cmake related artifacts
+/build*
+CMakeFiles
+CMakeCache.txt
+CTestTestfile.cmake
+cmake_install.cmake
+*_autogen
+tst_*.xml
+.remove_cmake*
+compile_commands.json
+DartConfiguration.tcl
+**/Testing/Temporary/*
+rules.ninja
+.ninja_log
+.ninja_deps
