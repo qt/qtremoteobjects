@@ -199,7 +199,7 @@ void ProxyTest::testProxy()
     // Now test subclass Source
     ParentClassSimpleSource parent;
     SubClassSimpleSource subclass;
-    const MyPOD initialValue(42, 3.14, QStringLiteral("SubClass"));
+    const MyPOD initialValue(42, 3.14f, QStringLiteral("SubClass"));
     subclass.setMyPOD(initialValue);
     QStringListModel model;
     model.setStringList(QStringList() << "Track1" << "Track2" << "Track3");
@@ -260,7 +260,7 @@ void ProxyTest::testProxy()
 
         //Change SubClass and make sure change propagates
         SubClassSimpleSource updatedSubclass;
-        const MyPOD updatedValue(-1, 123.456, QStringLiteral("Updated"));
+        const MyPOD updatedValue(-1, 123.456f, QStringLiteral("Updated"));
         updatedSubclass.setMyPOD(updatedValue);
         QSignalSpy replicaSpy(rep, SIGNAL(subClassChanged(SubClassReplica*)));
         parent.setSubClass(&updatedSubclass);
@@ -337,7 +337,7 @@ void ProxyTest::testProxy()
 
         //Change SubClass and make sure change propagates
         SubClassSimpleSource updatedSubclass;
-        const MyPOD updatedValue(-1, 123.456, QStringLiteral("Updated"));
+        const MyPOD updatedValue(-1, 123.456f, QStringLiteral("Updated"));
         updatedSubclass.setMyPOD(updatedValue);
         QSignalSpy replicaSpy(replica.data(), QByteArray(QByteArrayLiteral("2")+subclassMeta.notifySignal().methodSignature().constData()));
         parent.setSubClass(&updatedSubclass);
@@ -403,7 +403,6 @@ void ProxyTest::testReverseProxy()
     SET_NODE_NAME(host);
 
     // Setup Proxy
-    // QRemoteObjectRegistryHost proxyNode(proxyNodeUrl);
     QRemoteObjectRegistryHost proxyNode(proxyNodeUrl);
     SET_NODE_NAME(proxyNode);
     proxyNode.proxy(registryUrl, proxyHostUrl);

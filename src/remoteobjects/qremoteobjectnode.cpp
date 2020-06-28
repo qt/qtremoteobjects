@@ -2553,6 +2553,7 @@ ProxyInfo::ProxyInfo(QRemoteObjectNode *node, QRemoteObjectHostBase *parent,
 ProxyInfo::~ProxyInfo() {
     for (ProxyReplicaInfo* info : proxiedReplicas)
         delete info;
+    delete proxyNode;
 }
 
 bool ProxyInfo::setReverseProxy(QRemoteObjectHostBase::RemoteObjectNameFilter filter)
