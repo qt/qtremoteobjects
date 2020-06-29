@@ -27,7 +27,7 @@ qt_add_tool(${target_name}
 
 # QLALR Grammars:
 qt_process_qlalr(
-    repc
+    ${target_name} # special case
     ${CMAKE_SOURCE_DIR}/src/repparser/parser.g
     ""
 )
