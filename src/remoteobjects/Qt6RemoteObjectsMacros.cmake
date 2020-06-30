@@ -46,7 +46,15 @@ function(qt6_add_repc_files type target)
 
     foreach(it ${ARGS_FILES})
         get_filename_component(outfilename ${it} NAME_WE)
-        get_filename_component(infile ${it} ABSOLUTE)
+        get_filename_component(extension ${it} EXT)
+        if ("${extension}" STREQUAL ".h" OR "${extension}" STREQUAL ".hpp")
+            qt_manual_moc(qtro_moc_files OUTPUT_MOC_JSON_FILES json_list ${it})
+            set(infile ${json_list})
+            set_source_files_properties(${qtro_moc_files} PROPERTIES HEADER_FILE_ONLY ON)
+            list(APPEND outfiles ${qtro_moc_files})
+        else()
+            get_filename_component(infile ${it} ABSOLUTE)
+        endif()
         set(outfile ${CMAKE_CURRENT_BINARY_DIR}/rep_${outfilename}_${type}.h)
         add_custom_command(OUTPUT ${outfile}
                            ${QT_TOOL_PATH_SETUP_COMMAND}
@@ -75,4 +83,25 @@ endfunction()
 function(qt6_add_repc_merged target)
     list(POP_FRONT ARGV)
     qt6_add_repc_files(merged ${target} FILES ${ARGV})
+endfunction()
+
+# Create .rep interface file from QObject header
+function(qt6_rep_from_header target)
+    list(POP_FRONT ARGV)
+    foreach(it ${ARGV})
+        get_filename_component(outfilename ${it} NAME_WE)
+        qt_manual_moc(qtro_moc_files OUTPUT_MOC_JSON_FILES json_list ${it})
+        set(infile ${json_list})
+        set_source_files_properties(${qtro_moc_files} PROPERTIES HEADER_FILE_ONLY ON)
+        list(APPEND outfiles ${qtro_moc_files})
+        set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${outfilename}.rep)
+        add_custom_command(OUTPUT ${outfile}
+                           ${QT_TOOL_PATH_SETUP_COMMAND}
+                           COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::repc
+                           -o rep ${infile} ${outfile}
+                           MAIN_DEPENDENCY ${infile}
+                           VERBATIM)
+        list(APPEND outfiles ${outfile})
+    endforeach()
+    target_sources(${target} PRIVATE ${outfiles})
 endfunction()

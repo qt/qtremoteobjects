@@ -30,10 +30,11 @@
 #include <qcommandlineparser.h>
 #include <qcoreapplication.h>
 #include <qfileinfo.h>
+#include <qjsondocument.h>
+#include <qjsonobject.h>
+#include <qjsonarray.h>
 
 #include "cppcodegenerator.h"
-#include "moc.h"
-#include "preprocessor.h"
 #include "repcodegenerator.h"
 #include "repparser.h"
 #include "utils.h"
@@ -45,7 +46,7 @@
 
 enum Mode {
     InRep = 1,
-    InSrc = 2,
+    InJson = 2,
     OutRep = 4,
     OutSource = 8,
     OutReplica = 16,
@@ -53,7 +54,7 @@ enum Mode {
 };
 
 static const QLatin1String REP("rep");
-static const QLatin1String SRC("src");
+static const QLatin1String JSON("json");
 static const QLatin1String REPLICA("replica");
 static const QLatin1String SOURCE("source");
 static const QLatin1String MERGED("merged");
@@ -76,8 +77,8 @@ int main(int argc, char **argv)
     QCommandLineOption inputTypeOption(QStringLiteral("i"));
     inputTypeOption.setDescription(QLatin1String("Input file type:\n"
                                                   "rep: replicant template files.\n"
-                                                  "src: C++ QObject derived classes."));
-    inputTypeOption.setValueName(QStringLiteral("rep|src"));
+                                                  "json: JSON output from moc of a Qt header file."));
+    inputTypeOption.setValueName(QStringLiteral("rep|json"));
     parser.addOption(inputTypeOption);
 
     QCommandLineOption outputTypeOption(QStringLiteral("o"));
@@ -102,8 +103,8 @@ int main(int argc, char **argv)
     debugOption.setDescription(QStringLiteral("Print out parsing debug information (for troubleshooting)."));
     parser.addOption(debugOption);
 
-    parser.addPositionalArgument(QStringLiteral("[header-file/rep-file]"),
-            QStringLiteral("Input header/rep file to read from, otherwise stdin."));
+    parser.addPositionalArgument(QStringLiteral("[json-file/rep-file]"),
+            QStringLiteral("Input json/rep file to read from, otherwise stdin."));
 
     parser.addPositionalArgument(QStringLiteral("[rep-file/header-file]"),
             QStringLiteral("Output header/rep file to write to, otherwise stdout."));
@@ -121,8 +122,8 @@ int main(int argc, char **argv)
         const QString &inputType = parser.value(inputTypeOption);
         if (inputType == REP)
             mode = InRep;
-        else if (inputType == SRC)
-            mode = InSrc;
+        else if (inputType == JSON)
+            mode = InJson;
         else {
             fprintf(stderr, PROGRAM_NAME ": Unknown input type\"%s\".\n", qPrintable(inputType));
             parser.showHelp(1);
@@ -156,17 +157,17 @@ int main(int argc, char **argv)
         Q_FALLTHROUGH();
     case 1:
         inputFile = files.first();
-        if (!(mode & (InRep | InSrc))) {
+        if (!(mode & (InRep | InJson))) {
             // try to figure out the In mode from file extension
             if (inputFile.endsWith(QLatin1String(".rep")))
                 mode |= InRep;
             else
-                mode |= InSrc;
+                mode |= InJson;
         }
         break;
     }
     // check mode sanity
-    if (!(mode & (InRep | InSrc))) {
+    if (!(mode & (InRep | InJson))) {
         fprintf(stderr, PROGRAM_NAME ": Unknown input type, please use -i option to specify one.\n");
         parser.showHelp(1);
     }
@@ -178,7 +179,7 @@ int main(int argc, char **argv)
         fprintf(stderr, PROGRAM_NAME ": Invalid input/output type combination, both are rep files.\n");
         parser.showHelp(1);
     }
-    if (mode & InSrc && mode & OutSource) {
+    if (mode & InJson && mode & OutSource) {
         fprintf(stderr, PROGRAM_NAME ": Invalid input/output type combination, both are source header files.\n");
         parser.showHelp(1);
     }
@@ -207,40 +208,30 @@ int main(int argc, char **argv)
         }
     }
 
-    if (mode & InSrc) {
-        Preprocessor pp;
-        const QFileInfo includePath(QLatin1String(RO_INSTALL_HEADERS));
-        pp.includes += Preprocessor::IncludePath(QFile::encodeName(includePath.canonicalFilePath()));
-        pp.includes += Preprocessor::IncludePath(QFile::encodeName(includePath.canonicalPath()));
-        const auto paths = parser.values(includePathOption);
-        for (const QString &path : paths)
-            pp.includes += Preprocessor::IncludePath(QFile::encodeName(path));
+    if (mode & InJson) {
+        QJsonDocument doc(QJsonDocument::fromJson(input.readAll()));
+        input.close();
+        if (!doc.isObject()) {
+            fprintf(stderr, PROGRAM_NAME ": Unable to read json input.\n");
+            return 0;
+        }
 
-        pp.macros["Q_MOC_RUN"];
-        pp.macros["__cplusplus"];
+        QJsonObject json = doc.object();
 
-        Moc moc;
-        if (!inputFile.isEmpty())
-            moc.filename = inputFile.toLocal8Bit();
-        moc.currentFilenames.push(inputFile.toLocal8Bit());
-        moc.includes = pp.includes;
-        moc.symbols = pp.preprocessed(moc.filename, &input);
-        moc.parse();
-
-        if (moc.classList.isEmpty()) {
+        if (!json.contains(QLatin1String("classes")) || !json[QLatin1String("classes")].isArray()) {
             fprintf(stderr, PROGRAM_NAME ": No QObject classes found.\n");
             return 0;
         }
 
-        input.close();
+        QJsonArray classes = json[QLatin1String("classes")].toArray();
 
         if (mode & OutRep) {
             CppCodeGenerator generator(&output);
-            generator.generate(moc.classList, parser.isSet(alwaysClassOption));
+            generator.generate(classes, parser.isSet(alwaysClassOption));
         } else {
             Q_ASSERT(mode & OutReplica);
             RepCodeGenerator generator(&output);
-            generator.generate(classList2AST(moc.classList), RepCodeGenerator::REPLICA, outputFile);
+            generator.generate(classList2AST(classes), RepCodeGenerator::REPLICA, outputFile);
         }
     } else {
         Q_ASSERT(!(mode & OutRep));

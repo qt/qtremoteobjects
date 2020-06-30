@@ -26,8 +26,10 @@
 **
 ****************************************************************************/
 
+#include <qjsonarray.h>
+#include <qjsonvalue.h>
+
 #include "cppcodegenerator.h"
-#include "moc.h"
 #include "utils.h"
 
 QT_BEGIN_NAMESPACE
@@ -38,9 +40,9 @@ CppCodeGenerator::CppCodeGenerator(QIODevice *outputDevice)
     Q_ASSERT(m_outputDevice);
 }
 
-void CppCodeGenerator::generate(const QVector<ClassDef> &classList, bool alwaysGenerateClass /* = false */)
+void CppCodeGenerator::generate(const QJsonArray &classList, bool alwaysGenerateClass /* = false */)
 {
-    for (const ClassDef &cdef : classList)
+    for (const QJsonValue &cdef : classList)
         m_outputDevice->write(generateClass(cdef, alwaysGenerateClass));
 
     m_outputDevice->write("\n");

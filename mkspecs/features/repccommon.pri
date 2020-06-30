@@ -31,8 +31,13 @@ for(entry, REPC_$$repc_TYPE) {
     groups *= $$group
 
     input_list = $$upper($$group)_LIST
+    json_list = $$upper($$group)_JSONLIST
     for(subent, $$list($$unique(files))) {
-        $$input_list += $$subent
+        if (contains(subent, .*\\.h$)|contains(subent, .*\\.hpp$)) {
+            $$json_list += $$subent
+        } else {
+            $$input_list += $$subent
+        }
 
         # Add directory of *.rep file to include path
         file_path = $$_PRO_FILE_PWD_/$$subent
@@ -43,12 +48,21 @@ for(entry, REPC_$$repc_TYPE) {
 for(group, groups) {
     GROUP = $$upper($$group)
     input_list = $${GROUP}_LIST
+    json_list = $${GROUP}_JSONLIST
+
+    qtPrepareTool(MOC_CREATE_JSON, moc)
+    $${group}_moc_json.output = ${QMAKE_FILE_BASE}.json
+    $${group}_moc_json.CONFIG = no_link moc_verify
+    $${group}_moc_json.commands = $$MOC_CREATE_JSON -o ${QMAKE_FILE_BASE} ${QMAKE_FILE_NAME} --output-json
+    $${group}_moc_json.depends = ${QMAKE_FILE_NAME}
+    $${group}_moc_json.input = $$json_list
+    $${group}_moc_json.variable_out = MOC_JSON
 
     $${group}_header.output  = $$QMAKE_MOD_REPC${QMAKE_FILE_BASE}_$${repc_type}.h
     $${group}_header.commands = $$QMAKE_REPC $$repc_option $$REPC_INCLUDEPATH ${QMAKE_FILE_NAME} ${QMAKE_FILE_OUT}
     $${group}_header.depends = ${QMAKE_FILE_NAME} $$QT_TOOL.repc.binary
     $${group}_header.variable_out = $${GROUP}_HEADERS
-    $${group}_header.input = $$input_list
+    $${group}_header.input = $$input_list MOC_JSON
 
     $${group}_moc.commands = $$moc_header.commands $$REPC_INCLUDEPATH
     $${group}_moc.output = $$moc_header.output
@@ -57,5 +71,5 @@ for(group, groups) {
     !contains(TEMPLATE, vc.*): \
         $${group}_moc.name = $$moc_header.name
 
-    QMAKE_EXTRA_COMPILERS += $${group}_header $${group}_moc
+    QMAKE_EXTRA_COMPILERS += $${group}_moc_json $${group}_header $${group}_moc
 }

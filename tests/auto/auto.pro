@@ -14,6 +14,7 @@ SUBDIRS += \
     modelview \
     pods \
     proxy \
+    rep_from_header \
     repc \
     repcodegenerator \
     repparser \

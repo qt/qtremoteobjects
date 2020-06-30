@@ -20,3 +20,16 @@ if(NOT TARGET Qt::Network)
     return()
 endif()
 qt_build_repo()
+
+# special case begin
+if(NOT QT_BUILD_STANDALONE_TESTS)
+    # Copy mkspecs for users preferring qmake builds
+    set(mkspecs_install_dir "${INSTALL_MKSPECSDIR}")
+    qt_path_join(mkspecs_install_dir ${QT_INSTALL_DIR} ${mkspecs_install_dir})
+
+    qt_copy_or_install(DIRECTORY mkspecs/
+        DESTINATION "${mkspecs_install_dir}"
+        FILES_MATCHING PATTERN "*.pr[if]"
+    )
+endif()
+# special case end

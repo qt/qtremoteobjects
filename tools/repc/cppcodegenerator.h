@@ -29,10 +29,8 @@
 #ifndef CPPCODEGENERATOR_H
 #define CPPCODEGENERATOR_H
 
-#include <QVector>
-
 QT_BEGIN_NAMESPACE
-struct ClassDef;
+class QJsonArray;
 class QIODevice;
 
 class CppCodeGenerator
@@ -40,7 +38,7 @@ class CppCodeGenerator
 public:
     CppCodeGenerator(QIODevice *outputDevice);
 
-    void generate(const QVector<ClassDef> &classList, bool alwaysGenerateClass = false);
+    void generate(const QJsonArray &classList, bool alwaysGenerateClass = false);
 
 private:
     QIODevice *m_outputDevice;
