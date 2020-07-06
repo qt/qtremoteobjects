@@ -388,8 +388,7 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
         const QMetaProperty mp = target->metaObject()->property(propertyIndex);
         qCDebug(QT_REMOTEOBJECT) << "Sending Invoke Property" << (m_api->isAdapterSignal(internalIndex) ? "via adapter" : "") << internalIndex << propertyIndex << mp.name() << mp.read(target);
 
-        serializePropertyChangePacket(this, index);
-        d->m_packet.baseAddress = d->m_packet.size;
+        d->codec->serializePropertyChangePacket(this, index);
         propertyIndex = internalIndex;
     }
 
@@ -398,11 +397,9 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
                              << (call == 0 ? QLatin1String("InvokeMetaMethod") : QStringLiteral("Non-invoked call: %d").arg(call))
                              << m_api->signalSignature(index) << *marshalArgs(index, a);
 
-    serializeInvokePacket(d->m_packet, name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
-    d->m_packet.baseAddress = 0;
+    d->codec->serializeInvokePacket(name(), call, index, *marshalArgs(index, a), -1, propertyIndex);
 
-    for (IoDeviceBase *io : qAsConst(d->m_listeners))
-        io->write(d->m_packet.array, d->m_packet.size);
+    d->codec->send(d->m_listeners);
 }
 
 void QRemoteObjectRootSource::addListener(IoDeviceBase *io, bool dynamic)
@@ -412,11 +409,11 @@ void QRemoteObjectRootSource::addListener(IoDeviceBase *io, bool dynamic)
 
     if (dynamic) {
         d->sentTypes.clear();
-        serializeInitDynamicPacket(d->m_packet, this);
-        io->write(d->m_packet.array, d->m_packet.size);
+        d->codec->serializeInitDynamicPacket(this);
+        d->codec->send(io);
     } else {
-        serializeInitPacket(d->m_packet, this);
-        io->write(d->m_packet.array, d->m_packet.size);
+        d->codec->serializeInitPacket(this);
+        d->codec->send(io);
     }
 }
 
@@ -425,8 +422,8 @@ int QRemoteObjectRootSource::removeListener(IoDeviceBase *io, bool shouldSendRem
     d->m_listeners.removeAll(io);
     if (shouldSendRemove)
     {
-        serializeRemoveObjectPacket(d->m_packet, m_api->name());
-        io->write(d->m_packet.array, d->m_packet.size);
+        d->codec->serializeRemoveObjectPacket(m_api->name());
+        d->codec->send(io);
     }
     return int(d->m_listeners.length());
 }
@@ -558,6 +555,11 @@ QByteArrayList DynamicApiMap::methodParameterNames(int index) const
     const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);
     return m_cachedMetamethod.parameterNames();
+}
+
+QRemoteObjectSourceBase::Private::Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root)
+    : m_sourceIo(io), codec(io->m_codec.data()), isDynamic(false), root(root)
+{
 }
 
 QT_END_NAMESPACE

@@ -131,9 +131,6 @@ QDataStream& operator<<(QDataStream &stream, const QRO_ &info);
 
 QDataStream& operator>>(QDataStream &stream, QRO_ &info);
 
-void serializeObjectListPacket(DataStreamPacket&, const ObjectInfoList&);
-void deserializeObjectListPacket(QDataStream&, ObjectInfoList&);
-
 //Helper class for creating a QByteArray from a QRemoteObjectPacket
 class DataStreamPacket : public QDataStream
 {
@@ -147,6 +144,7 @@ public:
         *this << quint32(0);
         *this << id;
     }
+
     void setId(quint16 id)
     {
         device()->seek(baseAddress);
@@ -159,48 +157,130 @@ public:
         size = device()->pos();
         device()->seek(baseAddress);
         *this << quint32(size - baseAddress - sizeof(quint32));
+        baseAddress = size; // Allow appending until reset() is called
     }
+
+    const QByteArray &payload()
+    {
+        array.resize(size);
+        return array;
+    }
+
+    void reset()
+    {
+        baseAddress = 0;
+        size = 0;
+        array.clear();
+    }
+
+private:
     QByteArray array;
     int baseAddress;
     int size;
 
-private:
     Q_DISABLE_COPY(DataStreamPacket)
+};
+
+class CodecBase
+{
+public:
+    CodecBase() = default;
+    virtual ~CodecBase() = default;
+    virtual void serializeObjectListPacket(const ObjectInfoList &) = 0;
+    virtual void deserializeObjectListPacket(QDataStream &in, ObjectInfoList &) = 0;
+    virtual void serializeInitPacket(const QRemoteObjectRootSource *) = 0;
+    virtual void serializeInitDynamicPacket(const QRemoteObjectRootSource *) = 0;
+    virtual void serializePropertyChangePacket(QRemoteObjectSourceBase *source,
+                                               int signalIndex) = 0;
+    virtual void deserializePropertyChangePacket(QDataStream &in, int &index, QVariant &value) = 0;
+    virtual void serializeProperty(const QRemoteObjectSourceBase *source, int internalIndex) = 0;
+    // Heartbeat packets
+    virtual void serializePingPacket(const QString &name) = 0;
+    virtual void serializePongPacket(const QString &name) = 0;
+    virtual void serializeInvokePacket(const QString &name, int call, int index,
+                                       const QVariantList &args, int serialId = -1,
+                                       int propertyIndex = -1) = 0;
+    virtual void deserializeInvokePacket(QDataStream &in, int &call, int &index, QVariantList &args,
+                                         int &serialId, int &propertyIndex) = 0;
+    virtual void serializeInvokeReplyPacket(const QString &name, int ackedSerialId,
+                                            const QVariant &value) = 0;
+    virtual void serializeHandshakePacket() = 0;
+    virtual void serializeRemoveObjectPacket(const QString &name) = 0;
+    //There is no deserializeRemoveObjectPacket - no parameters other than id and name
+    virtual void serializeAddObjectPacket(const QString &name, bool isDynamic) = 0;
+    virtual void deserializeAddObjectPacket(QDataStream &, bool &isDynamic) = 0;
+    virtual void deserializeInitPacket(QDataStream &, QVariantList &) = 0;
+    virtual void deserializeInvokeReplyPacket(QDataStream &in, int &ackedSerialId,
+                                              QVariant &value) = 0;
+    void send(const QSet<IoDeviceBase *> &connections)
+    {
+        const auto bytearray = getPayload();
+        for (auto conn : connections)
+            conn->write(bytearray);
+        reset();
+    }
+    void send(const QVector<IoDeviceBase *> &connections)
+    {
+        const auto bytearray = getPayload();
+        for (auto conn : connections)
+            conn->write(bytearray);
+        reset();
+    }
+    void send(IoDeviceBase *connection)
+    {
+        const auto bytearray = getPayload();
+        connection->write(bytearray);
+        reset();
+    }
+
+protected:
+    // A payload can consist of one or more packets
+    virtual const QByteArray &getPayload() = 0;
+    virtual void reset() {}
+};
+
+class QDataStreamCodec : public CodecBase
+{
+public:
+    void serializeObjectListPacket(const ObjectInfoList &) override;
+    void deserializeObjectListPacket(QDataStream &in, ObjectInfoList &) override;
+    void serializeInitPacket(const QRemoteObjectRootSource *) override;
+    void serializeInitDynamicPacket(const QRemoteObjectRootSource*) override;
+    void serializePropertyChangePacket(QRemoteObjectSourceBase *source, int signalIndex) override;
+    void deserializePropertyChangePacket(QDataStream &in, int &index, QVariant &value) override;
+    void serializeProperty(const QRemoteObjectSourceBase *source, int internalIndex) override;
+    void serializePingPacket(const QString &name) override;
+    void serializePongPacket(const QString &name) override;
+    void serializeInvokePacket(const QString &name, int call, int index, const QVariantList &args,
+                               int serialId = -1, int propertyIndex = -1) override;
+    void deserializeInvokePacket(QDataStream &in, int &call, int &index, QVariantList &args,
+                                 int &serialId, int &propertyIndex) override;
+    void serializeInvokeReplyPacket(const QString &name, int ackedSerialId,
+                                    const QVariant &value) override;
+    void serializeHandshakePacket() override;
+    void serializeRemoveObjectPacket(const QString &name) override;
+    void serializeAddObjectPacket(const QString &name, bool isDynamic) override;
+    void deserializeAddObjectPacket(QDataStream &, bool &isDynamic) override;
+    void deserializeInitPacket(QDataStream &, QVariantList &) override;
+    void deserializeInvokeReplyPacket(QDataStream &in, int &ackedSerialId,
+                                      QVariant &value) override;
+
+protected:
+    const QByteArray &getPayload() override {
+        return m_packet.payload();
+    }
+    void reset() override {
+        m_packet.reset();
+    }
+private:
+    void serializeDefinition(QDataStream &, const QRemoteObjectSourceBase *);
+    void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, int internalIndex);
+    void serializeProperties(const QRemoteObjectSourceBase *source);
+    DataStreamPacket m_packet;
 };
 
 const QVariant encodeVariant(const QVariant &value);
 QVariant &decodeVariant(QVariant &value, QMetaType metaType);
-
-void serializeProperty(QDataStream &, const QRemoteObjectSourceBase *source, int internalIndex);
-
-void serializeHandshakePacket(DataStreamPacket &);
-void serializeInitPacket(DataStreamPacket &, const QRemoteObjectRootSource*);
-void serializeProperties(DataStreamPacket &, const QRemoteObjectSourceBase*);
-void deserializeInitPacket(QDataStream &, QVariantList&);
-
-void serializeInitDynamicPacket(DataStreamPacket &, const QRemoteObjectRootSource*);
-void serializeDefinition(QDataStream &, const QRemoteObjectSourceBase*);
-
-void serializeAddObjectPacket(DataStreamPacket &, const QString &name, bool isDynamic);
-void deserializeAddObjectPacket(QDataStream &, bool &isDynamic);
-
-void serializeRemoveObjectPacket(DataStreamPacket&, const QString &name);
-//There is no deserializeRemoveObjectPacket - no parameters other than id and name
-
-void serializeInvokePacket(DataStreamPacket&, const QString &name, int call, int index, const QVariantList &args, int serialId = -1, int propertyIndex = -1);
-void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantList &args, int &serialId, int &propertyIndex);
-
-void serializeInvokeReplyPacket(DataStreamPacket&, const QString &name, int ackedSerialId, const QVariant &value);
-void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant &value);
-
-//TODO do we need the object name or could we go with an id in backend code, this could be a costly allocation
-void serializePropertyChangePacket(QRemoteObjectSourceBase *source, int signalIndex);
-void deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &value);
-
-// Heartbeat packets
-void serializePingPacket(DataStreamPacket &ds, const QString &name);
-void serializePongPacket(DataStreamPacket &ds, const QString &name);
-
 
 } // namespace QRemoteObjectPackets
 

@@ -116,7 +116,12 @@ QVariant &decodeVariant(QVariant &value, QMetaType metaType)
     return value;
 }
 
-void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, int internalIndex)
+void QDataStreamCodec::serializeProperty(const QRemoteObjectSourceBase *source, int internalIndex)
+{
+    serializeProperty(m_packet, source, internalIndex);
+}
+
+void QDataStreamCodec::serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, int internalIndex)
 {
     const int propertyIndex = source->m_api->sourcePropertyIndex(internalIndex);
     Q_ASSERT (propertyIndex >= 0);
@@ -161,31 +166,31 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
     ds << encodeVariant(value);
 }
 
-void serializeHandshakePacket(DataStreamPacket &ds)
+void QDataStreamCodec::serializeHandshakePacket()
 {
-    ds.setId(Handshake);
-    ds << QString(protocolVersion);
-    ds.finishPacket();
+    m_packet.setId(Handshake);
+    m_packet << QString(protocolVersion);
+    m_packet.finishPacket();
 }
 
-void serializeInitPacket(DataStreamPacket &ds, const QRemoteObjectRootSource *source)
+void QDataStreamCodec::serializeInitPacket(const QRemoteObjectRootSource *source)
 {
-    ds.setId(InitPacket);
-    ds << source->name();
-    serializeProperties(ds, source);
-    ds.finishPacket();
+    m_packet.setId(InitPacket);
+    m_packet << source->name();
+    serializeProperties(source);
+    m_packet.finishPacket();
 }
 
-void serializeProperties(DataStreamPacket &ds, const QRemoteObjectSourceBase *source)
+void QDataStreamCodec::serializeProperties(const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
 
     //Now copy the property data
     const int numProperties = api->propertyCount();
-    ds << quint32(numProperties);  //Number of properties
+    m_packet << quint32(numProperties);  //Number of properties
 
     for (int internalIndex = 0; internalIndex < numProperties; ++internalIndex)
-        serializeProperty(ds, source, internalIndex);
+        serializeProperty(source, internalIndex);
 }
 
 bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
@@ -215,20 +220,20 @@ bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
     return true;
 }
 
-void deserializeInitPacket(QDataStream &in, QVariantList &values)
+void QDataStreamCodec::deserializeInitPacket(QDataStream &in, QVariantList &values)
 {
     const bool success = deserializeQVariantList(in, values);
     Q_ASSERT(success);
     Q_UNUSED(success)
 }
 
-void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectRootSource *source)
+void QDataStreamCodec::serializeInitDynamicPacket(const QRemoteObjectRootSource *source)
 {
-    ds.setId(InitDynamicPacket);
-    ds << source->name();
-    serializeDefinition(ds, source);
-    serializeProperties(ds, source);
-    ds.finishPacket();
+    m_packet.setId(InitDynamicPacket);
+    m_packet << source->name();
+    serializeDefinition(m_packet, source);
+    serializeProperties(source);
+    m_packet.finishPacket();
 }
 
 static ObjectType getObjectType(const QString &typeName)
@@ -447,7 +452,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
     }
 }
 
-void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
+void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
 {
     const SourceApiMap *api = source->m_api;
     const QByteArray desiredClassName(api->typeName().toLatin1());
@@ -557,44 +562,44 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
     }
 }
 
-void serializeAddObjectPacket(DataStreamPacket &ds, const QString &name, bool isDynamic)
+void QDataStreamCodec::serializeAddObjectPacket(const QString &name, bool isDynamic)
 {
-    ds.setId(AddObject);
-    ds << name;
-    ds << isDynamic;
-    ds.finishPacket();
+    m_packet.setId(AddObject);
+    m_packet << name;
+    m_packet << isDynamic;
+    m_packet.finishPacket();
 }
 
-void deserializeAddObjectPacket(QDataStream &ds, bool &isDynamic)
+void QDataStreamCodec::deserializeAddObjectPacket(QDataStream &ds, bool &isDynamic)
 {
     ds >> isDynamic;
 }
 
-void serializeRemoveObjectPacket(DataStreamPacket &ds, const QString &name)
+void QDataStreamCodec::serializeRemoveObjectPacket(const QString &name)
 {
-    ds.setId(RemoveObject);
-    ds << name;
-    ds.finishPacket();
+    m_packet.setId(RemoveObject);
+    m_packet << name;
+    m_packet.finishPacket();
 }
 //There is no deserializeRemoveObjectPacket - no parameters other than id and name
 
-void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, int index, const QVariantList &args, int serialId, int propertyIndex)
+void QDataStreamCodec::serializeInvokePacket(const QString &name, int call, int index, const QVariantList &args, int serialId, int propertyIndex)
 {
-    ds.setId(InvokePacket);
-    ds << name;
-    ds << call;
-    ds << index;
+    m_packet.setId(InvokePacket);
+    m_packet << name;
+    m_packet << call;
+    m_packet << index;
 
-    ds << quint32(args.size());
+    m_packet << quint32(args.size());
     for (const auto &arg : args)
-        ds << encodeVariant(arg);
+        m_packet << encodeVariant(arg);
 
-    ds << serialId;
-    ds << propertyIndex;
-    ds.finishPacket();
+    m_packet << serialId;
+    m_packet << propertyIndex;
+    m_packet.finishPacket();
 }
 
-void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantList &args, int &serialId, int &propertyIndex)
+void QDataStreamCodec::deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantList &args, int &serialId, int &propertyIndex)
 {
     in >> call;
     in >> index;
@@ -605,61 +610,60 @@ void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantLis
     in >> propertyIndex;
 }
 
-void serializeInvokeReplyPacket(DataStreamPacket &ds, const QString &name, int ackedSerialId, const QVariant &value)
+void QDataStreamCodec::serializeInvokeReplyPacket(const QString &name, int ackedSerialId, const QVariant &value)
 {
-    ds.setId(InvokeReplyPacket);
-    ds << name;
-    ds << ackedSerialId;
-    ds << value;
-    ds.finishPacket();
+    m_packet.setId(InvokeReplyPacket);
+    m_packet << name;
+    m_packet << ackedSerialId;
+    m_packet << value;
+    m_packet.finishPacket();
 }
 
-void deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant &value){
+void QDataStreamCodec::deserializeInvokeReplyPacket(QDataStream& in, int &ackedSerialId, QVariant &value){
     in >> ackedSerialId;
     in >> value;
 }
 
-void serializePropertyChangePacket(QRemoteObjectSourceBase *source, int signalIndex)
+void QDataStreamCodec::serializePropertyChangePacket(QRemoteObjectSourceBase *source, int signalIndex)
 {
     int internalIndex = source->m_api->propertyRawIndexFromSignal(signalIndex);
-    auto &ds = source->d->m_packet;
-    ds.setId(PropertyChangePacket);
-    ds << source->name();
-    ds << internalIndex;
-    serializeProperty(ds, source, internalIndex);
-    ds.finishPacket();
+    m_packet.setId(PropertyChangePacket);
+    m_packet << source->name();
+    m_packet << internalIndex;
+    serializeProperty(source, internalIndex);
+    m_packet.finishPacket();
 }
 
-void deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &value)
+void QDataStreamCodec::deserializePropertyChangePacket(QDataStream& in, int &index, QVariant &value)
 {
     in >> index;
     in >> value;
 }
 
-void serializeObjectListPacket(DataStreamPacket &ds, const ObjectInfoList &objects)
+void QDataStreamCodec::serializeObjectListPacket(const ObjectInfoList &objects)
 {
-    ds.setId(ObjectList);
-    ds << objects;
-    ds.finishPacket();
+    m_packet.setId(ObjectList);
+    m_packet << objects;
+    m_packet.finishPacket();
 }
 
-void deserializeObjectListPacket(QDataStream &in, ObjectInfoList &objects)
+void QDataStreamCodec::deserializeObjectListPacket(QDataStream &in, ObjectInfoList &objects)
 {
     in >> objects;
 }
 
-void serializePingPacket(DataStreamPacket &ds, const QString &name)
+void QDataStreamCodec::serializePingPacket(const QString &name)
 {
-    ds.setId(Ping);
-    ds << name;
-    ds.finishPacket();
+    m_packet.setId(Ping);
+    m_packet << name;
+    m_packet.finishPacket();
 }
 
-void serializePongPacket(DataStreamPacket &ds, const QString &name)
+void QDataStreamCodec::serializePongPacket(const QString &name)
 {
-    ds.setId(Pong);
-    ds << name;
-    ds.finishPacket();
+    m_packet.setId(Pong);
+    m_packet << name;
+    m_packet.finishPacket();
 }
 
 QRO_::QRO_(QRemoteObjectSourceBase *source)

@@ -164,6 +164,7 @@ private:
 
     Q_DECLARE_PRIVATE(QRemoteObjectNode)
     friend class QRemoteObjectReplica;
+    friend class QConnectedReplicaImplementation;
 };
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode

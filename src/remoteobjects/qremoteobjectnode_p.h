@@ -162,6 +162,7 @@ public:
     void handleReplicaConnection(const QString &name);
     void handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, IoDeviceBase *connection);
     void initialize();
+    QRemoteObjectPackets::CodecBase *codec(IoDeviceBase *conn);
 private:
     bool checkSignatures(const QByteArray &a, const QByteArray &b);
 
@@ -181,6 +182,7 @@ public:
     QSet<ClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
     QRemoteObjectRegistry *registry;
+    QHash<IoDeviceBase *, QRemoteObjectPackets::CodecBase *> m_codecs;
     int retryInterval;
     QBasicTimer reconnectTimer;
     QRemoteObjectNode::ErrorCode lastError;
@@ -189,7 +191,6 @@ public:
     QVariantList rxArgs;
     QVariant rxValue;
     QRemoteObjectAbstractPersistedStore *persistedStore;
-    bool m_handshakeReceived = false;
     int m_heartbeatInterval = 0;
     QRemoteObjectMetaObjectManager dynamicTypeManager;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)

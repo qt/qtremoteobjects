@@ -1420,7 +1420,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         if (!connection->read(packetType, rxName))
             return;
 
-        if (packetType != Handshake && !m_handshakeReceived) {
+        if (packetType != Handshake && !m_codecs.contains(connection)) {
             qROPrivWarning() << "Expected Handshake, got " << packetType;
             setLastError(QRemoteObjectNode::ProtocolMismatch);
             connection->close();
@@ -1443,12 +1443,13 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 setLastError(QRemoteObjectNode::ProtocolMismatch);
                 connection->close();
             } else {
-                m_handshakeReceived = true;
+                // TODO should have some sort of manager for the codec
+                m_codecs[connection] = new QRemoteObjectPackets::QDataStreamCodec;
             }
             break;
         case QRemoteObjectPacketTypeEnum::ObjectList:
         {
-            deserializeObjectListPacket(connection->stream(), rxObjects);
+            codec(connection)->deserializeObjectListPacket(connection->stream(), rxObjects);
             qROPrivDebug() << "newObjects:" << rxObjects;
             // We need to make sure all of the source objects are in connectedSources before we add connections,
             // otherwise nested QObjects could fail (we want to acquire children before parents, and the object
@@ -1474,7 +1475,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             qROPrivDebug() << "InitPacket-->" << rxName << this;
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             //Use m_rxArgs (a QVariantList to hold the properties QVariantList)
-            deserializeInitPacket(connection->stream(), rxArgs);
+            codec(connection)->deserializeInitPacket(connection->stream(), rxArgs);
             if (rep)
             {
                 handlePointerToQObjectProperties(rep.data(), rxArgs);
@@ -1488,7 +1489,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         {
             qROPrivDebug() << "InitDynamicPacket-->" << rxName << this;
             const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection, connection->stream());
-            deserializeInitPacket(connection->stream(), rxArgs);
+            codec(connection)->deserializeInitPacket(connection->stream(), rxArgs);
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep)
             {
@@ -1519,7 +1520,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::PropertyChangePacket:
         {
             int propertyIndex;
-            deserializePropertyChangePacket(connection->stream(), propertyIndex, rxValue);
+            codec(connection)->deserializePropertyChangePacket(connection->stream(), propertyIndex, rxValue);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 QConnectedReplicaImplementation *connectedRep = nullptr;
@@ -1550,7 +1551,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::InvokePacket:
         {
             int call, index, serialId, propertyIndex;
-            deserializeInvokePacket(connection->stream(), call, index, rxArgs, serialId, propertyIndex);
+            codec(connection)->deserializeInvokePacket(connection->stream(), call, index, rxArgs, serialId, propertyIndex);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 static QVariant null(QMetaType::fromType<QObject *>(), nullptr);
@@ -1585,7 +1586,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::InvokeReplyPacket:
         {
             int ackedSerialId;
-            deserializeInvokeReplyPacket(connection->stream(), ackedSerialId, rxValue);
+            codec(connection)->deserializeInvokeReplyPacket(connection->stream(), ackedSerialId, rxValue);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 qROPrivDebug() << "Received InvokeReplyPacket ack'ing serial id:" << ackedSerialId;
@@ -1748,6 +1749,12 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QRemoteObjectPackets::QRO_>();
     // To support dynamic MODELs, we need to make sure the types are registered
     QAbstractItemModelSourceAdapter::registerTypes();
+}
+
+QRemoteObjectPackets::CodecBase *QRemoteObjectNodePrivate::codec(IoDeviceBase *conn)
+{
+    Q_ASSERT(m_codecs.contains(conn));
+    return m_codecs[conn];
 }
 
 bool QRemoteObjectNodePrivate::checkSignatures(const QByteArray &a, const QByteArray &b)

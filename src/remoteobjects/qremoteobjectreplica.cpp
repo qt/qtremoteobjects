@@ -41,6 +41,7 @@
 #include "qremoteobjectreplica_p.h"
 
 #include "qremoteobjectnode.h"
+#include "qremoteobjectnode_p.h"
 #include "qremoteobjectdynamicreplica.h"
 #include "qremoteobjectpacket_p.h"
 #include "qremoteobjectpendingcall_p.h"
@@ -115,7 +116,7 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
             else if (connectionToSource)
                 connectionToSource->close();
         } else {
-            serializePingPacket(m_packet, m_objectName);
+            codec()->serializePingPacket(m_objectName);
             if (sendCommandWithReply(0).d->serialId == -1) {
                 m_heartbeatTimer.stop();
                 if (clientIo)
@@ -142,7 +143,7 @@ QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
 {
     if (!connectionToSource.isNull()) {
         qCDebug(QT_REMOTEOBJECT) << "Replica deleted: sending RemoveObject to RemoteObjectSource" << m_objectName;
-        serializeRemoveObjectPacket(m_packet, m_objectName);
+        codec()->serializeRemoveObjectPacket(m_objectName);
         sendCommand();
     }
     for (auto prop : m_propertyStorage) {
@@ -193,7 +194,7 @@ bool QConnectedReplicaImplementation::sendCommand()
         return false;
     }
 
-    connectionToSource->write(m_packet.array, m_packet.size);
+    codec()->send(connectionToSource);
     if (m_heartbeatTimer.interval())
         m_heartbeatTimer.start();
     return true;
@@ -321,6 +322,12 @@ void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &v
     qCDebug(QT_REMOTEOBJECT) << "isSet = true for" << m_objectName;
 }
 
+QRemoteObjectPackets::CodecBase *QConnectedReplicaImplementation::codec()
+{
+    const auto priv = m_node->d_func();
+    return priv->codec(connectionToSource.data());
+}
+
 bool QConnectedReplicaImplementation::isInitialized() const
 {
     return  m_state.loadAcquire() > QRemoteObjectReplica::Default && m_state.loadAcquire() != QRemoteObjectReplica::SignatureMismatch;
@@ -370,7 +377,7 @@ void QConnectedReplicaImplementation::_q_send(QMetaObject::Call call, int index,
         if (index < m_methodOffset) //index - m_methodOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid method invocation.  Index not found:" << index << "( offset =" << m_methodOffset << ") object:" << m_objectName << this->m_metaObject->method(index).name();
         else {
-            serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, args);
+            codec()->serializeInvokePacket(m_objectName, call, index - m_methodOffset, args);
             sendCommand();
         }
     } else {
@@ -378,7 +385,7 @@ void QConnectedReplicaImplementation::_q_send(QMetaObject::Call call, int index,
         if (index < m_propertyOffset) //index - m_propertyOffset < 0 is invalid, and can't be resolved on the Source side
             qCWarning(QT_REMOTEOBJECT) << "Skipping invalid property invocation.  Index not found:" << index << "( offset =" << m_propertyOffset << ") object:" << m_objectName << this->m_metaObject->property(index).name();
         else {
-            serializeInvokePacket(m_packet, m_objectName, call, index - m_propertyOffset, args);
+            codec()->serializeInvokePacket(m_objectName, call, index - m_propertyOffset, args);
             sendCommand();
         }
     }
@@ -390,7 +397,7 @@ QRemoteObjectPendingCall QConnectedReplicaImplementation::_q_sendWithReply(QMeta
 
     qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
     int serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 1 : m_curSerialId++);
-    serializeInvokePacket(m_packet, m_objectName, call, index - m_methodOffset, args, serialId);
+    codec()->serializeInvokePacket(m_objectName, call, index - m_methodOffset, args, serialId);
     return sendCommandWithReply(serialId);
 }
 
@@ -490,7 +497,7 @@ void QConnectedReplicaImplementation::setDisconnected()
 
 void QConnectedReplicaImplementation::requestRemoteObjectSource()
 {
-    serializeAddObjectPacket(m_packet, m_objectName, needsDynamicInitialization());
+    codec()->serializeAddObjectPacket(m_objectName, needsDynamicInitialization());
     sendCommand();
 }
 

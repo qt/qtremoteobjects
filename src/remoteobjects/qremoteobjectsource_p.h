@@ -84,10 +84,11 @@ public:
     QByteArray m_objectChecksum;
     QMap<int, QPointer<QRemoteObjectSourceBase>> m_children;
     struct Private {
-        Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root) : m_sourceIo(io), isDynamic(false), root(root) {}
+        Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root);
         QRemoteObjectSourceIo *m_sourceIo;
         QList<IoDeviceBase*> m_listeners;
-        QRemoteObjectPackets::DataStreamPacket m_packet;
+        // Pointer to codec, not owned by Private.  We can assume it is valid.
+        QRemoteObjectPackets::CodecBase *codec;
 
         // Types needed during recursively sending a root to a new listener
         QSet<QString> sentTypes;

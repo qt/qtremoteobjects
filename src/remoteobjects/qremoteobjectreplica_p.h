@@ -173,6 +173,7 @@ public:
 
     void setDynamicMetaObject(const QMetaObject *meta) override;
     void setDynamicProperties(const QVariantList&) override;
+    QRemoteObjectPackets::CodecBase *codec();
     QList<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
     QList<int> m_childIndices;
@@ -181,7 +182,6 @@ public:
     // pending call data
     int m_curSerialId = 1; // 0 is reserved for heartbeat signals
     QHash<int, QRemoteObjectPendingCall> m_pendingCalls;
-    QRemoteObjectPackets::DataStreamPacket m_packet;
     QTimer m_heartbeatTimer;
 };
 

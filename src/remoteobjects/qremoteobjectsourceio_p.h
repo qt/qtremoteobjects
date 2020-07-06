@@ -103,7 +103,8 @@ public:
     QMap<QString, QRemoteObjectRootSource*> m_sourceRoots;
     QHash<IoDeviceBase*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
-    QRemoteObjectPackets::DataStreamPacket m_packet;
+    // TODO should have some sort of manager for the codec
+    QScopedPointer<QRemoteObjectPackets::CodecBase> m_codec{new QRemoteObjectPackets::QDataStreamCodec};
     QString m_rxName;
     QVariantList m_rxArgs;
     QUrl m_address;

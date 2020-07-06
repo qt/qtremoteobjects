@@ -105,9 +105,8 @@ bool QRemoteObjectSourceIo::enableRemoting(QObject *object, const SourceApiMap *
     }
 
     new QRemoteObjectRootSource(object, api, adapter, this);
-    QRemoteObjectPackets::serializeObjectListPacket(m_packet, {QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName(), api->objectSignature()}});
-    for (auto conn : m_connections)
-        conn->write(m_packet.array, m_packet.size);
+    m_codec->serializeObjectListPacket({QRemoteObjectPackets::ObjectInfo{api->name(), api->typeName(), api->objectSignature()}});
+    m_codec->send(m_connections);
     if (const int count = m_connections.size())
         qRODebug(this) << "Wrote new QObjectListPacket for" << api->name() << "to" << count << "connections";
     return true;
@@ -186,13 +185,13 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
 
         switch (packetType) {
         case Ping:
-            serializePongPacket(m_packet, m_rxName);
-            connection->write(m_packet.array, m_packet.size);
+            m_codec->serializePongPacket(m_rxName);
+            m_codec->send(connection);
             break;
         case AddObject:
         {
             bool isDynamic;
-            deserializeAddObjectPacket(connection->stream(), isDynamic);
+            m_codec->deserializeAddObjectPacket(connection->stream(), isDynamic);
             qRODebug(this) << "AddObject" << m_rxName << isDynamic;
             if (m_sourceRoots.contains(m_rxName)) {
                 QRemoteObjectRootSource *root = m_sourceRoots[m_rxName];
@@ -219,7 +218,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         case InvokePacket:
         {
             int call, index, serialId, propertyId;
-            deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId, propertyId);
+            m_codec->deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId, propertyId);
             if (m_rxName == QLatin1String("Registry") && !m_registryMapping.contains(connection)) {
                 const QRemoteObjectSourceLocation loc = m_rxArgs.first().value<QRemoteObjectSourceLocation>();
                 m_registryMapping[connection] = loc.second.hostUrl;
@@ -259,14 +258,14 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                             QRemoteObjectPendingCallWatcher *watcher = new QRemoteObjectPendingCallWatcher(call, connection);
                             QObject::connect(watcher, &QRemoteObjectPendingCallWatcher::finished, connection, [this, serialId, connection, watcher]() {
                                 if (watcher->error() == QRemoteObjectPendingCall::NoError) {
-                                    serializeInvokeReplyPacket(this->m_packet, this->m_rxName, serialId, encodeVariant(watcher->returnValue()));
-                                    connection->write(m_packet.array, m_packet.size);
+                                    m_codec->serializeInvokeReplyPacket(this->m_rxName, serialId, encodeVariant(watcher->returnValue()));
+                                    m_codec->send(connection);
                                 }
                                 watcher->deleteLater();
                             });
                         } else {
-                            serializeInvokeReplyPacket(m_packet, m_rxName, serialId, encodeVariant(returnValue));
-                            connection->write(m_packet.array, m_packet.size);
+                            m_codec->serializeInvokeReplyPacket(m_rxName, serialId, encodeVariant(returnValue));
+                            m_codec->send(connection);
                         }
                     }
                 } else {
@@ -309,16 +308,16 @@ void QRemoteObjectSourceIo::newConnection(IoDeviceBase *conn)
         onServerDisconnect(conn);
     });
 
-    serializeHandshakePacket(m_packet);
-    conn->write(m_packet.array, m_packet.size);
+    m_codec->serializeHandshakePacket();
+    m_codec->send(conn);
 
     QRemoteObjectPackets::ObjectInfoList infos;
     infos.reserve(m_sourceRoots.size());
     for (auto remoteObject : qAsConst(m_sourceRoots)) {
         infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName(), remoteObject->m_api->objectSignature()};
     }
-    serializeObjectListPacket(m_packet, infos);
-    conn->write(m_packet.array, m_packet.size);
+    m_codec->serializeObjectListPacket(infos);
+    m_codec->send(conn);
     qRODebug(this) << "Wrote ObjectList packet from Server" << QStringList(m_sourceRoots.keys());
 }
 
