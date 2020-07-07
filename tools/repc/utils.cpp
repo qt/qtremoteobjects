@@ -107,7 +107,7 @@ namespace JSON
 
 using namespace JSON;
 
-static QByteArray join(const QVector<QByteArray> &array, const QByteArray &separator)
+static QByteArray join(const QByteArrayList &array, const QByteArray &separator)
 {
     QByteArray res;
     const int sz = array.size();
@@ -119,9 +119,9 @@ static QByteArray join(const QVector<QByteArray> &array, const QByteArray &separ
     return res;
 }
 
-static QVector<QByteArray> generateProperties(const QJsonArray &properties, bool isPod=false)
+static QByteArrayList generateProperties(const QJsonArray &properties, bool isPod=false)
 {
-    QVector<QByteArray> ret;
+    QByteArrayList ret;
     for (const QJsonValue prop : properties) {
         if (!isPod && !_Contains(prop, "notify") && !_Bool(prop, "constant")) {
             qWarning() << "Skipping property" << _String(prop, "name") << "because it is non-notifiable & non-constant";
@@ -222,17 +222,17 @@ QByteArray generateClass(const QJsonValue &cls, bool alwaysGenerateClass)
     return ret;
 }
 
-static QVector<PODAttribute> propertyList2PODAttributes(const QJsonArray &list)
+static QList<PODAttribute> propertyList2PODAttributes(const QJsonArray &list)
 {
-    QVector<PODAttribute> ret;
+    QList<PODAttribute> ret;
     for (const QJsonValue prop : list)
         ret.push_back(PODAttribute(_String(prop, "type"), _String(prop, "name")));
     return ret;
 }
 
-QVector<ASTProperty> propertyList2AstProperties(const QJsonArray &list)
+QList<ASTProperty> propertyList2AstProperties(const QJsonArray &list)
 {
-    QVector<ASTProperty> ret;
+    QList<ASTProperty> ret;
     for (const QJsonValue property : list) {
         if (!_Contains(property, "notify") && !_Bool(property, "constant")) {
             qWarning() << "Skipping property" << _String(property, "name") << "because it is non-notifiable & non-constant";
@@ -251,9 +251,9 @@ QVector<ASTProperty> propertyList2AstProperties(const QJsonArray &list)
     return ret;
 }
 
-QVector<ASTFunction> functionList2AstFunctionList(const QJsonArray &list)
+QList<ASTFunction> functionList2AstFunctionList(const QJsonArray &list)
 {
-    QVector<ASTFunction> ret;
+    QList<ASTFunction> ret;
     for (const QJsonValue function : list) {
         ASTFunction func;
         func.name = _String(function, "name");

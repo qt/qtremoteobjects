@@ -75,7 +75,7 @@ struct CacheEntry
     {}
 };
 
-typedef QVector<CacheEntry> CachedRowEntry;
+using CachedRowEntry = QList<CacheEntry>;
 
 template <class Key, class Value>
 struct LRUCache
@@ -274,7 +274,7 @@ struct RequestedData
 {
     IndexList start;
     IndexList end;
-    QVector<int> roles;
+    QList<int> roles;
 };
 
 struct RequestedHeaderData
@@ -298,26 +298,26 @@ class RowWatcher : public QRemoteObjectPendingCallWatcher
 {
     Q_OBJECT
 public:
-    RowWatcher(IndexList _start, IndexList _end, QVector<int> _roles, const QRemoteObjectPendingReply<DataEntries> &reply)
+    RowWatcher(IndexList _start, IndexList _end, QList<int> _roles, const QRemoteObjectPendingReply<DataEntries> &reply)
         : QRemoteObjectPendingCallWatcher(reply),
           start(_start),
           end(_end),
           roles(_roles) {}
     IndexList start, end;
-    QVector<int> roles;
+    QList<int> roles;
 };
 
 class HeaderWatcher : public QRemoteObjectPendingCallWatcher
 {
     Q_OBJECT
 public:
-    HeaderWatcher(QVector<Qt::Orientation> _orientations, QVector<int> _sections, QVector<int> _roles, const QRemoteObjectPendingReply<QVariantList> &reply)
+    HeaderWatcher(QList<Qt::Orientation> _orientations, QList<int> _sections, QList<int> _roles, const QRemoteObjectPendingReply<QVariantList> &reply)
         : QRemoteObjectPendingCallWatcher(reply),
           orientations(_orientations),
           sections(_sections),
           roles(_roles) {}
-    QVector<Qt::Orientation> orientations;
-    QVector<int> sections, roles;
+    QList<Qt::Orientation> orientations;
+    QList<int> sections, roles;
 };
 
 class QAbstractItemModelReplicaImplementation : public QRemoteObjectReplica
@@ -325,7 +325,7 @@ class QAbstractItemModelReplicaImplementation : public QRemoteObjectReplica
     Q_OBJECT
     //TODO Use an input name for the model on the Replica side
     Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "ServerModelAdapter")
-    Q_PROPERTY(QVector<int> availableRoles READ availableRoles NOTIFY availableRolesChanged)
+    Q_PROPERTY(QList<int> availableRoles READ availableRoles NOTIFY availableRolesChanged)
     Q_PROPERTY(QIntHash roleNames READ roleNames)
 public:
     QAbstractItemModelReplicaImplementation();
@@ -334,10 +334,10 @@ public:
     void initialize() override;
     static void registerMetatypes();
 
-    inline const QVector<int> &availableRoles() const
+    inline const QList<int> &availableRoles() const
     {
         if (m_availableRoles.isEmpty())
-            m_availableRoles = propAsVariant(0).value<QVector<int> >();
+            m_availableRoles = propAsVariant(0).value<QList<int>>();
         return m_availableRoles;
     }
 
@@ -348,11 +348,11 @@ public:
     }
 
     void setModel(QAbstractItemModelReplica *model);
-    bool clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles);
+    bool clearCache(const IndexList &start, const IndexList &end, const QList<int> &roles);
 
 Q_SIGNALS:
     void availableRolesChanged();
-    void dataChanged(IndexList topLeft, IndexList bottomRight, QVector<int> roles);
+    void dataChanged(IndexList topLeft, IndexList bottomRight, QList<int> roles);
     void rowsInserted(IndexList parent, int first, int last);
     void rowsRemoved(IndexList parent, int first, int last);
     void rowsMoved(IndexList parent, int start, int end, IndexList destination, int row);
@@ -369,16 +369,16 @@ public Q_SLOTS:
         __repc_args << QVariant::fromValue(parentList);
         return QRemoteObjectPendingReply<QSize>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
-    QRemoteObjectPendingReply<DataEntries> replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
+    QRemoteObjectPendingReply<DataEntries> replicaRowRequest(IndexList start, IndexList end, QList<int> roles)
     {
-        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaRowRequest(IndexList,IndexList,QVector<int>)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaRowRequest(IndexList,IndexList,QList<int>)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(start) << QVariant::fromValue(end) << QVariant::fromValue(roles);
         return QRemoteObjectPendingReply<DataEntries>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
-    QRemoteObjectPendingReply<QVariantList> replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles)
+    QRemoteObjectPendingReply<QVariantList> replicaHeaderRequest(QList<Qt::Orientation> orientations, QList<int> sections, QList<int> roles)
     {
-        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaHeaderRequest(QVector<Qt::Orientation>,QVector<int>,QVector<int>)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaHeaderRequest(QList<Qt::Orientation>,QList<int>,QList<int>)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(orientations) << QVariant::fromValue(sections) << QVariant::fromValue(roles);
         return QRemoteObjectPendingReply<QVariantList>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
@@ -397,15 +397,15 @@ public Q_SLOTS:
         __repc_args << QVariant::fromValue(index) << QVariant::fromValue(value) << QVariant::fromValue(role);
         send(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args);
     }
-    QRemoteObjectPendingReply<MetaAndDataEntries> replicaCacheRequest(size_t size, QVector<int> roles)
+    QRemoteObjectPendingReply<MetaAndDataEntries> replicaCacheRequest(size_t size, QList<int> roles)
     {
-        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaCacheRequest(size_t,QVector<int>)");
+        static int __repc_index = QAbstractItemModelReplicaImplementation::staticMetaObject.indexOfSlot("replicaCacheRequest(size_t,QList<int>)");
         QVariantList __repc_args;
         __repc_args << QVariant::fromValue(size) << QVariant::fromValue(roles);
         return QRemoteObjectPendingReply<MetaAndDataEntries>(sendWithReply(QMetaObject::InvokeMetaMethod, __repc_index, __repc_args));
     }
     void onHeaderDataChanged(Qt::Orientation orientation, int first, int last);
-    void onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles);
+    void onDataChanged(const IndexList &start, const IndexList &end, const QList<int> &roles);
     void onRowsInserted(const IndexList &parent, int start, int end);
     void onRowsRemoved(const IndexList &parent, int start, int end);
     void onColumnsInserted(const IndexList &parent, int start, int end);
@@ -421,11 +421,11 @@ public Q_SLOTS:
     void handleModelResetDone(QRemoteObjectPendingCallWatcher *watcher);
     void handleSizeDone(QRemoteObjectPendingCallWatcher *watcher);
     void onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
-    void fillCache(const IndexValuePair &pair,const QVector<int> &roles);
+    void fillCache(const IndexValuePair &pair,const QList<int> &roles);
 
 public:
     QScopedPointer<QItemSelectionModel> m_selectionModel;
-    QVector<CacheEntry> m_headerData[2];
+    QList<CacheEntry> m_headerData[2];
 
     CacheData m_rootItem;
     inline CacheData* cacheData(const QModelIndex &index) const {
@@ -461,14 +461,14 @@ public:
     void initializeModelConnections();
 
     bool m_initDone = false;
-    QVector<RequestedData> m_requestedData;
-    QVector<RequestedHeaderData> m_requestedHeaderData;
-    QVector<QRemoteObjectPendingCallWatcher*> m_pendingRequests;
+    QList<RequestedData> m_requestedData;
+    QList<RequestedHeaderData> m_requestedHeaderData;
+    QList<QRemoteObjectPendingCallWatcher*> m_pendingRequests;
     QAbstractItemModelReplica *q;
-    mutable QVector<int> m_availableRoles;
+    mutable QList<int> m_availableRoles;
     std::unordered_set<CacheData*> m_activeParents;
     QtRemoteObjects::InitialAction m_initialAction;
-    QVector<int> m_initialFetchRolesHint;
+    QList<int> m_initialFetchRolesHint;
 };
 
 QT_END_NAMESPACE

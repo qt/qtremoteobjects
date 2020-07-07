@@ -199,7 +199,7 @@ bool QConnectedReplicaImplementation::sendCommand()
     return true;
 }
 
-QVector<int> QConnectedReplicaImplementation::childIndices() const
+QList<int> QConnectedReplicaImplementation::childIndices() const
 {
     return m_childIndices;
 }

@@ -128,7 +128,7 @@ public:
     QStringList instances(const QString &typeName) const;
 
     QRemoteObjectDynamicReplica *acquireDynamic(const QString &name);
-    QAbstractItemModelReplica *acquireModel(const QString &name, QtRemoteObjects::InitialAction action = QtRemoteObjects::FetchRootSize, const QVector<int> &rolesHint = {});
+    QAbstractItemModelReplica *acquireModel(const QString &name, QtRemoteObjects::InitialAction action = QtRemoteObjects::FetchRootSize, const QList<int> &rolesHint = {});
     QUrl registryUrl() const;
     virtual bool setRegistryUrl(const QUrl &registryAddress);
     bool waitForRegistry(int timeout = 30000);
@@ -182,7 +182,7 @@ public:
         return enableRemoting(object, api);
     }
     Q_INVOKABLE bool enableRemoting(QObject *object, const QString &name = QString());
-    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel = nullptr);
+    bool enableRemoting(QAbstractItemModel *model, const QString &name, const QList<int> roles, QItemSelectionModel *selectionModel = nullptr);
     Q_INVOKABLE bool disableRemoting(QObject *remoteObject);
     void addHostSideConnection(QIODevice *ioDevice);
 

@@ -99,7 +99,7 @@ inline QDataStream& operator>>(QDataStream &stream, ObjectInfo &info)
     return stream >> info.name >> info.typeName >> info.signature;
 }
 
-typedef QVector<ObjectInfo> ObjectInfoList;
+using ObjectInfoList = QList<ObjectInfo>;
 
 enum class ObjectType : quint8 { CLASS, MODEL, GADGET };
 Q_ENUM_NS(ObjectType)

@@ -51,9 +51,9 @@
 // We mean it.
 //
 
-#include <QtCore/qobject.h>
+#include <QtCore/qlist.h>
 #include <QtCore/qmetaobject.h>
-#include <QtCore/qvector.h>
+#include <QtCore/qobject.h>
 #include <QtCore/qpointer.h>
 #include "qremoteobjectsource.h"
 #include "qremoteobjectpacket_p.h"
@@ -86,7 +86,7 @@ public:
     struct Private {
         Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root) : m_sourceIo(io), isDynamic(false), root(root) {}
         QRemoteObjectSourceIo *m_sourceIo;
-        QVector<IoDeviceBase*> m_listeners;
+        QList<IoDeviceBase*> m_listeners;
         QRemoteObjectPackets::DataStreamPacket m_packet;
 
         // Types needed during recursively sending a root to a new listener
@@ -167,14 +167,14 @@ public:
     int signalParameterCount(int index) const override { return parameterCount(m_signals.at(index)); }
     int signalParameterType(int sigIndex, int paramIndex) const override { return parameterType(m_signals.at(sigIndex), paramIndex); }
     const QByteArray signalSignature(int index) const override { return signature(m_signals.at(index)); }
-    QList<QByteArray> signalParameterNames(int index) const override;
+    QByteArrayList signalParameterNames(int index) const override;
 
     int methodParameterCount(int index) const override { return parameterCount(m_methods.at(index)); }
     int methodParameterType(int methodIndex, int paramIndex) const override { return parameterType(m_methods.at(methodIndex), paramIndex); }
     const QByteArray methodSignature(int index) const override { return signature(m_methods.at(index)); }
     QMetaMethod::MethodType methodType(int index) const override;
     const QByteArray typeName(int index) const override;
-    QList<QByteArray> methodParameterNames(int index) const override;
+    QByteArrayList methodParameterNames(int index) const override;
 
     int propertyIndexFromSignal(int index) const override
     {
@@ -207,10 +207,10 @@ public:
     QString m_typeName;
     int m_enumCount;
     int m_enumOffset;
-    QVector<int> m_properties;
-    QVector<int> m_signals;
-    QVector<int> m_methods;
-    QVector<int> m_propertyAssociatedWithSignal;
+    QList<int> m_properties;
+    QList<int> m_signals;
+    QList<int> m_methods;
+    QList<int> m_propertyAssociatedWithSignal;
     const QMetaObject *m_metaObject;
     mutable QMetaMethod m_cachedMetamethod;
     mutable int m_cachedMetamethodIndex;

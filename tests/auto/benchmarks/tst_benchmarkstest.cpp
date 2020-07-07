@@ -252,7 +252,7 @@ void BenchmarksTest::benchModelLinearAccess()
         QScopedPointer<QAbstractItemModelReplica> model(localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel")));
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
-        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles) {
             for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                 // we're assuming that the view will try use the sent data,
                 // therefore we're not optimizing the code
@@ -325,7 +325,7 @@ void BenchmarksTest::benchModelRandomAccess()
         model->setRootCacheSize(5000); // we need to make room for all 5000 rows that we'll use
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
-        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles) {
             for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                 // we're assuming that the view will try use the sent data,
                 // therefore we're not optimizing the code

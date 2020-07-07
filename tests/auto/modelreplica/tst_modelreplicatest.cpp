@@ -76,7 +76,7 @@ void ModelreplicaTest::basicFunctions()
     QVERIFY(replica->waitForSource(300));
     QVERIFY(tracksSpy.wait());
     // Rep file only uses display role
-    QCOMPARE(QVector<int>{Qt::DisplayRole}, replica->tracks()->availableRoles());
+    QCOMPARE(QList<int>{Qt::DisplayRole}, replica->tracks()->availableRoles());
 
     QCOMPARE(model->rowCount(), replica->tracks()->rowCount());
     for (int i = 0; i < replica->tracks()->rowCount(); i++)

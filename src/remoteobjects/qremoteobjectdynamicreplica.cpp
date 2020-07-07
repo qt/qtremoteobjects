@@ -178,7 +178,6 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
         } else {
             // method relay from Replica to Source
             const QMetaMethod mm = impl->m_metaObject->method(saved_id);
-
             const int nParam = mm.parameterCount();
             QVariantList args;
             args.reserve(nParam);

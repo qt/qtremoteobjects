@@ -69,7 +69,7 @@
 #include <rep_grammar_p.h>
 #include <qregexparser.h>
 #include <QStringList>
-#include <QVector>
+#include <QList>
 #include <QRegularExpression>
 
 QT_BEGIN_NAMESPACE
@@ -138,7 +138,7 @@ struct ASTFunction
 
     QString returnType;
     QString name;
-    QVector<ASTDeclaration> params;
+    QList<ASTDeclaration> params;
 };
 Q_DECLARE_TYPEINFO(ASTFunction, Q_MOVABLE_TYPE);
 
@@ -162,7 +162,7 @@ struct ASTEnum
     explicit ASTEnum(const QString &name = QString());
 
     QString name;
-    QVector<ASTEnumParam> params;
+    QList<ASTEnumParam> params;
     bool isSigned;
     int max;
 };
@@ -183,7 +183,7 @@ struct ASTModel
 {
     ASTModel(int index = -1) : propertyIndex(index) {}
 
-    QVector<ASTModelRole> roles;
+    QList<ASTModelRole> roles;
     int propertyIndex;
 };
 Q_DECLARE_TYPEINFO(ASTModel, Q_MOVABLE_TYPE);
@@ -197,13 +197,13 @@ struct ASTClass
     bool hasPointerObjects() const;
 
     QString name;
-    QVector<ASTProperty> properties;
-    QVector<ASTFunction> signalsList;
-    QVector<ASTFunction> slotsList;
-    QVector<ASTEnum> enums;
+    QList<ASTProperty> properties;
+    QList<ASTFunction> signalsList;
+    QList<ASTFunction> slotsList;
+    QList<ASTEnum> enums;
     bool hasPersisted;
-    QVector<ASTModel> modelMetadata;
-    QVector<int> subClassPropertyIndices;
+    QList<ASTModel> modelMetadata;
+    QList<int> subClassPropertyIndices;
 };
 Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
 
@@ -223,17 +223,17 @@ Q_DECLARE_TYPEINFO(PODAttribute, Q_MOVABLE_TYPE);
 struct POD
 {
     QString name;
-    QVector<PODAttribute> attributes;
+    QList<PODAttribute> attributes;
 };
 Q_DECLARE_TYPEINFO(POD, Q_MOVABLE_TYPE);
 
 // The AST representation of a .rep file
 struct AST
 {
-    QVector<ASTClass> classes;
-    QVector<POD> pods;
-    QVector<ASTEnum> enums;
-    QVector<QString> enumUses;
+    QList<ASTClass> classes;
+    QList<POD> pods;
+    QList<ASTEnum> enums;
+    QList<QString> enumUses;
     QStringList preprocessorDirectives;
 };
 Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);

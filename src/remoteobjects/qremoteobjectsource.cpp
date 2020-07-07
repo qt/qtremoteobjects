@@ -100,7 +100,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
 
     const int nChildren = api->m_models.count() + api->m_subclasses.count();
     if (nChildren > 0) {
-        QVector<int> roles;
+        QList<int> roles;
         const int numProperties = api->propertyCount();
         int modelIndex = 0, subclassIndex = 0;
         for (int i = 0; i < numProperties; ++i) {
@@ -514,7 +514,7 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
     m_objectSignature = QtPrivate::qtro_classinfo_signature(metaObject);
 }
 
-QList<QByteArray> DynamicApiMap::signalParameterNames(int index) const
+QByteArrayList DynamicApiMap::signalParameterNames(int index) const
 {
     const int objectIndex = m_signals.at(index);
     checkCache(objectIndex);
@@ -553,7 +553,7 @@ const QByteArray DynamicApiMap::typeName(int index) const
     return m_cachedMetamethod.typeName();
 }
 
-QList<QByteArray> DynamicApiMap::methodParameterNames(int index) const
+QByteArrayList DynamicApiMap::methodParameterNames(int index) const
 {
     const int objectIndex = m_methods.at(index);
     checkCache(objectIndex);

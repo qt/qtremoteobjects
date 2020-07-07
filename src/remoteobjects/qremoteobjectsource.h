@@ -257,13 +257,13 @@ public:
     virtual int signalParameterCount(int index) const = 0;
     virtual int signalParameterType(int sigIndex, int paramIndex) const = 0;
     virtual const QByteArray signalSignature(int index) const = 0;
-    virtual QList<QByteArray> signalParameterNames(int index) const = 0;
+    virtual QByteArrayList signalParameterNames(int index) const = 0;
     virtual int methodParameterCount(int index) const = 0;
     virtual int methodParameterType(int methodIndex, int paramIndex) const = 0;
     virtual const QByteArray methodSignature(int index) const = 0;
     virtual QMetaMethod::MethodType methodType(int index) const = 0;
     virtual const QByteArray typeName(int index) const = 0;
-    virtual QList<QByteArray> methodParameterNames(int index) const = 0;
+    virtual QByteArrayList methodParameterNames(int index) const = 0;
     virtual int propertyIndexFromSignal(int index) const = 0;
     virtual int propertyRawIndexFromSignal(int index) const = 0;
     virtual QByteArray objectSignature() const = 0;
@@ -271,8 +271,8 @@ public:
     virtual bool isAdapterSignal(int) const { return false; }
     virtual bool isAdapterMethod(int) const { return false; }
     virtual bool isAdapterProperty(int) const { return false; }
-    QVector<ModelInfo> m_models;
-    QVector<SourceApiMap *> m_subclasses;
+    QList<ModelInfo> m_models;
+    QList<SourceApiMap *> m_subclasses;
 };
 
 QT_END_NAMESPACE

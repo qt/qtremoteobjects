@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     };
     sourceModel.setItemRoleNames(roleNames);
 
-    QVector<int> roles;
+    QList<int> roles;
     roles << Qt::DisplayRole << Qt::BackgroundRole;
 
     QWebSocketServer webSockServer{QStringLiteral("WS QtRO"), QWebSocketServer::NonSecureMode};

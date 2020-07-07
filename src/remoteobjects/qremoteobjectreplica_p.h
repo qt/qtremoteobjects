@@ -57,10 +57,9 @@
 
 #include "qremoteobjectpacket_p.h"
 
-#include <QtCore/qpointer.h>
-#include <QtCore/qvector.h>
-#include <QtCore/qdatastream.h>
 #include <QtCore/qcompilerdetection.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qpointer.h>
 #include <QtCore/qtimer.h>
 
 QT_BEGIN_NAMESPACE
@@ -158,7 +157,7 @@ public:
     bool isShortCircuit() const final { return false; }
     bool isInitialized() const override;
     bool waitForSource(int timeout) override;
-    QVector<int> childIndices() const;
+    QList<int> childIndices() const;
     void initialize(QVariantList &values);
     void configurePrivate(QRemoteObjectReplica *) override;
     void requestRemoteObjectSource();
@@ -174,9 +173,9 @@ public:
 
     void setDynamicMetaObject(const QMetaObject *meta) override;
     void setDynamicProperties(const QVariantList&) override;
-    QVector<QRemoteObjectReplica *> m_parentsNeedingConnect;
+    QList<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
-    QVector<int> m_childIndices;
+    QList<int> m_childIndices;
     QPointer<IoDeviceBase> connectionToSource;
 
     // pending call data

@@ -40,16 +40,15 @@
 #ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
 #define QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
 
-#include <QtCore/qdatastream.h>
-#include <QtCore/qlist.h>
-#include <QtCore/qvector.h>
-#include <QtCore/qpair.h>
-#include <QtCore/qvariant.h>
 #include <QtCore/qabstractitemmodel.h>
-#include <QtCore/qitemselectionmodel.h>
-#include <QtCore/qsize.h>
+#include <QtCore/qdatastream.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qitemselectionmodel.h>
+#include <QtCore/qlist.h>
 #include <QtCore/qnamespace.h>
+#include <QtCore/qpair.h>
+#include <QtCore/qsize.h>
+#include <QtCore/qvariant.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
 QT_BEGIN_NAMESPACE
@@ -88,7 +87,7 @@ struct IndexValuePair
     QVariantList data;
     Qt::ItemFlags flags;
     bool hasChildren;
-    QVector<IndexValuePair> children;
+    QList<IndexValuePair> children;
     QSize size;
 };
 
@@ -97,12 +96,12 @@ struct DataEntries
     inline bool operator==(const DataEntries &other) const { return data == other.data; }
     inline bool operator!=(const DataEntries &other) const { return !(*this == other); }
 
-    QVector<IndexValuePair> data;
+    QList<IndexValuePair> data;
 };
 
 struct MetaAndDataEntries : DataEntries
 {
-    QVector<int> roles;
+    QList<int> roles;
     QSize size;
 };
 

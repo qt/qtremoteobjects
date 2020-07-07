@@ -29,9 +29,9 @@
 #ifndef REPCODEGENERATOR_H
 #define REPCODEGENERATOR_H
 
+#include <QList>
 #include <QSet>
 #include <QString>
-#include <QVector>
 
 QT_BEGIN_NAMESPACE
 struct AST;
@@ -63,14 +63,14 @@ private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
     QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
     QString generateMetaTypeRegistrationForPending(const QSet<QString> &metaTypes);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
+    void generateStreamOperatorsForEnums(QTextStream &out, const QList<QString> &enums);
 
     void generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride = true);
     void generatePOD(QTextStream &out, const POD &pod);
-    void generateENUMs(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className);
-    void generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, bool generateQENUM=true);
-    void generateStreamOperatorsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className);
-    void generateConversionFunctionsForEnums(QTextStream &out, const QVector<ASTEnum> &enums);
+    void generateENUMs(QTextStream &out, const QList<ASTEnum> &enums, const QString &className);
+    void generateDeclarationsForEnums(QTextStream &out, const QList<ASTEnum> &enums, bool generateQENUM=true);
+    void generateStreamOperatorsForEnums(QTextStream &out, const QList<ASTEnum> &enums, const QString &className);
+    void generateConversionFunctionsForEnums(QTextStream &out, const QList<ASTEnum> &enums);
     void generateENUM(QTextStream &out, const ASTEnum &en);
     QString formatQPropertyDeclarations(const POD &pod);
     QString formatConstructors(const POD &pod);

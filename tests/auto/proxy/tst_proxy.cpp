@@ -224,7 +224,7 @@ void ProxyTest::testProxy()
         QVERIFY(tracksSpy.count() || tracksSpy.wait());
         // Rep file only uses display role, but proxy doesn't forward that yet
         if (!useProxy)
-            QCOMPARE(rep->tracks()->availableRoles(), QVector<int>{Qt::DisplayRole});
+            QCOMPARE(rep->tracks()->availableRoles(), QList<int> { Qt::DisplayRole });
         else {
             const auto &availableRolesVec = rep->tracks()->availableRoles();
             QSet<int> availableRoles;
@@ -236,8 +236,8 @@ void ProxyTest::testProxy()
                 roles.insert(it.key());
             QCOMPARE(availableRoles, roles);
         }
-        QSignalSpy dataSpy(rep->tracks(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
-        QVector<QModelIndex> pending;
+        QSignalSpy dataSpy(rep->tracks(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QList<int>)));
+        QList<QModelIndex> pending;
         QTRY_COMPARE(rep->tracks()->rowCount(), model.rowCount());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
         {
@@ -299,7 +299,7 @@ void ProxyTest::testProxy()
         // Verify tracks data
         // Rep file only uses display role, but proxy doesn't forward that yet
         if (!useProxy)
-            QCOMPARE(tracksReplica->availableRoles(), QVector<int>{Qt::DisplayRole});
+            QCOMPARE(tracksReplica->availableRoles(), QList<int> { Qt::DisplayRole });
         else {
             const auto &availableRolesVec = tracksReplica->availableRoles();
             QSet<int> availableRoles;
@@ -312,8 +312,8 @@ void ProxyTest::testProxy()
             QCOMPARE(availableRoles, roles);
         }
         QTRY_COMPARE(tracksReplica->isInitialized(), true);
-        QSignalSpy dataSpy(tracksReplica, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
-        QVector<QModelIndex> pending;
+        QSignalSpy dataSpy(tracksReplica, SIGNAL(dataChanged(QModelIndex,QModelIndex,QList<int>)));
+        QList<QModelIndex> pending;
         QTRY_COMPARE(tracksReplica->rowCount(), model.rowCount());
         for (int i = 0; i < tracksReplica->rowCount(); i++)
         {
@@ -436,7 +436,7 @@ void ProxyTest::testTopLevelModel()
 
     QStringListModel model;
     model.setStringList(QStringList() << "Track1" << "Track2" << "Track3");
-    host.enableRemoting(&model, "trackList", QVector<int>() << Qt::DisplayRole);
+    host.enableRemoting(&model, "trackList", QList<int> { Qt::DisplayRole });
 
     QRemoteObjectHost proxyNode;
     SET_NODE_NAME(proxyNode);

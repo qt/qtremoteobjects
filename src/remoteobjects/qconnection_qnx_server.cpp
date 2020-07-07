@@ -150,7 +150,7 @@ void QQnxNativeServerPrivate::thread_func()
 {
     struct _msg_info msg_info;
     recv_msgs recv_buf;
-    QVector<iov_t> resp_repeat_iov(5);
+    QList<iov_t> resp_repeat_iov(5);
 
     qCDebug(QT_REMOTEOBJECT) << "Server thread_func running";
 
@@ -324,7 +324,7 @@ void QQnxNativeServerPrivate::thread_func()
 
             int len_taken = 0;
             const int to_send = msg_info.dstmsglen - sizeof(int); //Exclude the buffer count
-            QVector<QByteArray> qba_array;
+            QByteArrayList qba_array;
             io->d_func()->obLock.lockForWrite(); //NAR (Not-An-Error)
             qCDebug(QT_REMOTEOBJECT) << "server received SOURCE_TX_RESP_REPEAT with length" << msg_info.dstmsglen << "Available:" << io->d_func()->obuffer.size();
             while (len_taken != to_send)

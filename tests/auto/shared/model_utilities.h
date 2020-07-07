@@ -52,7 +52,7 @@ struct WaitForDataChanged
         QModelIndex bottomRight;
     };
 
-    WaitForDataChanged(const QVector<QModelIndex> &pending, QSignalSpy *spy) : m_pending(pending), m_spy(spy){}
+    WaitForDataChanged(const QList<QModelIndex> &pending, QSignalSpy *spy) : m_pending(pending), m_spy(spy){}
     bool wait()
     {
         Q_ASSERT(m_spy);
@@ -82,7 +82,7 @@ struct WaitForDataChanged
         if (signal.size() != 3)
             return pair;
         const static QMetaType indexType = QMetaType::fromType<QModelIndex>();
-        const static QMetaType vectorType = QMetaType::fromType<QVector<int>>();
+        const static QMetaType vectorType = QMetaType::fromType<QList<int>>();
         const bool matchingTypes = signal[0].metaType() == indexType
                                    && signal[1].metaType() == indexType
                                    && signal[2].metaType() == vectorType;
@@ -113,7 +113,7 @@ struct WaitForDataChanged
                         m_pending.end());
     }
 
-    QVector<QModelIndex> m_pending;
+    QList<QModelIndex> m_pending;
     QSignalSpy *m_spy;
 };
 

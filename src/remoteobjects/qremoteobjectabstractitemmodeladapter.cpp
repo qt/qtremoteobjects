@@ -42,7 +42,7 @@
 #include <QtCore/qitemselectionmodel.h>
 
 // consider evaluating performance difference with item data
-inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model, const QVector<int> &roles)
+inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model, const QList<int> &roles)
 {
     QVariantList result;
     result.reserve(roles.size());
@@ -51,12 +51,12 @@ inline QVariantList collectData(const QModelIndex &index, const QAbstractItemMod
     return result;
 }
 
-inline QVector<int> filterRoles(const QVector<int> &roles, const QVector<int> &availableRoles)
+inline QList<int> filterRoles(const QList<int> &roles, const QList<int> &availableRoles)
 {
     if (roles.isEmpty())
         return availableRoles;
 
-    QVector<int> neededRoles;
+    QList<int> neededRoles;
     for (int inRole : roles) {
         for (int availableRole : availableRoles)
             if (inRole == availableRole) {
@@ -67,14 +67,14 @@ inline QVector<int> filterRoles(const QVector<int> &roles, const QVector<int> &a
     return neededRoles;
 }
 
-QAbstractItemModelSourceAdapter::QAbstractItemModelSourceAdapter(QAbstractItemModel *obj, QItemSelectionModel *sel, const QVector<int> &roles)
+QAbstractItemModelSourceAdapter::QAbstractItemModelSourceAdapter(QAbstractItemModel *obj, QItemSelectionModel *sel, const QList<int> &roles)
     : QObject(obj),
       m_model(obj),
       m_availableRoles(roles)
 {
     QAbstractItemModelSourceAdapter::registerTypes();
     m_selectionModel = sel;
-    connect(m_model, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)), this, SLOT(sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    connect(m_model, SIGNAL(dataChanged(QModelIndex,QModelIndex,QList<int>)), this, SLOT(sourceDataChanged(QModelIndex,QModelIndex,QList<int>)));
     connect(m_model, SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(sourceRowsInserted(QModelIndex,int,int)));
     connect(m_model, SIGNAL(columnsInserted(QModelIndex,int,int)), this, SLOT(sourceColumnsInserted(QModelIndex,int,int)));
     connect(m_model, SIGNAL(rowsRemoved(QModelIndex,int,int)), this, SLOT(sourceRowsRemoved(QModelIndex,int,int)));
@@ -92,7 +92,7 @@ void QAbstractItemModelSourceAdapter::registerTypes()
     alreadyRegistered = true;
     qRegisterMetaType<QAbstractItemModel*>();
     qRegisterMetaType<Qt::Orientation>();
-    qRegisterMetaType<QVector<Qt::Orientation>>();
+    qRegisterMetaType<QList<Qt::Orientation>>();
     qRegisterMetaType<ModelIndex>();
     qRegisterMetaType<IndexList>();
     qRegisterMetaType<DataEntries>();
@@ -126,7 +126,7 @@ void QAbstractItemModelSourceAdapter::replicaSetData(const IndexList &index, con
     Q_UNUSED(result);
 }
 
-DataEntries QAbstractItemModelSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QVector<int> roles)
+DataEntries QAbstractItemModelSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QList<int> roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << "Requested rows" << "start=" << start << "end=" << end << "roles=" << roles;
 
@@ -169,7 +169,7 @@ DataEntries QAbstractItemModelSourceAdapter::replicaRowRequest(IndexList start, 
     return entries;
 }
 
-MetaAndDataEntries QAbstractItemModelSourceAdapter::replicaCacheRequest(size_t size, const QVector<int> &roles)
+MetaAndDataEntries QAbstractItemModelSourceAdapter::replicaCacheRequest(size_t size, const QList<int> &roles)
 {
     MetaAndDataEntries res;
     res.roles = roles.isEmpty() ? m_availableRoles : roles;
@@ -180,7 +180,7 @@ MetaAndDataEntries QAbstractItemModelSourceAdapter::replicaCacheRequest(size_t s
     return res;
 }
 
-QVariantList QAbstractItemModelSourceAdapter::replicaHeaderRequest(QVector<Qt::Orientation> orientations, QVector<int> sections, QVector<int> roles)
+QVariantList QAbstractItemModelSourceAdapter::replicaHeaderRequest(QList<Qt::Orientation> orientations, QList<int> sections, QList<int> roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "orientations=" << orientations << "sections=" << sections << "roles=" << roles;
     QVariantList data;
@@ -198,9 +198,9 @@ void QAbstractItemModelSourceAdapter::replicaSetCurrentIndex(IndexList index, QI
         m_selectionModel->setCurrentIndex(toQModelIndex(index, m_model), command);
 }
 
-void QAbstractItemModelSourceAdapter::sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QVector<int> & roles) const
+void QAbstractItemModelSourceAdapter::sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QList<int> & roles) const
 {
-    QVector<int> neededRoles = filterRoles(roles, availableRoles());
+    QList<int> neededRoles = filterRoles(roles, availableRoles());
     if (neededRoles.isEmpty()) {
         qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "Needed roles is empty!";
         return;
@@ -244,9 +244,9 @@ void QAbstractItemModelSourceAdapter::sourceCurrentChanged(const QModelIndex & c
     emit currentChanged(currentIndex, previousIndex);
 }
 
-QVector<IndexValuePair> QAbstractItemModelSourceAdapter::fetchTree(const QModelIndex &parent, size_t &size, const QVector<int> &roles)
+QList<IndexValuePair> QAbstractItemModelSourceAdapter::fetchTree(const QModelIndex &parent, size_t &size, const QList<int> &roles)
 {
-    QVector<IndexValuePair> entries;
+    QList<IndexValuePair> entries;
     const int rowCount = m_model->rowCount(parent);
     const int columnCount = m_model->columnCount(parent);
     if (!columnCount || !rowCount)

@@ -123,8 +123,8 @@ void tst_Parser::testProperties_data()
     QTest::newRow("defaultWithValueWhitespaces") << "PROP(  int foo  = 1 )" << "int" << "foo" << "1" << ASTProperty::ReadPush << false;
     QTest::newRow("readonlyWithValueWhitespaces") << "PROP(  int foo = 1 READONLY  )" << "int" << "foo" << "1" << ASTProperty::ReadOnly << false;
     QTest::newRow("constantWithValueWhitespaces") << "PROP(  int foo = 1 CONSTANT )" << "int" << "foo" << "1" << ASTProperty::Constant << false;
-    QTest::newRow("templatetype") << "PROP(QVector<int> bar)" << "QVector<int>" << "bar" << QString() << ASTProperty::ReadPush << false;
-    QTest::newRow("nested templatetype") << "PROP(QMap<int, QVector<int> > bar)" << "QMap<int, QVector<int> >" << "bar" << QString() << ASTProperty::ReadPush << false;
+    QTest::newRow("templatetype") << "PROP(QList<int> bar)" << "QList<int>" << "bar" << QString() << ASTProperty::ReadPush << false;
+    QTest::newRow("nested templatetype") << "PROP(QMap<int, QList<int>> bar)" << "QMap<int, QList<int>>" << "bar" << QString() << ASTProperty::ReadPush << false;
     QTest::newRow("non-int default value") << "PROP(double foo=1.1 CONSTANT)" << "double" << "foo" << "1.1" << ASTProperty::Constant << false;
     QTest::newRow("tab") << "PROP(double\tfoo)" << "double" << "foo" << "" << ASTProperty::ReadPush << false;
     QTest::newRow("two tabs") << "PROP(double\t\tfoo)" << "double" << "foo" << "" << ASTProperty::ReadPush << false;
@@ -166,7 +166,7 @@ void tst_Parser::testProperties()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QVector<ASTProperty> properties = astClass.properties;
+    const QList<ASTProperty> properties = astClass.properties;
     QCOMPARE(properties.count(), 1);
 
     const ASTProperty property = properties.first();
@@ -221,7 +221,7 @@ void tst_Parser::testSlots()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QVector<ASTFunction> slotsList = astClass.slotsList;
+    const QList<ASTFunction> slotsList = astClass.slotsList;
     QCOMPARE(slotsList.count(), 1);
     ASTFunction slot = slotsList.first();
     QCOMPARE(QString("%1 %2(%3)").arg(slot.returnType).arg(slot.name).arg(slot.paramsAsString()), expectedSlot);
@@ -261,7 +261,7 @@ void tst_Parser::testSignals()
     QCOMPARE(ast.classes.count(), 1);
 
     const ASTClass astClass = ast.classes.first();
-    const QVector<ASTFunction> signalsList = astClass.signalsList;
+    const QList<ASTFunction> signalsList = astClass.signalsList;
     ASTFunction signal = signalsList.first();
     QCOMPARE(QString("%1(%2)").arg(signal.name).arg(signal.paramsAsString()), expectedSignal);
 }
@@ -308,7 +308,7 @@ void tst_Parser::testPods()
 
     QCOMPARE(ast.pods.count(), 1);
     const POD pods = ast.pods.first();
-    const QVector<PODAttribute> podsList = pods.attributes;
+    const QList<PODAttribute> podsList = pods.attributes;
     const QStringList typeList = expectedtypes.split(QLatin1Char(';'));
     const QStringList variableList = expectedvariables.split(QLatin1Char(';'));
     QVERIFY(typeList.count() == variableList.count());
@@ -380,7 +380,7 @@ void tst_Parser::testEnums()
         QCOMPARE(ast.enums.count(), 1);
         enums = ast.enums.first();
     }
-    const QVector<ASTEnumParam> paramList = enums.params;
+    const QList<ASTEnumParam> paramList = enums.params;
     const QStringList nameList = expectednames.split(QLatin1Char(';'));
     QVERIFY(nameList.count() == expectedvalues.count());
     QVERIFY(paramList.count() == expectedvalues.count());
@@ -396,16 +396,16 @@ void tst_Parser::testModels_data()
 {
     QTest::addColumn<QString>("modelDeclaration");
     QTest::addColumn<QString>("expectedModel");
-    QTest::addColumn<QVector<ASTModelRole>>("expectedRoles");
-    QTest::newRow("basicmodel") << "MODEL test(display)" << "test" << QVector<ASTModelRole>({{"display"}});
-    QTest::newRow("basicmodelsemicolon") << "MODEL test(display);" << "test" << QVector<ASTModelRole>({{"display"}});
+    QTest::addColumn<QList<ASTModelRole>>("expectedRoles");
+    QTest::newRow("basicmodel") << "MODEL test(display)" << "test" << QList<ASTModelRole>({{"display"}});
+    QTest::newRow("basicmodelsemicolon") << "MODEL test(display);" << "test" << QList<ASTModelRole>({{"display"}});
 }
 
 void tst_Parser::testModels()
 {
     QFETCH(QString, modelDeclaration);
     QFETCH(QString, expectedModel);
-    QFETCH(QVector<ASTModelRole>, expectedRoles);
+    QFETCH(QList<ASTModelRole>, expectedRoles);
 
     QTemporaryFile file;
     file.open();

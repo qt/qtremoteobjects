@@ -52,7 +52,7 @@
 #define SET_NODE_NAME(obj) (obj).setName(QLatin1String(#obj))
 
 //DUMMY impl for variant comparison
-bool operator<(const QVector<int> &lhs, const QVector<int> &rhs)
+bool operator<(const QList<int> &lhs, const QList<int> &rhs)
 {
     return lhs.size() < rhs.size();
 }
@@ -558,7 +558,7 @@ private slots:
         source1.setData1(5);
         source1.setData2(5.0);
         source1.setData3(QStringLiteral("tcp"));
-        source1.setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
+        source1.setData4(QList<int> { 1, 2, 3, 4, 5 });
         registry->enableRemoting(&source1);
 
         setupHost(true);
@@ -566,7 +566,7 @@ private slots:
         source2.setData1(5);
         source2.setData2(5.0);
         source2.setData3(QStringLiteral("local"));
-        source2.setData4(QVector<int>() << 1 << 2 << 3 << 4 << 5);
+        source2.setData4(QList<int> { 1, 2, 3, 4, 5 });
         host->enableRemoting(&source2);
         QVERIFY(host->waitForRegistry(1000));
 
@@ -582,15 +582,16 @@ private slots:
         QTRY_VERIFY(localCentre->isInitialized());
         QTRY_VERIFY(tcpCentre->isInitialized());
 
+        const QList<int> expected = { 1, 2, 3, 4, 5 };
         QCOMPARE(tcpCentre->data1(), 5 );
         QCOMPARE(tcpCentre->data2(), 5.0);
         QCOMPARE(tcpCentre->data3(), QStringLiteral("tcp"));
-        QCOMPARE(tcpCentre->data4(), QVector<int>() << 1 << 2 << 3 << 4 << 5);
+        QCOMPARE(tcpCentre->data4(), expected);
 
         QCOMPARE(localCentre->data1(), 5);
         QCOMPARE(localCentre->data2(), 5.0);
         QCOMPARE(localCentre->data3(), QStringLiteral("local"));
-        QCOMPARE(localCentre->data4(), QVector<int>() << 1 << 2 << 3 << 4 << 5);
+        QCOMPARE(localCentre->data4(), expected);
     }
 
     void invalidUrlsTest()

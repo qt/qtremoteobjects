@@ -149,7 +149,7 @@ private:
     QMap<QString, QString> m_captured;
     int m_maxMatchLen;
     QString m_errorString;
-    QVector<QMap<int, QString> > m_names; //storage for match names
+    QList<QMap<int, QString>> m_names; //storage for match names
 };
 
 template <typename _Parser, typename _Table>

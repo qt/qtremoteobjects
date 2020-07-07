@@ -86,8 +86,8 @@ static QString fullyQualifiedTypeName(const ASTClass& classContext, const QStrin
 }
 
 // for enums we need to transform signal/slot arguments to include the class scope
-static QVector<ASTFunction> transformEnumParams(const ASTClass& classContext, const QVector<ASTFunction> &methodList, const QString &typeName) {
-    QVector<ASTFunction> localList = methodList;
+static QList<ASTFunction> transformEnumParams(const ASTClass& classContext, const QList<ASTFunction> &methodList, const QString &typeName) {
+    QList<ASTFunction> localList = methodList;
     for (ASTFunction &astFunction : localList) {
         for (ASTDeclaration &astParam : astFunction.params) {
             for (const ASTEnum &astEnum : classContext.enums) {
@@ -137,7 +137,7 @@ static QByteArray typeData(const QString &type, const QHash<QString, QByteArray>
     return type.toLatin1();
 }
 
-static QByteArray functionsData(const QVector<ASTFunction> &functions, const QHash<QString, QByteArray> &specialTypes)
+static QByteArray functionsData(const QList<ASTFunction> &functions, const QHash<QString, QByteArray> &specialTypes)
 {
     QByteArray ret;
     for (const ASTFunction &func : functions) {
@@ -464,7 +464,7 @@ QString getEnumType(const ASTEnum &en)
     }
 }
 
-void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, bool generateQENUM)
+void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QList<ASTEnum> &enums, bool generateQENUM)
 {
     if (!generateQENUM) {
         out << "    // You need to add this enum as well as Q_ENUM to your" << Qt::endl;
@@ -484,7 +484,7 @@ void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QVec
     }
 }
 
-void RepCodeGenerator::generateENUMs(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className)
+void RepCodeGenerator::generateENUMs(QTextStream &out, const QList<ASTEnum> &enums, const QString &className)
 {
     out << "class " << className << "\n"
            "{\n"
@@ -501,7 +501,7 @@ void RepCodeGenerator::generateENUMs(QTextStream &out, const QVector<ASTEnum> &e
     generateStreamOperatorsForEnums(out, enums, className);
 }
 
-void RepCodeGenerator::generateConversionFunctionsForEnums(QTextStream &out, const QVector<ASTEnum> &enums)
+void RepCodeGenerator::generateConversionFunctionsForEnums(QTextStream &out, const QList<ASTEnum> &enums)
 {
     for (const ASTEnum &en : enums)
     {
@@ -522,7 +522,7 @@ void RepCodeGenerator::generateConversionFunctionsForEnums(QTextStream &out, con
     }
 }
 
-void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QVector<ASTEnum> &enums, const QString &className)
+void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QList<ASTEnum> &enums, const QString &className)
 {
     for (const ASTEnum &en : enums)
     {
@@ -547,7 +547,7 @@ void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const Q
 
 void RepCodeGenerator::generateENUM(QTextStream &out, const ASTEnum &en)
 {
-    generateENUMs(out, (QVector<ASTEnum>() << en), QStringLiteral("%1Enum").arg(en.name));
+    generateENUMs(out, (QList<ASTEnum>() << en), QStringLiteral("%1Enum").arg(en.name));
 }
 
 QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &metaTypes)
@@ -582,7 +582,7 @@ QString RepCodeGenerator::generateMetaTypeRegistrationForPending(const QSet<QStr
     return out;
 }
 
-void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enumUses)
+void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const QList<QString> &enumUses)
 {
     out << "QT_BEGIN_NAMESPACE" << Qt::endl;
     for (const QString &enumName : enumUses) {
@@ -751,7 +751,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << metaTypeRegistrationCode << Qt::endl;
         out << "    }" << Qt::endl;
     } else {
-        QVector<int> constIndices;
+        QList<int> constIndices;
         for (int index = 0; index < astClass.properties.count(); ++index) {
             const ASTProperty &property = astClass.properties.at(index);
             if (property.modifier == ASTProperty::Constant)
@@ -864,7 +864,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                     out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, typeForMode(property, mode)) << " " << property.name << ");" << Qt::endl;
             }
 
-            const QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, className);
+            const QList<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, className);
             for (const ASTFunction &signal : signalsList)
                 out << "    void " << signal.name << "(" << signal.paramsAsString() << ");" << Qt::endl;
 
@@ -905,7 +905,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                     }
                 }
             }
-            const QVector<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, className);
+            const QList<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, className);
             for (const ASTFunction &slot : slotsList) {
                 const auto returnType = fullyQualifiedTypeName(astClass, className, slot.returnType);
                 if (mode != REPLICA) {
@@ -1031,7 +1031,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                                   fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(onChangeProperties.at(i), SOURCE)),
                                   QString::number(i)) << Qt::endl;
 
-    QVector<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, QStringLiteral("typename ObjectType"));
+    QList<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, QStringLiteral("typename ObjectType"));
     for (int i = 0; i < signalCount; ++i) {
         const ASTFunction &sig = signalsList.at(i);
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
@@ -1039,7 +1039,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                              .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(changedCount+i)) << Qt::endl;
     }
     const int slotCount = astClass.slotsList.count();
-    QVector<ASTProperty> pushProps;
+    QList<ASTProperty> pushProps;
     for (const ASTProperty &property : astClass.properties) {
         if (property.modifier == ASTProperty::ReadPush)
             pushProps << property;
@@ -1057,7 +1057,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                                   QString::number(i)) << Qt::endl;
     }
 
-    QVector<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, QStringLiteral("typename ObjectType"));
+    QList<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, QStringLiteral("typename ObjectType"));
     for (int i = 0; i < slotCount; ++i) {
         const ASTFunction &slot = slotsList.at(i);
         const QString params = slot.paramsAsString(ASTFunction::Normalized);
@@ -1214,10 +1214,10 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    }") << Qt::endl;
 
     //signalParameterNames method
-    out << QStringLiteral("    QList<QByteArray> signalParameterNames(int index) const override") << Qt::endl;
+    out << QStringLiteral("    QByteArrayList signalParameterNames(int index) const override") << Qt::endl;
     out << QStringLiteral("    {") << Qt::endl;
     out << QStringLiteral("        if (index < 0 || index >= m_signals[0])") << Qt::endl;
-    out << QStringLiteral("            return QList<QByteArray>();") << Qt::endl;
+    out << QStringLiteral("            return QByteArrayList();") << Qt::endl;
     out << QStringLiteral("        return ObjectType::staticMetaObject.method(m_signals[index + 1]).parameterNames();") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
 
@@ -1266,10 +1266,10 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("    }") << Qt::endl;
 
     //methodParameterNames method
-    out << QStringLiteral("    QList<QByteArray> methodParameterNames(int index) const override") << Qt::endl;
+    out << QStringLiteral("    QByteArrayList methodParameterNames(int index) const override") << Qt::endl;
     out << QStringLiteral("    {") << Qt::endl;
     out << QStringLiteral("        if (index < 0 || index >= m_methods[0])") << Qt::endl;
-    out << QStringLiteral("            return QList<QByteArray>();") << Qt::endl;
+    out << QStringLiteral("            return QByteArrayList();") << Qt::endl;
     out << QStringLiteral("        return ObjectType::staticMetaObject.method(m_methods[index + 1]).parameterNames();") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
 

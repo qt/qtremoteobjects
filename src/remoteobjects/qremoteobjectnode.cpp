@@ -59,13 +59,13 @@ QT_BEGIN_NAMESPACE
 using namespace QtRemoteObjects;
 using namespace QRemoteObjectStringLiterals;
 
-using GadgetType = QVector<QVariant>;
+using GadgetType = QList<QVariant>;
 
 struct ManagedGadgetTypeEntry
 {
     GadgetType gadgetType;
     QMetaType gadgetMetaType;
-    QVector<QMetaType> enumMetaTypes;
+    QList<QMetaType> enumMetaTypes;
     std::shared_ptr<QMetaObject> metaObject;
 
     void unregisterMetaTypes()
@@ -790,7 +790,7 @@ struct EnumData {
     QByteArray name;
     bool isFlag, isScoped;
     quint32 keyCount, size;
-    QVector<EnumPair> values;
+    QList<EnumPair> values;
 };
 
 struct GadgetProperty {
@@ -799,8 +799,8 @@ struct GadgetProperty {
 };
 
 struct GadgetData {
-    QVector<GadgetProperty> properties;
-    QVector<EnumData> enums;
+    QList<GadgetProperty> properties;
+    QList<EnumData> enums;
 };
 
 static const char *strDup(const QByteArray &s)
@@ -903,7 +903,7 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
         dynamicProperty.setWritable(true);
         dynamicProperty.setReadable(true);
     }
-    QVector<TypeInfo *> enumsToBeAssignedMetaObject;
+    QList<TypeInfo *> enumsToBeAssignedMetaObject;
     enumsToBeAssignedMetaObject.reserve(gadget.enums.length());
     for (const auto &enumData: gadget.enums) {
         auto enumBuilder = gadgetBuilder.addEnumerator(enumData.name);
@@ -1057,7 +1057,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     builder.setClassName(type);
 
     in >> numEnums;
-    QVector<quint32> enumSizes(numEnums);
+    QList<quint32> enumSizes(numEnums);
     enumsToBeAssignedMetaObject.reserve(numEnums);
     for (quint32 i = 0; i < numEnums; ++i) {
         EnumData enumData;
@@ -1087,7 +1087,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     in >> numSignals;
     for (quint32 i = 0; i < numSignals; ++i) {
         QByteArray signature;
-        QList<QByteArray> paramNames;
+        QByteArrayList paramNames;
         in >> signature;
         in >> paramNames;
         ++curIndex;
@@ -1098,7 +1098,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
     in >> numMethods;
     for (quint32 i = 0; i < numMethods; ++i) {
         QByteArray signature, returnType;
-        QList<QByteArray> paramNames;
+        QByteArrayList paramNames;
         in >> signature;
         in >> returnType;
         in >> paramNames;
@@ -2452,13 +2452,13 @@ bool QRemoteObjectHostBase::enableRemoting(QObject *object, const QString &name)
 
     \sa disableRemoting()
  */
-bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QString &name, const QVector<int> roles, QItemSelectionModel *selectionModel)
+bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QString &name, const QList<int> roles, QItemSelectionModel *selectionModel)
 {
     //This looks complicated, but hopefully there is a way to have an adapter be a template
     //parameter and this makes sure that is supported.
     QObject *adapter = QAbstractItemModelSourceAdapter::staticMetaObject.newInstance(Q_ARG(QAbstractItemModel*, model),
                                                                                      Q_ARG(QItemSelectionModel*, selectionModel),
-                                                                                     Q_ARG(QVector<int>, roles));
+                                                                                     Q_ARG(QList<int>, roles));
     QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter> *api =
         new QAbstractItemAdapterSourceAPI<QAbstractItemModel, QAbstractItemModelSourceAdapter>(name);
     if (!this->objectName().isEmpty())
@@ -2582,7 +2582,7 @@ void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
  the Model on the network. The returned model will be empty until it is
  initialized with the \l Source.
  */
-QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name, QtRemoteObjects::InitialAction action, const QVector<int> &rolesHint)
+QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name, QtRemoteObjects::InitialAction action, const QList<int> &rolesHint)
 {
     QAbstractItemModelReplicaImplementation *rep = acquire<QAbstractItemModelReplicaImplementation>(name);
     return new QAbstractItemModelReplica(rep, action, rolesHint);
@@ -2703,7 +2703,7 @@ void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirec
             QAbstractItemModelReplica *rep = proxyNode->acquireModel(name);
             proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
             connect(rep, &QAbstractItemModelReplica::initialized, this,
-                    [rep, name, this]() { this->parentNode->enableRemoting(rep, name, QVector<int>()); });
+                    [rep, name, this]() { this->parentNode->enableRemoting(rep, name, QList<int>()); });
         } else {
             QRemoteObjectDynamicReplica *rep = proxyNode->acquireDynamic(name);
             proxiedReplicas.insert(name, new ProxyReplicaInfo{rep, direction});
@@ -2731,7 +2731,7 @@ void ProxyInfo::proxyObject(const QRemoteObjectSourceLocation &entry, ProxyDirec
             {
                 QRemoteObjectHostBase *host = qobject_cast<QRemoteObjectHostBase *>(this->proxyNode);
                 Q_ASSERT(host);
-                host->enableRemoting(rep, name, QVector<int>());
+                host->enableRemoting(rep, name, QList<int>());
             });
         } else {
             QRemoteObjectDynamicReplica *rep = this->parentNode->acquireDynamic(name);

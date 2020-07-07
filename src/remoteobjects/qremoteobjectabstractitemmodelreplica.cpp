@@ -103,7 +103,7 @@ QAbstractItemModelReplicaImplementation::~QAbstractItemModelReplicaImplementatio
 void QAbstractItemModelReplicaImplementation::initialize()
 {
     QVariantList properties;
-    properties << QVariant::fromValue(QVector<int>());
+    properties << QVariant::fromValue(QList<int>());
     properties << QVariant::fromValue(QIntHash());
     setProperties(properties);
 }
@@ -117,7 +117,7 @@ void QAbstractItemModelReplicaImplementation::registerMetatypes()
     alreadyRegistered = true;
     qRegisterMetaType<QAbstractItemModel*>();
     qRegisterMetaType<Qt::Orientation>();
-    qRegisterMetaType<QVector<Qt::Orientation>>();
+    qRegisterMetaType<QList<Qt::Orientation>>();
     qRegisterMetaType<ModelIndex>();
     qRegisterMetaType<IndexList>();
     qRegisterMetaType<DataEntries>();
@@ -139,7 +139,7 @@ void QAbstractItemModelReplicaImplementation::initializeModelConnections()
     connect(this, &QAbstractItemModelReplicaImplementation::headerDataChanged, this, &QAbstractItemModelReplicaImplementation::onHeaderDataChanged);
 }
 
-inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &roles, CachedRowEntry *entry)
+inline void removeIndexFromRow(const QModelIndex &index, const QList<int> &roles, CachedRowEntry *entry)
 {
     CachedRowEntry &entryRef = *entry;
     if (index.column() < entryRef.size()) {
@@ -169,7 +169,7 @@ void QAbstractItemModelReplicaImplementation::setModel(QAbstractItemModelReplica
     connect(m_selectionModel.data(), &QItemSelectionModel::currentChanged, this, &QAbstractItemModelReplicaImplementation::onReplicaCurrentChanged);
 }
 
-bool QAbstractItemModelReplicaImplementation::clearCache(const IndexList &start, const IndexList &end, const QVector<int> &roles = QVector<int>())
+bool QAbstractItemModelReplicaImplementation::clearCache(const IndexList &start, const IndexList &end, const QList<int> &roles = QList<int>())
 {
     Q_ASSERT(start.size() == end.size());
 
@@ -203,7 +203,7 @@ bool QAbstractItemModelReplicaImplementation::clearCache(const IndexList &start,
     return true;
 }
 
-void QAbstractItemModelReplicaImplementation::onDataChanged(const IndexList &start, const IndexList &end, const QVector<int> &roles)
+void QAbstractItemModelReplicaImplementation::onDataChanged(const IndexList &start, const IndexList &end, const QList<int> &roles)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "start=" << start << "end=" << end << "roles=" << roles;
 
@@ -380,12 +380,12 @@ void QAbstractItemModelReplicaImplementation::handleModelResetDone(QRemoteObject
     m_headerData[0].resize(size.width());
     m_headerData[1].resize(size.height());
     {
-        QVector<CacheEntry> &headerEntries = m_headerData[0];
+        QList<CacheEntry> &headerEntries = m_headerData[0];
         for (int i = 0; i < size.width(); ++i )
             headerEntries[i].data.clear();
     }
     {
-        QVector<CacheEntry> &headerEntries = m_headerData[1];
+        QList<CacheEntry> &headerEntries = m_headerData[1];
         for (int i = 0; i < size.height(); ++i )
             headerEntries[i].data.clear();
     }
@@ -457,7 +457,7 @@ QRemoteObjectPendingCallWatcher* QAbstractItemModelReplicaImplementation::doMode
     return watcher;
 }
 
-inline void fillCacheEntry(CacheEntry *entry, const IndexValuePair &pair, const QVector<int> &roles)
+inline void fillCacheEntry(CacheEntry *entry, const IndexValuePair &pair, const QList<int> &roles)
 {
     Q_ASSERT(entry);
 
@@ -475,7 +475,7 @@ inline void fillCacheEntry(CacheEntry *entry, const IndexValuePair &pair, const 
     }
 }
 
-inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstractItemModel *model, const QVector<int> &roles)
+inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstractItemModel *model, const QList<int> &roles)
 {
     CachedRowEntry &rowRef = item->cachedRowEntry;
     const QModelIndex index = toQModelIndex(pair.index, model);
@@ -513,7 +513,7 @@ int collectEntriesForRow(DataEntries* filteredEntries, int row, const DataEntrie
     return size;
 }
 
-void QAbstractItemModelReplicaImplementation::fillCache(const IndexValuePair &pair, const QVector<int> &roles)
+void QAbstractItemModelReplicaImplementation::fillCache(const IndexValuePair &pair, const QList<int> &roles)
 {
     if (auto item = createCacheData(pair.index)) {
         fillRow(item, pair, q, roles);
@@ -604,7 +604,7 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
             const ModelIndex dataIndEnd = data.end.last();
             const ModelIndex resStart(std::min(curIndStart.row, dataIndStart.row), std::min(curIndStart.column, dataIndStart.column));
             const ModelIndex resEnd(std::max(curIndEnd.row, dataIndEnd.row), std::max(curIndEnd.column, dataIndEnd.column));
-            QVector<int> roles = curData.roles;
+            QList<int> roles = curData.roles;
             if (!curData.roles.isEmpty()) {
                 for (int role : data.roles) {
                     if (!curData.roles.contains(role))
@@ -666,7 +666,7 @@ void QAbstractItemModelReplicaImplementation::onHeaderDataChanged(Qt::Orientatio
 {
     // TODO clean cache
     const int index = orientation == Qt::Horizontal ? 0 : 1;
-    QVector<CacheEntry> &entries = m_headerData[index];
+    QList<CacheEntry> &entries = m_headerData[index];
     for (int i = first; i < last; ++i )
         entries[i].data.clear();
     emit q->headerDataChanged(orientation, first, last);
@@ -674,9 +674,9 @@ void QAbstractItemModelReplicaImplementation::onHeaderDataChanged(Qt::Orientatio
 
 void QAbstractItemModelReplicaImplementation::fetchPendingHeaderData()
 {
-    QVector<int> roles;
-    QVector<int> sections;
-    QVector<Qt::Orientation> orientations;
+    QList<int> roles;
+    QList<int> sections;
+    QList<Qt::Orientation> orientations;
     for (const RequestedHeaderData &data : qAsConst(m_requestedHeaderData)) {
         roles.push_back(data.role);
         sections.push_back(data.section);
@@ -689,14 +689,14 @@ void QAbstractItemModelReplicaImplementation::fetchPendingHeaderData()
     m_pendingRequests.push_back(watcher);
 }
 
-static inline QVector<QPair<int, int> > listRanges(const QVector<int> &list)
+static inline QList<QPair<int, int>> listRanges(const QList<int> &list)
 {
-    QVector<QPair<int, int> > result;
+    QList<QPair<int, int>> result;
     if (!list.isEmpty()) {
         QPair<int, int> currentElem = qMakePair(list.first(), list.first());
-        QVector<int>::const_iterator end = list.end();
-        for (QVector<int>::const_iterator it = list.constBegin() + 1; it != end; ++it) {
-            if (currentElem.first == *it +1)
+        const auto end = list.constEnd();
+        for (auto it = list.constBegin() + 1; it != end; ++it) {
+            if (currentElem.first == *it + 1)
                 currentElem.first = *it;
             else if ( currentElem.second == *it -1)
                 currentElem.second = *it;
@@ -722,8 +722,8 @@ void QAbstractItemModelReplicaImplementation::requestedHeaderData(QRemoteObjectP
     Q_ASSERT(watcher->orientations.size() == data.size());
     Q_ASSERT(watcher->sections.size() == data.size());
     Q_ASSERT(watcher->roles.size() == data.size());
-    QVector<int> horizontalSections;
-    QVector<int> verticalSections;
+    QList<int> horizontalSections;
+    QList<int> verticalSections;
 
     for (int i = 0; i < data.size(); ++i) {
         if (watcher->orientations[i] == Qt::Horizontal)
@@ -735,8 +735,8 @@ void QAbstractItemModelReplicaImplementation::requestedHeaderData(QRemoteObjectP
         QHash<int, QVariant> &dat = m_headerData[index][watcher->sections[i]].data;
         dat[role] = data[i];
     }
-    QVector<QPair<int, int> > horRanges = listRanges(horizontalSections);
-    QVector<QPair<int, int> > verRanges = listRanges(verticalSections);
+    QList<QPair<int, int>> horRanges = listRanges(horizontalSections);
+    QList<QPair<int, int>> verRanges = listRanges(verticalSections);
 
     for (int i = 0; i < horRanges.size(); ++i)
         emit q->headerDataChanged(Qt::Horizontal, horRanges[i].first, horRanges[i].second);
@@ -746,7 +746,7 @@ void QAbstractItemModelReplicaImplementation::requestedHeaderData(QRemoteObjectP
     delete watcher;
 }
 
-QAbstractItemModelReplica::QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep, QtRemoteObjects::InitialAction action, const QVector<int> &rolesHint)
+QAbstractItemModelReplica::QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep, QtRemoteObjects::InitialAction action, const QList<int> &rolesHint)
     : QAbstractItemModel()
     , d(rep)
 {
@@ -801,8 +801,8 @@ bool QAbstractItemModelReplica::setData(const QModelIndex &index, const QVariant
     if (index.column() < 0 || index.column() >= columnCount(index.parent()))
         return false;
 
-    const QVector<int > &availRoles = availableRoles();
-    const QVector<int>::const_iterator res = std::find(availRoles.begin(), availRoles.end(), role);
+    const QList<int> &availRoles = availableRoles();
+    const auto res = std::find(availRoles.begin(), availRoles.end(), role);
     if (res == availRoles.end()) {
         qCWarning(QT_REMOTEOBJECT_MODELS) << "Tried to setData for index" << index << "on a not supported role" << role;
         return false;
@@ -844,7 +844,7 @@ QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) co
     Q_ASSERT(toQModelIndex(start, this).isValid());
 
     RequestedData data;
-    QVector<int> roles;
+    QList<int> roles;
     roles << role;
     data.start = start;
     data.end = end;
@@ -927,7 +927,7 @@ int QAbstractItemModelReplica::columnCount(const QModelIndex &parent) const
 QVariant QAbstractItemModelReplica::headerData(int section, Qt::Orientation orientation, int role) const
 {
     const int index = orientation == Qt::Horizontal ? 0 : 1;
-    const QVector<CacheEntry> elem = d->m_headerData[index];
+    const QList<CacheEntry> elem = d->m_headerData[index];
     if (section >= elem.size())
         return QVariant();
 
@@ -980,7 +980,7 @@ void QAbstractItemModelReplica::setRootCacheSize(size_t rootCacheSize)
     d->m_rootItem.children.setCacheSize(rootCacheSize);
 }
 
-QVector<int> QAbstractItemModelReplica::availableRoles() const
+QList<int> QAbstractItemModelReplica::availableRoles() const
 {
     return d->availableRoles();
 }
