@@ -67,6 +67,9 @@ static const QLatin1String protocolVersion("QtRO 1.3");
 
 }
 
+class IoDeviceBasePrivate;
+class ClientIoDevicePrivate;
+class ExternalIoDevicePrivate;
 class Q_REMOTEOBJECTS_EXPORT IoDeviceBase : public QObject
 {
     Q_OBJECT
@@ -80,13 +83,14 @@ public:
 
     virtual void write(const QByteArray &data);
     virtual void write(const QByteArray &data, qint64);
-    virtual bool isOpen() const { return !isClosing(); }
+    virtual bool isOpen() const;
     virtual void close();
     virtual qint64 bytesAvailable() const;
     virtual QIODevice *connection() const = 0;
     void initializeDataStream();
-    QDataStream& stream() { return m_dataStream; }
-    inline bool isClosing() const { return m_isClosing; }
+    // TODO Remove stream()
+    QDataStream &stream();
+    bool isClosing() const;
     void addSource(const QString &);
     void removeSource(const QString &);
     QSet<QString> remoteObjects() const;
@@ -96,14 +100,12 @@ Q_SIGNALS:
     void disconnected();
 
 protected:
+    explicit IoDeviceBase(IoDeviceBasePrivate &, QObject *parent);
     virtual QString deviceType() const = 0;
     virtual void doClose() = 0;
-    bool m_isClosing;
 
 private:
-    quint32 m_curReadSize;
-    QDataStream m_dataStream;
-    QSet<QString> m_remoteObjects;
+    Q_DECLARE_PRIVATE(IoDeviceBase)
 };
 
 class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public IoDeviceBase
@@ -161,11 +163,11 @@ Q_SIGNALS:
 protected:
     virtual void doDisconnectFromServer() = 0;
     QString deviceType() const override;
+    void setUrl(const QUrl &url);
 
 private:
+    Q_DECLARE_PRIVATE(ClientIoDevice)
     friend class QtROClientFactory;
-
-    QUrl m_url;
 };
 
 class ExternalIoDevice : public IoDeviceBase
@@ -180,7 +182,9 @@ public:
 protected:
     void doClose() override;
     QString deviceType() const override;
-    QPointer<QIODevice> m_device;
+
+private:
+    Q_DECLARE_PRIVATE(ExternalIoDevice)
 };
 
 class QtROServerFactory
@@ -229,7 +233,7 @@ public:
 
         ClientIoDevice *res = (*creatorFunc)(parent);
         if (res)
-            res->m_url = url;
+            res->setUrl(url);
         return res;
     }
 
