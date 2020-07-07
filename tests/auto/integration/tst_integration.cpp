@@ -626,7 +626,8 @@ private slots:
     {
         QFETCH_GLOBAL(QUrl, registryUrl);
         if (registryUrl.isEmpty())
-            QSKIP("Skipping registry tests for external QIODevice types.");        setupHost(true);
+            QSKIP("Skipping registry tests for external QIODevice types.");
+        setupHost(true);
         const bool res = host->waitForRegistry(3000);
         QVERIFY(!res);
         QCOMPARE(host->registry()->isInitialized(), false);
