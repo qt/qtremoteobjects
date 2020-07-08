@@ -8,7 +8,7 @@ qt_internal_add_module(RemoteObjects
     SOURCES
         qconnection_local_backend.cpp qconnection_local_backend_p.h
         qconnection_tcpip_backend.cpp qconnection_tcpip_backend_p.h
-        qconnectionfactories.cpp qconnectionfactories_p.h
+        qconnectionfactories.cpp qconnectionfactories.h qconnectionfactories_p.h
         qremoteobjectabstractitemmodeladapter.cpp qremoteobjectabstractitemmodeladapter_p.h
         qremoteobjectabstractitemmodelreplica.cpp qremoteobjectabstractitemmodelreplica.h qremoteobjectabstractitemmodelreplica_p.h
         qremoteobjectabstractitemmodeltypes.h

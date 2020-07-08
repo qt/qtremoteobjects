@@ -37,10 +37,8 @@
 **
 ****************************************************************************/
 
-#include <QtCore/private/qobject_p.h>
-
 #include "qconnectionfactories_p.h"
-#include "qconnectionfactories_p.h"
+#include "qremoteobjectpacket_p.h"
 
 // BEGIN: Backends
 #if defined(Q_OS_QNX)
@@ -62,34 +60,6 @@ public:
 };
 
 Q_GLOBAL_STATIC(QtROFactoryLoader, loader)
-
-class IoDeviceBasePrivate : public QObjectPrivate
-{
-public:
-    IoDeviceBasePrivate() : QObjectPrivate() { m_dataStream.setVersion(dataStreamVersion); }
-    ~IoDeviceBasePrivate() = default;
-    bool m_isClosing = false;
-    quint32 m_curReadSize = 0;
-    QDataStream m_dataStream;
-    QSet<QString> m_remoteObjects;
-    Q_DECLARE_PUBLIC(IoDeviceBase)
-};
-
-class ClientIoDevicePrivate : public IoDeviceBasePrivate
-{
-public:
-    ClientIoDevicePrivate() : IoDeviceBasePrivate() { }
-    QUrl m_url;
-    Q_DECLARE_PUBLIC(ClientIoDevice)
-};
-
-class ExternalIoDevicePrivate : public IoDeviceBasePrivate
-{
-public:
-    ExternalIoDevicePrivate(QIODevice *device) : IoDeviceBasePrivate(), m_device(device) { }
-    QPointer<QIODevice> m_device;
-    Q_DECLARE_PUBLIC(ExternalIoDevice)
-};
 
 inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, QString &name)
 {
@@ -418,3 +388,8 @@ QtROClientFactory *QtROClientFactory::instance()
 */
 
 QT_END_NAMESPACE
+
+IoDeviceBasePrivate::IoDeviceBasePrivate() : QObjectPrivate()
+{
+    m_dataStream.setVersion(dataStreamVersion);
+}

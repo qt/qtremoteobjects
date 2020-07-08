@@ -51,12 +51,13 @@
 // We mean it.
 //
 
-#include <QtNetwork/qabstractsocket.h>
 #include <QtCore/qdatastream.h>
 #include <QtCore/qiodevice.h>
 #include <QtCore/qpointer.h>
+#include <QtCore/private/qobject_p.h>
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
+#include <QtRemoteObjects/qconnectionfactories.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -66,109 +67,6 @@ static const int dataStreamVersion = QDataStream::Qt_5_12;
 static const QLatin1String protocolVersion("QtRO 1.3");
 
 }
-
-class IoDeviceBasePrivate;
-class ClientIoDevicePrivate;
-class ExternalIoDevicePrivate;
-class Q_REMOTEOBJECTS_EXPORT IoDeviceBase : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(IoDeviceBase)
-
-public:
-    explicit IoDeviceBase(QObject *parent = nullptr);
-    ~IoDeviceBase() override;
-
-    bool read(QtRemoteObjects::QRemoteObjectPacketTypeEnum &, QString &);
-
-    virtual void write(const QByteArray &data);
-    virtual void write(const QByteArray &data, qint64);
-    virtual bool isOpen() const;
-    virtual void close();
-    virtual qint64 bytesAvailable() const;
-    virtual QIODevice *connection() const = 0;
-    void initializeDataStream();
-    // TODO Remove stream()
-    QDataStream &stream();
-    bool isClosing() const;
-    void addSource(const QString &);
-    void removeSource(const QString &);
-    QSet<QString> remoteObjects() const;
-
-Q_SIGNALS:
-    void readyRead();
-    void disconnected();
-
-protected:
-    explicit IoDeviceBase(IoDeviceBasePrivate &, QObject *parent);
-    virtual QString deviceType() const = 0;
-    virtual void doClose() = 0;
-
-private:
-    Q_DECLARE_PRIVATE(IoDeviceBase)
-};
-
-class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public IoDeviceBase
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(ServerIoDevice)
-
-public:
-    explicit ServerIoDevice(QObject *parent = nullptr);
-
-protected:
-    QString deviceType() const override;
-};
-
-class Q_REMOTEOBJECTS_EXPORT QConnectionAbstractServer : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(QConnectionAbstractServer)
-
-public:
-    explicit QConnectionAbstractServer(QObject *parent = nullptr);
-    ~QConnectionAbstractServer() override;
-
-    virtual bool hasPendingConnections() const = 0;
-    ServerIoDevice* nextPendingConnection();
-    virtual QUrl address() const = 0;
-    virtual bool listen(const QUrl &address) = 0;
-    virtual QAbstractSocket::SocketError serverError() const = 0;
-    virtual void close() = 0;
-
-protected:
-    virtual ServerIoDevice* configureNewConnection() = 0;
-
-Q_SIGNALS:
-    void newConnection();
-};
-
-class Q_REMOTEOBJECTS_EXPORT ClientIoDevice : public IoDeviceBase
-{
-    Q_OBJECT
-    Q_DISABLE_COPY(ClientIoDevice)
-
-public:
-    explicit ClientIoDevice(QObject *parent = nullptr);
-    ~ClientIoDevice() override;
-
-    void disconnectFromServer();
-    virtual void connectToServer() = 0;
-
-    QUrl url() const;
-
-Q_SIGNALS:
-    void shouldReconnect(ClientIoDevice*);
-
-protected:
-    virtual void doDisconnectFromServer() = 0;
-    QString deviceType() const override;
-    void setUrl(const QUrl &url);
-
-private:
-    Q_DECLARE_PRIVATE(ClientIoDevice)
-    friend class QtROClientFactory;
-};
 
 class ExternalIoDevice : public IoDeviceBase
 {
@@ -182,93 +80,37 @@ public:
 protected:
     void doClose() override;
     QString deviceType() const override;
-
 private:
     Q_DECLARE_PRIVATE(ExternalIoDevice)
 };
 
-class QtROServerFactory
+class IoDeviceBasePrivate : public QObjectPrivate
 {
 public:
-    Q_REMOTEOBJECTS_EXPORT static QtROServerFactory *instance();
-
-    QConnectionAbstractServer *create(const QUrl &url, QObject *parent = nullptr)
-    {
-        auto creatorFunc = m_creatorFuncs.value(url.scheme());
-        return creatorFunc ? (*creatorFunc)(parent) : nullptr;
-    }
-
-    template<typename T>
-    void registerType(const QString &id)
-    {
-        m_creatorFuncs[id] = [](QObject *parent) -> QConnectionAbstractServer * {
-            return new T(parent);
-        };
-    }
-
-    bool isValid(const QUrl &url)
-    {
-        return m_creatorFuncs.contains(url.scheme());
-    }
-
-private:
-    friend class QtROFactoryLoader;
-    QtROServerFactory();
-
-    using CreatorFunc = QConnectionAbstractServer * (*)(QObject *);
-    QHash<QString, CreatorFunc> m_creatorFuncs;
+    IoDeviceBasePrivate();
+    ~IoDeviceBasePrivate() = default;
+    bool m_isClosing = false;
+    quint32 m_curReadSize = 0;
+    QDataStream m_dataStream;
+    QSet<QString> m_remoteObjects;
+    Q_DECLARE_PUBLIC(IoDeviceBase)
 };
 
-class QtROClientFactory
+class ClientIoDevicePrivate : public IoDeviceBasePrivate
 {
 public:
-    Q_REMOTEOBJECTS_EXPORT static QtROClientFactory *instance();
-
-    /// creates an object from a string
-    ClientIoDevice *create(const QUrl &url, QObject *parent = nullptr)
-    {
-        auto creatorFunc = m_creatorFuncs.value(url.scheme());
-        if (!creatorFunc)
-            return nullptr;
-
-        ClientIoDevice *res = (*creatorFunc)(parent);
-        if (res)
-            res->setUrl(url);
-        return res;
-    }
-
-    template<typename T>
-    void registerType(const QString &id)
-    {
-        m_creatorFuncs[id] = [](QObject *parent) -> ClientIoDevice * {
-            return new T(parent);
-        };
-    }
-
-    bool isValid(const QUrl &url)
-    {
-        return m_creatorFuncs.contains(url.scheme());
-    }
-
-private:
-    friend class QtROFactoryLoader;
-    QtROClientFactory();
-
-    using CreatorFunc = ClientIoDevice * (*)(QObject *);
-    QHash<QString, CreatorFunc> m_creatorFuncs;
+    ClientIoDevicePrivate() : IoDeviceBasePrivate() { }
+    QUrl m_url;
+    Q_DECLARE_PUBLIC(ClientIoDevice)
 };
 
-template <typename T>
-inline void qRegisterRemoteObjectsClient(const QString &id)
+class ExternalIoDevicePrivate : public IoDeviceBasePrivate
 {
-    QtROClientFactory::instance()->registerType<T>(id);
-}
-
-template <typename T>
-inline void qRegisterRemoteObjectsServer(const QString &id)
-{
-    QtROServerFactory::instance()->registerType<T>(id);
-}
+public:
+    ExternalIoDevicePrivate(QIODevice *device) : IoDeviceBasePrivate(), m_device(device) { }
+    QPointer<QIODevice> m_device;
+    Q_DECLARE_PUBLIC(ExternalIoDevice)
+};
 
 QT_END_NAMESPACE
 
