@@ -37,13 +37,14 @@
 **
 ****************************************************************************/
 
-#include "qremoteobjectpacket_p.h"
-
 #include <QtCore/qabstractitemmodel.h>
 
 #include "qremoteobjectpendingcall.h"
 #include "qremoteobjectsource.h"
 #include "qremoteobjectsource_p.h"
+#include "qremoteobjectpacket_p.h"
+#include "qconnectionfactories.h"
+#include "qconnectionfactories_p.h"
 #include <cstring>
 
 //#define QTRO_VERBOSE_PROTOCOL
@@ -723,6 +724,37 @@ QDataStream &operator>>(QDataStream &stream, QRO_ &info)
     if (!info.isNull)
         stream >> info.parameters;
     return stream;
+}
+
+DataStreamPacket::DataStreamPacket(quint16 id)
+    : QDataStream(&array, QIODevice::WriteOnly), baseAddress(0), size(0)
+{
+    this->setVersion(QtRemoteObjects::dataStreamVersion);
+    *this << quint32(0);
+    *this << id;
+}
+
+void CodecBase::send(const QSet<IoDeviceBase *> &connections)
+{
+    const auto bytearray = getPayload();
+    for (auto conn : connections)
+        conn->write(bytearray);
+    reset();
+}
+
+void CodecBase::send(const QList<IoDeviceBase *> &connections)
+{
+    const auto bytearray = getPayload();
+    for (auto conn : connections)
+        conn->write(bytearray);
+    reset();
+}
+
+void CodecBase::send(IoDeviceBase *connection)
+{
+    const auto bytearray = getPayload();
+    connection->write(bytearray);
+    reset();
 }
 
 } // namespace QRemoteObjectPackets

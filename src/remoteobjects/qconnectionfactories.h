@@ -95,6 +95,8 @@ protected:
 
 private:
     Q_DECLARE_PRIVATE(IoDeviceBase)
+    friend class QRemoteObjectNodePrivate;
+    friend class QConnectedReplicaImplementation;
 };
 
 class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public IoDeviceBase

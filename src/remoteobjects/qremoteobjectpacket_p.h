@@ -53,7 +53,7 @@
 
 #include "qtremoteobjectglobal.h"
 #include "qremoteobjectsource.h"
-#include "qconnectionfactories_p.h"
+#include "qconnectionfactories.h"
 
 #include <QtCore/qhash.h>
 #include <QtCore/qmap.h>
@@ -61,6 +61,7 @@
 #include <QtCore/qurl.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qloggingcategory.h>
+#include <QtCore/qdatastream.h>
 
 #include <cstdlib>
 
@@ -135,15 +136,7 @@ QDataStream& operator>>(QDataStream &stream, QRO_ &info);
 class DataStreamPacket : public QDataStream
 {
 public:
-    DataStreamPacket(quint16 id = QtRemoteObjects::InvokePacket)
-        : QDataStream(&array, QIODevice::WriteOnly)
-        , baseAddress(0)
-        , size(0)
-    {
-        this->setVersion(QtRemoteObjects::dataStreamVersion);
-        *this << quint32(0);
-        *this << id;
-    }
+    DataStreamPacket(quint16 id = QtRemoteObjects::InvokePacket);
 
     void setId(quint16 id)
     {
@@ -212,26 +205,9 @@ public:
     virtual void deserializeInitPacket(QDataStream &, QVariantList &) = 0;
     virtual void deserializeInvokeReplyPacket(QDataStream &in, int &ackedSerialId,
                                               QVariant &value) = 0;
-    void send(const QSet<IoDeviceBase *> &connections)
-    {
-        const auto bytearray = getPayload();
-        for (auto conn : connections)
-            conn->write(bytearray);
-        reset();
-    }
-    void send(const QVector<IoDeviceBase *> &connections)
-    {
-        const auto bytearray = getPayload();
-        for (auto conn : connections)
-            conn->write(bytearray);
-        reset();
-    }
-    void send(IoDeviceBase *connection)
-    {
-        const auto bytearray = getPayload();
-        connection->write(bytearray);
-        reset();
-    }
+    void send(const QSet<IoDeviceBase *> &connections);
+    void send(const QVector<IoDeviceBase *> &connections);
+    void send(IoDeviceBase *connection);
 
 protected:
     // A payload can consist of one or more packets

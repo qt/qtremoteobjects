@@ -173,7 +173,6 @@ public:
 
     void setDynamicMetaObject(const QMetaObject *meta) override;
     void setDynamicProperties(const QVariantList&) override;
-    QRemoteObjectPackets::CodecBase *codec();
     QList<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
     QList<int> m_childIndices;
