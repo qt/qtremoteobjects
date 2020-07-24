@@ -226,8 +226,6 @@ private slots:
         // use different paths in QRemoteObjectSettingsStore
         QCoreApplication::setOrganizationName(QLatin1String("QtProject"));
         QStandardPaths::setTestModeEnabled(true);
-
-        QMetaType::registerEqualsComparator<QVector<int>>();
     }
 
     void init()

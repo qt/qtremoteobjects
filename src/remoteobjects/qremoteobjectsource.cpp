@@ -293,7 +293,7 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
         N = 0; // Don't try to send pointers, the will be handle by QRO_
     if (list.size() < N)
         list.reserve(N);
-    const int minFill = std::min(list.size(), N);
+    const int minFill = std::min(list.size(), static_cast<qsizetype>(N));
     for (int i = 0; i < minFill; ++i) {
         const int type = m_api->signalParameterType(index, i);
         if (type == QMetaType::QVariant)

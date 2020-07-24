@@ -56,7 +56,7 @@ struct WaitForDataChanged
     bool wait()
     {
         Q_ASSERT(m_spy);
-        const int maxRuns = std::min(m_pending.size(), 100);
+        const int maxRuns = std::min(m_pending.size(), static_cast<qsizetype>(100));
         int runs = 0;
         bool cancel = false;
         while (!cancel) {

@@ -133,6 +133,11 @@ static void GadgetLoadOperator(QDataStream &in, void *data)
         in >> prop;
 }
 
+static bool GadgetEqualsFn(const QtPrivate::QMetaTypeInterface *, const void *a, const void *b)
+{
+    return *reinterpret_cast<const GadgetType*>(a) == *reinterpret_cast<const GadgetType*>(b);
+}
+
 // Like the Q_GADGET static methods above, we need constructor/destructor methods
 // in order to use dynamically defined enums with QVariant or as signal/slot
 // parameters (i.e., the queued connection mechanism, which QtRO leverages).
@@ -176,6 +181,18 @@ static void EnumLoadOperator(QDataStream &in, void *data)
 {
     T value = *static_cast<T *>(data);
     in >> value;
+}
+
+template<typename T>
+static bool EnumEqualsFn(const QtPrivate::QMetaTypeInterface *, const void *a, const void *b)
+{
+    return *static_cast<const T*>(a) == *static_cast<const T*>(b);
+}
+
+template<typename T>
+static bool EnumLessThanFn(const QtPrivate::QMetaTypeInterface *, const void *a, const void *b)
+{
+    return *static_cast<const T*>(a) < *static_cast<const T*>(b);
 }
 
 static QString name(const QMetaObject * const mobj)
@@ -777,6 +794,8 @@ static TypeInfo *enumMetaType(const QByteArray &name, uint size, const QMetaObje
         EnumCopyConstructor<Int>,
         EnumMoveConstructor<Int>,
         EnumDestructor<Int>,
+        EnumEqualsFn<Int>,
+        EnumLessThanFn<Int>,
         nullptr };
     return typeInfo;
 }
@@ -878,6 +897,8 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
            GadgetTypedCopyConstructor,
            GadgetTypedMoveConstructor,
            GadgetTypedDestructor,
+           GadgetEqualsFn,
+           nullptr,
            nullptr };
        entry.gadgetMetaType = QMetaType(typeInfo);
        QMetaType::registerStreamOperators(entry.gadgetMetaType.id(), &GadgetSaveOperator, &GadgetLoadOperator);
@@ -886,6 +907,8 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
            0, sizeof(GadgetType), alignof(GadgetType), uint(flags), meta, strDup(typeName), 0,
            Q_BASIC_ATOMIC_INITIALIZER(0),
            [](TypeInfo *self) { delete [] self->name; delete self; },
+           nullptr,
+           nullptr,
            nullptr,
            nullptr,
            nullptr,
