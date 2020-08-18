@@ -360,7 +360,7 @@ Q_SIGNALS:
     void modelReset();
     void headerDataChanged(Qt::Orientation,int,int);
     void columnsInserted(IndexList parent, int first, int last);
-
+    void layoutChanged(IndexList parents, QAbstractItemModel::LayoutChangeHint hint);
 public Q_SLOTS:
     QRemoteObjectPendingReply<QSize> replicaSizeRequest(IndexList parentList)
     {
@@ -422,7 +422,7 @@ public Q_SLOTS:
     void handleSizeDone(QRemoteObjectPendingCallWatcher *watcher);
     void onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
     void fillCache(const IndexValuePair &pair,const QVector<int> &roles);
-
+    void onLayoutChanged(const IndexList &parents, QAbstractItemModel::LayoutChangeHint hint);
 public:
     QScopedPointer<QItemSelectionModel> m_selectionModel;
     QVector<CacheEntry> m_headerData[2];

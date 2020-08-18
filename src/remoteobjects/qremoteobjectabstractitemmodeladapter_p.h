@@ -97,7 +97,7 @@ public Q_SLOTS:
     void sourceRowsRemoved(const QModelIndex & parent, int start, int end);
     void sourceRowsMoved(const QModelIndex & sourceParent, int sourceRow, int count, const QModelIndex & destinationParent, int destinationChild) const;
     void sourceCurrentChanged(const QModelIndex & current, const QModelIndex & previous);
-
+    void sourceLayoutChanged(const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint);
 Q_SIGNALS:
     void availableRolesChanged();
     void dataChanged(IndexList topLeft, IndexList bottomRight, QVector<int> roles) const;
@@ -106,6 +106,7 @@ Q_SIGNALS:
     void rowsMoved(IndexList sourceParent, int sourceRow, int count, IndexList destinationParent, int destinationChild) const;
     void currentChanged(IndexList current, IndexList previous);
     void columnsInserted(IndexList parent, int start, int end) const;
+    void layoutChanged(IndexList parents, QAbstractItemModel::LayoutChangeHint hint);
 
 private:
     QAbstractItemModelSourceAdapter();
@@ -128,7 +129,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         m_properties[0] = 2;
         m_properties[1] = QtPrivate::qtro_property_index<AdapterType>(&AdapterType::availableRoles, static_cast<QVector<int> (QObject::*)()>(0),"availableRoles");
         m_properties[2] = QtPrivate::qtro_property_index<AdapterType>(&AdapterType::roleNames, static_cast<QIntHash (QObject::*)()>(0),"roleNames");
-        m_signals[0] = 9;
+        m_signals[0] = 10;
         m_signals[1] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::availableRolesChanged, static_cast<void (QObject::*)()>(0),m_signalArgCount+0,&m_signalArgTypes[0]);
         m_signals[2] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::dataChanged, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),m_signalArgCount+1,&m_signalArgTypes[1]);
         m_signals[3] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),m_signalArgCount+2,&m_signalArgTypes[2]);
@@ -138,6 +139,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         m_signals[7] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(0),m_signalArgCount+6,&m_signalArgTypes[6]);
         m_signals[8] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(0),m_signalArgCount+7,&m_signalArgTypes[7]);
         m_signals[9] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(0),m_signalArgCount+8,&m_signalArgTypes[8]);
+        m_signals[10] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::layoutChanged, static_cast<void (QObject::*)(IndexList,QAbstractItemModel::LayoutChangeHint)>(nullptr),m_signalArgCount+9,&m_signalArgTypes[9]);
         m_methods[0] = 6;
         m_methods[1] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(0),"replicaSizeRequest(IndexList)",m_methodArgCount+0,&m_methodArgTypes[0]);
         m_methods[2] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QVector<int>)>(0),"replicaRowRequest(IndexList,IndexList,QVector<int>)",m_methodArgCount+1,&m_methodArgTypes[1]);
@@ -213,6 +215,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 6: return QByteArrayLiteral("resetModel()");
         case 7: return QByteArrayLiteral("headerDataChanged(Qt::Orientation,int,int)");
         case 8: return QByteArrayLiteral("columnsInserted(IndexList,int,int)");
+        case 9: return QByteArrayLiteral("layoutChanged(IndexList,QAbstractItemModel::LayoutChangeHint)");
         }
         return QByteArrayLiteral("");
     }
@@ -264,6 +267,7 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         case 4:
         case 5:
         case 8:
+        case 9:
             return true;
         }
         return false;
@@ -292,10 +296,10 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     }
 
     int m_properties[3];
-    int m_signals[10];
+    int m_signals[11];
     int m_methods[7];
-    int m_signalArgCount[9];
-    const int* m_signalArgTypes[9];
+    int m_signalArgCount[10];
+    const int* m_signalArgTypes[10];
     int m_methodArgCount[6];
     const int* m_methodArgTypes[6];
     QString m_name;
