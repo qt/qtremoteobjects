@@ -238,8 +238,7 @@ void ProxyTest::testProxy()
         }
         QSignalSpy dataSpy(rep->tracks(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
         QVector<QModelIndex> pending;
-        QTest::qWait(100);
-        QCOMPARE(rep->tracks()->rowCount(), model.rowCount());
+        QTRY_COMPARE(rep->tracks()->rowCount(), model.rowCount());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
         {
             // We haven't received any data yet
@@ -315,8 +314,7 @@ void ProxyTest::testProxy()
         QTRY_COMPARE(tracksReplica->isInitialized(), true);
         QSignalSpy dataSpy(tracksReplica, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
         QVector<QModelIndex> pending;
-        QTest::qWait(100);
-        QCOMPARE(tracksReplica->rowCount(), model.rowCount());
+        QTRY_COMPARE(tracksReplica->rowCount(), model.rowCount());
         for (int i = 0; i < tracksReplica->rowCount(); i++)
         {
             // We haven't received any data yet
@@ -386,7 +384,7 @@ void ProxyTest::testForwardProxy()
 
     // Setup Replica
     const QScopedPointer<EngineReplica> replica(remoteNode.acquire<EngineReplica>());
-    QVERIFY(replica->waitForSource(1000));
+    QTRY_VERIFY(replica->waitForSource(300));
 
     // Compare Replica to Source
     QCOMPARE(replica->rpm(), engine.rpm());
@@ -422,7 +420,7 @@ void ProxyTest::testReverseProxy()
 
     // Setup Replica
     const QScopedPointer<EngineReplica> replica(host.acquire<EngineReplica>());
-    QVERIFY(replica->waitForSource(1000));
+    QTRY_VERIFY(replica->waitForSource(300));
 
     //Compare Replica to Source
     QCOMPARE(replica->rpm(), engine.rpm());
