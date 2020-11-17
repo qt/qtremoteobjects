@@ -38,7 +38,7 @@ such as QRemoteObjectNode, QRemoteObjectHost, or QRemoteObjectRegistryHost.
 The host types of Nodes provide additional functionality. Both
 QRemoteObjectHost and QRemoteObjectRegistryHost support the
 \l{QRemoteObjectHostBase::}{enableRemoting()} and the corresponding
-\l{QRemoteObjectHostBase::}{disableRemoting()}) methods, which are the key
+\l{QRemoteObjectHostBase::}{disableRemoting()} methods, which are the key
 methods to expose source objects to the network. To use the \l Registry
 functionality, you need to have a QRemoteObjectRegistryHost on the network.
 Then, all other nodes can pass the RegistryHost's URL to the Node's

@@ -43,7 +43,7 @@ processes or devices can then create
 \l{QRemoteObjectDynamicReplica}{dynamics replicas} of the object to interact
 with.
 
-For more information, see \l{Remote Object Interaction}).
+For more information, see \l{Remote Object Interaction}.
 
 Letting repc generate a source header file for your project, using the
 \l {REPC_SOURCE} variable, provides three different options to implement the
