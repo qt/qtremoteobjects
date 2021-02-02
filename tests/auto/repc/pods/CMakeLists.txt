@@ -4,7 +4,7 @@
 ## tst_repc_pods Test:
 #####################################################################
 
-qt_add_test(tst_repc_pods
+qt_internal_add_test(tst_repc_pods
     SOURCES
         tst_pods.cpp
     PUBLIC_LIBRARIES

@@ -18,9 +18,13 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/simpleswitch/direct
 find_package(Qt6 COMPONENTS Core)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_executable(directconnectdynamicclient
+qt_add_executable(directconnectdynamicclient
     dynamicclient.cpp dynamicclient.h
     main.cpp
+)
+set_target_properties(directconnectdynamicclient PROPERTIES
+    WIN32_EXECUTABLE FALSE
+    MACOSX_BUNDLE FALSE
 )
 target_link_libraries(directconnectdynamicclient PUBLIC
     Qt::Core

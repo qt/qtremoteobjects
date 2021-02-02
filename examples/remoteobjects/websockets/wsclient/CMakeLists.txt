@@ -21,9 +21,13 @@ find_package(Qt6 COMPONENTS Widgets)
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS WebSockets)
 
-add_executable(wsclient
+qt_add_executable(wsclient
     ../common/websocketiodevice.cpp ../common/websocketiodevice.h
     main.cpp
+)
+set_target_properties(wsclient PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE FALSE
 )
 target_include_directories(wsclient PUBLIC
     ../common

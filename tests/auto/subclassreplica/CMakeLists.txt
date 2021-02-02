@@ -4,7 +4,7 @@
 ## tst_subclassreplicatest Test:
 #####################################################################
 
-qt_add_test(tst_subclassreplicatest
+qt_internal_add_test(tst_subclassreplicatest
     SOURCES
         tst_subclassreplicatest.cpp
     DEFINES

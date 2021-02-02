@@ -18,9 +18,13 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/server")
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS Core)
 
-add_executable(server
+qt_add_executable(server
     main.cpp
     timemodel.cpp timemodel.h
+)
+set_target_properties(server PROPERTIES
+    WIN32_EXECUTABLE FALSE
+    MACOSX_BUNDLE TRUE
 )
 target_link_libraries(server PUBLIC
     Qt::Core

@@ -20,8 +20,12 @@ find_package(Qt6 COMPONENTS Gui)
 find_package(Qt6 COMPONENTS Widgets)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_executable(modelviewclient
+qt_add_executable(modelviewclient
     main.cpp
+)
+set_target_properties(modelviewclient PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE FALSE
 )
 target_link_libraries(modelviewclient PUBLIC
     Qt::Core

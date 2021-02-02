@@ -21,8 +21,12 @@ find_package(Qt6 COMPONENTS Qml)
 find_package(Qt6 COMPONENTS Quick)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_qt_gui_executable(qmlmodelviewclient
+qt_add_executable(qmlmodelviewclient
     main.cpp
+)
+set_target_properties(qmlmodelviewclient PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
 )
 target_link_libraries(qmlmodelviewclient PUBLIC
     Qt::Core

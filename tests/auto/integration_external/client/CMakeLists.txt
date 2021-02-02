@@ -4,7 +4,7 @@
 ## integration_external_client Binary:
 #####################################################################
 
-qt_add_executable(integration_external_client
+qt_internal_add_executable(integration_external_client
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp

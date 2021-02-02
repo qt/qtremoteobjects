@@ -20,8 +20,12 @@ find_package(Qt6 COMPONENTS Gui)
 find_package(Qt6 COMPONENTS Widgets)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_qt_gui_executable(modelviewserver
+qt_add_executable(modelviewserver
     main.cpp
+)
+set_target_properties(modelviewserver PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
 )
 target_link_libraries(modelviewserver PUBLIC
     Qt::Core

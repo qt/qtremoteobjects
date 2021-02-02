@@ -4,7 +4,7 @@
 ## differentSignalCount Binary:
 #####################################################################
 
-qt_add_executable(differentSignalCount
+qt_internal_add_executable(differentSignalCount
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp

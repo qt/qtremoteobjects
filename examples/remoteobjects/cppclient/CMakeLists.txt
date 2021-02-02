@@ -18,8 +18,12 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/cppclient")
 find_package(Qt6 COMPONENTS Core)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_executable(CppClient
+qt_add_executable(CppClient
     main.cpp
+)
+set_target_properties(CppClient PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE FALSE
 )
 target_link_libraries(CppClient PUBLIC
     Qt::Core

@@ -18,9 +18,13 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/simpleswitch/regist
 find_package(Qt6 COMPONENTS Core)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_executable(registryconnectedserver
+qt_add_executable(registryconnectedserver
     main.cpp
     simpleswitch.cpp simpleswitch.h
+)
+set_target_properties(registryconnectedserver PROPERTIES
+    WIN32_EXECUTABLE FALSE
+    MACOSX_BUNDLE FALSE
 )
 target_link_libraries(registryconnectedserver PUBLIC
     Qt::Core

@@ -4,7 +4,7 @@
 ## tst_modelreplicatest Test:
 #####################################################################
 
-qt_add_test(tst_modelreplicatest
+qt_internal_add_test(tst_modelreplicatest
     SOURCES
         tst_modelreplicatest.cpp
     DEFINES

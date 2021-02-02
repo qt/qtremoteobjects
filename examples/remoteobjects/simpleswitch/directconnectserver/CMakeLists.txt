@@ -18,9 +18,13 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/simpleswitch/direct
 find_package(Qt6 COMPONENTS Core)
 find_package(Qt6 COMPONENTS RemoteObjects)
 
-add_executable(directconnectserver
+qt_add_executable(directconnectserver
     main.cpp
     simpleswitch.cpp simpleswitch.h
+)
+set_target_properties(directconnectserver PROPERTIES
+    WIN32_EXECUTABLE FALSE
+    MACOSX_BUNDLE FALSE
 )
 target_link_libraries(directconnectserver PUBLIC
     Qt::Core

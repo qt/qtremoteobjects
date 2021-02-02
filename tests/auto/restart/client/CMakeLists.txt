@@ -4,7 +4,7 @@
 ## restart_client Binary:
 #####################################################################
 
-qt_add_executable(restart_client
+qt_internal_add_executable(restart_client
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         main.cpp

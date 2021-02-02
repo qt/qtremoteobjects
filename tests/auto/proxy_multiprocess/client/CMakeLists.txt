@@ -4,7 +4,7 @@
 ## proxy_multiprocess_client Binary:
 #####################################################################
 
-qt_add_executable(proxy_multiprocess_client
+qt_internal_add_executable(proxy_multiprocess_client
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../namespace.h

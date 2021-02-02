@@ -4,7 +4,7 @@
 ## tst_integration Test:
 #####################################################################
 
-qt_add_test(tst_integration
+qt_internal_add_test(tst_integration
     SOURCES
         engine.cpp engine.h
         speedometer.cpp speedometer.h

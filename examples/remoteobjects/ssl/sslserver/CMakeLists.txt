@@ -18,10 +18,14 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/ssl/sslserver")
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS Core)
 
-add_executable(sslserver
+qt_add_executable(sslserver
     main.cpp
     sslserver.cpp sslserver.h
     timemodel.cpp timemodel.h
+)
+set_target_properties(sslserver PROPERTIES
+    WIN32_EXECUTABLE FALSE
+    MACOSX_BUNDLE TRUE
 )
 target_link_libraries(sslserver PUBLIC
     Qt::Core

@@ -4,7 +4,7 @@
 ## tst_pods Test:
 #####################################################################
 
-qt_add_test(tst_pods
+qt_internal_add_test(tst_pods
     SOURCES
         tst_pods.cpp
     PUBLIC_LIBRARIES
@@ -13,9 +13,6 @@ qt_add_test(tst_pods
 qt6_add_repc_replica(tst_pods
     pods.h
 )
-
-#### Keys ignored in scope 1:.:.:pods.pro:<TRUE>:
-# QOBJECT_REP = "$$REP_FILES"
 
 ## Scopes:
 #####################################################################

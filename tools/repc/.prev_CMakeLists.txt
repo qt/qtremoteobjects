@@ -10,13 +10,6 @@ qt_add_tool(${target_name}
     SOURCES
         cppcodegenerator.cpp cppcodegenerator.h
         main.cpp
-        moc_copy/moc.cpp moc_copy/moc.h
-        moc_copy/outputrevision.h
-        moc_copy/parser.cpp moc_copy/parser.h
-        moc_copy/preprocessor.cpp moc_copy/preprocessor.h
-        moc_copy/symbols.h
-        moc_copy/token.cpp moc_copy/token.h
-        moc_copy/utils.h
         repcodegenerator.cpp repcodegenerator.h
         utils.cpp utils.h
     DEFINES
@@ -27,7 +20,6 @@ qt_add_tool(${target_name}
         RO_INSTALL_HEADERS=\"$$[QT_INSTALL_HEADERS]/QtRemoteObjects\"
     INCLUDE_DIRECTORIES
         ${CMAKE_SOURCE_DIR}/src/repparser
-        moc_copy
     PUBLIC_LIBRARIES
         Qt::CorePrivate
 )

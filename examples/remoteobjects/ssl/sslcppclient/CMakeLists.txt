@@ -18,8 +18,12 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/ssl/sslcppclient")
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS Core)
 
-add_executable(SslCppClient
+qt_add_executable(SslCppClient
     main.cpp
+)
+set_target_properties(SslCppClient PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE FALSE
 )
 target_link_libraries(SslCppClient PUBLIC
     # Remove: gui

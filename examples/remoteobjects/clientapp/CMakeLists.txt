@@ -20,8 +20,12 @@ find_package(Qt6 COMPONENTS Gui)
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS Quick)
 
-add_qt_gui_executable(clientapp
+qt_add_executable(clientapp
     main.cpp
+)
+set_target_properties(clientapp PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
 )
 target_link_libraries(clientapp PUBLIC
     Qt::Core

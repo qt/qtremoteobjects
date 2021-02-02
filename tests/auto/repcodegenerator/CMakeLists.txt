@@ -4,7 +4,7 @@
 ## tst_repcodegenerator Test:
 #####################################################################
 
-qt_add_test(tst_repcodegenerator
+qt_internal_add_test(tst_repcodegenerator
     SOURCES
         tst_repcodegenerator.cpp
     PUBLIC_LIBRARIES

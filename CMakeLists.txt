@@ -1,6 +1,6 @@
 # Generated from qtremoteobjects.pro.
 
-cmake_minimum_required(VERSION 3.15.0)
+cmake_minimum_required(VERSION 3.16)
 
 include(.cmake.conf)
 project(QtRemoteObjects
@@ -12,7 +12,7 @@ project(QtRemoteObjects
 
 # special case begin
 find_package(Qt6 ${PROJECT_VERSION} CONFIG REQUIRED COMPONENTS BuildInternals Core Network)
-find_package(Qt6 ${PROJECT_VERSION} CONFIG OPTIONAL_COMPONENTS Quick QuickTest)
+find_package(Qt6 ${PROJECT_VERSION} CONFIG OPTIONAL_COMPONENTS Gui Widgets Quick QuickTest)
 # special case end
 
 if(NOT TARGET Qt::Network)

@@ -4,7 +4,7 @@
 ## signatureServer Binary:
 #####################################################################
 
-qt_add_executable(signatureServer
+qt_internal_add_executable(signatureServer
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/rep_server_source.h

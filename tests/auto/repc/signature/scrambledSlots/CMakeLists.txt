@@ -4,7 +4,7 @@
 ## scrambledSlots Binary:
 #####################################################################
 
-qt_add_executable(scrambledSlots
+qt_internal_add_executable(scrambledSlots
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         ../mismatch.cpp
