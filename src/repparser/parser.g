@@ -98,7 +98,7 @@ struct ASTProperty
     bool persisted;
     bool isPointer;
 };
-Q_DECLARE_TYPEINFO(ASTProperty, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTProperty, Q_RELOCATABLE_TYPE);
 
 struct ASTDeclaration
 {
@@ -122,7 +122,7 @@ struct ASTDeclaration
     QString name;
     VariableTypes variableType;
 };
-Q_DECLARE_TYPEINFO(ASTDeclaration, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTDeclaration, Q_RELOCATABLE_TYPE);
 
 struct ASTFunction
 {
@@ -140,7 +140,7 @@ struct ASTFunction
     QString name;
     QList<ASTDeclaration> params;
 };
-Q_DECLARE_TYPEINFO(ASTFunction, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTFunction, Q_RELOCATABLE_TYPE);
 
 struct ASTEnumParam
 {
@@ -155,7 +155,7 @@ struct ASTEnumParam
     QString name;
     int value;
 };
-Q_DECLARE_TYPEINFO(ASTEnumParam, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTEnumParam, Q_RELOCATABLE_TYPE);
 
 struct ASTEnum
 {
@@ -166,7 +166,7 @@ struct ASTEnum
     bool isSigned;
     int max;
 };
-Q_DECLARE_TYPEINFO(ASTEnum, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTEnum, Q_RELOCATABLE_TYPE);
 
 struct ASTModelRole
 {
@@ -177,7 +177,7 @@ struct ASTModelRole
 
     QString name;
 };
-Q_DECLARE_TYPEINFO(ASTModelRole, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTModelRole, Q_RELOCATABLE_TYPE);
 
 struct ASTModel
 {
@@ -186,7 +186,7 @@ struct ASTModel
     QList<ASTModelRole> roles;
     int propertyIndex;
 };
-Q_DECLARE_TYPEINFO(ASTModel, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTModel, Q_RELOCATABLE_TYPE);
 
 /// A Class declaration
 struct ASTClass
@@ -205,7 +205,7 @@ struct ASTClass
     QList<ASTModel> modelMetadata;
     QList<int> subClassPropertyIndices;
 };
-Q_DECLARE_TYPEINFO(ASTClass, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ASTClass, Q_RELOCATABLE_TYPE);
 
 // The attribute of a POD
 struct PODAttribute
@@ -217,7 +217,7 @@ struct PODAttribute
     QString type;
     QString name;
 };
-Q_DECLARE_TYPEINFO(PODAttribute, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(PODAttribute, Q_RELOCATABLE_TYPE);
 
 // A POD declaration
 struct POD
@@ -225,7 +225,7 @@ struct POD
     QString name;
     QList<PODAttribute> attributes;
 };
-Q_DECLARE_TYPEINFO(POD, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(POD, Q_RELOCATABLE_TYPE);
 
 // The AST representation of a .rep file
 struct AST
@@ -236,7 +236,7 @@ struct AST
     QList<QString> enumUses;
     QStringList preprocessorDirectives;
 };
-Q_DECLARE_TYPEINFO(AST, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(AST, Q_RELOCATABLE_TYPE);
 
 class RepParser: public QRegexParser<RepParser, $table>
 {

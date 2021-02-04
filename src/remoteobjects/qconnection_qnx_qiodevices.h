@@ -109,7 +109,7 @@ protected:
 private:
     Q_DISABLE_COPY(QQnxNativeIo)
 };
-Q_DECLARE_TYPEINFO(QQnxNativeIo, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(QQnxNativeIo, Q_RELOCATABLE_TYPE);
 
 class Q_REMOTEOBJECTS_EXPORT QIOQnxSource : public QIODevice
 {
@@ -151,7 +151,7 @@ private:
     friend class QQnxNativeServerPrivate;
     friend class QnxServerIo;
 };
-Q_DECLARE_TYPEINFO(QIOQnxSource, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(QIOQnxSource, Q_RELOCATABLE_TYPE);
 
 QT_END_NAMESPACE
 
