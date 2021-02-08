@@ -92,18 +92,14 @@ void QAbstractItemModelSourceAdapter::registerTypes()
     alreadyRegistered = true;
     qRegisterMetaType<QAbstractItemModel*>();
     qRegisterMetaType<Qt::Orientation>();
-    qRegisterMetaType<QVector<Qt::Orientation> >();
-    qRegisterMetaTypeStreamOperators<ModelIndex>();
-    qRegisterMetaTypeStreamOperators<IndexList>();
-    qRegisterMetaTypeStreamOperators<DataEntries>();
-    qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
-    qRegisterMetaTypeStreamOperators<Qt::Orientation>();
-    qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
+    qRegisterMetaType<QVector<Qt::Orientation>>();
+    qRegisterMetaType<ModelIndex>();
+    qRegisterMetaType<IndexList>();
+    qRegisterMetaType<DataEntries>();
+    qRegisterMetaType<MetaAndDataEntries>();
     qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
-    qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
     qRegisterMetaType<QSize>();
     qRegisterMetaType<QIntHash>();
-    qRegisterMetaTypeStreamOperators<QIntHash>();
 }
 
 QItemSelectionModel* QAbstractItemModelSourceAdapter::selectionModel() const

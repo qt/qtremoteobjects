@@ -41,7 +41,6 @@ struct ASTEnum;
 struct ASTProperty;
 
 class QIODevice;
-class QStringList;
 class QTextStream;
 
 class RepCodeGenerator
@@ -64,7 +63,6 @@ private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
     QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
     QString generateMetaTypeRegistrationForPending(const QSet<QString> &metaTypes);
-    QString generateMetaTypeRegistrationForEnums(const QVector<QString> &enums);
     void generateStreamOperatorsForEnums(QTextStream &out, const QVector<QString> &enums);
 
     void generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride = true);

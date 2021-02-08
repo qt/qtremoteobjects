@@ -67,6 +67,13 @@ struct ManagedGadgetTypeEntry
     QMetaType gadgetMetaType;
     QVector<QMetaType> enumMetaTypes;
     std::shared_ptr<QMetaObject> metaObject;
+
+    void unregisterMetaTypes()
+    {
+        QMetaType::unregisterMetaType(gadgetMetaType);
+        for (auto enumMetaType : enumMetaTypes)
+            QMetaType::unregisterMetaType(enumMetaType);
+    }
 };
 
 static QMutex s_managedTypesMutex;
@@ -86,7 +93,7 @@ static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int
         GadgetType *_t = reinterpret_cast<GadgetType *>(_o);
         if (_id < _t->size()) {
             auto & prop = (*_t)[_id];
-            prop = QVariant(prop.userType(), _a[0]);
+            prop = QVariant(prop.metaType(), _a[0]);
         }
     }
 }
@@ -136,6 +143,16 @@ static void GadgetLoadOperator(QDataStream &in, void *data)
 static bool GadgetEqualsFn(const QtPrivate::QMetaTypeInterface *, const void *a, const void *b)
 {
     return *reinterpret_cast<const GadgetType*>(a) == *reinterpret_cast<const GadgetType*>(b);
+}
+
+static void GadgetDataStreamOutFn(const QtPrivate::QMetaTypeInterface *, QDataStream &ds, const void *a)
+{
+    GadgetSaveOperator(ds, a);
+}
+
+static void GadgetDataStreamInFn(const QtPrivate::QMetaTypeInterface *, QDataStream &ds, void *a)
+{
+    GadgetLoadOperator(ds, a);
 }
 
 // Like the Q_GADGET static methods above, we need constructor/destructor methods
@@ -193,6 +210,24 @@ template<typename T>
 static bool EnumLessThanFn(const QtPrivate::QMetaTypeInterface *, const void *a, const void *b)
 {
     return *static_cast<const T*>(a) < *static_cast<const T*>(b);
+}
+
+template<typename T>
+static void EnumDebugStreamFn(const QtPrivate::QMetaTypeInterface *, QDebug &dbg, const void *a)
+{
+    dbg << *static_cast<const T *>(a);
+}
+
+template<typename T>
+static void EnumDataStreamOutFn(const QtPrivate::QMetaTypeInterface *, QDataStream &ds, const void *a)
+{
+    ds << *static_cast<const T *>(a);
+}
+
+template<typename T>
+static void EnumDataStreamInFn(const QtPrivate::QMetaTypeInterface *, QDataStream &ds, void *a)
+{
+    ds >> *static_cast<T *>(a);
 }
 
 static QString name(const QMetaObject * const mobj)
@@ -708,6 +743,8 @@ QRemoteObjectAbstractPersistedStorePrivate::~QRemoteObjectAbstractPersistedStore
 QRemoteObjectMetaObjectManager::~QRemoteObjectMetaObjectManager()
 {
     for (QMetaObject *mo : dynamicTypes) {
+        for (auto metaType : enumTypes[mo])
+            QMetaType::unregisterMetaType(metaType);
         enumTypes.remove(mo);
         free(mo); //QMetaObjectBuilder uses malloc, not new
     }
@@ -736,7 +773,8 @@ static void trackConnection(int typeId, IoDeviceBase *connection)
         s_trackedConnections[typeId].remove(connection);
         if (s_trackedConnections[typeId].isEmpty()) {
             s_trackedConnections.remove(typeId);
-            s_managedTypes.remove(typeId); // Destroys the meta types, unregistering them.
+            s_managedTypes[typeId].unregisterMetaTypes();
+            s_managedTypes.remove(typeId); // Destroys the meta types
         }
     };
 
@@ -777,7 +815,14 @@ static const char *strDup(const QByteArray &s)
 }
 
 using Gadgets = QHash<QByteArray, GadgetData>;
-using TypeInfo = QtPrivate::QMetaTypeInterface;
+struct TypeInfo : public QtPrivate::QMetaTypeInterface
+{
+    const QMetaObject *metaObject;
+};
+static const QMetaObject *metaObjectFn(const QtPrivate::QMetaTypeInterface *self)
+{
+    return static_cast<const TypeInfo *>(self)->metaObject;
+}
 
 template <class Int>
 static TypeInfo *enumMetaType(const QByteArray &name, uint size, const QMetaObject *meta=nullptr)
@@ -786,17 +831,20 @@ static TypeInfo *enumMetaType(const QByteArray &name, uint size, const QMetaObje
                               | QMetaType::NeedsDestruction;
 
     auto typeInfo = new TypeInfo {
-        0, size, alignof(Int), uint(flags), meta, strDup(name), 0,
-        // meta is only passed in for Qt types, which don't need to be unregistered.
-        Q_BASIC_ATOMIC_INITIALIZER(meta ? -1 : 0),
-        [](TypeInfo *self) { delete [] self->name; delete self; },
-        EnumConstructor<Int>,
-        EnumCopyConstructor<Int>,
-        EnumMoveConstructor<Int>,
-        EnumDestructor<Int>,
-        EnumEqualsFn<Int>,
-        EnumLessThanFn<Int>,
-        nullptr };
+        {
+            0, alignof(Int), size, uint(flags), 0, metaObjectFn, strDup(name),
+            EnumConstructor<Int>,
+            EnumCopyConstructor<Int>,
+            EnumMoveConstructor<Int>,
+            EnumDestructor<Int>,
+            EnumEqualsFn<Int>,
+            EnumLessThanFn<Int>,
+            EnumDebugStreamFn<Int>,
+            EnumDataStreamOutFn<Int>,
+            EnumDataStreamInFn<Int>,
+            nullptr
+        }, meta
+    };
     return typeInfo;
 }
 
@@ -847,7 +895,7 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
 
    QMetaObjectBuilder gadgetBuilder;
    gadgetBuilder.setClassName(typeName);
-   gadgetBuilder.setFlags(QMetaObjectBuilder::DynamicMetaObject | QMetaObjectBuilder::PropertyAccessInStaticMetaCall);
+   gadgetBuilder.setFlags(DynamicMetaObject | PropertyAccessInStaticMetaCall);
    for (const auto &prop : gadget.properties) {
        int propertyType = QMetaType::type(prop.type);
        if (!propertyType && gadgets.contains(prop.type))
@@ -889,31 +937,41 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
        meta->d.superdata = nullptr;
        flags |= QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
        auto typeInfo = new TypeInfo {
-           0, sizeof(GadgetType), alignof(GadgetType), uint(flags), meta,
-           strDup(typeName), 0,
-           Q_BASIC_ATOMIC_INITIALIZER(0),
-           [](TypeInfo *self) { delete [] self->name; delete self; },
-           GadgetTypedConstructor,
-           GadgetTypedCopyConstructor,
-           GadgetTypedMoveConstructor,
-           GadgetTypedDestructor,
-           GadgetEqualsFn,
-           nullptr,
-           nullptr };
+           {
+               0, alignof(GadgetType), sizeof(GadgetType), uint(flags), 0, metaObjectFn,
+               strDup(typeName),
+               GadgetTypedConstructor,
+               GadgetTypedCopyConstructor,
+               GadgetTypedMoveConstructor,
+               GadgetTypedDestructor,
+               GadgetEqualsFn,
+               nullptr, /* LessThanFn */
+               nullptr, /* DebugStreamFn */
+               GadgetDataStreamOutFn,
+               GadgetDataStreamInFn,
+               nullptr /* LegacyRegisterOp */
+           },
+           meta
+       };
        entry.gadgetMetaType = QMetaType(typeInfo);
-       QMetaType::registerStreamOperators(entry.gadgetMetaType.id(), &GadgetSaveOperator, &GadgetLoadOperator);
    } else {
        auto typeInfo = new TypeInfo {
-           0, sizeof(GadgetType), alignof(GadgetType), uint(flags), meta, strDup(typeName), 0,
-           Q_BASIC_ATOMIC_INITIALIZER(0),
-           [](TypeInfo *self) { delete [] self->name; delete self; },
-           nullptr,
-           nullptr,
-           nullptr,
-           nullptr,
-           nullptr,
-           nullptr,
-           nullptr };
+           {
+               0, alignof(GadgetType), sizeof(GadgetType), uint(flags), 0, metaObjectFn,
+               strDup(typeName),
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr,
+               nullptr
+           },
+           meta
+       };
        entry.gadgetMetaType = QMetaType(typeInfo);
    }
    const int gadgetTypeId = entry.gadgetMetaType.id();
@@ -985,7 +1043,7 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
 {
     QMetaObjectBuilder builder;
     builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
-    builder.setFlags(QMetaObjectBuilder::DynamicMetaObject);
+    builder.setFlags(DynamicMetaObject);
 
     QString typeString;
     QByteArray type;
@@ -1065,9 +1123,17 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
         in >> name;
         in >> typeName;
         in >> signalName;
-        const auto choppedName = QByteArray::fromRawData(typeName.constData(), typeName.size()-1); // Remove trailing null
-        if (classEnums.contains(choppedName))
-            typeName = classEnums[choppedName] + '\0'; // Update to the enum's registered name
+
+        auto choppedName = QByteArray::fromRawData(typeName.constData(),
+                                                   typeName.size() - 1); // Remove trailing null
+        // The typeName for class enums is qualified with the class name.
+        // Need to remove the class name  before checking if it's a class enum.
+        if (auto idx = choppedName.indexOf("::"); idx >= 0) {
+            choppedName = choppedName.sliced(idx + 2);
+            if (classEnums.contains(choppedName))
+                typeName = classEnums[choppedName] + '\0'; // Update to the enum's registered name
+        }
+
         if (signalName.isEmpty())
             builder.addProperty(name, typeName);
         else
@@ -1076,7 +1142,8 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connec
 
     auto meta = builder.toMetaObject();
     for (auto typeInfo : enumsToBeAssignedMetaObject.keys()) {
-        typeInfo->metaObject = meta;
+        auto typeInfoWithMetaObject = static_cast<TypeInfo *>(typeInfo);
+        typeInfoWithMetaObject->metaObject = meta;
         enumTypes[meta].append(enumsToBeAssignedMetaObject.take(typeInfo));
     }
     dynamicTypes.insert(typeString, meta);
@@ -1183,6 +1250,17 @@ bool QRemoteObjectNodePrivate::hasInstance(const QString &name)
     }
 
     return true;
+}
+
+static QDebug operator<<(QDebug debug,
+                         const QHash<QString, QWeakPointer<QReplicaImplementationInterface>> &hash)
+{
+    const QDebugStateSaver saver(debug);
+    debug.nospace() << "QHash(";
+    for (auto it = hash.cbegin(); it != hash.cend(); ++it)
+        debug << '(' << it.key() << ", " << it.value().isNull() << ')';
+    debug << ')';
+    return debug;
 }
 
 void QRemoteObjectNodePrivate::onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry)
@@ -1352,7 +1430,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         }
 
         switch (packetType) {
-        case Pong:
+        case QRemoteObjectPacketTypeEnum::Pong:
         {
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep)
@@ -1361,7 +1439,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 replicas.remove(rxName);
             break;
         }
-        case Handshake:
+        case QRemoteObjectPacketTypeEnum::Handshake:
             if (rxName != QtRemoteObjects::protocolVersion) {
                 qWarning() << "*** Protocol Mismatch, closing connection ***. Got" << rxName << "expected" << QtRemoteObjects::protocolVersion;
                 setLastError(QRemoteObjectNode::ProtocolMismatch);
@@ -1370,7 +1448,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 m_handshakeReceived = true;
             }
             break;
-        case ObjectList:
+        case QRemoteObjectPacketTypeEnum::ObjectList:
         {
             deserializeObjectListPacket(connection->stream(), rxObjects);
             qROPrivDebug() << "newObjects:" << rxObjects;
@@ -1393,7 +1471,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case InitPacket:
+        case QRemoteObjectPacketTypeEnum::InitPacket:
         {
             qROPrivDebug() << "InitPacket-->" << rxName << this;
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
@@ -1408,7 +1486,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case InitDynamicPacket:
+        case QRemoteObjectPacketTypeEnum::InitDynamicPacket:
         {
             qROPrivDebug() << "InitDynamicPacket-->" << rxName << this;
             const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection, connection->stream());
@@ -1424,7 +1502,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case RemoveObject:
+        case QRemoteObjectPacketTypeEnum::RemoveObject:
         {
             qROPrivDebug() << "RemoveObject-->" << rxName << this;
             connectedSources.remove(rxName);
@@ -1440,7 +1518,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case PropertyChangePacket:
+        case QRemoteObjectPacketTypeEnum::PropertyChangePacket:
         {
             int propertyIndex;
             deserializePropertyChangePacket(connection->stream(), propertyIndex, rxValue);
@@ -1471,13 +1549,13 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case InvokePacket:
+        case QRemoteObjectPacketTypeEnum::InvokePacket:
         {
             int call, index, serialId, propertyIndex;
             deserializeInvokePacket(connection->stream(), call, index, rxArgs, serialId, propertyIndex);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
-                static QVariant null(QMetaType::QObjectStar, (void*)0);
+                static QVariant null(QMetaType(QMetaType::QObjectStar), nullptr);
                 QVariant paramValue;
                 // Qt usually supports 9 arguments, so ten should be usually safe
                 QVarLengthArray<void*, 10> param(rxArgs.size() + 1);
@@ -1506,7 +1584,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case InvokeReplyPacket:
+        case QRemoteObjectPacketTypeEnum::InvokeReplyPacket:
         {
             int ackedSerialId;
             deserializeInvokeReplyPacket(connection->stream(), ackedSerialId, rxValue);
@@ -1519,9 +1597,9 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             }
             break;
         }
-        case AddObject:
-        case Invalid:
-        case Ping:
+        case QRemoteObjectPacketTypeEnum::AddObject:
+        case QRemoteObjectPacketTypeEnum::Invalid:
+        case QRemoteObjectPacketTypeEnum::Ping:
             qROPrivWarning() << "Unexpected packet received";
         }
     } while (connection->bytesAvailable()); // have bytes left over, so do another iteration
@@ -1669,8 +1747,7 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QRemoteObjectNode *>();
     qRegisterMetaType<QRemoteObjectNode::ErrorCode>();
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
-    qRegisterMetaTypeStreamOperators<QVector<int> >();
-    qRegisterMetaTypeStreamOperators<QRemoteObjectPackets::QRO_>();
+    qRegisterMetaType<QRemoteObjectPackets::QRO_>();
     // To support dynamic MODELs, we need to make sure the types are registered
     QAbstractItemModelSourceAdapter::registerTypes();
 }

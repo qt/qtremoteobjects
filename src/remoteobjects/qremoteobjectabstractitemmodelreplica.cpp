@@ -117,18 +117,14 @@ void QAbstractItemModelReplicaImplementation::registerMetatypes()
     alreadyRegistered = true;
     qRegisterMetaType<QAbstractItemModel*>();
     qRegisterMetaType<Qt::Orientation>();
-    qRegisterMetaType<QVector<Qt::Orientation> >();
-    qRegisterMetaTypeStreamOperators<ModelIndex>();
-    qRegisterMetaTypeStreamOperators<IndexList>();
-    qRegisterMetaTypeStreamOperators<DataEntries>();
-    qRegisterMetaTypeStreamOperators<MetaAndDataEntries>();
-    qRegisterMetaTypeStreamOperators<Qt::Orientation>();
-    qRegisterMetaTypeStreamOperators<QVector<Qt::Orientation> >();
-    qRegisterMetaTypeStreamOperators<QItemSelectionModel::SelectionFlags>();
+    qRegisterMetaType<QVector<Qt::Orientation>>();
+    qRegisterMetaType<ModelIndex>();
+    qRegisterMetaType<IndexList>();
+    qRegisterMetaType<DataEntries>();
+    qRegisterMetaType<MetaAndDataEntries>();
     qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
     qRegisterMetaType<QSize>();
     qRegisterMetaType<QIntHash>();
-    qRegisterMetaTypeStreamOperators<QIntHash>();
 }
 
 void QAbstractItemModelReplicaImplementation::initializeModelConnections()

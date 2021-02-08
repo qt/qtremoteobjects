@@ -372,7 +372,7 @@ private slots:
 
         QMetaProperty property = metaObject->property(propertyIndex);
         QVERIFY(property.isValid());
-        QCOMPARE(property.typeName(), "ClassEnum");
+        QCOMPARE(property.typeName(), "TestClassReplica::ClassEnum");
 
         // read enum on the dynamic replica
         {
@@ -393,7 +393,7 @@ private slots:
 
         property = metaObject->property(propertyIndex);
         QVERIFY(property.isValid());
-        QCOMPARE(property.typeName(), "ClassEnum");
+        QCOMPARE(property.typeName(), "TestClassReplica::ClassEnum");
 
         // read enum on the dynamic replica
         {

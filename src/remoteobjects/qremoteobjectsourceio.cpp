@@ -245,7 +245,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     int typeId = QMetaType::type(source->m_api->typeName(index).constData());
                     if (!QMetaType(typeId).sizeOf())
                         typeId = QVariant::Invalid;
-                    QVariant returnValue(typeId, nullptr);
+                    QVariant returnValue(QMetaType(typeId), nullptr);
                     // If a Replica is used as a Source (which node->proxy() does) we can have a PendingCall return value.
                     // In this case, we need to wait for the pending call and send that.
                     if (source->m_api->typeName(index) == QByteArrayLiteral("QRemoteObjectPendingCall"))

@@ -139,7 +139,7 @@ inline bool apiMethodMatch(const QMetaObject *m, const Data &data,
     for (int i = 0; i < argc; ++i) {
         uint typeInfo = m->d.data[paramsIndex + i];
         if (typeInfo & 0x80000000) { // Custom/named type, compare names
-            const char *t = QMetaType::typeName(types[i]);
+            const char *t = QMetaType(types[i]).name();
             const auto type = QByteArray::fromRawData(t, qstrlen(t));
             if (type != apiStringData(m, typeInfo & 0x7FFFFFFF))
                 return false;

@@ -149,7 +149,7 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
             if (mp.userType() == QMetaType::QVariant)
                 args << *reinterpret_cast<QVariant*>(argv[0]);
             else
-                args << QVariant(mp.userType(), argv[0]);
+                args << QVariant(mp.metaType(), argv[0]);
             QRemoteObjectReplica::send(QMetaObject::WriteProperty, saved_id, args);
         } else {
             if (mp.userType() == QMetaType::QVariant)
@@ -188,17 +188,17 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 if (impl->m_metaObject->indexOfEnumerator(types[i].constData()) != -1) {
                     const auto size = QMetaType(type).sizeOf();
                     switch (size) {
-                    case 1: args.push_back(QVariant(QMetaType::Char, argv[i + 1])); break;
-                    case 2: args.push_back(QVariant(QMetaType::Short, argv[i + 1])); break;
-                    case 4: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
+                    case 1: args.push_back(QVariant(QMetaType(QMetaType::Char), argv[i + 1])); break;
+                    case 2: args.push_back(QVariant(QMetaType(QMetaType::Short), argv[i + 1])); break;
+                    case 4: args.push_back(QVariant(QMetaType(QMetaType::Int), argv[i + 1])); break;
                     // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
 //                    case 8: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
                     default:
                         qWarning() << "Invalid enum detected (Dynamic Replica)" << QMetaType::typeName(type) << "with size" << size;
-                        args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
+                        args.push_back(QVariant(QMetaType(QMetaType::Int), argv[i + 1])); break;
                     }
                 } else
-                    args.push_back(QVariant(type, argv[i + 1]));
+                    args.push_back(QVariant(QMetaType(type), argv[i + 1]));
             }
 
             if (debugArgs) {

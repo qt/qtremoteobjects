@@ -152,6 +152,19 @@ inline QDebug operator<<(QDebug stream, const IndexValuePair &pair)
     return stream.nospace() << "IndexValuePair[index=" << pair.index << ", data=" << pair.data << ", hasChildren=" << pair.hasChildren << ", flags=" << pair.flags << "]";
 }
 
+inline QDataStream& operator<<(QDataStream &stream, const IndexValuePair &pair)
+{
+    return stream << pair.index << pair.data << pair.hasChildren << static_cast<int>(pair.flags) << pair.children << pair.size;
+}
+
+inline QDataStream& operator>>(QDataStream &stream, IndexValuePair &pair)
+{
+    int flags;
+    QDataStream &ret = stream >> pair.index >> pair.data >> pair.hasChildren >> flags >> pair.children >> pair.size;
+    pair.flags = static_cast<Qt::ItemFlags>(flags);
+    return ret;
+}
+
 inline QDebug operator<<(QDebug stream, const DataEntries &entries)
 {
     return stream.nospace() << "DataEntries[" << entries.data << "]";
@@ -175,19 +188,6 @@ inline QDataStream& operator<<(QDataStream &stream, const MetaAndDataEntries &en
 inline QDataStream& operator>>(QDataStream &stream, MetaAndDataEntries &entries)
 {
     return stream >> entries.data >> entries.roles >> entries.size;
-}
-
-inline QDataStream& operator<<(QDataStream &stream, const IndexValuePair &pair)
-{
-    return stream << pair.index << pair.data << pair.hasChildren << static_cast<int>(pair.flags) << pair.children << pair.size;
-}
-
-inline QDataStream& operator>>(QDataStream &stream, IndexValuePair &pair)
-{
-    int flags;
-    QDataStream &ret = stream >> pair.index >> pair.data >> pair.hasChildren >> flags >> pair.children >> pair.size;
-    pair.flags = static_cast<Qt::ItemFlags>(flags);
-    return ret;
 }
 
 inline QString modelIndexToString(const IndexList &list)

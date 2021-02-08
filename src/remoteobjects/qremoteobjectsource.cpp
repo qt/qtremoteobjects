@@ -300,14 +300,14 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
         if (type == QMetaType::QVariant)
             list[i] = *reinterpret_cast<QVariant *>(a[i + 1]);
         else
-            list[i] = QVariant(type, a[i + 1]);
+            list[i] = QVariant(QMetaType(type), a[i + 1]);
     }
     for (int i = list.size(); i < N; ++i) {
         const int type = m_api->signalParameterType(index, i);
         if (type == QMetaType::QVariant)
             list << *reinterpret_cast<QVariant *>(a[i + 1]);
         else
-            list << QVariant(type, a[i + 1]);
+            list << QVariant(QMetaType(type), a[i + 1]);
     }
     for (int i = N; i < list.size(); ++i)
         list.removeLast();

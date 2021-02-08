@@ -254,7 +254,7 @@ void ProxyTest::testProxy()
         QVERIFY(w.wait());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
         {
-            QCOMPARE(rep->tracks()->data(rep->tracks()->index(i, 0)), model.data(model.index(i), Qt::DisplayRole));
+            QTRY_COMPARE(rep->tracks()->data(rep->tracks()->index(i, 0)), model.data(model.index(i), Qt::DisplayRole));
         }
 
         //Change SubClass and make sure change propagates

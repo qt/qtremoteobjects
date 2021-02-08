@@ -116,9 +116,7 @@ void QRemoteObjectRegistry::registerMetatypes()
         return;
     initialized = true;
     qRegisterMetaType<QRemoteObjectSourceLocation>();
-    qRegisterMetaTypeStreamOperators<QRemoteObjectSourceLocation>();
     qRegisterMetaType<QRemoteObjectSourceLocations>();
-    qRegisterMetaTypeStreamOperators<QRemoteObjectSourceLocations>();
 }
 
 void QRemoteObjectRegistry::initialize()

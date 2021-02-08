@@ -79,7 +79,7 @@ private Q_SLOTS:
         auto enumReply = m_rep->enumSlot(p, ParentClassReplica::bar);
         QVERIFY(enumReply.waitForFinished());
         QCOMPARE(enumReply.error(), QRemoteObjectPendingCall::NoError);
-        QCOMPARE(enumReply.returnValue(), QVariant::fromValue(ParentClassReplica::foobar));
+        QCOMPARE(enumReply.returnValue(), ParentClassReplica::foobar);
 
         qDebug() << "Verified expected initial states, sending start.";
         QSignalSpy enumSpy(m_rep.data(), &ParentClassReplica::enum2);

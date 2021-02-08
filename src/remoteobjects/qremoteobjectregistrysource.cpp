@@ -45,8 +45,6 @@ QT_BEGIN_NAMESPACE
 QRegistrySource::QRegistrySource(QObject *parent)
     : QObject(parent)
 {
-    qRegisterMetaTypeStreamOperators<QRemoteObjectSourceLocation>();
-    qRegisterMetaTypeStreamOperators<QRemoteObjectSourceLocations>();
 }
 
 QRegistrySource::~QRegistrySource()

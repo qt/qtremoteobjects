@@ -863,7 +863,7 @@ QRemoteObjectPendingCall QInProcessReplicaImplementation::_q_sendWithReply(QMeta
     int typeId = QMetaType::type(connectionToSource->m_api->typeName(ReplicaIndex).constData());
     if (!QMetaType(typeId).sizeOf())
         typeId = QVariant::Invalid;
-    QVariant returnValue(typeId, nullptr);
+    QVariant returnValue(QMetaType(typeId), nullptr);
 
     const int resolvedIndex = connectionToSource->m_api->sourceMethodIndex(ReplicaIndex);
     if (resolvedIndex < 0) {

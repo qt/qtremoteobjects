@@ -202,8 +202,7 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
         for (const PODAttribute &attribute : pod.attributes)
             metaTypes << attribute.type;
     }
-    const QString metaTypeRegistrationCode = generateMetaTypeRegistration(metaTypes)
-                                           + generateMetaTypeRegistrationForEnums(ast.enumUses);
+    const QString metaTypeRegistrationCode = generateMetaTypeRegistration(metaTypes);
 
     for (const ASTClass &astClass : ast.classes) {
         QSet<QString> classMetaTypes;
@@ -555,17 +554,12 @@ QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &meta
 {
     QString out;
     const QString qRegisterMetaType = QStringLiteral("        qRegisterMetaType<");
-    const QString qRegisterMetaTypeStreamOperators = QStringLiteral("        qRegisterMetaTypeStreamOperators<");
     const QString lineEnding = QStringLiteral(">();\n");
     for (const QString &metaType : metaTypes) {
         if (isBuiltinType(metaType))
             continue;
 
         out += qRegisterMetaType;
-        out += metaType;
-        out += lineEnding;
-
-        out += qRegisterMetaTypeStreamOperators;
         out += metaType;
         out += lineEnding;
     }
@@ -585,18 +579,6 @@ QString RepCodeGenerator::generateMetaTypeRegistrationForPending(const QSet<QStr
         out += qRegisterConverterConditional.arg(metaType);
         out += qRegisterConverter.arg(metaType);
     }
-    return out;
-}
-
-
-QString RepCodeGenerator::generateMetaTypeRegistrationForEnums(const QVector<QString> &enumUses)
-{
-    QString out;
-
-    for (const QString &enumName : enumUses) {
-        out += QLatin1String("        qRegisterMetaTypeStreamOperators<") + enumName + QLatin1String(">(\"") + enumName + QLatin1String("\");\n");
-    }
-
     return out;
 }
 

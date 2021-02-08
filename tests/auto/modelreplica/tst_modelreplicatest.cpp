@@ -90,7 +90,7 @@ void ModelreplicaTest::basicFunctions()
     QCOMPARE(model->rowCount(), replica->tracks()->rowCount());
     for (int i = 0; i < replica->tracks()->rowCount(); i++)
     {
-        QCOMPARE(model->data(model->index(i), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
+        QTRY_COMPARE(model->data(model->index(i), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
     }
 
     // ensure the tracks objects are distinct

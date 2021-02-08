@@ -26,6 +26,7 @@
 **
 ****************************************************************************/
 
+#include <qiodevice.h>
 #include <qjsonarray.h>
 #include <qjsonvalue.h>
 
