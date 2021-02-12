@@ -4,6 +4,8 @@
 ## repc Tool:
 #####################################################################
 
+set(REPPARSER_DIR "${PROJECT_SOURCE_DIR}/src/repparser")
+
 qt_get_tool_target_name(target_name repc)
 qt_add_tool(${target_name}
     TARGET_DESCRIPTION "Qt Remote Objects Compiler"
@@ -20,15 +22,15 @@ qt_add_tool(${target_name}
         QT_NO_URL_CAST_FROM_STRING
         RO_INSTALL_HEADERS=\"$$[QT_INSTALL_HEADERS]/QtRemoteObjects\"
     INCLUDE_DIRECTORIES
-        ${CMAKE_SOURCE_DIR}/src/repparser
+        ${REPPARSER_DIR}
     PUBLIC_LIBRARIES
         Qt::CorePrivate
 )
 
 # QLALR Grammars:
 qt_process_qlalr(
-    ${target_name} # special case
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../src/repparser/parser.g" # special case
+    ${target_name}
+    "${REPPARSER_DIR}/parser.g"
     ""
 )
 

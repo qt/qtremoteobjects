@@ -4,11 +4,13 @@
 ## tst_parser Test:
 #####################################################################
 
+set(REPPARSER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/repparser")
+
 qt_add_test(tst_parser
     SOURCES
         tst_parser.cpp
     INCLUDE_DIRECTORIES
-        ${CMAKE_SOURCE_DIR}/src/repparser
+        ${REPPARSER_DIR}
     PUBLIC_LIBRARIES
         Qt::CorePrivate
 )
@@ -16,7 +18,7 @@ qt_add_test(tst_parser
 # QLALR Grammars:
 qt_process_qlalr(
     tst_parser
-    ${CMAKE_SOURCE_DIR}/src/repparser/parser.g
+    ${REPPARSER_DIR}/parser.g
     ""
 )
 
