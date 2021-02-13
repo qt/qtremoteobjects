@@ -126,33 +126,30 @@ static void GadgetTypedMoveConstructor(const QtPrivate::QMetaTypeInterface *, vo
     new(where) GadgetType(std::move(*reinterpret_cast<GadgetType*>(copy)));
 }
 
-static void GadgetSaveOperator(QDataStream & out, const void *data)
-{
-    const GadgetType *gadgetProperties = reinterpret_cast<const GadgetType *>(data);
-    for (const auto &prop : *gadgetProperties)
-        out << prop;
-}
-
-static void GadgetLoadOperator(QDataStream &in, void *data)
-{
-    GadgetType *gadgetProperties = reinterpret_cast<GadgetType *>(data);
-    for (auto &prop : *gadgetProperties)
-        in >> prop;
-}
-
 static bool GadgetEqualsFn(const QtPrivate::QMetaTypeInterface *, const void *a, const void *b)
 {
     return *reinterpret_cast<const GadgetType*>(a) == *reinterpret_cast<const GadgetType*>(b);
 }
 
+static void GadgetDebugStreamFn(const QtPrivate::QMetaTypeInterface *, QDebug &dbg, const void *a)
+{
+    const GadgetType *gadgetProperties = reinterpret_cast<const GadgetType *>(a);
+    for (const auto &prop : *gadgetProperties)
+        dbg << prop;
+}
+
 static void GadgetDataStreamOutFn(const QtPrivate::QMetaTypeInterface *, QDataStream &ds, const void *a)
 {
-    GadgetSaveOperator(ds, a);
+    const GadgetType *gadgetProperties = reinterpret_cast<const GadgetType *>(a);
+    for (const auto &prop : *gadgetProperties)
+        ds << prop;
 }
 
 static void GadgetDataStreamInFn(const QtPrivate::QMetaTypeInterface *, QDataStream &ds, void *a)
 {
-    GadgetLoadOperator(ds, a);
+    GadgetType *gadgetProperties = reinterpret_cast<GadgetType *>(a);
+    for (auto &prop : *gadgetProperties)
+        ds >> prop;
 }
 
 // Like the Q_GADGET static methods above, we need constructor/destructor methods
@@ -946,7 +943,7 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
                GadgetTypedDestructor,
                GadgetEqualsFn,
                nullptr, /* LessThanFn */
-               nullptr, /* DebugStreamFn */
+               GadgetDebugStreamFn,
                GadgetDataStreamOutFn,
                GadgetDataStreamInFn,
                nullptr /* LegacyRegisterOp */
