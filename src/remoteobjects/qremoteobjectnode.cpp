@@ -881,101 +881,101 @@ static TypeInfo *registerEnum(const QByteArray &name, uint size=4u)
 
 static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
 {
-   const auto &gadget = gadgets.take(typeName);
-   int typeId = QMetaType::type(typeName);
-   if (typeId != QMetaType::UnknownType) {
-       trackConnection(typeId, connection);
-       return typeId;
-   }
-
-   ManagedGadgetTypeEntry entry;
-
-   QMetaObjectBuilder gadgetBuilder;
-   gadgetBuilder.setClassName(typeName);
-   gadgetBuilder.setFlags(DynamicMetaObject | PropertyAccessInStaticMetaCall);
-   for (const auto &prop : gadget.properties) {
-       int propertyType = QMetaType::type(prop.type);
-       if (!propertyType && gadgets.contains(prop.type))
-           propertyType = registerGadgets(connection, gadgets, prop.type);
-       entry.gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
-       auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
-       dynamicProperty.setWritable(true);
-       dynamicProperty.setReadable(true);
-   }
-   QVector<TypeInfo *> enumsToBeAssignedMetaObject;
-   enumsToBeAssignedMetaObject.reserve(gadget.enums.length());
-   for (const auto &enumData: gadget.enums) {
-       auto enumBuilder = gadgetBuilder.addEnumerator(enumData.name);
-       enumBuilder.setIsFlag(enumData.isFlag);
-       enumBuilder.setIsScoped(enumData.isScoped);
-
-       for (quint32 k = 0; k < enumData.keyCount; ++k) {
-           const auto pair = enumData.values.at(k);
-           enumBuilder.addKey(pair.name, pair.value);
-       }
-       const QByteArray registeredName = QByteArray(typeName).append("::").append(enumData.name);
-       auto typeInfo = registerEnum(registeredName, enumData.size);
-       if (typeInfo)
-           enumsToBeAssignedMetaObject.append(typeInfo);
-   }
-   auto meta = gadgetBuilder.toMetaObject();
-   entry.metaObject = std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }};
-   for (auto typeInfo : enumsToBeAssignedMetaObject) {
-       typeInfo->metaObject = meta;
-       auto metaType = QMetaType(typeInfo);
-       entry.enumMetaTypes.append(metaType);
-       auto id = metaType.id();
-       qCDebug(QT_REMOTEOBJECT) << "Registering new gadget enum with id" << id << typeInfo->name << "size:" << typeInfo->size;
+    const auto &gadget = gadgets.take(typeName);
+    int typeId = QMetaType::type(typeName);
+    if (typeId != QMetaType::UnknownType) {
+        trackConnection(typeId, connection);
+        return typeId;
     }
 
-   QMetaType::TypeFlags flags = QMetaType::IsGadget;
-   if (meta->propertyCount()) {
-       meta->d.static_metacall = &GadgetsStaticMetacallFunction;
-       meta->d.superdata = nullptr;
-       flags |= QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
-       auto typeInfo = new TypeInfo {
-           {
-               0, alignof(GadgetType), sizeof(GadgetType), uint(flags), 0, metaObjectFn,
-               strDup(typeName),
-               GadgetTypedConstructor,
-               GadgetTypedCopyConstructor,
-               GadgetTypedMoveConstructor,
-               GadgetTypedDestructor,
-               GadgetEqualsFn,
-               nullptr, /* LessThanFn */
-               GadgetDebugStreamFn,
-               GadgetDataStreamOutFn,
-               GadgetDataStreamInFn,
-               nullptr /* LegacyRegisterOp */
-           },
-           meta
-       };
-       entry.gadgetMetaType = QMetaType(typeInfo);
-   } else {
-       auto typeInfo = new TypeInfo {
-           {
-               0, alignof(GadgetType), sizeof(GadgetType), uint(flags), 0, metaObjectFn,
-               strDup(typeName),
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr
-           },
-           meta
-       };
-       entry.gadgetMetaType = QMetaType(typeInfo);
-   }
-   const int gadgetTypeId = entry.gadgetMetaType.id();
-   trackConnection(gadgetTypeId, connection);
-   QMutexLocker lock(&s_managedTypesMutex);
-   s_managedTypes.insert(gadgetTypeId, entry);
-   return gadgetTypeId;
+    ManagedGadgetTypeEntry entry;
+
+    QMetaObjectBuilder gadgetBuilder;
+    gadgetBuilder.setClassName(typeName);
+    gadgetBuilder.setFlags(DynamicMetaObject | PropertyAccessInStaticMetaCall);
+    for (const auto &prop : gadget.properties) {
+        int propertyType = QMetaType::type(prop.type);
+        if (!propertyType && gadgets.contains(prop.type))
+            propertyType = registerGadgets(connection, gadgets, prop.type);
+        entry.gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
+        auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
+        dynamicProperty.setWritable(true);
+        dynamicProperty.setReadable(true);
+    }
+    QVector<TypeInfo *> enumsToBeAssignedMetaObject;
+    enumsToBeAssignedMetaObject.reserve(gadget.enums.length());
+    for (const auto &enumData: gadget.enums) {
+        auto enumBuilder = gadgetBuilder.addEnumerator(enumData.name);
+        enumBuilder.setIsFlag(enumData.isFlag);
+        enumBuilder.setIsScoped(enumData.isScoped);
+
+        for (quint32 k = 0; k < enumData.keyCount; ++k) {
+            const auto pair = enumData.values.at(k);
+            enumBuilder.addKey(pair.name, pair.value);
+        }
+        const QByteArray registeredName = QByteArray(typeName).append("::").append(enumData.name);
+        auto typeInfo = registerEnum(registeredName, enumData.size);
+        if (typeInfo)
+            enumsToBeAssignedMetaObject.append(typeInfo);
+    }
+    auto meta = gadgetBuilder.toMetaObject();
+    entry.metaObject = std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }};
+    for (auto typeInfo : enumsToBeAssignedMetaObject) {
+        typeInfo->metaObject = meta;
+        auto metaType = QMetaType(typeInfo);
+        entry.enumMetaTypes.append(metaType);
+        auto id = metaType.id();
+        qCDebug(QT_REMOTEOBJECT) << "Registering new gadget enum with id" << id << typeInfo->name << "size:" << typeInfo->size;
+    }
+
+    QMetaType::TypeFlags flags = QMetaType::IsGadget;
+    if (meta->propertyCount()) {
+        meta->d.static_metacall = &GadgetsStaticMetacallFunction;
+        meta->d.superdata = nullptr;
+        flags |= QMetaType::NeedsConstruction | QMetaType::NeedsDestruction;
+        auto typeInfo = new TypeInfo {
+            {
+                0, alignof(GadgetType), sizeof(GadgetType), uint(flags), 0, metaObjectFn,
+                strDup(typeName),
+                GadgetTypedConstructor,
+                GadgetTypedCopyConstructor,
+                GadgetTypedMoveConstructor,
+                GadgetTypedDestructor,
+                GadgetEqualsFn,
+                nullptr, /* LessThanFn */
+                GadgetDebugStreamFn,
+                GadgetDataStreamOutFn,
+                GadgetDataStreamInFn,
+                nullptr /* LegacyRegisterOp */
+            },
+            meta
+        };
+        entry.gadgetMetaType = QMetaType(typeInfo);
+    } else {
+        auto typeInfo = new TypeInfo {
+            {
+                0, alignof(GadgetType), sizeof(GadgetType), uint(flags), 0, metaObjectFn,
+                strDup(typeName),
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr
+            },
+            meta
+        };
+        entry.gadgetMetaType = QMetaType(typeInfo);
+    }
+    const int gadgetTypeId = entry.gadgetMetaType.id();
+    trackConnection(gadgetTypeId, connection);
+    QMutexLocker lock(&s_managedTypesMutex);
+    s_managedTypes.insert(gadgetTypeId, entry);
+    return gadgetTypeId;
 }
 
 static void registerAllGadgets(IoDeviceBase *connection, Gadgets &gadgets)
