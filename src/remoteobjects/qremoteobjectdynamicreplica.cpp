@@ -156,8 +156,8 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 *reinterpret_cast<QVariant*>(argv[0]) = impl->m_propertyStorage[id];
             else {
                 const QVariant value = propAsVariant(id);
-                QMetaType::destruct(mp.userType(), argv[0]);
-                QMetaType::construct(mp.userType(), argv[0], value.data());
+                mp.metaType().destruct(argv[0]);
+                mp.metaType().construct(argv[0], value.data());
             }
             const bool readStatus = true;
             // Caller supports QVariant returns? Then we can also report errors
@@ -178,15 +178,14 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
         } else {
             // method relay from Replica to Source
             const QMetaMethod mm = impl->m_metaObject->method(saved_id);
-            const QList<QByteArray> types = mm.parameterTypes();
 
-            const int typeSize = types.size();
+            const int nParam = mm.parameterCount();
             QVariantList args;
-            args.reserve(typeSize);
-            for (int i = 0; i < typeSize; ++i) {
-                const int type = QMetaType::type(types[i].constData());
-                if (impl->m_metaObject->indexOfEnumerator(types[i].constData()) != -1) {
-                    const auto size = QMetaType(type).sizeOf();
+            args.reserve(nParam);
+            for (int i = 0; i < nParam; ++i) {
+                const auto metaType = mm.parameterMetaType(i);
+                if (metaType.flags().testFlag(QMetaType::IsEnumeration)) {
+                    const auto size = metaType.sizeOf();
                     switch (size) {
                     case 1: args.push_back(QVariant(QMetaType(QMetaType::Char), argv[i + 1])); break;
                     case 2: args.push_back(QVariant(QMetaType(QMetaType::Short), argv[i + 1])); break;
@@ -194,11 +193,11 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                     // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
 //                    case 8: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
                     default:
-                        qWarning() << "Invalid enum detected (Dynamic Replica)" << QMetaType::typeName(type) << "with size" << size;
+                        qWarning() << "Invalid enum detected (Dynamic Replica)" << metaType.name() << "with size" << size;
                         args.push_back(QVariant(QMetaType(QMetaType::Int), argv[i + 1])); break;
                     }
                 } else
-                    args.push_back(QVariant(QMetaType(type), argv[i + 1]));
+                    args.push_back(QVariant(metaType, argv[i + 1]));
             }
 
             if (debugArgs) {

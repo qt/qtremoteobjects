@@ -93,9 +93,11 @@ struct InsertedRow
     {
         if (signal.size() != 3)
             return false;
-        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[1].type() == QVariant::nameToType("int")
-                                   && signal[2].type() == QVariant::nameToType("int");
+        const static QMetaType indexType = QMetaType::fromType<QModelIndex>();
+        const static QMetaType intType = QMetaType::fromType<int>();
+        const bool matchingTypes = signal[0].metaType() == indexType
+                                   && signal[1].metaType() == intType
+                                   && signal[2].metaType() == intType;
         if (!matchingTypes)
             return false;
         const QModelIndex otherIndex = signal[0].value<QModelIndex>();

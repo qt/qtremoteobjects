@@ -81,9 +81,11 @@ struct WaitForDataChanged
         IndexPair pair;
         if (signal.size() != 3)
             return pair;
-        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[1].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[2].type() == QVariant::nameToType("QVector<int>");
+        const static QMetaType indexType = QMetaType::fromType<QModelIndex>();
+        const static QMetaType vectorType = QMetaType::fromType<QVector<int>>();
+        const bool matchingTypes = signal[0].metaType() == indexType
+                                   && signal[1].metaType() == indexType
+                                   && signal[2].metaType() == vectorType;
         if (!matchingTypes)
             return pair;
         const QModelIndex topLeft = signal[0].value<QModelIndex>();

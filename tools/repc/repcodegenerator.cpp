@@ -105,10 +105,10 @@ static QVector<ASTFunction> transformEnumParams(const ASTClass& classContext, co
 */
 static bool isBuiltinType(const QString &type)
  {
-    int id = QMetaType::type(type.toLatin1().constData());
-    if (id == QMetaType::UnknownType)
+    const auto metaType = QMetaType::fromName(type.toLatin1().constData());
+    if (!metaType.isValid())
         return false;
-    return (id < QMetaType::User);
+    return (metaType.id() < QMetaType::User);
 }
 
 RepCodeGenerator::RepCodeGenerator(QIODevice *outputDevice)

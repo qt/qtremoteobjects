@@ -125,9 +125,9 @@ private Q_SLOTS:
             QCOMPARE(paramNames.at(0), QByteArrayLiteral("enumSignalParam"));
             QCOMPARE(paramNames.at(1), QByteArrayLiteral("signalParam2"));
             QCOMPARE(paramNames.at(2), QByteArrayLiteral("__repc_variable_1"));
-            QCOMPARE(simm.parameterType(0), QMetaType::type("MyInterfaceReplica::Enum1"));
-            QCOMPARE(simm.parameterType(1), int(QMetaType::Bool));
-            QCOMPARE(simm.parameterType(2), int(QMetaType::QString));
+            QCOMPARE(simm.parameterMetaType(0), QMetaType::fromType<MyInterfaceReplica::Enum1>());
+            QCOMPARE(simm.parameterMetaType(1), QMetaType::fromType<bool>());
+            QCOMPARE(simm.parameterMetaType(2), QMetaType::fromType<QString>());
         }
 
         int slotIdx = mo->indexOfSlot("testEnumParamsInSlots(MyInterfaceReplica::Enum1,bool,int)");

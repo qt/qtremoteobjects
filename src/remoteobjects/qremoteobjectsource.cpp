@@ -108,8 +108,9 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                 continue;
             const int index = api->sourcePropertyIndex(i);
             const auto property = m_object->metaObject()->property(index);
-            if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
-                auto propertyMeta = QMetaType::metaObjectForType(property.userType());
+            const auto metaType = property.metaType();
+            if (metaType.flags().testFlag(QMetaType::PointerToQObject)) {
+                auto propertyMeta = metaType.metaObject();
                 QObject *child = property.read(m_object).value<QObject *>();
                 if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
                     const auto modelInfo = api->m_models.at(modelIndex++);
@@ -290,7 +291,7 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
 {
     QVariantList &list = m_marshalledArgs;
     int N = m_api->signalParameterCount(index);
-    if (N == 1 && QMetaType::typeFlags(m_api->signalParameterType(index, 0)).testFlag(QMetaType::PointerToQObject))
+    if (N == 1 && QMetaType(m_api->signalParameterType(index, 0)).flags().testFlag(QMetaType::PointerToQObject))
         N = 0; // Don't try to send pointers, the will be handle by QRO_
     if (list.size() < N)
         list.reserve(N);
@@ -457,8 +458,9 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
     int i = 0;
     for (i = propOffset; i < propCount; ++i) {
         const QMetaProperty property = metaObject->property(i);
-        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
-            auto propertyMeta = QMetaType::metaObjectForType(property.userType());
+        const auto metaType = property.metaType();
+        if (metaType.flags().testFlag(QMetaType::PointerToQObject)) {
+            auto propertyMeta = metaType.metaObject();
             QObject *child = property.read(object).value<QObject *>();
             if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
                 const QByteArray name = QByteArray::fromRawData(property.name(),

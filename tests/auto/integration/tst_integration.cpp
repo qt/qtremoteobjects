@@ -828,7 +828,7 @@ private slots:
         QCOMPARE(call.error(), QRemoteObjectPendingCall::InvalidMessage);
         QVERIFY(call.waitForFinished());
         QVERIFY(call.isFinished());
-        QCOMPARE(call.returnValue().type(), QVariant::Bool);
+        QCOMPARE(call.returnValue().metaType(), QMetaType::fromType<bool>());
         QCOMPARE(call.returnValue().toBool(), true);
         started = property.read(engine_r.data()).value<bool>();
         QCOMPARE(started, true);
@@ -874,7 +874,7 @@ private slots:
         QVERIFY(getCall.waitForFinished());
         QVERIFY(getCall.isFinished());
         QCOMPARE(getCall.error(), QRemoteObjectPendingCall::NoError);
-        QCOMPARE(getCall.returnValue().type(), QVariant::String);
+        QCOMPARE(getCall.returnValue().metaType(), QMetaType::fromType<QString>());
         QCOMPARE(getCall.returnValue().toString(), s);
     }
 

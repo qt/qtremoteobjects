@@ -133,7 +133,7 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
     QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(offsetMeta);
     for (int index = offsetMeta->propertyOffset(); index < offsetMeta->propertyCount(); ++index) {
         const QMetaProperty property = offsetMeta->property(index);
-        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+        if (QMetaType(property.userType()).flags().testFlag(QMetaType::PointerToQObject))
             m_childIndices << index - offsetMeta->propertyOffset();
     }
 }
@@ -287,7 +287,7 @@ void QConnectedReplicaImplementation::setDynamicMetaObject(const QMetaObject *me
 
     for (int index = m_metaObject->propertyOffset(); index < m_metaObject->propertyCount(); ++index) {
         const QMetaProperty property = m_metaObject->property(index);
-        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject))
+        if (QMetaType(property.userType()).flags().testFlag(QMetaType::PointerToQObject))
             m_childIndices << index - m_metaObject->propertyOffset();
     }
 }
@@ -860,10 +860,10 @@ QRemoteObjectPendingCall QInProcessReplicaImplementation::_q_sendWithReply(QMeta
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
 
     const int ReplicaIndex = index - m_methodOffset;
-    int typeId = QMetaType::type(connectionToSource->m_api->typeName(ReplicaIndex).constData());
-    if (!QMetaType(typeId).sizeOf())
-        typeId = QVariant::Invalid;
-    QVariant returnValue(QMetaType(typeId), nullptr);
+    auto metaType = QMetaType::fromName(connectionToSource->m_api->typeName(ReplicaIndex).constData());
+    if (!metaType.sizeOf())
+        metaType = QMetaType(QMetaType::UnknownType);
+    QVariant returnValue(metaType, nullptr);
 
     const int resolvedIndex = connectionToSource->m_api->sourceMethodIndex(ReplicaIndex);
     if (resolvedIndex < 0) {

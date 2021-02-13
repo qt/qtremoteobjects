@@ -80,18 +80,19 @@ namespace QRemoteObjectPackets {
 // decode the integer variant into an enum variant (via decodeVariant).
 const QVariant encodeVariant(const QVariant &value)
 {
-    if (QMetaType::typeFlags(value.userType()).testFlag(QMetaType::IsEnumeration)) {
+    const auto metaType = value.metaType();
+    if (metaType.flags().testFlag(QMetaType::IsEnumeration)) {
         auto converted = QVariant(value);
-        const auto size = QMetaType(value.userType()).sizeOf();
+        const auto size = metaType.sizeOf();
         switch (size) {
-        case 1: converted.convert(QMetaType::Char); break;
-        case 2: converted.convert(QMetaType::Short); break;
-        case 4: converted.convert(QMetaType::Int); break;
+        case 1: converted.convert(QMetaType::fromType<qint8>()); break;
+        case 2: converted.convert(QMetaType::fromType<qint16>()); break;
+        case 4: converted.convert(QMetaType::fromType<qint32>()); break;
         // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
 //        case 8: converted.convert(QMetaType::Long); break; // typeId for long from qmetatype.h
         default:
-            qWarning() << "Invalid enum detected" << QMetaType::typeName(value.userType()) << "with size" << size;
-            converted.convert(QMetaType::Int);
+            qWarning() << "Invalid enum detected" << metaType.name() << "with size" << size;
+            converted.convert(QMetaType::fromType<qint32>());
         }
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "Converting from enum to integer type" << size << converted << value;
@@ -103,11 +104,11 @@ const QVariant encodeVariant(const QVariant &value)
 
 QVariant &decodeVariant(QVariant &value, int type)
 {
-    if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
+    if (QMetaType(type).flags().testFlag(QMetaType::IsEnumeration)) {
 #ifdef QTRO_VERBOSE_PROTOCOL
         QVariant encoded(value);
 #endif
-        value.convert(type);
+        value.convert(QMetaType(type));
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "Converting to enum from integer type" << value << encoded;
 #endif
@@ -122,7 +123,7 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
     const auto target = source->m_api->isAdapterProperty(internalIndex) ? source->m_adapter : source->m_object;
     const auto property = target->metaObject()->property(propertyIndex);
     const QVariant value = property.read(target);
-    if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::PointerToQObject)) {
+    if (QMetaType(property.userType()).flags().testFlag(QMetaType::PointerToQObject)) {
         auto const childSource = source->m_children.value(internalIndex);
         auto valueAsPointerToQObject = qvariant_cast<QObject *>(value);
         if (childSource->m_object != valueAsPointerToQObject)
@@ -147,8 +148,8 @@ void serializeProperty(QDataStream &ds, const QRemoteObjectSourceBase *source, i
         return;
     }
     if (source->d->isDynamic && property.userType() == QMetaType::QVariant &&
-        QMetaType::typeFlags(value.userType()).testFlag(QMetaType::IsGadget)) {
-        const auto typeName = QString::fromLatin1(QMetaType::typeName(value.userType()));
+        QMetaType(value.userType()).flags().testFlag(QMetaType::IsGadget)) {
+        const auto typeName = QString::fromLatin1(QMetaType(value.userType()).name());
         if (!source->d->sentTypes.contains(typeName)) {
             QRO_ qro(value);
             ds << QVariant::fromValue<QRO_>(qro);
@@ -238,7 +239,7 @@ static ObjectType getObjectType(const QString &typeName)
 {
     if (typeName == QLatin1String("QAbstractItemModelAdapter"))
         return ObjectType::MODEL;
-    auto tid = QMetaType::type(typeName.toUtf8());
+    auto tid = QMetaType::fromName(typeName.toUtf8()).id();
     if (tid == QMetaType::UnknownType)
         return ObjectType::CLASS;
     QMetaType type(tid);
@@ -254,7 +255,7 @@ static QMetaEnum metaEnumFromType(int type)
     QMetaType t(type);
     if (t.flags() & QMetaType::IsEnumeration) {
         if (const QMetaObject *metaObject = t.metaObject()) {
-            const char *enumName = QMetaType::typeName(type);
+            const char *enumName = t.name();
             const char *lastColon = std::strrchr(enumName, ':');
             if (lastColon)
                 enumName = lastColon + 1;
@@ -266,7 +267,7 @@ static QMetaEnum metaEnumFromType(int type)
 
 static bool checkEnum(int type, QSet<QMetaEnum> &enums)
 {
-    if (QMetaType::typeFlags(type).testFlag(QMetaType::IsEnumeration)) {
+    if (QMetaType(type).flags().testFlag(QMetaType::IsEnumeration)) {
         QMetaEnum meta = metaEnumFromType(type);
         enums.insert(meta);
         return true;
@@ -284,8 +285,8 @@ static void recurseMetaobject(const QMetaObject *mo, QSet<const QMetaObject *> &
         const auto property = mo->property(i);
         if (checkEnum(property.userType(), enums))
             continue;
-        if (QMetaType::typeFlags(property.userType()).testFlag(QMetaType::IsGadget))
-            recurseMetaobject(QMetaType::metaObjectForType(property.userType()), gadgets, enums);
+        if (QMetaType(property.userType()).flags().testFlag(QMetaType::IsGadget))
+            recurseMetaobject(QMetaType(property.userType()).metaObject(), gadgets, enums);
     }
 }
 
@@ -306,9 +307,10 @@ void recurseForGadgets(QSet<const QMetaObject *> &gadgets, QSet<QMetaEnum> &enum
             const int type = api->signalParameterType(si, pi);
             if (checkEnum(type, enums))
                 continue;
-            if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
+            const auto metaType = QMetaType(type);
+            if (!metaType.flags().testFlag(QMetaType::IsGadget))
                 continue;
-            const auto mo = QMetaType::metaObjectForType(type);
+            const auto mo = metaType.metaObject();
             if (source->d->sentTypes.contains(QLatin1String(mo->className())))
                 continue;
             recurseMetaobject(mo, gadgets, enums);
@@ -322,9 +324,10 @@ void recurseForGadgets(QSet<const QMetaObject *> &gadgets, QSet<QMetaEnum> &enum
             const int type = api->methodParameterType(mi, pi);
             if (checkEnum(type, enums))
                 continue;
-            if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
+            const auto metaType = QMetaType(type);
+            if (!metaType.flags().testFlag(QMetaType::IsGadget))
                 continue;
-            const auto mo = QMetaType::metaObjectForType(type);
+            const auto mo = metaType.metaObject();
             if (source->d->sentTypes.contains(QLatin1String(mo->className())))
                 continue;
             recurseMetaobject(mo, gadgets, enums);
@@ -339,7 +342,8 @@ void recurseForGadgets(QSet<const QMetaObject *> &gadgets, QSet<QMetaEnum> &enum
         const int type = metaProperty.userType();
         if (checkEnum(type, enums))
             continue;
-        if (QMetaType::typeFlags(type).testFlag(QMetaType::PointerToQObject)) {
+        const auto metaType = QMetaType(type);
+        if (metaType.flags().testFlag(QMetaType::PointerToQObject)) {
             auto const objectType = getObjectType(QString::fromLatin1(metaProperty.typeName()));
             if (objectType == ObjectType::CLASS) {
                 auto const childSource = source->m_children.value(pi);
@@ -347,9 +351,9 @@ void recurseForGadgets(QSet<const QMetaObject *> &gadgets, QSet<QMetaEnum> &enum
                     recurseForGadgets(gadgets, enums, childSource);
             }
         }
-        if (!QMetaType::typeFlags(type).testFlag(QMetaType::IsGadget))
+        if (!metaType.flags().testFlag(QMetaType::IsGadget))
             continue;
-        const auto mo = QMetaType::metaObjectForType(type);
+        const auto mo = metaType.metaObject();
         if (source->d->sentTypes.contains(QLatin1String(mo->className())))
             continue;
         recurseMetaobject(mo, gadgets, enums);
@@ -374,7 +378,7 @@ static void serializeEnum(QDataStream &ds, const QMetaEnum &enumerator)
     ds << enumerator.isFlag();
     ds << enumerator.isScoped();
     const auto typeName = QByteArray(enumerator.scope()).append("::").append(enumerator.name());
-    quint32 size = QMetaType(QMetaType::type(typeName.constData())).sizeOf();
+    quint32 size = QMetaType::fromName(typeName.constData()).sizeOf();
     ds << size;
 #ifdef QTRO_VERBOSE_PROTOCOL
     qDebug("  Enum (name = %s, size = %d, isFlag = %s, isScoped = %s):", enumerator.name(), size, enumerator.isFlag() ? "true" : "false", enumerator.isScoped() ? "true" : "false");
@@ -531,7 +535,7 @@ void serializeDefinition(QDataStream &ds, const QRemoteObjectSourceBase *source)
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "  Property" << i << "name =" << metaProperty.name();
 #endif
-        if (QMetaType::typeFlags(metaProperty.userType()).testFlag(QMetaType::PointerToQObject)) {
+        if (QMetaType(metaProperty.userType()).flags().testFlag(QMetaType::PointerToQObject)) {
             auto objectType = getObjectType(QLatin1String(metaProperty.typeName()));
             ds << (objectType == ObjectType::CLASS ? "QObject*" : "QAbstractItemModel*");
 #ifdef QTRO_VERBOSE_PROTOCOL
@@ -677,10 +681,12 @@ QRO_::QRO_(const QVariant &value)
     : type(ObjectType::GADGET)
     , isNull(false)
 {
-    auto meta = QMetaType::metaObjectForType(value.userType());
+    const auto metaType = QMetaType(value.userType());
+    auto meta = metaType.metaObject();
     QDataStream out(&classDefinition, QIODevice::WriteOnly);
     const int numProperties = meta->propertyCount();
-    const auto typeName = QByteArray::fromRawData(QMetaType::typeName(value.userType()), qstrlen(QMetaType::typeName(value.userType())));
+    const auto name = metaType.name();
+    const auto typeName = QByteArray::fromRawData(name, qstrlen(name));
     out << quint32(0) << quint32(1);
     out << typeName;
     out << numProperties;

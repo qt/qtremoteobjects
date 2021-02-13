@@ -86,8 +86,8 @@ static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int
         GadgetType *_t = reinterpret_cast<GadgetType *>(_o);
         if (_id < _t->size()) {
             const auto &prop = _t->at(_id);
-            QMetaType::destruct(int(prop.userType()), _a[0]);
-            QMetaType::construct(int(prop.userType()), _a[0], prop.constData());
+            prop.metaType().destruct(_a[0]);
+            prop.metaType().construct(_a[0], prop.constData());
         }
     } else if (_c == QMetaObject::WriteProperty) {
         GadgetType *_t = reinterpret_cast<GadgetType *>(_o);
@@ -851,7 +851,7 @@ static TypeInfo *registerEnum(const QByteArray &name, uint size=4u)
     // When we add support for enum classes, we will need to set this to something like
     // QByteArray(enumClass).append("::").append(enumMeta.name()) when enumMeta.isScoped() is true.
     // That is a new feature, though.
-    if (QMetaType::isRegistered(QMetaType::type(name)))
+    if (QMetaType::fromName(name).isValid())
         return result;
     switch (size) {
     case 1:
@@ -882,7 +882,8 @@ static TypeInfo *registerEnum(const QByteArray &name, uint size=4u)
 static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
 {
     const auto &gadget = gadgets.take(typeName);
-    int typeId = QMetaType::type(typeName);
+    // TODO Look at having registerGadgets return QMetaType index of the id of the type
+    int typeId = QMetaType::fromName(typeName).id();
     if (typeId != QMetaType::UnknownType) {
         trackConnection(typeId, connection);
         return typeId;
@@ -894,10 +895,10 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
     gadgetBuilder.setClassName(typeName);
     gadgetBuilder.setFlags(DynamicMetaObject | PropertyAccessInStaticMetaCall);
     for (const auto &prop : gadget.properties) {
-        int propertyType = QMetaType::type(prop.type);
+        int propertyType = QMetaType::fromName(prop.type).id();
         if (!propertyType && gadgets.contains(prop.type))
             propertyType = registerGadgets(connection, gadgets, prop.type);
-        entry.gadgetType.push_back(QVariant(QVariant::Type(propertyType)));
+        entry.gadgetType.push_back(QVariant(QMetaType(propertyType)));
         auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
         dynamicProperty.setWritable(true);
         dynamicProperty.setReadable(true);
