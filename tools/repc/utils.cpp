@@ -122,7 +122,7 @@ static QByteArray join(const QVector<QByteArray> &array, const QByteArray &separ
 static QVector<QByteArray> generateProperties(const QJsonArray &properties, bool isPod=false)
 {
     QVector<QByteArray> ret;
-    for (const QJsonValue &prop : properties) {
+    for (const QJsonValue prop : properties) {
         if (!isPod && !_Contains(prop, "notify") && !_Bool(prop, "constant")) {
             qWarning() << "Skipping property" << _String(prop, "name") << "because it is non-notifiable & non-constant";
             continue; // skip non-notifiable properties
@@ -140,10 +140,10 @@ static QVector<QByteArray> generateProperties(const QJsonArray &properties, bool
 static QByteArray generateFunctions(const QByteArray &type, const QJsonArray &functions)
 {
     QByteArray ret;
-    for (const QJsonValue &func : functions) {
+    for (const QJsonValue func : functions) {
         ret += type + "(" + _Bytes(func, "returnType") + " " + _Bytes(func, "name") + "(";
         const auto arguments = _Array(func, "arguments");
-        for (const QJsonValue &arg : arguments)
+        for (const QJsonValue arg : arguments)
             ret += _Bytes(arg, "type") + " " + _Bytes(arg, "name") + ", ";
         if (arguments.count())
             ret.chop(2);
@@ -225,7 +225,7 @@ QByteArray generateClass(const QJsonValue &cls, bool alwaysGenerateClass)
 static QVector<PODAttribute> propertyList2PODAttributes(const QJsonArray &list)
 {
     QVector<PODAttribute> ret;
-    for (const QJsonValue &prop : list)
+    for (const QJsonValue prop : list)
         ret.push_back(PODAttribute(_String(prop, "type"), _String(prop, "name")));
     return ret;
 }
@@ -233,7 +233,7 @@ static QVector<PODAttribute> propertyList2PODAttributes(const QJsonArray &list)
 QVector<ASTProperty> propertyList2AstProperties(const QJsonArray &list)
 {
     QVector<ASTProperty> ret;
-    for (const QJsonValue &property : list) {
+    for (const QJsonValue property : list) {
         if (!_Contains(property, "notify") && !_Bool(property, "constant")) {
             qWarning() << "Skipping property" << _String(property, "name") << "because it is non-notifiable & non-constant";
             continue; // skip non-notifiable properties
@@ -254,12 +254,12 @@ QVector<ASTProperty> propertyList2AstProperties(const QJsonArray &list)
 QVector<ASTFunction> functionList2AstFunctionList(const QJsonArray &list)
 {
     QVector<ASTFunction> ret;
-    for (const QJsonValue &function : list) {
+    for (const QJsonValue function : list) {
         ASTFunction func;
         func.name = _String(function, "name");
         func.returnType = _String(function, "returnType");
         const auto arguments = _Array(function, "arguments");
-        for (const QJsonValue &arg : arguments)
+        for (const QJsonValue arg : arguments)
             func.params.push_back(ASTDeclaration(_String(arg, "type"), _String(arg, "name")));
         ret.push_back(func);
     }
@@ -269,7 +269,7 @@ QVector<ASTFunction> functionList2AstFunctionList(const QJsonArray &list)
 AST classList2AST(const QJsonArray &classes)
 {
     AST ret;
-    for (const QJsonValue &cls : classes) {
+    for (const QJsonValue cls : classes) {
         if (_Empty(cls, "signals") && _Empty(cls, "slots")) {
             POD pod;
             pod.name = _String(cls, "className");

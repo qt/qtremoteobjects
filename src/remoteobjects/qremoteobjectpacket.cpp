@@ -365,7 +365,7 @@ static bool checkForEnumsInSource(const QMetaObject *meta, const QRemoteObjectSo
 {
     if (source->m_object->inherits(meta->className()))
         return true;
-    for (const auto child : source->m_children) {
+    for (const auto &child : source->m_children) {
         if (child->m_object && checkForEnumsInSource(meta, child))
             return true;
     }
@@ -399,7 +399,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
     // Determine how to handle the enums found
     QSet<QMetaEnum> qtEnums;
     QSet<const QMetaObject *> dynamicEnumMetaObjects;
-    for (const auto metaEnum : enums) {
+    for (const auto &metaEnum : enums) {
         auto const metaObject = metaEnum.enclosingMetaObject();
         if (gadgets.contains(metaObject)) // Part of a gadget will we serialize
             continue;
@@ -415,7 +415,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
             dynamicEnumMetaObjects.insert(metaEnum.enclosingMetaObject());
     }
     ds << quint32(qtEnums.size());
-    for (const auto metaEnum : qtEnums) {
+    for (const auto &metaEnum : qtEnums) {
         QByteArray enumName(metaEnum.scope());
         enumName.append("::", 2).append(metaEnum.name());
         ds << enumName;

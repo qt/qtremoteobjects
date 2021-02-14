@@ -43,7 +43,7 @@ CppCodeGenerator::CppCodeGenerator(QIODevice *outputDevice)
 
 void CppCodeGenerator::generate(const QJsonArray &classList, bool alwaysGenerateClass /* = false */)
 {
-    for (const QJsonValue &cdef : classList)
+    for (const QJsonValue cdef : classList)
         m_outputDevice->write(generateClass(cdef, alwaysGenerateClass));
 
     m_outputDevice->write("\n");
