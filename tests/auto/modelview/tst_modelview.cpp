@@ -76,9 +76,9 @@ QList<QStandardItem*> createInsertionChildren(int num, const QString& name, cons
 {
     QList<QStandardItem*> children;
     for (int i = 0; i < num; ++i) {
-        QScopedPointer<QStandardItem> item(new QStandardItem(QStringLiteral("%1 %2").arg(name).arg(i+1)));
+        QStandardItem *item = new QStandardItem(QStringLiteral("%1 %2").arg(name).arg(i+1));
         item->setBackground(background);
-        children.append(item.take());
+        children.append(item);
     }
     return children;
 }
