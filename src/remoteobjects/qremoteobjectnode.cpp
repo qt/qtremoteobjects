@@ -1540,7 +1540,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         QDataStream ds(typeInfo.parameters);
                         ds >> rxValue;
                     }
-                    rep->setProperty(propertyIndex, decodeVariant(rxValue, property.userType()));
+                    rep->setProperty(propertyIndex, decodeVariant(rxValue, property.metaType()));
                 }
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -1553,7 +1553,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             deserializeInvokePacket(connection->stream(), call, index, rxArgs, serialId, propertyIndex);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
-                static QVariant null(QMetaType(QMetaType::QObjectStar), nullptr);
+                static QVariant null(QMetaType::fromType<QObject *>(), nullptr);
                 QVariant paramValue;
                 // Qt usually supports 9 arguments, so ten should be usually safe
                 QVarLengthArray<void*, 10> param(rxArgs.size() + 1);
@@ -1564,7 +1564,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         if (signal.parameterType(i) == QMetaType::QVariant)
                             param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
                         else {
-                            decodeVariant(rxArgs[i], signal.parameterType(i));
+                            decodeVariant(rxArgs[i], signal.parameterMetaType(i));
                             param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
                         }
                     }

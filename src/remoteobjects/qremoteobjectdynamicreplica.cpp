@@ -187,14 +187,14 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 if (metaType.flags().testFlag(QMetaType::IsEnumeration)) {
                     const auto size = metaType.sizeOf();
                     switch (size) {
-                    case 1: args.push_back(QVariant(QMetaType(QMetaType::Char), argv[i + 1])); break;
-                    case 2: args.push_back(QVariant(QMetaType(QMetaType::Short), argv[i + 1])); break;
-                    case 4: args.push_back(QVariant(QMetaType(QMetaType::Int), argv[i + 1])); break;
+                    case 1: args.push_back(QVariant(QMetaType::fromType<qint8>(), argv[i + 1])); break;
+                    case 2: args.push_back(QVariant(QMetaType::fromType<qint16>(), argv[i + 1])); break;
+                    case 4: args.push_back(QVariant(QMetaType::fromType<qint32>(), argv[i + 1])); break;
                     // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
 //                    case 8: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
                     default:
                         qWarning() << "Invalid enum detected (Dynamic Replica)" << metaType.name() << "with size" << size;
-                        args.push_back(QVariant(QMetaType(QMetaType::Int), argv[i + 1])); break;
+                        args.push_back(QVariant(QMetaType::fromType<qint32>(), argv[i + 1])); break;
                     }
                 } else
                     args.push_back(QVariant(metaType, argv[i + 1]));

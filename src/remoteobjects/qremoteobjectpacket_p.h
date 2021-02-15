@@ -169,7 +169,7 @@ private:
 };
 
 const QVariant encodeVariant(const QVariant &value);
-QVariant &decodeVariant(QVariant &value, int type);
+QVariant &decodeVariant(QVariant &value, QMetaType metaType);
 
 void serializeProperty(QDataStream &, const QRemoteObjectSourceBase *source, int internalIndex);
 

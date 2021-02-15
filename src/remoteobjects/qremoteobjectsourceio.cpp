@@ -240,7 +240,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         auto method = source->m_object->metaObject()->method(resolvedIndex);
                         const int parameterCount = method.parameterCount();
                         for (int i = 0; i < parameterCount; i++)
-                            decodeVariant(m_rxArgs[i], method.parameterType(i));
+                            decodeVariant(m_rxArgs[i], method.parameterMetaType(i));
                     }
                     auto metaType = QMetaType::fromName(source->m_api->typeName(index).constData());
                     if (!metaType.sizeOf())
