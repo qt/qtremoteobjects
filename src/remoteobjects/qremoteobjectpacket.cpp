@@ -193,6 +193,8 @@ bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
     // note: optimized version of: QDataStream operator>>(QDataStream& s, QList<T>& l)
     quint32 c;
     s >> c;
+
+    Q_ASSERT(static_cast<quint32>(l.size()) == l.size());
     if (static_cast<quint32>(l.size()) < c)
         l.reserve(c);
     else if (static_cast<quint32>(l.size()) > c)
@@ -204,7 +206,7 @@ bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
             return false;
         s >> l[i];
     }
-    for (quint32 i = l.size(); i < c; ++i)
+    for (auto i = l.size(); i < c; ++i)
     {
         if (s.atEnd())
             return false;
@@ -366,11 +368,11 @@ static bool checkForEnumsInSource(const QMetaObject *meta, const QRemoteObjectSo
 
 static void serializeEnum(QDataStream &ds, const QMetaEnum &enumerator)
 {
-    ds << QByteArray::fromRawData(enumerator.name(), qstrlen(enumerator.name()));
+    ds << QByteArray::fromRawData(enumerator.name(), qsizetype(qstrlen(enumerator.name())));
     ds << enumerator.isFlag();
     ds << enumerator.isScoped();
     const auto typeName = QByteArray(enumerator.scope()).append("::").append(enumerator.name());
-    quint32 size = QMetaType::fromName(typeName.constData()).sizeOf();
+    const quint32 size = quint32(QMetaType::fromName(typeName.constData()).sizeOf());
     ds << size;
 #ifdef QTRO_VERBOSE_PROTOCOL
     qDebug("  Enum (name = %s, size = %d, isFlag = %s, isScoped = %s):", enumerator.name(), size, enumerator.isFlag() ? "true" : "false", enumerator.isScoped() ? "true" : "false");
@@ -378,7 +380,7 @@ static void serializeEnum(QDataStream &ds, const QMetaEnum &enumerator)
     const int keyCount = enumerator.keyCount();
     ds << keyCount;
     for (int k = 0; k < keyCount; ++k) {
-        ds << QByteArray::fromRawData(enumerator.key(k), qstrlen(enumerator.key(k)));
+        ds << QByteArray::fromRawData(enumerator.key(k), qsizetype(qstrlen(enumerator.key(k))));
         ds << enumerator.value(k);
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug("    Key %d (name = %s, value = %d):", k, enumerator.key(k), enumerator.value(k));
@@ -422,7 +424,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
     // send all of the metaobject's enums, but no properties, when an external
     // enum is requested.
     for (auto const meta : allMetaObjects) {
-        ds << QByteArray::fromRawData(meta->className(), qstrlen(meta->className()));
+        ds << QByteArray::fromRawData(meta->className(), qsizetype(qstrlen(meta->className())));
         int propertyCount = gadgets.contains(meta) ? meta->propertyCount() : 0;
         ds << quint32(propertyCount);
 #ifdef QTRO_VERBOSE_PROTOCOL
@@ -433,8 +435,8 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
 #ifdef QTRO_VERBOSE_PROTOCOL
             qDebug("    Data member %d (name = %s, type = %s):", j, prop.name(), prop.typeName());
 #endif
-            ds << QByteArray::fromRawData(prop.name(), qstrlen(prop.name()));
-            ds << QByteArray::fromRawData(prop.typeName(), qstrlen(prop.typeName()));
+            ds << QByteArray::fromRawData(prop.name(), qsizetype(qstrlen(prop.name())));
+            ds << QByteArray::fromRawData(prop.typeName(), qsizetype(qstrlen(prop.typeName())));
         }
         int enumCount = meta->enumeratorCount();
         ds << enumCount;
@@ -678,7 +680,7 @@ QRO_::QRO_(const QVariant &value)
     QDataStream out(&classDefinition, QIODevice::WriteOnly);
     const int numProperties = meta->propertyCount();
     const auto name = metaType.name();
-    const auto typeName = QByteArray::fromRawData(name, qstrlen(name));
+    const auto typeName = QByteArray::fromRawData(name, qsizetype(qstrlen(name)));
     out << quint32(0) << quint32(1);
     out << typeName;
     out << numProperties;
@@ -690,8 +692,8 @@ QRO_::QRO_(const QVariant &value)
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug("  Data member %d (name = %s, type = %s):", i, property.name(), property.typeName());
 #endif
-        out << QByteArray::fromRawData(property.name(), qstrlen(property.name()));
-        out << QByteArray::fromRawData(property.typeName(), qstrlen(property.typeName()));
+        out << QByteArray::fromRawData(property.name(), qsizetype(qstrlen(property.name())));
+        out << QByteArray::fromRawData(property.typeName(), qsizetype(qstrlen(property.typeName())));
     }
     QDataStream ds(&parameters, QIODevice::WriteOnly);
     ds << value;

@@ -207,7 +207,7 @@ QList<int> QConnectedReplicaImplementation::childIndices() const
 void QConnectedReplicaImplementation::initialize(QVariantList &values)
 {
     qCDebug(QT_REMOTEOBJECT) << "initialize()" << m_propertyStorage.size();
-    const int nParam = values.size();
+    const int nParam = int(values.size());
     QVarLengthArray<int> changedProperties(nParam);
     const int offset = m_propertyOffset;
     for (int i = 0; i < nParam; ++i) {
@@ -567,7 +567,7 @@ void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep
         // we are initializing an nth replica of the same type
         if (!firstReplicaInstance) {
             const int offset = m_propertyOffset;
-            const int nParam = m_propertyStorage.count();
+            const int nParam = int(m_propertyStorage.count());
             void *args[] = {nullptr, nullptr};
             for (int i = 0; i < nParam; ++i) {
                 const int notifyIndex = m_metaObject->property(i+offset).notifySignalIndex();

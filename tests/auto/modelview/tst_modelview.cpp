@@ -48,7 +48,7 @@ bool waitForSignal(QList<Storage> *storage, QSignalSpy *spy)
         return false;
     const int maxRuns = 10;
     int runs = 0;
-    const int storageSize = storage->size();
+    const auto storageSize = storage->size();
     QList<Storage> rowsToRemove;
     while (runs < maxRuns) {
         ++runs;
@@ -270,7 +270,7 @@ class RolenamesListModel : public QAbstractListModel
 {
 public:
     explicit RolenamesListModel(QObject *parent = nullptr) : QAbstractListModel(parent) { }
-    int rowCount(const QModelIndex &) const override{return m_list.length(); }
+    int rowCount(const QModelIndex &) const override { return int(m_list.length()); }
     QVariant data(const QModelIndex &index, int role) const override
     {
        if (role == Qt::UserRole)

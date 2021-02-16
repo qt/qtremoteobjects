@@ -54,7 +54,7 @@ private Q_SLOTS:
                 qDebug() << "SocketError" << error;
                 delete socket;
             });
-            socket->connectToHost(url.host(), url.port());
+            socket->connectToHost(url.host(), quint16(url.port()));
         };
         m_repNode.registerExternalSchema(QStringLiteral("exttcp"), setupTcp);
         QVERIFY(m_repNode.waitForRegistry(3000));

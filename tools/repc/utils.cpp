@@ -110,10 +110,10 @@ using namespace JSON;
 static QByteArray join(const QByteArrayList &array, const QByteArray &separator)
 {
     QByteArray res;
-    const int sz = array.size();
+    const auto sz = array.size();
     if (!sz)
         return res;
-    for (int i = 0; i < sz - 1; i++)
+    for (qsizetype i = 0; i < sz - 1; i++)
         res += array.at(i) + separator;
     res += array.at(sz - 1);
     return res;

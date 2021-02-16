@@ -501,7 +501,7 @@ inline void fillRow(CacheData *item, const IndexValuePair &pair, const QAbstract
 int collectEntriesForRow(DataEntries* filteredEntries, int row, const DataEntries &entries, int startIndex)
 {
     Q_ASSERT(filteredEntries);
-    const int size = entries.data.size();
+    const int size = int(entries.data.size());
     for (int i = startIndex; i < size; ++i)
     {
         const IndexValuePair &pair = entries.data[i];

@@ -131,7 +131,7 @@ static QByteArray typeData(const QString &type, const QHash<QString, QByteArray>
     QHash<QString, QByteArray>::const_iterator it = specialTypes.find(type);
     if (it != specialTypes.end())
         return it.value();
-    int pos = type.lastIndexOf(QLatin1String("::"));
+    const auto pos = type.lastIndexOf(QLatin1String("::"));
     if (pos > 0)
             return typeData(type.mid(pos + 2), specialTypes);
     return type.toLatin1();
@@ -298,7 +298,7 @@ static QString formatTemplateStringArgTypeNameCapitalizedName(int numberOfTypeOc
     QString out;
     const int LengthOfPlaceholderText = 2;
     Q_ASSERT(templateString.count(QRegularExpression(QStringLiteral("%\\d"))) == numberOfNameOccurrences + numberOfTypeOccurrences);
-    const int expectedOutSize
+    const auto expectedOutSize
             = numberOfNameOccurrences * accumulatedSizeOfNames(pod.attributes)
             + numberOfTypeOccurrences * accumulatedSizeOfTypes(pod.attributes)
             + pod.attributes.size() * (templateString.size() - (numberOfNameOccurrences + numberOfTypeOccurrences) * LengthOfPlaceholderText);
@@ -346,7 +346,7 @@ QString RepCodeGenerator::formatDataMembers(const POD &pod)
     const QString prefix = QStringLiteral("    ");
     const QString infix  = QStringLiteral(" m_");
     const QString suffix = QStringLiteral(";\n");
-    const int expectedOutSize
+    const auto expectedOutSize
             = accumulatedSizeOfNames(pod.attributes)
             + accumulatedSizeOfTypes(pod.attributes)
             + pod.attributes.size() * (prefix.size() + infix.size() + suffix.size());
@@ -989,23 +989,23 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     if (!astClass.hasPointerObjects())
         out << QStringLiteral("        Q_UNUSED(object)") << Qt::endl;
 
-    const int enumCount = astClass.enums.count();
+    const auto enumCount = astClass.enums.count();
     for (int i : astClass.subClassPropertyIndices) {
         const ASTProperty &child = astClass.properties.at(i);
         out << QString::fromLatin1("        using %1_type_t = typename std::remove_pointer<decltype(object->%1())>::type;")
                                   .arg(child.name) << Qt::endl;
     }
     out << QString::fromLatin1("        m_enums[0] = %1;").arg(enumCount) << Qt::endl;
-    for (int i = 0; i < enumCount; ++i) {
+    for (qsizetype i = 0; i < enumCount; ++i) {
         const auto enumerator = astClass.enums.at(i);
         out << QString::fromLatin1("        m_enums[%1] = ObjectType::staticMetaObject.indexOfEnumerator(\"%2\");")
                              .arg(i+1).arg(enumerator.name) << Qt::endl;
     }
-    const int propCount = astClass.properties.count();
+    const auto propCount = astClass.properties.count();
     out << QString::fromLatin1("        m_properties[0] = %1;").arg(propCount) << Qt::endl;
     QList<ASTProperty> onChangeProperties;
-    QList<int> propertyChangeIndex;
-    for (int i = 0; i < propCount; ++i) {
+    QList<qsizetype> propertyChangeIndex;
+    for (qsizetype i = 0; i < propCount; ++i) {
         const ASTProperty &prop = astClass.properties.at(i);
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(prop, SOURCE));
         out << QString::fromLatin1("        m_properties[%1] = QtPrivate::qtro_property_index<ObjectType>(&ObjectType::%2, "
@@ -1021,10 +1021,10 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
             propertyChangeIndex << i + 1; //m_properties[0] is the count, so index is one higher
         }
     }
-    const int signalCount = astClass.signalsList.count();
-    const int changedCount = onChangeProperties.size();
+    const auto signalCount = astClass.signalsList.count();
+    const auto changedCount = onChangeProperties.size();
     out << QString::fromLatin1("        m_signals[0] = %1;").arg(signalCount+onChangeProperties.size()) << Qt::endl;
-    for (int i = 0; i < changedCount; ++i)
+    for (qsizetype i = 0; i < changedCount; ++i)
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2Changed, "
                               "static_cast<void (QObject::*)(%3)>(nullptr),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(i+1), onChangeProperties.at(i).name,
@@ -1032,22 +1032,22 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                                   QString::number(i)) << Qt::endl;
 
     QList<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, QStringLiteral("typename ObjectType"));
-    for (int i = 0; i < signalCount; ++i) {
+    for (qsizetype i = 0; i < signalCount; ++i) {
         const ASTFunction &sig = signalsList.at(i);
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<void (QObject::*)(%3)>(nullptr),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(changedCount+i)) << Qt::endl;
     }
-    const int slotCount = astClass.slotsList.count();
+    const auto slotCount = astClass.slotsList.count();
     QList<ASTProperty> pushProps;
     for (const ASTProperty &property : astClass.properties) {
         if (property.modifier == ASTProperty::ReadPush)
             pushProps << property;
     }
-    const int pushCount = pushProps.count();
-    const int methodCount = slotCount + pushCount;
+    const auto pushCount = pushProps.count();
+    const auto methodCount = slotCount + pushCount;
     out << QString::fromLatin1("        m_methods[0] = %1;").arg(methodCount) << Qt::endl;
-    for (int i = 0; i < pushCount; ++i) {
+    for (qsizetype i = 0; i < pushCount; ++i) {
         const ASTProperty &prop = pushProps.at(i);
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
         out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::push%2, "
@@ -1058,7 +1058,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     }
 
     QList<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, QStringLiteral("typename ObjectType"));
-    for (int i = 0; i < slotCount; ++i) {
+    for (qsizetype i = 0; i < slotCount; ++i) {
         const ASTFunction &slot = slotsList.at(i);
         const QString params = slot.paramsAsString(ASTFunction::Normalized);
         out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::%2, "

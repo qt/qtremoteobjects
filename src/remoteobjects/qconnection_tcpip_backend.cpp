@@ -88,7 +88,7 @@ void TcpClientIo::connectToServer()
         address = addresses.first();
     }
 
-    m_socket->connectToHost(address, url().port());
+    m_socket->connectToHost(address, quint16(url().port()));
 }
 
 bool TcpClientIo::isOpen() const
@@ -191,7 +191,7 @@ bool TcpServerImpl::listen(const QUrl &address)
         }
     }
 
-    bool ret = m_server.listen(host, address.port());
+    bool ret = m_server.listen(host, quint16(address.port()));
     if (ret) {
         m_originalUrl.setScheme(QLatin1String("tcp"));
         m_originalUrl.setHost(m_server.serverAddress().toString());

@@ -45,7 +45,7 @@ class tst_Server_Process : public QObject
     {
         Device(QUrl url) : srcNode(url, registryUrl, QRemoteObjectHost::AllowExternalRegistration)
         {
-            tcpServer.listen(QHostAddress(url.host()), url.port());
+            tcpServer.listen(QHostAddress(url.host()), quint16(url.port()));
             QVERIFY(srcNode.waitForRegistry(3000));
             QObject::connect(&tcpServer, &QTcpServer::newConnection, [this]() {
                 auto conn = this->tcpServer.nextPendingConnection();

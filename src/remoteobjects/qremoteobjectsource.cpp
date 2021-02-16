@@ -98,7 +98,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
 
     setConnections();
 
-    const int nChildren = api->m_models.count() + api->m_subclasses.count();
+    const auto nChildren = api->m_models.count() + api->m_subclasses.count();
     if (nChildren > 0) {
         QList<int> roles;
         const int numProperties = api->propertyCount();
@@ -241,7 +241,7 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
     if (newObject)
         setConnections();
 
-    const int nChildren = m_api->m_models.count() + m_api->m_subclasses.count();
+    const auto nChildren = m_api->m_models.count() + m_api->m_subclasses.count();
     if (nChildren == 0)
         return;
 
@@ -295,7 +295,7 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
         N = 0; // Don't try to send pointers, the will be handle by QRO_
     if (list.size() < N)
         list.reserve(N);
-    const int minFill = std::min(list.size(), static_cast<qsizetype>(N));
+    const int minFill = std::min(int(list.size()), N);
     for (int i = 0; i < minFill; ++i) {
         const int type = m_api->signalParameterType(index, i);
         if (type == QMetaType::QVariant)
@@ -303,7 +303,7 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
         else
             list[i] = QVariant(QMetaType(type), a[i + 1]);
     }
-    for (int i = list.size(); i < N; ++i) {
+    for (int i = int(list.size()); i < N; ++i) {
         const int type = m_api->signalParameterType(index, i);
         if (type == QMetaType::QVariant)
             list << *reinterpret_cast<QVariant *>(a[i + 1]);
@@ -428,7 +428,7 @@ int QRemoteObjectRootSource::removeListener(IoDeviceBase *io, bool shouldSendRem
         serializeRemoveObjectPacket(d->m_packet, m_api->name());
         io->write(d->m_packet.array, d->m_packet.size);
     }
-    return d->m_listeners.length();
+    return int(d->m_listeners.length());
 }
 
 int QRemoteObjectSourceBase::qt_metacall(QMetaObject::Call call, int methodId, void **a)
@@ -464,13 +464,13 @@ DynamicApiMap::DynamicApiMap(QObject *object, const QMetaObject *metaObject, con
             QObject *child = property.read(object).value<QObject *>();
             if (propertyMeta->inherits(&QAbstractItemModel::staticMetaObject)) {
                 const QByteArray name = QByteArray::fromRawData(property.name(),
-                                                                qstrlen(property.name()));
+                                                                qsizetype(qstrlen(property.name())));
                 const QByteArray infoName = name.toUpper() + QByteArrayLiteral("_ROLES");
                 const int infoIndex = metaObject->indexOfClassInfo(infoName.constData());
                 QByteArray roleInfo;
                 if (infoIndex >= 0) {
                     auto ci = metaObject->classInfo(infoIndex);
-                    roleInfo = QByteArray::fromRawData(ci.value(), qstrlen(ci.value()));
+                    roleInfo = QByteArray::fromRawData(ci.value(), qsizetype(qstrlen(ci.value())));
                 }
                 m_models << ModelInfo({qobject_cast<QAbstractItemModel *>(child),
                                        QString::fromLatin1(property.name()),

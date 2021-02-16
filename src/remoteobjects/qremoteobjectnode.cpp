@@ -805,7 +805,7 @@ struct GadgetData {
 
 static const char *strDup(const QByteArray &s)
 {
-    auto result = new char[s.size() + 1];
+    auto result = new char[uint(s.size()) + 1];
     auto end = std::copy(s.cbegin(), s.cend(), result);
     *end = 0;
     return result;

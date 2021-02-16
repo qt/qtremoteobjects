@@ -185,7 +185,7 @@ void BenchmarksTest::benchQLocalSocketInt()
     });
     QBENCHMARK {
         for (int i = 0; i < 50000; ++i) {
-            const int res = serverSock->write(reinterpret_cast<char*>(&i), sizeof(int));
+            const int res = int(serverSock->write(reinterpret_cast<char*>(&i), sizeof(int)));
             Q_ASSERT(res == sizeof(int));
             Q_UNUSED(res)
         }
