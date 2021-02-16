@@ -67,9 +67,9 @@ void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst)
         mp.writeOnGadget(dst, mp.readOnGadget(src));
     }
 #else
-    Q_UNUSED(mo);
-    Q_UNUSED(src);
-    Q_UNUSED(dst);
+    Q_UNUSED(mo)
+    Q_UNUSED(src)
+    Q_UNUSED(dst)
 #endif
 }
 
@@ -86,9 +86,9 @@ void copyStoredProperties(const QMetaObject *mo, const void *src, QDataStream &d
         dst << mp.readOnGadget(src);
     }
 #else
-    Q_UNUSED(mo);
-    Q_UNUSED(src);
-    Q_UNUSED(dst);
+    Q_UNUSED(mo)
+    Q_UNUSED(src)
+    Q_UNUSED(dst)
 #endif
 }
 
@@ -107,9 +107,9 @@ void copyStoredProperties(const QMetaObject *mo, QDataStream &src, void *dst)
         mp.writeOnGadget(dst, v);
     }
 #else
-    Q_UNUSED(mo);
-    Q_UNUSED(src);
-    Q_UNUSED(dst);
+    Q_UNUSED(mo)
+    Q_UNUSED(src)
+    Q_UNUSED(dst)
 #endif
 }
 

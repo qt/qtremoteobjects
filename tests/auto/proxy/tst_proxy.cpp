@@ -139,7 +139,7 @@ void ProxyTest::testProxy()
 
         //Compare Replica to Source
         QCOMPARE(rep->rpm(), engine.rpm());
-        QCOMPARE((EngineReplica::EngineType)rep->type(), EngineReplica::Gas);
+        QCOMPARE(EngineReplica::EngineType(rep->type()), EngineReplica::Gas);
 
         //Change Replica and make sure change propagates to source
         QSignalSpy sourceSpy(&engine, SIGNAL(rpmChanged(int)));

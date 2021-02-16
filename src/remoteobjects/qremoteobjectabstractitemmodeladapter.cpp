@@ -123,7 +123,7 @@ void QAbstractItemModelSourceAdapter::replicaSetData(const IndexList &index, con
     Q_ASSERT(modelIndex.isValid());
     const bool result = m_model->setData(modelIndex, value, role);
     Q_ASSERT(result);
-    Q_UNUSED(result);
+    Q_UNUSED(result)
 }
 
 DataEntries QAbstractItemModelSourceAdapter::replicaRowRequest(IndexList start, IndexList end, QList<int> roles)

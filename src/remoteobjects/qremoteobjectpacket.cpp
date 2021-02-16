@@ -223,7 +223,7 @@ void deserializeInitPacket(QDataStream &in, QVariantList &values)
 {
     const bool success = deserializeQVariantList(in, values);
     Q_ASSERT(success);
-    Q_UNUSED(success);
+    Q_UNUSED(success)
 }
 
 void serializeInitDynamicPacket(DataStreamPacket &ds, const QRemoteObjectRootSource *source)
@@ -589,7 +589,7 @@ void serializeInvokePacket(DataStreamPacket &ds, const QString &name, int call, 
     ds << call;
     ds << index;
 
-    ds << (quint32)args.size();
+    ds << quint32(args.size());
     for (const auto &arg : args)
         ds << encodeVariant(arg);
 
@@ -604,7 +604,7 @@ void deserializeInvokePacket(QDataStream& in, int &call, int &index, QVariantLis
     in >> index;
     const bool success = deserializeQVariantList(in, args);
     Q_ASSERT(success);
-    Q_UNUSED(success);
+    Q_UNUSED(success)
     in >> serialId;
     in >> propertyIndex;
 }
@@ -708,7 +708,7 @@ QRO_::QRO_(const QVariant &value)
 
 QDataStream &operator<<(QDataStream &stream, const QRO_ &info)
 {
-    stream << info.name << info.typeName << (quint8)(info.type) << info.classDefinition << info.isNull;
+    stream << info.name << info.typeName << quint8(info.type) << info.classDefinition << info.isNull;
     qCDebug(QT_REMOTEOBJECT) << "Serializing " << info;
     // info.parameters will be filled in by serializeProperty
     return stream;

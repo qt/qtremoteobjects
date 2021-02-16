@@ -339,7 +339,7 @@ private slots:
         const QScopedPointer<TestClassReplica> tc_rep(client->acquire<TestClassReplica>());
         tc_rep->waitForSource();
         QCOMPARE(tc.testEnum(), tc_rep->testEnum());
-        QCOMPARE((qint32)tc.classEnum(), (qint32)TestClassSimpleSource::One);
+        QCOMPARE(qint32(tc.classEnum()), qint32(TestClassSimpleSource::One));
 
         // set property on the replica (test property change packet)
         {
@@ -348,7 +348,7 @@ private slots:
             tc_rep->pushClassEnum(TestClassReplica::Two);
             QVERIFY(spy.count() || spy.wait());
 
-            QCOMPARE((qint32)tc.classEnum(), (qint32)tc_rep->classEnum());
+            QCOMPARE(qint32(tc.classEnum()), qint32(tc_rep->classEnum()));
         }
 
         // set property on the source (test property change packet)
@@ -357,7 +357,7 @@ private slots:
             tc.setClassEnum(TestClassSimpleSource::One);
             QVERIFY(spy.wait());
 
-            QCOMPARE((qint32)tc.classEnum(), (qint32)tc_rep->classEnum());
+            QCOMPARE(qint32(tc.classEnum()), qint32(tc_rep->classEnum()));
         }
 
         QScopedPointer<QRemoteObjectDynamicReplica> tc_repDynamic(client->acquireDynamic(QStringLiteral("TestClass")));

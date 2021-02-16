@@ -1182,7 +1182,7 @@ void QRemoteObjectNodePrivate::connectReplica(QObject *object, QRemoteObjectRepl
         sig.prepend(QSIGNAL_CODE + '0');
         const char * const csig = sig.constData();
         const bool res = QObject::connect(object, csig, instance, csig);
-        Q_UNUSED(res);
+        Q_UNUSED(res)
         ++nConnections;
 
         qROPrivDebug() << sig << res;

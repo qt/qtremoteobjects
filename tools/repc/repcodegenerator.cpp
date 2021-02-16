@@ -987,7 +987,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QStringLiteral("        : SourceApiMap(), m_name(name)") << Qt::endl;
     out << QStringLiteral("    {") << Qt::endl;
     if (!astClass.hasPointerObjects())
-        out << QStringLiteral("        Q_UNUSED(object);") << Qt::endl;
+        out << QStringLiteral("        Q_UNUSED(object)") << Qt::endl;
 
     const int enumCount = astClass.enums.count();
     for (int i : astClass.subClassPropertyIndices) {
@@ -1009,13 +1009,13 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         const ASTProperty &prop = astClass.properties.at(i);
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(prop, SOURCE));
         out << QString::fromLatin1("        m_properties[%1] = QtPrivate::qtro_property_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<%3 (QObject::*)()>(0),\"%2\");")
+                              "static_cast<%3 (QObject::*)()>(nullptr),\"%2\");")
                              .arg(QString::number(i+1), prop.name, propTypeName) << Qt::endl;
         if (prop.modifier == prop.ReadWrite) //Make sure we have a setter function
-            out << QStringLiteral("        QtPrivate::qtro_method_test<ObjectType>(&ObjectType::set%1, static_cast<void (QObject::*)(%2)>(0));")
+            out << QStringLiteral("        QtPrivate::qtro_method_test<ObjectType>(&ObjectType::set%1, static_cast<void (QObject::*)(%2)>(nullptr));")
                                  .arg(cap(prop.name), propTypeName) << Qt::endl;
         if (prop.modifier != prop.Constant) { //Make sure we have an onChange signal
-            out << QStringLiteral("        QtPrivate::qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(0));")
+            out << QStringLiteral("        QtPrivate::qtro_method_test<ObjectType>(&ObjectType::%1Changed, static_cast<void (QObject::*)()>(nullptr));")
                                  .arg(prop.name) << Qt::endl;
             onChangeProperties << prop;
             propertyChangeIndex << i + 1; //m_properties[0] is the count, so index is one higher
@@ -1026,7 +1026,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     out << QString::fromLatin1("        m_signals[0] = %1;").arg(signalCount+onChangeProperties.size()) << Qt::endl;
     for (int i = 0; i < changedCount; ++i)
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2Changed, "
-                              "static_cast<void (QObject::*)(%3)>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
+                              "static_cast<void (QObject::*)(%3)>(nullptr),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(i+1), onChangeProperties.at(i).name,
                                   fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(onChangeProperties.at(i), SOURCE)),
                                   QString::number(i)) << Qt::endl;
@@ -1035,7 +1035,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     for (int i = 0; i < signalCount; ++i) {
         const ASTFunction &sig = signalsList.at(i);
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<void (QObject::*)(%3)>(0),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
+                              "static_cast<void (QObject::*)(%3)>(nullptr),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(changedCount+i+1), sig.name, sig.paramsAsString(ASTFunction::Normalized), QString::number(changedCount+i)) << Qt::endl;
     }
     const int slotCount = astClass.slotsList.count();
@@ -1051,7 +1051,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         const ASTProperty &prop = pushProps.at(i);
         const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), prop.type);
         out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::push%2, "
-                              "static_cast<void (QObject::*)(%3)>(0),\"push%2(%4)\",m_methodArgCount+%5,&m_methodArgTypes[%5]);")
+                              "static_cast<void (QObject::*)(%3)>(nullptr),\"push%2(%4)\",m_methodArgCount+%5,&m_methodArgTypes[%5]);")
                              .arg(QString::number(i+1), cap(prop.name), propTypeName,
                                   QString(propTypeName).remove(QStringLiteral("typename ObjectType::")), // we don't want this in the string signature
                                   QString::number(i)) << Qt::endl;
@@ -1062,7 +1062,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         const ASTFunction &slot = slotsList.at(i);
         const QString params = slot.paramsAsString(ASTFunction::Normalized);
         out << QString::fromLatin1("        m_methods[%1] = QtPrivate::qtro_method_index<ObjectType>(&ObjectType::%2, "
-                              "static_cast<void (QObject::*)(%3)>(0),\"%2(%4)\",m_methodArgCount+%5,&m_methodArgTypes[%5]);")
+                              "static_cast<void (QObject::*)(%3)>(nullptr),\"%2(%4)\",m_methodArgCount+%5,&m_methodArgTypes[%5]);")
                              .arg(QString::number(i+pushCount+1), slot.name, params,
                                   QString(params).remove(QStringLiteral("typename ObjectType::")), // we don't want this in the string signature
                                   QString::number(i+pushCount)) << Qt::endl;
@@ -1129,9 +1129,9 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QStringLiteral("        return m_signalArgTypes[sigIndex][paramIndex];") << Qt::endl;
         out << QStringLiteral("    }") << Qt::endl;
     } else {
-        out << QStringLiteral("    int signalParameterCount(int index) const override { Q_UNUSED(index); return -1; }") << Qt::endl;
+        out << QStringLiteral("    int signalParameterCount(int index) const override { Q_UNUSED(index) return -1; }") << Qt::endl;
         out << QStringLiteral("    int signalParameterType(int sigIndex, int paramIndex) const override") << Qt::endl;
-        out << QStringLiteral("    { Q_UNUSED(sigIndex); Q_UNUSED(paramIndex); return -1; }") << Qt::endl;
+        out << QStringLiteral("    { Q_UNUSED(sigIndex) Q_UNUSED(paramIndex) return -1; }") << Qt::endl;
     }
     if (methodCount > 0) {
         out << QStringLiteral("    int methodParameterCount(int index) const override") << Qt::endl;
@@ -1147,9 +1147,9 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QStringLiteral("        return m_methodArgTypes[methodIndex][paramIndex];") << Qt::endl;
         out << QStringLiteral("    }") << Qt::endl;
     } else {
-        out << QStringLiteral("    int methodParameterCount(int index) const override { Q_UNUSED(index); return -1; }") << Qt::endl;
+        out << QStringLiteral("    int methodParameterCount(int index) const override { Q_UNUSED(index) return -1; }") << Qt::endl;
         out << QStringLiteral("    int methodParameterType(int methodIndex, int paramIndex) const override") << Qt::endl;
-        out << QStringLiteral("    { Q_UNUSED(methodIndex); Q_UNUSED(paramIndex); return -1; }") << Qt::endl;
+        out << QStringLiteral("    { Q_UNUSED(methodIndex) Q_UNUSED(paramIndex) return -1; }") << Qt::endl;
     }
     //propertyIndexFromSignal method
     out << QStringLiteral("    int propertyIndexFromSignal(int index) const override") << Qt::endl;
@@ -1160,7 +1160,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
             out << QString::fromLatin1("        case %1: return m_properties[%2];").arg(i).arg(propertyChangeIndex.at(i)) << Qt::endl;
         out << QStringLiteral("        }") << Qt::endl;
     } else
-        out << QStringLiteral("        Q_UNUSED(index);") << Qt::endl;
+        out << QStringLiteral("        Q_UNUSED(index)") << Qt::endl;
     out << QStringLiteral("        return -1;") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
     //propertyRawIndexFromSignal method
@@ -1172,7 +1172,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
             out << QString::fromLatin1("        case %1: return %2;").arg(i).arg(propertyChangeIndex.at(i)-1) << Qt::endl;
         out << QStringLiteral("        }") << Qt::endl;
     } else
-        out << QStringLiteral("        Q_UNUSED(index);") << Qt::endl;
+        out << QStringLiteral("        Q_UNUSED(index)") << Qt::endl;
     out << QStringLiteral("        return -1;") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
 
@@ -1209,7 +1209,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         }
         out << QStringLiteral("        }") << Qt::endl;
     } else
-        out << QStringLiteral("        Q_UNUSED(index);") << Qt::endl;
+        out << QStringLiteral("        Q_UNUSED(index)") << Qt::endl;
     out << QStringLiteral("        return QByteArrayLiteral(\"\");") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
 
@@ -1255,7 +1255,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         }
         out << QStringLiteral("        }") << Qt::endl;
     } else
-        out << QStringLiteral("        Q_UNUSED(index);") << Qt::endl;
+        out << QStringLiteral("        Q_UNUSED(index)") << Qt::endl;
     out << QStringLiteral("        return QByteArrayLiteral(\"\");") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
 
@@ -1295,7 +1295,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         }
         out << QStringLiteral("        }") << Qt::endl;
     } else
-        out << QStringLiteral("        Q_UNUSED(index);") << Qt::endl;
+        out << QStringLiteral("        Q_UNUSED(index)") << Qt::endl;
     out << QStringLiteral("        return QByteArrayLiteral(\"\");") << Qt::endl;
     out << QStringLiteral("    }") << Qt::endl;
 

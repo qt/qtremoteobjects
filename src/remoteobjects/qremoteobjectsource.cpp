@@ -145,8 +145,8 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
     }
 }
 
-QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *d, const SourceApiMap *api, QObject *adapter, const QString &parentName)
-    : QRemoteObjectSourceBase(obj, d, api, adapter)
+QRemoteObjectSource::QRemoteObjectSource(QObject *obj, Private *dd, const SourceApiMap *api, QObject *adapter, const QString &parentName)
+    : QRemoteObjectSourceBase(obj, dd, api, adapter)
     , m_name(api->typeName() == QLatin1String("QAbstractItemModelAdapter") ? MODEL().arg(parentName + QLatin1String("::") + api->name()) :
                                                                              CLASS().arg(parentName + QLatin1String("::") + api->name()))
 {
@@ -198,7 +198,7 @@ void QRemoteObjectSourceBase::setConnections()
         //We know no one will inherit from this class, so no need to worry about indices from
         //derived classes.
         const auto target = isAdapter ? m_adapter : m_object;
-        if (!QMetaObject::connect(target, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, 0)) {
+        if (!QMetaObject::connect(target, sourceIndex, this, QRemoteObjectSource::qobjectMethodOffset+idx, Qt::DirectConnection, nullptr)) {
             qCWarning(QT_REMOTEOBJECT) << "QRemoteObjectSourceBase: QMetaObject::connect returned false. Unable to connect.";
             return;
         }

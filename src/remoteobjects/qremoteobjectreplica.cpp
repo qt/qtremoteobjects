@@ -507,7 +507,7 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
         if (mm.methodType() == QMetaMethod::Signal) {
             const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, nullptr);
             qCDebug(QT_REMOTEOBJECT) << "  Rep connect"<<i<<res<<mm.name();
-            Q_UNUSED(res);
+            Q_UNUSED(res)
         }
     }
     if (m_methodOffset == 0) //We haven't initialized the offsets yet
@@ -530,7 +530,7 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
                 ++m_numSignals;
                 const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, nullptr);
                 qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<mm.name();
-                Q_UNUSED(res);
+                Q_UNUSED(res)
             }
         }
         m_methodOffset = m_signalOffset + m_numSignals;
@@ -539,7 +539,7 @@ void QRemoteObjectReplicaImplementation::configurePrivate(QRemoteObjectReplica *
         for (int i = m_signalOffset; i < m_methodOffset; ++i) {
             const bool res = QMetaObject::connect(this, i, rep, i, Qt::DirectConnection, nullptr);
             qCDebug(QT_REMOTEOBJECT) << "  Connect"<<i<<res<<m_metaObject->method(i).name();
-            Q_UNUSED(res);
+            Q_UNUSED(res)
         }
         if (isInitialized()) {
             qCDebug(QT_REMOTEOBJECT) << QStringLiteral("ReplicaImplementation initialized, emitting signal on replica");
@@ -899,17 +899,17 @@ void QStubReplicaImplementation::setProperty(int i, const QVariant &prop)
 
 void QStubReplicaImplementation::_q_send(QMetaObject::Call call, int index, const QVariantList &args)
 {
-    Q_UNUSED(call);
-    Q_UNUSED(index);
-    Q_UNUSED(args);
+    Q_UNUSED(call)
+    Q_UNUSED(index)
+    Q_UNUSED(args)
     qWarning("Tried calling a slot or setting a property on a replica that hasn't been initialized with a node");
 }
 
 QRemoteObjectPendingCall QStubReplicaImplementation::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
-    Q_UNUSED(call);
-    Q_UNUSED(index);
-    Q_UNUSED(args);
+    Q_UNUSED(call)
+    Q_UNUSED(index)
+    Q_UNUSED(args)
     qWarning("Tried calling a slot or setting a property on a replica that hasn't been initialized with a node");
     return QRemoteObjectPendingCall(); //Invalid
 }

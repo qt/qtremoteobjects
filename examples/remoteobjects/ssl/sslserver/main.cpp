@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     MinuteTimer timer;
     host.enableRemoting(&timer);
 
-    Q_UNUSED(timer);
+    Q_UNUSED(timer)
     return app.exec();
 }
 

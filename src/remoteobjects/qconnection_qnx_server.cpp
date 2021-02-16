@@ -118,8 +118,8 @@ bool QQnxNativeServer::waitForNewConnection(int msec, bool *timedOut)
     //TODO - This method isn't used by Qt Remote Objects, but would
     //need to be implemented before this class could be used as a
     //connection server (like QTcpServer or QLocalServer).
-    Q_UNUSED(msec);
-    Q_UNUSED(timedOut);
+    Q_UNUSED(msec)
+    Q_UNUSED(timedOut)
     Q_ASSERT(false);
     return false;
 }
@@ -459,7 +459,7 @@ void QQnxNativeServerPrivate::createSource(int rcvid, uint64_t uid, pid_t toPid)
 {
     Q_Q(QQnxNativeServer);
 #ifndef USE_HAM
-    Q_UNUSED(toPid);
+    Q_UNUSED(toPid)
 #endif
     auto io = QSharedPointer<QIOQnxSource>(new QIOQnxSource(rcvid));
     io->moveToThread(q->thread());

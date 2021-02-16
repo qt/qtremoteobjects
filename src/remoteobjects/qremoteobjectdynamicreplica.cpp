@@ -110,7 +110,7 @@ const QMetaObject* QRemoteObjectDynamicReplica::metaObject() const
 void *QRemoteObjectDynamicReplica::qt_metacast(const char *name)
 {
     if (!name)
-        return 0;
+        return nullptr;
 
     if (!strcmp(name, "QRemoteObjectDynamicReplica"))
         return static_cast<void*>(const_cast<QRemoteObjectDynamicReplica*>(this));

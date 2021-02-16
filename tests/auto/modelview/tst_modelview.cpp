@@ -269,7 +269,7 @@ void compareFlags(const QAbstractItemModel *sourceModel, const QAbstractItemMode
 class RolenamesListModel : public QAbstractListModel
 {
 public:
-    explicit RolenamesListModel(QObject *parent = 0) : QAbstractListModel(parent) { }
+    explicit RolenamesListModel(QObject *parent = nullptr) : QAbstractListModel(parent) { }
     int rowCount(const QModelIndex &) const override{return m_list.length(); }
     QVariant data(const QModelIndex &index, int role) const override
     {
@@ -384,7 +384,7 @@ public:
         for (; it != end; ++it) {
             for (int role : it.value()) {
                 QVariant v = m_replica->data(it.key(), role);
-                Q_UNUSED(v);
+                Q_UNUSED(v)
             }
         }
     }
@@ -471,7 +471,7 @@ private:
                     m_pending[index] = itroles;
                 }
 #else
-                Q_UNUSED(roles);
+                Q_UNUSED(roles)
                 m_pending.erase(it);
                 if (m_replica->hasChildren(index)) {
                     // ask for the row count to get an update
@@ -1034,7 +1034,7 @@ void TestModelView::testModelTest()
     FetchData f(repModel.data());
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
-    Q_UNUSED(test);
+    Q_UNUSED(test)
 }
 
 void TestModelView::testSortFilterModel()

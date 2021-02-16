@@ -47,7 +47,7 @@ public:
 
 int BenchmarksModel::rowCount(const QModelIndex &parent) const
 {
-    Q_UNUSED(parent);
+    Q_UNUSED(parent)
     return 100000;
 }
 
@@ -103,7 +103,7 @@ void BenchmarksTest::initTestCase() {
     dataCenterLocal->setData1(5);
     const bool remoted = m_basicServer.enableRemoting(dataCenterLocal.data());
     Q_ASSERT(remoted);
-    Q_UNUSED(remoted);
+    Q_UNUSED(remoted)
 
     m_basicClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
     Q_ASSERT(m_basicClient.lastError() == QRemoteObjectNode::NoError);
@@ -126,7 +126,7 @@ void BenchmarksTest::benchPropertyChangesInt()
     connect(center.data(), &LocalDataCenterReplica::data1Changed, [&lastValue, &center, &loop]() {
         const bool res = (lastValue++ == center->data1());
         Q_ASSERT(res);
-        Q_UNUSED(res);
+        Q_UNUSED(res)
         if (lastValue == 50000)
             loop.quit();
     });
@@ -178,7 +178,7 @@ void BenchmarksTest::benchQLocalSocketInt()
             client.read(reinterpret_cast<char*>(&readout), sizeof(int));
             const bool res = (lastValue++ == readout);
             Q_ASSERT(res);
-            Q_UNUSED(res);
+            Q_UNUSED(res)
         }
         if (lastValue >= 50000)
             loop.quit();
@@ -187,7 +187,7 @@ void BenchmarksTest::benchQLocalSocketInt()
         for (int i = 0; i < 50000; ++i) {
             const int res = serverSock->write(reinterpret_cast<char*>(&i), sizeof(int));
             Q_ASSERT(res == sizeof(int));
-            Q_UNUSED(res);
+            Q_UNUSED(res)
         }
         loop.exec();
     }
@@ -223,7 +223,7 @@ void BenchmarksTest::benchQLocalSocketQDataStreamInt()
             readStream >> readout;
             const bool res = (lastValue++ == readout);
             Q_ASSERT(res);
-            Q_UNUSED(res);
+            Q_UNUSED(res)
         }
         if (lastValue >= 50000)
             loop.quit();

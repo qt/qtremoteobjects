@@ -63,7 +63,7 @@
 // that change on-the-minute yet efficiently sleep the rest
 // of the time.
 
-QRemoteObjectNode m_client;
+static QRemoteObjectNode m_client;
 
 class TimeModel : public QObject
 {
@@ -122,8 +122,8 @@ class QExampleQmlPlugin : public QQmlExtensionPlugin
 public:
     void initializeEngine(QQmlEngine *engine, const char *uri) override
     {
-        Q_UNUSED(engine);
-        Q_UNUSED(uri);
+        Q_UNUSED(engine)
+        Q_UNUSED(uri)
         Q_ASSERT(uri == QLatin1String("TimeExample"));
         engine->addImportPath(QStringLiteral("qrc:/qml"));
         m_client.setRegistryUrl(QUrl(QStringLiteral("local:registry")));

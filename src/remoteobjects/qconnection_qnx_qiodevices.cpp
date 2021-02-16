@@ -314,7 +314,7 @@ QQnxNativeIo::~QQnxNativeIo()
 bool QQnxNativeIo::connectToServer(QIODevice::OpenMode openMode)
 {
     Q_D(QQnxNativeIo);
-    Q_UNUSED(openMode);
+    Q_UNUSED(openMode)
 
     if (state() == QAbstractSocket::ConnectedState ||
         state() == QAbstractSocket::ConnectingState) {
@@ -455,7 +455,7 @@ bool QQnxNativeIo::waitForBytesWritten(int msecs)
     //TODO - This method isn't used by Qt Remote Objects, but would
     //need to be implemented before this class could be used as a
     //generic QIODevice.
-    Q_UNUSED(msecs);
+    Q_UNUSED(msecs)
     Q_ASSERT(false);
     return false;
 }
@@ -465,7 +465,7 @@ bool QQnxNativeIo::waitForReadyRead(int msecs)
     //TODO - This method isn't used by Qt Remote Objects, but would
     //need to be implemented before this class could be used as a
     //generic QIODevice.
-    Q_UNUSED(msecs);
+    Q_UNUSED(msecs)
     Q_ASSERT(false);
     return false;
 }
@@ -557,7 +557,7 @@ qint64 QIOQnxSource::bytesToWrite() const
 
 bool QIOQnxSource::open(QIODevice::OpenMode openMode)
 {
-    Q_UNUSED(openMode);
+    Q_UNUSED(openMode)
     return false;
 }
 
@@ -596,7 +596,7 @@ bool QIOQnxSource::waitForBytesWritten(int msecs)
     //TODO - This method isn't used by Qt Remote Objects, but would
     //need to be implemented before this class could be used as a
     //generic QIODevice.
-    Q_UNUSED(msecs);
+    Q_UNUSED(msecs)
     Q_ASSERT(false);
     return false;
 }
@@ -606,7 +606,7 @@ bool QIOQnxSource::waitForReadyRead(int msecs)
     //TODO - This method isn't used by Qt Remote Objects, but would
     //need to be implemented before this class could be used as a
     //generic QIODevice.
-    Q_UNUSED(msecs);
+    Q_UNUSED(msecs)
     Q_ASSERT(false);
     return false;
 }

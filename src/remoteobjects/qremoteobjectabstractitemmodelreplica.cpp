@@ -71,7 +71,7 @@ CacheData::~CacheData() {
 
 QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation()
     : QRemoteObjectReplica()
-    , m_selectionModel(0)
+    , m_selectionModel(nullptr)
     , m_rootItem(this)
 {
     QAbstractItemModelReplicaImplementation::registerMetatypes();
@@ -83,7 +83,7 @@ QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation
 
 QAbstractItemModelReplicaImplementation::QAbstractItemModelReplicaImplementation(QRemoteObjectNode *node, const QString &name)
     : QRemoteObjectReplica(ConstructWithNode)
-    , m_selectionModel(0)
+    , m_selectionModel(nullptr)
     , m_rootItem(this)
 {
     QAbstractItemModelReplicaImplementation::registerMetatypes();
@@ -155,7 +155,7 @@ inline void removeIndexFromRow(const QModelIndex &index, const QList<int> &roles
 
 void QAbstractItemModelReplicaImplementation::onReplicaCurrentChanged(const QModelIndex &current, const QModelIndex &previous)
 {
-    Q_UNUSED(previous);
+    Q_UNUSED(previous)
     IndexList currentIndex = toModelIndexList(current, q);
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentIndex;
     replicaSetCurrentIndex(currentIndex, QItemSelectionModel::Clear|QItemSelectionModel::Select|QItemSelectionModel::Current);
@@ -183,7 +183,7 @@ bool QAbstractItemModelReplicaImplementation::clearCache(const IndexList &start,
     Q_ASSERT(startIndex.isValid());
     Q_ASSERT(endIndex.isValid());
     Q_ASSERT(startIndex.parent() == endIndex.parent());
-    Q_UNUSED(endIndex);
+    Q_UNUSED(endIndex)
     QModelIndex parentIndex = startIndex.parent();
     auto parentItem = cacheData(parentIndex);
 
@@ -336,7 +336,7 @@ void QAbstractItemModelReplicaImplementation::onRowsMoved(IndexList srcParent, i
 void QAbstractItemModelReplicaImplementation::onCurrentChanged(IndexList current, IndexList previous)
 {
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << current << "previous=" << previous;
-    Q_UNUSED(previous);
+    Q_UNUSED(previous)
     Q_ASSERT(m_selectionModel);
     bool ok;
     // If we have several tree models sharing a selection model, we
@@ -761,7 +761,7 @@ QAbstractItemModelReplica::~QAbstractItemModelReplica()
 {
 }
 
-static QVariant findData(const CachedRowEntry &row, const QModelIndex &index, int role, bool *cached = 0)
+static QVariant findData(const CachedRowEntry &row, const QModelIndex &index, int role, bool *cached = nullptr)
 {
     if (index.column() < row.size()) {
         const CacheEntry &entry = row[index.column()];
@@ -966,7 +966,7 @@ bool QAbstractItemModelReplica::hasData(const QModelIndex &index, int role) cons
     bool cached = false;
     const CachedRowEntry &entry = item->cachedRowEntry;
     QVariant result = findData(entry, index, role, &cached);
-    Q_UNUSED(result);
+    Q_UNUSED(result)
     return cached;
 }
 

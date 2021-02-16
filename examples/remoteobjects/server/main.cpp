@@ -99,6 +99,6 @@ int main(int argc, char *argv[])
     MinuteTimer timer;
     node2.enableRemoting(&timer);
 
-    Q_UNUSED(timer);
+    Q_UNUSED(timer)
     return app.exec();
 }
