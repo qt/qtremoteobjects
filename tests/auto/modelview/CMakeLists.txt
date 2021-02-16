@@ -6,7 +6,6 @@
 
 qt_internal_add_test(tst_modelview
     SOURCES
-        modeltest.cpp modeltest.h
         tst_modelview.cpp
     PUBLIC_LIBRARIES
         Qt::Gui

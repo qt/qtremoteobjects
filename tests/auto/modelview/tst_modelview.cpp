@@ -26,10 +26,10 @@
 **
 ****************************************************************************/
 
-#include "modeltest.h"
 #include "../shared/model_utilities.h"
 
 #include <QtTest/QtTest>
+#include <QAbstractItemModelTester>
 #include <QMetaType>
 #include <QRemoteObjectReplica>
 #include <QRemoteObjectNode>
@@ -539,6 +539,7 @@ private slots:
 
     void testRoleNames();
 
+    void testModelTest_data();
     void testModelTest();
     void testSortFilterModel();
 
@@ -1026,11 +1027,25 @@ void TestModelView::testServerInsertDataTree()
     compareData(&testTreeModel, model.data());
 }
 
+void TestModelView::testModelTest_data()
+{
+    // QtRemoteObjects::InitialAction is a namespace enum.  QTest/QFETCH fail to compile with it as
+    // the column type, so use bool instead.
+    QTest::addColumn<bool>("prefetch");
+
+    QTest::newRow("size only") << false;
+    QTest::newRow("prefetch") << true;
+}
+
 void TestModelView::testModelTest()
 {
+    QFETCH(bool, prefetch);
     _SETUP_TEST_
-    QScopedPointer<QAbstractItemModelReplica> repModel( client.acquireModel(QStringLiteral("test")));
-    ModelTest test(repModel.data());
+    QtRemoteObjects::InitialAction action = QtRemoteObjects::InitialAction::FetchRootSize;
+    if (prefetch)
+        action = QtRemoteObjects::InitialAction::PrefetchData;
+    QScopedPointer<QAbstractItemModelReplica> repModel( client.acquireModel(QStringLiteral("test"), action));
+    QAbstractItemModelTester test(repModel.data(), QAbstractItemModelTester::FailureReportingMode::Fatal);
 
     FetchData f(repModel.data());
     f.addAll();
