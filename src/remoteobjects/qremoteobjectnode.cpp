@@ -2356,7 +2356,7 @@ void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
     version, but takes the name of the \l {Source} class as a parameter (\a
     typeName) rather than deriving it from the class type.
 */
-QStringList QRemoteObjectNode::instances(const QString &typeName) const
+QStringList QRemoteObjectNode::instances(QStringView typeName) const
 {
     Q_D(const QRemoteObjectNode);
     QStringList names;

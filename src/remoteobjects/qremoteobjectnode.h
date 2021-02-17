@@ -125,7 +125,7 @@ public:
         const QString typeName = QString::fromLatin1(mobj->classInfo(index).value());
         return instances(typeName);
     }
-    QStringList instances(const QString &typeName) const;
+    QStringList instances(QStringView typeName) const;
 
     QRemoteObjectDynamicReplica *acquireDynamic(const QString &name);
     QAbstractItemModelReplica *acquireModel(const QString &name, QtRemoteObjects::InitialAction action = QtRemoteObjects::FetchRootSize, const QList<int> &rolesHint = {});
@@ -186,12 +186,12 @@ public:
     Q_INVOKABLE bool disableRemoting(QObject *remoteObject);
     void addHostSideConnection(QIODevice *ioDevice);
 
-    typedef std::function<bool(const QString &, const QString &)> RemoteObjectNameFilter;
+    typedef std::function<bool(QStringView, QStringView)> RemoteObjectNameFilter;
     bool proxy(const QUrl &registryUrl, const QUrl &hostUrl={},
-               RemoteObjectNameFilter filter=[](const QString &, const QString &) {return true; });
+               RemoteObjectNameFilter filter=[](QStringView, QStringView) {return true; });
     // ### Qt 6: Fix -> This should only be part of the QRemoteObjectRegistryHost type, since the
     // reverse aspect requires the registry.
-    bool reverseProxy(RemoteObjectNameFilter filter=[](const QString &, const QString &) {return true; });
+    bool reverseProxy(RemoteObjectNameFilter filter=[](QStringView, QStringView) {return true; });
 
 protected:
     virtual QUrl hostUrl() const;
