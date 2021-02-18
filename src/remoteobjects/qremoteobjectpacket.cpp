@@ -193,28 +193,22 @@ bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
     // note: optimized version of: QDataStream operator>>(QDataStream& s, QList<T>& l)
     quint32 c;
     s >> c;
-    const int initialListSize = l.size();
     if (static_cast<quint32>(l.size()) < c)
         l.reserve(c);
     else if (static_cast<quint32>(l.size()) > c)
-        for (int i = c; i < initialListSize; ++i)
-            l.removeLast();
+        l.resize(c);
 
     for (int i = 0; i < l.size(); ++i)
     {
         if (s.atEnd())
             return false;
-        QVariant t;
-        s >> t;
-        l[i] = t;
+        s >> l[i];
     }
     for (quint32 i = l.size(); i < c; ++i)
     {
         if (s.atEnd())
             return false;
-        QVariant t;
-        s >> t;
-        l.append(t);
+        s >> l.emplace_back();
     }
     return true;
 }
