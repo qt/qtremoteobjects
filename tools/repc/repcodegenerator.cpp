@@ -732,7 +732,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
         int nPersisted = 0;
         if (astClass.hasPersisted) {
-            out << "        QVariantList stored = retrieveProperties(\"" << astClass.name << "\", \"" << classSignature(astClass) << "\");" << Qt::endl;
+            out << "        QVariantList stored = retrieveProperties(QStringLiteral(\"" << astClass.name << "\"), \"" << classSignature(astClass) << "\");" << Qt::endl;
             out << "        if (!stored.isEmpty()) {" << Qt::endl;
             for (int i = 0; i < astClass.properties.size(); i++) {
                 if (astClass.properties.at(i).persisted) {
@@ -789,7 +789,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
                 out << "        persisted << propAsVariant(" << i << ");" << Qt::endl;
             }
         }
-        out << "        persistProperties(\"" << astClass.name << "\", \"" << classSignature(astClass) << "\", persisted);" << Qt::endl;
+        out << "        persistProperties(QStringLiteral(\"" << astClass.name << "\"), \"" << classSignature(astClass) << "\", persisted);" << Qt::endl;
         out << "    }" << Qt::endl;
     } else {
         out << "    ~" << className << "() override = default;" << Qt::endl;
