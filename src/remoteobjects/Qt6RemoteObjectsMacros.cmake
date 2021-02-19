@@ -56,12 +56,16 @@ function(qt6_add_repc_files type target)
             get_filename_component(infile ${it} ABSOLUTE)
         endif()
         set(outfile ${CMAKE_CURRENT_BINARY_DIR}/rep_${outfilename}_${type}.h)
-        add_custom_command(OUTPUT ${outfile}
-                           ${QT_TOOL_PATH_SETUP_COMMAND}
-                           COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::repc
-                           ARGS -o ${type} ${repc_incpath} ${infile} ${outfile}
-                           MAIN_DEPENDENCY ${infile}
-                           VERBATIM)
+        add_custom_command(
+            OUTPUT ${outfile}
+            ${QT_TOOL_PATH_SETUP_COMMAND}
+            COMMAND
+                ${QT_CMAKE_EXPORT_NAMESPACE}::repc
+                -o ${type} ${repc_incpath} ${infile} ${outfile}
+            MAIN_DEPENDENCY ${infile}
+            DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::repc
+            VERBATIM
+        )
         list(APPEND outfiles ${outfile})
     endforeach()
     target_sources(${target} PRIVATE ${outfiles})
