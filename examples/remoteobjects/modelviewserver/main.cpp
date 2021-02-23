@@ -157,11 +157,11 @@ int main(int argc, char *argv[])
     view.show();
     TimerHandler handler;
     handler.model = &sourceModel;
-    QTimer::singleShot(5000, &handler, SLOT(changeData()));
-    QTimer::singleShot(10000, &handler, SLOT(insertData()));
-    QTimer::singleShot(11000, &handler, SLOT(changeFlags()));
-    QTimer::singleShot(12000, &handler, SLOT(removeData()));
-    QTimer::singleShot(13000, &handler, SLOT(moveData()));
+    QTimer::singleShot(5000, &handler, &TimerHandler::changeData);
+    QTimer::singleShot(10000, &handler, &TimerHandler::insertData);
+    QTimer::singleShot(11000, &handler, &TimerHandler::changeFlags);
+    QTimer::singleShot(12000, &handler, &TimerHandler::removeData);
+    QTimer::singleShot(13000, &handler, &TimerHandler::moveData);
 
     return app.exec();
 }

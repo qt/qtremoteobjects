@@ -42,7 +42,7 @@ private Q_SLOTS:
         QRemoteObjectNode repNode;
         repNode.connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65214")));
         QSharedPointer<TestClassReplica> rep(repNode.acquire<TestClassReplica>());
-        QSignalSpy stateChangedSpy(rep.data(), SIGNAL(stateChanged(State,State)));
+        QSignalSpy stateChangedSpy(rep.data(), &QRemoteObjectReplica::stateChanged);
         QVERIFY(rep->waitForSource());
         QCOMPARE(rep->state(), QRemoteObjectReplica::Valid);
 

@@ -191,7 +191,7 @@ void ProxyTest::testProxy()
     // Make sure disabling the Source cascades the state change
     bool res = host.disableRemoting(&engine);
     Q_ASSERT(res);
-    QSignalSpy stateSpy(replica.data(), SIGNAL(stateChanged(QRemoteObjectReplica::State,QRemoteObjectReplica::State)));
+    QSignalSpy stateSpy(replica.data(), &QRemoteObjectReplica::stateChanged);
     stateSpy.wait();
     QCOMPARE(stateSpy.count(), 1);
     QCOMPARE(replica->state(), QRemoteObjectReplica::Suspect);
@@ -236,7 +236,7 @@ void ProxyTest::testProxy()
                 roles.insert(it.key());
             QCOMPARE(availableRoles, roles);
         }
-        QSignalSpy dataSpy(rep->tracks(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QList<int>)));
+        QSignalSpy dataSpy(rep->tracks(), &QAbstractItemModelReplica::dataChanged);
         QList<QModelIndex> pending;
         QTRY_COMPARE(rep->tracks()->rowCount(), model.rowCount());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
@@ -312,7 +312,7 @@ void ProxyTest::testProxy()
             QCOMPARE(availableRoles, roles);
         }
         QTRY_COMPARE(tracksReplica->isInitialized(), true);
-        QSignalSpy dataSpy(tracksReplica, SIGNAL(dataChanged(QModelIndex,QModelIndex,QList<int>)));
+        QSignalSpy dataSpy(tracksReplica, &QAbstractItemModelReplica::dataChanged);
         QList<QModelIndex> pending;
         QTRY_COMPARE(tracksReplica->rowCount(), model.rowCount());
         for (int i = 0; i < tracksReplica->rowCount(); i++)

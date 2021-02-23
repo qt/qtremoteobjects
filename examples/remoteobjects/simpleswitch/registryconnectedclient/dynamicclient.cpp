@@ -56,7 +56,8 @@ DynamicClient::DynamicClient(QSharedPointer<QRemoteObjectDynamicReplica> ptr) :
     QObject(nullptr), clientSwitchState(false), reptr(ptr)
 {
     //connect signal for replica valid changed with signal slot initialization
-    QObject::connect(reptr.data(), SIGNAL(initialized()), this, SLOT(initConnection_slot()));
+    QObject::connect(reptr.data(), &QRemoteObjectDynamicReplica::initialized, this,
+                     &DynamicClient::initConnection_slot);
 }
 
 //destructor

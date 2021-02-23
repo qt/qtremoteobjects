@@ -42,7 +42,7 @@ private Q_SLOTS:
         QRemoteObjectNode repNode;
         repNode.connectToNode(QUrl{QStringLiteral("tcp://127.0.0.1:65214")});
         QSharedPointer<TestClassReplica> rep{repNode.acquire<TestClassReplica>()};
-        QSignalSpy stateChangedSpy(rep.data(), SIGNAL(stateChanged(State,State)));
+        QSignalSpy stateChangedSpy(rep.data(), &QRemoteObjectReplica::stateChanged);
         QTRY_COMPARE(rep->state(), QRemoteObjectReplica::SignatureMismatch);
         QCOMPARE(stateChangedSpy.count(), 1);
         auto args = stateChangedSpy.takeFirst();
@@ -56,7 +56,7 @@ private Q_SLOTS:
         QRemoteObjectNode repNode;
         repNode.connectToNode(QUrl{QStringLiteral("tcp://127.0.0.1:65214")});
         QSharedPointer<QRemoteObjectDynamicReplica> rep{repNode.acquireDynamic("TestClass")};
-        QSignalSpy stateChangedSpy(rep.data(), SIGNAL(stateChanged(State,State)));
+        QSignalSpy stateChangedSpy(rep.data(), &QRemoteObjectReplica::stateChanged);
         QTRY_COMPARE(rep->state(), QRemoteObjectReplica::Valid);
         QCOMPARE(stateChangedSpy.count(), 1);
         auto args = stateChangedSpy.takeFirst();
