@@ -324,7 +324,7 @@ public:
     FetchData(const QAbstractItemModelReplica *replica) : QObject(), m_replica(replica), isFinished(false) {
         if (!m_replica->isInitialized()) {
             QEventLoop l;
-            connect(m_replica, SIGNAL(initialized()), &l, SLOT(quit()));
+            connect(m_replica, &QAbstractItemModelReplica::initialized, &l, &QEventLoop::quit);
             l.exec();
         }
 
@@ -404,7 +404,7 @@ private:
 
     void emitFetched()
     {
-        QTimer::singleShot(0, this, SIGNAL(fetched()));
+        QTimer::singleShot(0, this, &FetchData::fetched);
     }
 
     void rowsInserted(const QModelIndex &parent, int first, int last)
@@ -661,7 +661,7 @@ void TestModelView::testHeaderData()
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     // ask for all Data members first, so we don't have to wait for update signals
-    QSignalSpy spyHeader(model.data(), SIGNAL(headerDataChanged(Qt::Orientation,int,int)));
+    QSignalSpy spyHeader(model.data(), &QAbstractItemModelReplica::headerDataChanged);
     for (int i = 0; i < m_sourceModel.rowCount(); ++i)
         model->headerData(i, Qt::Vertical, Qt::DisplayRole);
     for (int i = 0; i < m_sourceModel.columnCount(); ++i)
@@ -684,7 +684,7 @@ void TestModelView::testDataChangedTree()
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareTreeData(&m_sourceModel, model.data());
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QSet<int> expected;
     for (int i = 10; i < 20; ++i) {
         const QModelIndex parent = m_sourceModel.index(i,0);
@@ -731,7 +731,7 @@ void TestModelView::testFlags()
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(model.data(),  &QAbstractItemModelReplica::dataChanged);
     for (int i = 10; i < 20; ++i) {
         QStandardItem* firstItem = m_sourceModel.item(i, 0);
         QStandardItem* secondItem = m_sourceModel.item(i, 1);
@@ -757,7 +757,7 @@ void TestModelView::testDataChanged()
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(model.data(),  &QAbstractItemModelReplica::dataChanged);
     for (int i = 10; i < 20; ++i)
         m_sourceModel.setData(m_sourceModel.index(i, 1), QColor(Qt::blue), Qt::BackgroundRole);
 
@@ -782,9 +782,9 @@ void TestModelView::testDataInsertion()
 
     QVector<QModelIndex> pending;
 
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<InsertedRow> insertedRows;
-    QSignalSpy rowSpy(model.data(), SIGNAL(rowsInserted(QModelIndex,int,int)));
+    QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsInserted);
     m_sourceModel.insertRows(2, 9);
     insertedRows.append(InsertedRow(QModelIndex(), 2, 10));
     const int maxRuns = 10;
@@ -847,9 +847,9 @@ void TestModelView::testDataInsertionTree()
     const QVector<int> roles = model->availableRoles();
 
     QVector<InsertedRow> insertedRows;
-    QSignalSpy rowSpy(model.data(), SIGNAL(rowsInserted(QModelIndex,int,int)));
+    QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsInserted);
 
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
 
     for (int i = 0; i < 9; ++ i) {
@@ -934,8 +934,7 @@ void TestModelView::testDataRemoval()
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QVector<InsertedRow> removedRows;
-    QSignalSpy rowSpy(model.data(), SIGNAL(rowsRemoved(QModelIndex,int,int)));
-
+    QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsRemoved);
 
     const QModelIndex parent = m_sourceModel.index(10, 0);
     m_sourceModel.removeRows(0, 4, parent);
@@ -953,7 +952,7 @@ void TestModelView::testDataRemoval()
     // change one row to check for inconsistencies
 
     QVector<QModelIndex> pending;
-    QSignalSpy dataChangedSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     pending << m_sourceModel.index(0, 0, parent);
     WaitForDataChanged w(pending, &dataChangedSpy);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
@@ -1061,8 +1060,8 @@ void TestModelView::testSetData()
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
-    QSignalSpy dataChangedSpy(&m_sourceModel, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
-    QSignalSpy dataChangedReplicaSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(&m_sourceModel, &QStandardItemModel::dataChanged);
+    QSignalSpy dataChangedReplicaSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
     QVector<QModelIndex> pendingReplica;
     for (int row = 0, numRows = model->rowCount(); row < numRows; ++row) {
@@ -1092,8 +1091,8 @@ void TestModelView::testSetDataTree()
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
-    QSignalSpy dataChangedSpy(&m_sourceModel, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
-    QSignalSpy dataChangedReplicaSpy(model.data(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
+    QSignalSpy dataChangedSpy(&m_sourceModel, &QStandardItemModel::dataChanged);
+    QSignalSpy dataChangedReplicaSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
     QVector<QModelIndex> pendingReplica;
 
@@ -1178,7 +1177,7 @@ void TestModelView::testCacheData()
     model->setRootCacheSize(1000);
 
     QEventLoop l;
-    connect(model.data(), SIGNAL(initialized()), &l, SLOT(quit()));
+    connect(model.data(), &QAbstractItemModelReplica::initialized, &l, &QEventLoop::quit);
     l.exec();
 
     compareData(&m_listModel, model.data());

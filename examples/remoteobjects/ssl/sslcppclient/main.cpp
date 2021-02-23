@@ -75,10 +75,10 @@ public:
         ptr1.reset(m_client.acquire< MinuteTimerReplica >());
         ptr2.reset(m_client.acquire< MinuteTimerReplica >());
         ptr3.reset(m_client.acquire< MinuteTimerReplica >());
-        QTimer::singleShot(0,this,SLOT(clear()));
-        QTimer::singleShot(1,this,SLOT(clear()));
-        QTimer::singleShot(10000,this,SLOT(clear()));
-        QTimer::singleShot(11000,this,SLOT(clear()));
+        QTimer::singleShot(0, this, &tester::clear);
+        QTimer::singleShot(1, this, &tester::clear);
+        QTimer::singleShot(10000, this, &tester::clear);
+        QTimer::singleShot(11000, this, &tester::clear);
     }
 public slots:
     void clear()
