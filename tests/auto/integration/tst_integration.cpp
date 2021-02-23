@@ -470,7 +470,7 @@ private slots:
         instances = client->instances<EngineReplica>();
         QCOMPARE(instances, QStringList({"Engine", "Engine2"}));
 
-        QSignalSpy spy(engine_r.data(), SIGNAL(stateChanged(State,State)));
+        QSignalSpy spy(engine_r.data(), &QRemoteObjectReplica::stateChanged);
         host->disableRemoting(&e);
         spy.wait();
         QCOMPARE(spy.count(), 1);
@@ -510,7 +510,7 @@ private slots:
                 }
             });
 
-        QSignalSpy addedSpy(client->registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
+        QSignalSpy addedSpy(client->registry(), &QRemoteObjectRegistry::remoteObjectAdded);
 
         Engine e;
         e.setRpm(1111);
@@ -655,8 +655,8 @@ private slots:
         host->enableRemoting(localEngine.data());
         QCOMPARE(host->registry()->sourceLocations().keys().isEmpty(), true);
 
-        QSignalSpy spy(host->registry(), SIGNAL(initialized()));
-        QSignalSpy addedSpy(host->registry(), SIGNAL(remoteObjectAdded(QRemoteObjectSourceLocation)));
+        QSignalSpy spy(host->registry(), &QRemoteObjectRegistry::initialized);
+        QSignalSpy addedSpy(host->registry(), &QRemoteObjectRegistry::remoteObjectAdded);
         setupRegistry();
         bool added = addedSpy.wait();
         QVERIFY(spy.count() > 0);
@@ -717,7 +717,7 @@ private slots:
 
         setupClient();
 
-        QSignalSpy spy(this, SIGNAL(forwardResult(int)));
+        QSignalSpy spy(this, &tst_Integration::forwardResult);
         QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client->acquireDynamic(QStringLiteral("Engine")));
         connect(engine_dr.data(), &QRemoteObjectDynamicReplica::initialized, [&]()
             {
@@ -785,7 +785,7 @@ private slots:
         QCOMPARE(reply.error(), QRemoteObjectPendingCall::InvalidMessage);
 
         QRemoteObjectPendingCallWatcher watcher(reply);
-        QSignalSpy spy(&watcher, SIGNAL(finished(QRemoteObjectPendingCallWatcher *)));
+        QSignalSpy spy(&watcher, &QRemoteObjectPendingCallWatcher::finished);
         spy.wait();
         QCOMPARE(spy.count(), 1);
 
@@ -1243,7 +1243,7 @@ private slots:
     {
         QRemoteObjectNode _client;
         Q_SET_OBJECT_NAME(_client);
-        QSignalSpy errorSpy(&_client, SIGNAL(error(QRemoteObjectNode::ErrorCode)));
+        QSignalSpy errorSpy(&_client, &QRemoteObjectNode::error);
         QVERIFY(!_client.connectToNode(QUrl(QLatin1String("invalid:invalid"))));
         QCOMPARE(errorSpy.count(), 1);
         auto emittedErrorCode = errorSpy.first().at(0).value<QRemoteObjectNode::ErrorCode>();
