@@ -55,13 +55,6 @@ public:
 private slots:
     void testRun()
     {
-#if QT_CONFIG(securetransport)
-        if (QOperatingSystemVersion::current() >= QOperatingSystemVersion::MacOSCatalina) {
-            qWarning("Skipping the test case on macOS 10.15, "
-                     "SecureTransport does not like certificates on the test server");
-            return;
-        }
-#endif
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
         serverProc.start(findExecutable("sslTestServer", {
