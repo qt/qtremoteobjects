@@ -71,7 +71,7 @@ private Q_SLOTS:
 
         qDebug() << "Waiting for incoming connections";
 
-        QSignalSpy waitForStartedSpy(&myTestServer, SIGNAL(startedChanged(bool)));
+        QSignalSpy waitForStartedSpy(&myTestServer, &MyTestServer::startedChanged);
         QVERIFY(waitForStartedSpy.isValid());
         QVERIFY(waitForStartedSpy.wait());
         QCOMPARE(waitForStartedSpy.value(0).value(0).toBool(), true);

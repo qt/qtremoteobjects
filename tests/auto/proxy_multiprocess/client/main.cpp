@@ -83,7 +83,7 @@ private Q_SLOTS:
 
         qDebug() << "Verified expected initial states, sending start.";
         QSignalSpy enumSpy(m_rep.data(), &ParentClassReplica::enum2);
-        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
+        QSignalSpy advanceSpy(m_rep.data(), &ParentClassReplica::advance);
         auto reply = m_rep->start();
         QVERIFY(reply.waitForFinished());
         QVERIFY(reply.error() == QRemoteObjectPendingCall::NoError);

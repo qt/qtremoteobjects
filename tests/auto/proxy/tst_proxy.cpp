@@ -142,8 +142,8 @@ void ProxyTest::testProxy()
         QCOMPARE((EngineReplica::EngineType)rep->type(), EngineReplica::Gas);
 
         //Change Replica and make sure change propagates to source
-        QSignalSpy sourceSpy(&engine, SIGNAL(rpmChanged(int)));
-        QSignalSpy replicaSpy(rep, SIGNAL(rpmChanged(int)));
+        QSignalSpy sourceSpy(&engine, &EngineSimpleSource::rpmChanged);
+        QSignalSpy replicaSpy(rep, &EngineReplica::rpmChanged);
         rep->pushRpm(42);
         sourceSpy.wait();
         QCOMPARE(sourceSpy.count(), 1);
@@ -169,7 +169,7 @@ void ProxyTest::testProxy()
         QCOMPARE(typeMeta.read(replica.data()).value<EngineReplica::EngineType>(), EngineReplica::Gas);
 
         //Change Replica and make sure change propagates to source
-        QSignalSpy sourceSpy(&engine, SIGNAL(rpmChanged(int)));
+        QSignalSpy sourceSpy(&engine, &EngineSimpleSource::rpmChanged);
         QSignalSpy replicaSpy(replica.data(), QByteArray(QByteArrayLiteral("2")+rpmMeta.notifySignal().methodSignature().constData()));
 
         const int rpmPushIndex = metaObject->indexOfMethod("pushRpm(int)");
@@ -261,7 +261,7 @@ void ProxyTest::testProxy()
         SubClassSimpleSource updatedSubclass;
         const MyPOD updatedValue(-1, 123.456, QStringLiteral("Updated"));
         updatedSubclass.setMyPOD(updatedValue);
-        QSignalSpy replicaSpy(rep, SIGNAL(subClassChanged(SubClassReplica*)));
+        QSignalSpy replicaSpy(rep, &ParentClassReplica::subClassChanged);
         parent.setSubClass(&updatedSubclass);
         replicaSpy.wait();
         QCOMPARE(replicaSpy.count(), 1);
