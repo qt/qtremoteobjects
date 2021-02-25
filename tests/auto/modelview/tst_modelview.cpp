@@ -610,6 +610,12 @@ void TestModelView::setup_models(QRemoteObjectHost &basicServer, QRemoteObjectNo
     port += 2;
 }
 
+#ifdef SLOW_MODELTEST
+#define MODELTEST_WAIT_TIME 25000
+#else
+#define MODELTEST_WAIT_TIME
+#endif
+
 void TestModelView::testEmptyModel()
 {
     _SETUP_TEST_
@@ -622,7 +628,7 @@ void TestModelView::testEmptyModel()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareData(&emptyModel, model.data());
 }
@@ -634,7 +640,7 @@ void TestModelView::testInitialData()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareData(&m_sourceModel, model.data());
 }
@@ -646,7 +652,7 @@ void TestModelView::testInitialDataTree()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareTreeData(&m_sourceModel, model.data());
 }
@@ -658,7 +664,7 @@ void TestModelView::testHeaderData()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     // ask for all Data members first, so we don't have to wait for update signals
     QSignalSpy spyHeader(model.data(), &QAbstractItemModelReplica::headerDataChanged);
@@ -681,7 +687,7 @@ void TestModelView::testDataChangedTree()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareTreeData(&m_sourceModel, model.data());
     QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
@@ -729,7 +735,7 @@ void TestModelView::testFlags()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QSignalSpy dataChangedSpy(model.data(),  &QAbstractItemModelReplica::dataChanged);
     for (int i = 10; i < 20; ++i) {
@@ -755,7 +761,7 @@ void TestModelView::testDataChanged()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QSignalSpy dataChangedSpy(model.data(),  &QAbstractItemModelReplica::dataChanged);
     for (int i = 10; i < 20; ++i)
@@ -778,7 +784,7 @@ void TestModelView::testDataInsertion()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QList<QModelIndex> pending;
 
@@ -842,7 +848,7 @@ void TestModelView::testDataInsertionTree()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     const QList<int> roles = model->availableRoles();
 
@@ -931,7 +937,7 @@ void TestModelView::testDataRemoval()
     model->setRootCacheSize(1000);
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QList<InsertedRow> removedRows;
     QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsRemoved);
@@ -972,7 +978,7 @@ void TestModelView::testRoleNames()
     repModel->setRootCacheSize(1500);
     FetchData f(repModel.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     // test custom role names
     QCOMPARE(repModel.data()->roleNames(), m_listModel.roleNames());
@@ -1014,16 +1020,10 @@ void TestModelView::testServerInsertDataTree()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareData(&testTreeModel, model.data());
 }
-
-#ifdef SLOW_MODELTEST
-#define MODELTEST_WAIT_TIME 25000
-#else
-#define MODELTEST_WAIT_TIME
-#endif
 
 void TestModelView::testModelTest()
 {
@@ -1044,7 +1044,7 @@ void TestModelView::testSortFilterModel()
 
     FetchData f(repModel.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QSortFilterProxyModel clientSort;
     clientSort.setSourceModel(repModel.data());
@@ -1063,7 +1063,7 @@ void TestModelView::testSetData()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
@@ -1094,7 +1094,7 @@ void TestModelView::testSetDataTree()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
@@ -1149,7 +1149,7 @@ void TestModelView::testSelectionFromReplica()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     replicaSelectionModel->setCurrentIndex(model->index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
     QTRY_COMPARE(selectionModel.currentIndex().row(), 1);
@@ -1170,7 +1170,7 @@ void TestModelView::testSelectionFromSource()
 
     FetchData f(model.data());
     f.addAll();
-    QVERIFY(f.fetchAndWait());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     selectionModel.setCurrentIndex(simpleModel.index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
     QTRY_COMPARE(replicaSelectionModel->currentIndex().row(), 1);
