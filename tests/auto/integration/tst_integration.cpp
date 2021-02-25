@@ -342,7 +342,7 @@ private slots:
 
         // set property on the replica (test property change packet)
         {
-            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumChanged(TestClassReplica::ClassEnum)));
+            QSignalSpy spy(tc_rep.data(), &TestClassReplica::classEnumChanged);
             QVERIFY(spy.isValid());
             tc_rep->pushClassEnum(TestClassReplica::Two);
             QVERIFY(spy.count() || spy.wait());
@@ -352,7 +352,7 @@ private slots:
 
         // set property on the source (test property change packet)
         {
-            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumChanged(TestClassReplica::ClassEnum)));
+            QSignalSpy spy(tc_rep.data(), &TestClassReplica::classEnumChanged);
             tc.setClassEnum(TestClassSimpleSource::One);
             QVERIFY(spy.wait());
 
@@ -380,7 +380,7 @@ private slots:
 
         // write enum on the dynamic replica
         {
-            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumRWChanged(TestClassReplica::ClassEnum)));
+            QSignalSpy spy(tc_rep.data(), &TestClassReplica::classEnumRWChanged);
             property.write(tc_repDynamic.data(), TestClassReplica::Two);
             QVERIFY(spy.wait());
 
@@ -401,7 +401,7 @@ private slots:
 
         // ensure write enum fails on ReadPush
         {
-            QSignalSpy spy(tc_rep.data(), SIGNAL(classEnumChanged(TestClassReplica::ClassEnum)));
+            QSignalSpy spy(tc_rep.data(), &TestClassReplica::classEnumChanged);
             bool res = property.write(tc_repDynamic.data(), TestClassReplica::Two);
             QVERIFY(!res);
             int methodIndex = metaObject->indexOfMethod("pushClassEnum(TestClassReplica::ClassEnum)");
@@ -696,7 +696,7 @@ private slots:
         setupClient();
 
         const QScopedPointer<EngineReplica> engine_r(client->acquire<EngineReplica>());
-        QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged(int)));
+        QSignalSpy spy(engine_r.data(), &EngineReplica::rpmChanged);
         e.setRpm(2345);
 
         spy.wait();
@@ -939,7 +939,7 @@ private slots:
         QCOMPARE(engine_r->cylinders(), 4); // Default value
         engine_r->waitForSource();
         QCOMPARE(engine_r->cylinders(), 6);
-        QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged(int)));
+        QSignalSpy spy(engine_r.data(), &EngineReplica::rpmChanged);
         engine_r->setRpm(42);
         spy.wait();
         QCOMPARE(spy.count(), 1);
@@ -957,7 +957,7 @@ private slots:
         const QScopedPointer<EngineReplica> engine_r(client->acquire<EngineReplica>());
         engine_r->waitForSource();
         QCOMPARE(engine_r->started(), false);
-        QSignalSpy spy(engine_r.data(), SIGNAL(startedChanged(bool)));
+        QSignalSpy spy(engine_r.data(), &EngineReplica::startedChanged);
         engine_r->pushStarted(true);
         spy.wait();
         QCOMPARE(spy.count(), 1);
@@ -1000,7 +1000,7 @@ private slots:
         engine_r->waitForSource();
         QCOMPARE(engine_r->rpm(), 0);
 
-        QSignalSpy spy(engine_r.data(), SIGNAL(rpmChanged(int)));
+        QSignalSpy spy(engine_r.data(), &EngineReplica::rpmChanged);
         engine_r->increaseRpm(1000);
         spy.wait();
         QCOMPARE(spy.count(), 1);
@@ -1232,7 +1232,7 @@ private slots:
         setupHost();
         Engine e;
         host->enableRemoting<EngineSourceAPI>(&e);
-        QSignalSpy spy(engine_d.data(), SIGNAL(rpmChanged(int)));
+        QSignalSpy spy(engine_d.data(), &EngineReplica::rpmChanged);
         e.setRpm(50);
 
         spy.wait();
