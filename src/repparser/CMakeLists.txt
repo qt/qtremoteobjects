@@ -4,7 +4,7 @@
 ## RepParser Module:
 #####################################################################
 
-qt_add_module(RepParser
+qt_internal_add_module(RepParser
     HEADER_MODULE
     SOURCES
         # qregexparser.h          # special case

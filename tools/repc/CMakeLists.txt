@@ -7,7 +7,7 @@
 set(REPPARSER_DIR "${PROJECT_SOURCE_DIR}/src/repparser")
 
 qt_get_tool_target_name(target_name repc)
-qt_add_tool(${target_name}
+qt_internal_add_tool(${target_name}
     TARGET_DESCRIPTION "Qt Remote Objects Compiler"
     TOOLS_TARGET RemoteObjects # special case
     SOURCES
@@ -41,7 +41,7 @@ qt_process_qlalr(
 ## Scopes:
 #####################################################################
 
-qt_extend_target(${target_name} CONDITION MSVC
+qt_internal_extend_target(${target_name} CONDITION MSVC
     COMPILE_OPTIONS
         /wd4129
 )

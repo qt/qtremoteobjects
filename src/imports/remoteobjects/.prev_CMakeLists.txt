@@ -4,7 +4,7 @@
 ## qtremoteobjects Plugin:
 #####################################################################
 
-qt_add_qml_module(qtremoteobjects
+qt_internal_add_qml_module(qtremoteobjects
     URI "QtRemoteObjects"
     VERSION "5.${CMAKE_PROJECT_VERSION_MINOR}"
     CLASSNAME QtRemoteObjectsPlugin
