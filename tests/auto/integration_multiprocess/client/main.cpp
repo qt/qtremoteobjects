@@ -57,9 +57,9 @@ private Q_SLOTS:
         QVERIFY(reply.waitForFinished());
 
         // BEGIN: Testing
-        QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
+        QSignalSpy advanceSpy(m_rep.data(), &MyInterfaceReplica::advance);
 
-        QSignalSpy spy(m_rep.data(), SIGNAL(enum1Changed(MyInterfaceReplica::Enum1)));
+        QSignalSpy spy(m_rep.data(), &MyInterfaceReplica::enum1Changed);
         QVERIFY(advanceSpy.wait());
 
         QCOMPARE(spy.count(), 2);

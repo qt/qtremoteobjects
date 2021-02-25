@@ -69,12 +69,12 @@ Client::~Client()
 
 void Client::initConnections(void)
 {
-        // initialize connections between signals and slots
+    // initialize connections between signals and slots
 
-       // connect source replica signal currStateChanged() with client's recSwitchState() slot to receive source's current state
-        QObject::connect(reptr.data(), SIGNAL(currStateChanged(bool)), this, SLOT(recSwitchState_slot(bool)));
-       // connect client's echoSwitchState(..) signal with replica's server_slot(..) to echo back received state
-        QObject::connect(this, SIGNAL(echoSwitchState(bool)),reptr.data(), SLOT(server_slot(bool)));
+    // connect source replica signal currStateChanged() with client's recSwitchState() slot to receive source's current state
+    QObject::connect(reptr.data(), &SimpleSwitchReplica::currStateChanged, this, &Client::recSwitchState_slot);
+    // connect client's echoSwitchState(..) signal with replica's server_slot(..) to echo back received state
+    QObject::connect(this, &Client::echoSwitchState, reptr.data(), &SimpleSwitchReplica::server_slot);
 }
 
 void Client::recSwitchState_slot(bool value)
