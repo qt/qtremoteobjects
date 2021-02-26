@@ -226,8 +226,7 @@ void ProxyTest::testProxy()
         }
         QSignalSpy dataSpy(rep->tracks(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
         QVector<QModelIndex> pending;
-        QTest::qWait(100);
-        QCOMPARE(rep->tracks()->rowCount(), model.rowCount());
+        QTRY_COMPARE(rep->tracks()->rowCount(), model.rowCount());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
         {
             // We haven't received any data yet
@@ -296,8 +295,7 @@ void ProxyTest::testProxy()
         QTRY_COMPARE(tracksReplica->isInitialized(), true);
         QSignalSpy dataSpy(tracksReplica, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)));
         QVector<QModelIndex> pending;
-        QTest::qWait(100);
-        QCOMPARE(tracksReplica->rowCount(), model.rowCount());
+        QTRY_COMPARE(tracksReplica->rowCount(), model.rowCount());
         for (int i = 0; i < tracksReplica->rowCount(); i++)
         {
             // We haven't received any data yet
@@ -360,8 +358,7 @@ void ProxyTest::testTopLevelModel()
     QAbstractItemModelReplica *replica = client.acquireModel("trackList");
     QSignalSpy tracksSpy(replica, &QAbstractItemModelReplica::initialized);
     QVERIFY(tracksSpy.wait());
-    QTest::qWait(100);
-    QCOMPARE(replica->rowCount(), model.rowCount());
+    QTRY_COMPARE(replica->rowCount(), model.rowCount());
 }
 
 QTEST_MAIN(ProxyTest)

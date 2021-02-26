@@ -68,7 +68,7 @@ struct WaitForDataChanged
                 cancel = m_pending.isEmpty();
             }
             if (!cancel)
-                m_spy->wait(50);
+                m_spy->wait();
             ++runs;
             if (runs >= maxRuns)
                 cancel = true;

@@ -383,7 +383,7 @@ public:
         }
     }
 
-    bool fetchAndWait(int timeout = 3000)
+    bool fetchAndWait(int timeout = 5000)
     {
         QEventLoop l;
         QTimer::singleShot(timeout, &l, &QEventLoop::quit);
