@@ -450,8 +450,7 @@ void ProxyTest::testTopLevelModel()
     QAbstractItemModelReplica *replica = client.acquireModel("trackList");
     QSignalSpy tracksSpy(replica, &QAbstractItemModelReplica::initialized);
     QVERIFY(tracksSpy.wait());
-    QTest::qWait(100);
-    QCOMPARE(replica->rowCount(), model.rowCount());
+    QTRY_COMPARE(replica->rowCount(), model.rowCount());
 }
 
 QTEST_MAIN(ProxyTest)
