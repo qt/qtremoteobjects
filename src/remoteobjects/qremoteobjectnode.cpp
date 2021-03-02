@@ -2576,12 +2576,17 @@ void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
 }
 
 /*!
- Returns a pointer to a Replica which is specifically derived from \l
- QAbstractItemModel. The \a name provided must match the name used with the
- matching \l {QRemoteObjectHostBase::}{enableRemoting} that put
- the Model on the network. The returned model will be empty until it is
- initialized with the \l Source.
- */
+    Returns a pointer to a \l Replica which is specifically derived from \l
+    QAbstractItemModel. The \a name provided must match the name used with the
+    matching \l {QRemoteObjectHostBase::}{enableRemoting} that put
+    the \l Model on the network. \a action specifies whether the model should
+    fetch data before the \l {QRemoteObjectReplica::}{initialized} signal is
+    emitted. If it's set to QtRemoteObjects::PrefetchData, then the data for
+    roles in the \a rolesHint will be prefetched. If \a rolesHint is empty, then
+    the data for all the roles exposed by \l Source will be prefetched.
+
+    The returned model will be empty until it is initialized with the \l Source.
+*/
 QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name, QtRemoteObjects::InitialAction action, const QList<int> &rolesHint)
 {
     QAbstractItemModelReplicaImplementation *rep = acquire<QAbstractItemModelReplicaImplementation>(name);
