@@ -597,9 +597,15 @@ void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep
     communication latency. As long as the replica has been initialized and the
     communication is not disrupted, receipt and order of changes is guaranteed.
 
-    The \l {isInitialized} and \l {state} properties (and corresponding \l {initialized()}/\l {stateChanged()} signals) allow the state of a \l {Replica} to be determined.
+    The \l {isInitialized} and \l {state} properties (and corresponding
+    \l {initialized()}/\l {stateChanged()} signals) allow the state of a
+    \l {Replica} to be determined.
 
-    While Qt Remote Objects (QtRO) handles the initialization and synchronization of \l {Replica} objects, there are numerous steps happening behind the scenes which can fail and that aren't encountered in single process Qt applications.  See \l {Troubleshooting} for advice on how to handle such issues when using a remote objects network.
+    While Qt Remote Objects (QtRO) handles the initialization and
+    synchronization of \l {Replica} objects, there are numerous steps happening
+    behind the scenes which can fail and that aren't encountered in single
+    process Qt applications. See \l {Troubleshooting} for advice on how to
+    handle such issues when using a remote objects network.
 */
 
 /*!
@@ -607,17 +613,28 @@ void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep
 
     This enum type specifies the various state codes associated with QRemoteObjectReplica states:
 
-    \value Uninitialized initial value of DynamicReplica, where nothing is known about the replica before connection to source.
-    \value Default initial value of static replica, where any defaults set in the .rep file are available so it can be used if necessary.
-    \value Valid indicates the replica is connected, has good property values and can be interacted with.
-    \value Suspect error state that occurs if the connection to the source is lost after it is initialized.
-    \value SignatureMismatch error state that occurs if a connection to the source is made, but the source and replica are not derived from the same .rep (only possible for static Replicas).
+    \value Uninitialized Initial value of DynamicReplica, where nothing is
+    known about the replica before connection to source.
+
+    \value Default Initial value of static replica, where any defaults set in
+    the .rep file are available so it can be used if necessary.
+
+    \value Valid Indicates the replica is connected, has good property values
+    and can be interacted with.
+
+    \value Suspect Error state that occurs if the connection to the source is
+    lost after it is initialized.
+
+    \value SignatureMismatch Error state that occurs if a connection to the
+    source is made, but the source and replica are not derived from the same
+    .rep (only possible for static Replicas).
 */
 
 /*!
     \fn void QRemoteObjectReplica::stateChanged(State state, State oldState)
 
-    This signal is emitted whenever a replica's state toggles between \l QRemoteObjectReplica::State.
+    This signal is emitted whenever a replica's state toggles between
+    \l QRemoteObjectReplica::State.
 
     The change in state is represented with \a state and \a oldState.
 
@@ -740,7 +757,8 @@ void QRemoteObjectReplica::setChild(int i, const QVariant &value)
 }
 
 /*!
-    Returns \c true if this replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
+    Returns \c true if this replica has been initialized with data from the
+    \l {Source} object.  Returns \c false otherwise.
 
     \sa state()
 */
@@ -750,7 +768,8 @@ bool QRemoteObjectReplica::isInitialized() const
 }
 
 /*!
-    Returns \c true if this replica has been initialized with data from the \l {Source} object.  Returns \c false otherwise.
+    Returns \c true if this replica has been initialized with data from the
+    \l {Source} object.  Returns \c false otherwise.
 
     \sa isInitialized()
 */
@@ -783,7 +802,9 @@ void QRemoteObjectReplica::initialize()
 }
 
 /*!
-    Returns \c true if this replica has been initialized and has a valid connection with the \l {QRemoteObjectNode} {node} hosting the \l {Source}.  Returns \c false otherwise.
+    Returns \c true if this replica has been initialized and has a valid
+    connection with the \l {QRemoteObjectNode} {node} hosting the \l {Source}.
+    Returns \c false otherwise.
 
     \sa isInitialized()
 */
@@ -793,7 +814,9 @@ bool QRemoteObjectReplica::isReplicaValid() const
 }
 
 /*!
-    Blocking call that waits for the replica to become initialized or until the \a timeout (in ms) expires.  Returns \c true if the replica is initialized when the call completes, \c false otherwise.
+    Blocking call that waits for the replica to become initialized or until the
+    \a timeout (in ms) expires. Returns \c true if the replica is initialized
+    when the call completes, \c false otherwise.
 
     If \a timeout is -1, this function will not time out.
 

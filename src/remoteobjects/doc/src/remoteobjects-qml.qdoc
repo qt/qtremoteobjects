@@ -96,7 +96,7 @@ import QtRemoteObjects 5.\1
 /*!
     \qmlmethod Promise QtRemoteObjects::QtRemoteObjects::watch(QRemoteObjectPendingCall reply, int timeout = 30000)
     Encapsulates the return value, represented by \a reply, from a replica in a JavaScript Promise.
-    A timeout can be set with \e timeout. The default timeout value is 30 seconds.
+    A timeout can be set with \a timeout. The default timeout value is 30 seconds.
 
     \qml
     QtRemoteObjects.watch(replica.fetchDetails(identifier))

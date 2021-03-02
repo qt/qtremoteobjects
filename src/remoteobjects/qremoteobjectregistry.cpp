@@ -100,7 +100,9 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
     \property QRemoteObjectRegistry::sourceLocations
     \brief The set of sources known to the registry.
 
-    This property is a QRemoteObjectSourceLocations, which is a typedef for QHash<QString, QUrl>.  Each known \l Source is the QString key, while the url for the host node is the corresponding value for that key in the hash.
+    This property is a QRemoteObjectSourceLocations, which is a typedef for
+    QHash<QString, QUrl>. Each known \l Source is the QString key, while the
+    url for the host node is the corresponding value for that key in the hash.
 */
 
 /*!

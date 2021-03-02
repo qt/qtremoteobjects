@@ -625,7 +625,7 @@ void QRemoteObjectNodePrivate::setReplicaImplementation(const QMetaObject *meta,
 
 /*!
     Returns a pointer to the Node's \l {QRemoteObjectRegistry}, if the Node
-    is using the Registry feature; otherwise it returns 0.
+    is using the Registry feature; otherwise it returns \nullptr.
 */
 const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 {
@@ -653,7 +653,7 @@ const QRemoteObjectRegistry *QRemoteObjectNode::registry() const
 
 /*!
     Constructs a QRemoteObjectAbstractPersistedStore with the given \a parent.
-    The default value of \a parent is \c nullptr.
+    The default value of \a parent is \nullptr.
 */
 QRemoteObjectAbstractPersistedStore::QRemoteObjectAbstractPersistedStore(QObject *parent)
     : QObject(parent)
@@ -1656,7 +1656,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     can use the QRemoteObjectRegistry to simplify connections.
 
     The QRemoteObjectRegistry is a special replica available to every node that
-    connects to the uegistry Url. It knows how to connect to every
+    connects to the registry Url. It knows how to connect to every
     QRemoteObjectSource object on the network.
 
     \sa QRemoteObjectNode, QRemoteObjectRegistryHost
@@ -2316,7 +2316,7 @@ void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
 /*!
     \fn void QRemoteObjectNode::remoteObjectRemoved(const QRemoteObjectSourceLocation &loc)
 
-    This signal is emitted whenever there is a known \l {Source} object is
+    This signal is emitted whenever a known \l {Source} object is
     removed from the Registry. The signal will not be emitted if there is no
     Registry set (i.e., Sources over connections made via connectToNode
     directly). The \a loc parameter contains the information about the removed
