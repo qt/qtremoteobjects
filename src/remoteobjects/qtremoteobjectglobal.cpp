@@ -48,6 +48,21 @@ Q_LOGGING_CATEGORY(QT_REMOTEOBJECT, "qt.remoteobjects", QtWarningMsg)
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS, "qt.remoteobjects.models", QtWarningMsg)
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_IO, "qt.remoteobjects.io", QtWarningMsg)
 
+/*!
+    \enum QtRemoteObjects::InitialAction
+
+    This enum type specifies the initial action when acquiring a \l Replica derived
+    from QAbstractItemModel.
+
+    \value FetchRootSize Only the size of the model is requested before the
+                         \l {QRemoteObjectReplica::}{initialized} signal is emitted,
+                         no data will be prefetched before that.
+    \value PrefetchData  Some data can be prefetched before the
+                         \l {QRemoteObjectReplica::}{initialized} signal is emitted.
+
+    \sa QRemoteObjectNode::acquireModel(), QRemoteObjectReplica::initialized()
+*/
+
 namespace QtRemoteObjects {
 
 void copyStoredProperties(const QMetaObject *mo, const void *src, void *dst)
