@@ -173,7 +173,7 @@ MetaAndDataEntries QAbstractItemModelSourceAdapter::replicaCacheRequest(size_t s
 {
     MetaAndDataEntries res;
     res.roles = roles.isEmpty() ? m_availableRoles : roles;
-    res.data = fetchTree(QModelIndex{}, size, roles);
+    res.data = fetchTree(QModelIndex {}, size, res.roles);
     const int rowCount = m_model->rowCount(QModelIndex{});
     const int columnCount = m_model->columnCount(QModelIndex{});
     res.size = QSize{columnCount, rowCount};

@@ -546,6 +546,7 @@ private slots:
     void testSelectionFromSource();
     void testChildSelection();
 
+    void testCacheData_data();
     void testCacheData();
 
     void cleanup();
@@ -1176,10 +1177,19 @@ void TestModelView::testSelectionFromSource()
     QTRY_COMPARE(replicaSelectionModel->currentIndex().row(), 1);
 }
 
+void TestModelView::testCacheData_data()
+{
+    QTest::addColumn<QList<int>>("roles");
+
+    QTest::newRow("empty") << QList<int> {};
+    QTest::newRow("all") << QList<int> { Qt::UserRole, Qt::UserRole + 1 };
+}
+
 void TestModelView::testCacheData()
 {
+    QFETCH(QList<int>, roles);
+
     _SETUP_TEST_
-    QList<int> roles = QList<int> { Qt::UserRole, Qt::UserRole + 1 };
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("testRoleNames", QtRemoteObjects::PrefetchData, roles));
     model->setRootCacheSize(1000);
 
