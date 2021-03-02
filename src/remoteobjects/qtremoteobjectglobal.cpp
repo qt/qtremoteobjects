@@ -49,6 +49,15 @@ Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS, "qt.remoteobjects.models", QtWarningM
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_IO, "qt.remoteobjects.io", QtWarningMsg)
 
 /*!
+    \namespace QtRemoteObjects
+    \inmodule QtRemoteObjects
+
+    \brief The QtRemoteObjects namespace contains identifiers used in the
+    Remote Objects module, as well as some functions used from code generated
+    by the \l{Qt Remote Objects Compiler}{Replica Compiler (repc)}.
+*/
+
+/*!
     \enum QtRemoteObjects::InitialAction
 
     This enum type specifies the initial action when acquiring a \l Replica derived
