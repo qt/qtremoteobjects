@@ -61,7 +61,7 @@ inline bool operator==(const QMetaEnum e1, const QMetaEnum e2)
            && e1.scope() == e2.scope();
 }
 
-inline uint qHash(const QMetaEnum &key, uint seed=0) Q_DECL_NOTHROW
+inline size_t qHash(const QMetaEnum &key, size_t seed=0) Q_DECL_NOTHROW
 {
     return qHash(key.enclosingMetaObject(), seed) ^ qHash(static_cast<const void *>(key.name()), seed)
            ^ qHash(static_cast<const void *>(key.enumName()), seed) ^ qHash(static_cast<const void *>(key.scope()), seed);
