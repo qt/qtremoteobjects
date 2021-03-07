@@ -2110,6 +2110,10 @@ bool QRemoteObjectNode::connectToNode(const QUrl &address)
 void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
 {
     Q_D(QRemoteObjectNode);
+    if (!ioDevice || !ioDevice->isOpen()) {
+        qWarning() << "A null or closed QIODevice was passed to addClientSideConnection().  Ignoring.";
+        return;
+    }
     ExternalIoDevice *device = new ExternalIoDevice(ioDevice, this);
     connect(device, &IoDeviceBase::readyRead, this, [d, device]() {
         d->onClientRead(device);
@@ -2390,6 +2394,10 @@ bool QRemoteObjectHostBase::disableRemoting(QObject *remoteObject)
 void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
 {
     Q_D(QRemoteObjectHostBase);
+    if (!ioDevice || !ioDevice->isOpen()) {
+        qWarning() << "A null or closed QIODevice was passed to addHostSideConnection().  Ignoring.";
+        return;
+    }
     if (!d->remoteObjectIo)
         d->remoteObjectIo = new QRemoteObjectSourceIo(this);
     ExternalIoDevice *device = new ExternalIoDevice(ioDevice, this);
