@@ -26,12 +26,13 @@
 **
 ****************************************************************************/
 
-#include <qjsonvalue.h>
-#include <qjsonarray.h>
-#include <qjsonobject.h>
+#include <QCryptographicHash>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
 
-#include "utils.h"
 #include "repparser.h"
+#include "utils.h"
 
 
 #define _(X) QLatin1String(X)
@@ -284,6 +285,138 @@ AST classList2AST(const QJsonArray &classes)
         }
     }
     return ret;
+}
+
+static QByteArray typeData(const QString &type, const QHash<QString, QByteArray> &specialTypes)
+{
+    QHash<QString, QByteArray>::const_iterator it = specialTypes.find(type);
+    if (it != specialTypes.end())
+        return it.value();
+    const auto pos = type.lastIndexOf(QLatin1String("::"));
+    if (pos > 0)
+            return typeData(type.mid(pos + 2), specialTypes);
+    return type.toLatin1();
+}
+
+static QByteArray functionsData(const QList<ASTFunction> &functions, const QHash<QString, QByteArray> &specialTypes)
+{
+    QByteArray ret;
+    for (const ASTFunction &func : functions) {
+        ret += func.name.toLatin1();
+        for (const ASTDeclaration &param : func.params) {
+            ret += param.name.toLatin1();
+            ret += typeData(param.type, specialTypes);
+            ret += QByteArray(reinterpret_cast<const char *>(&param.variableType), sizeof(param.variableType));
+        }
+        ret += typeData(func.returnType, specialTypes);
+    }
+    return ret;
+}
+
+GeneratorBase::GeneratorBase()
+{
+}
+
+GeneratorBase::~GeneratorBase()
+{
+
+}
+
+QByteArray GeneratorBase::enumSignature(const ASTEnum &e)
+{
+    QByteArray ret;
+    ret += e.name.toLatin1();
+    for (const ASTEnumParam &param : e.params)
+        ret += param.name.toLatin1() + QByteArray::number(param.value);
+    return ret;
+}
+
+QByteArray GeneratorBase::classSignature(const ASTClass &ac)
+{
+    QCryptographicHash checksum(QCryptographicHash::Sha1);
+    auto specialTypes = m_globalEnumsPODs;
+    for (const ASTEnum &e : ac.enums) // add local enums
+        specialTypes[e.name] = enumSignature(e);
+
+    checksum.addData(ac.name.toLatin1());
+
+    // Checksum properties
+    for (const ASTProperty &p : ac.properties) {
+        checksum.addData(p.name.toLatin1());
+        checksum.addData(typeData(p.type, specialTypes));
+        checksum.addData(reinterpret_cast<const char *>(&p.modifier), sizeof(p.modifier));
+    }
+
+    // Checksum signals
+    checksum.addData(functionsData(ac.signalsList, specialTypes));
+
+    // Checksum slots
+    checksum.addData(functionsData(ac.slotsList, specialTypes));
+
+    return checksum.result().toHex();
+}
+
+QByteArray GeneratorBase::podSignature(const POD &pod)
+{
+    QByteArray podData = pod.name.toLatin1();
+    for (const PODAttribute &attr : pod.attributes)
+        podData += attr.name.toLatin1() + typeData(attr.type, m_globalEnumsPODs);
+
+    return podData;
+}
+
+GeneratorImplBase::GeneratorImplBase(QTextStream &_stream) : stream(_stream)
+{
+}
+
+bool GeneratorImplBase::hasNotify(const ASTProperty &property, Mode mode)
+{
+    switch (property.modifier) {
+        case ASTProperty::Constant:
+            if (mode == Mode::Replica) // We still need to notify when we get the initial value
+                return true;
+            else
+                return false;
+        case ASTProperty::ReadOnly:
+        case ASTProperty::ReadWrite:
+        case ASTProperty::ReadPush:
+        case ASTProperty::SourceOnlySetter:
+            return true;
+    }
+    Q_UNREACHABLE();
+}
+
+bool GeneratorImplBase::hasPush(const ASTProperty &property, Mode mode)
+{
+    Q_UNUSED(mode)
+    switch (property.modifier) {
+        case ASTProperty::ReadPush:
+            return true;
+        case ASTProperty::Constant:
+        case ASTProperty::ReadOnly:
+        case ASTProperty::ReadWrite:
+        case ASTProperty::SourceOnlySetter:
+            return false;
+    }
+    Q_UNREACHABLE();
+}
+
+bool GeneratorImplBase::hasSetter(const ASTProperty &property, Mode mode)
+{
+    switch (property.modifier) {
+        case ASTProperty::Constant:
+        case ASTProperty::ReadOnly:
+            return false;
+        case ASTProperty::ReadWrite:
+            return true;
+        case ASTProperty::ReadPush:
+        case ASTProperty::SourceOnlySetter:
+            if (mode == Mode::Replica) // The setter slot isn't known to the PROP
+                return false;
+            else // The Source can use the setter, since non-asynchronous
+                return true;
+    }
+    Q_UNREACHABLE();
 }
 
 QT_END_NAMESPACE

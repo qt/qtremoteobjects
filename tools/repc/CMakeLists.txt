@@ -14,6 +14,7 @@ qt_internal_add_tool(${target_name}
         cppcodegenerator.cpp cppcodegenerator.h
         main.cpp
         repcodegenerator.cpp repcodegenerator.h
+        pythoncodegenerator.cpp pythoncodegenerator.h
         utils.cpp utils.h
     DEFINES
         QT_NO_CAST_FROM_ASCII

@@ -27,13 +27,12 @@
 ****************************************************************************/
 
 #include "repcodegenerator.h"
-
 #include "repparser.h"
+#include "utils.h"
 
 #include <QFileInfo>
 #include <QMetaType>
 #include <QTextStream>
-#include <QCryptographicHash>
 #include <QRegularExpression>
 
 using namespace Qt;
@@ -117,66 +116,6 @@ RepCodeGenerator::RepCodeGenerator(QIODevice *outputDevice)
     Q_ASSERT(m_outputDevice);
 }
 
-static QByteArray enumSignature(const ASTEnum &e)
-{
-    QByteArray ret;
-    ret += e.name.toLatin1();
-    for (const ASTEnumParam &param : e.params)
-        ret += param.name.toLatin1() + QByteArray::number(param.value);
-    return ret;
-}
-
-static QByteArray typeData(const QString &type, const QHash<QString, QByteArray> &specialTypes)
-{
-    QHash<QString, QByteArray>::const_iterator it = specialTypes.find(type);
-    if (it != specialTypes.end())
-        return it.value();
-    const auto pos = type.lastIndexOf(QLatin1String("::"));
-    if (pos > 0)
-            return typeData(type.mid(pos + 2), specialTypes);
-    return type.toLatin1();
-}
-
-static QByteArray functionsData(const QList<ASTFunction> &functions, const QHash<QString, QByteArray> &specialTypes)
-{
-    QByteArray ret;
-    for (const ASTFunction &func : functions) {
-        ret += func.name.toLatin1();
-        for (const ASTDeclaration &param : func.params) {
-            ret += param.name.toLatin1();
-            ret += typeData(param.type, specialTypes);
-            ret += QByteArray(reinterpret_cast<const char *>(&param.variableType), sizeof(param.variableType));
-        }
-        ret += typeData(func.returnType, specialTypes);
-    }
-    return ret;
-}
-
-QByteArray RepCodeGenerator::classSignature(const ASTClass &ac)
-{
-    QCryptographicHash checksum(QCryptographicHash::Sha1);
-    QHash<QString, QByteArray> localTypes = m_globalEnumsPODs;
-    for (const ASTEnum &e : ac.enums) // add local enums
-        localTypes[e.name] = enumSignature(e);
-
-    checksum.addData(ac.name.toLatin1());
-
-    // Checksum properties
-    for (const ASTProperty &p : ac.properties) {
-        checksum.addData(p.name.toLatin1());
-        checksum.addData(typeData(p.type, localTypes));
-        checksum.addData(reinterpret_cast<const char *>(&p.modifier), sizeof(p.modifier));
-    }
-
-    // Checksum signals
-    checksum.addData(functionsData(ac.signalsList, localTypes));
-
-    // Checksum slots
-    checksum.addData(functionsData(ac.slotsList, localTypes));
-
-    return checksum.result().toHex();
-}
-
 void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
 {
     QTextStream stream(m_outputDevice);
@@ -229,15 +168,15 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
         const QString replicaMetaTypeRegistrationCode = classMetaTypeRegistrationCode
                 + generateMetaTypeRegistrationForPending(pendingMetaTypes);
 
-        if (mode == MERGED) {
-            generateClass(REPLICA, stream, astClass, replicaMetaTypeRegistrationCode);
-            generateClass(SOURCE, stream, astClass, classMetaTypeRegistrationCode);
-            generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
+        if (mode == Mode::Merged) {
+            generateClass(Mode::Replica, stream, astClass, replicaMetaTypeRegistrationCode);
+            generateClass(Mode::Source, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(Mode::SimpleSource, stream, astClass, classMetaTypeRegistrationCode);
             generateSourceAPI(stream, astClass);
         } else {
-            generateClass(mode, stream, astClass, mode == REPLICA ? replicaMetaTypeRegistrationCode : classMetaTypeRegistrationCode);
-            if (mode == SOURCE) {
-                generateClass(SIMPLE_SOURCE, stream, astClass, classMetaTypeRegistrationCode);
+            generateClass(mode, stream, astClass, mode == Mode::Replica ? replicaMetaTypeRegistrationCode : classMetaTypeRegistrationCode);
+            if (mode == Mode::Source) {
+                generateClass(Mode::SimpleSource, stream, astClass, classMetaTypeRegistrationCode);
                 generateSourceAPI(stream, astClass);
             }
         }
@@ -273,13 +212,13 @@ void RepCodeGenerator::generateHeader(Mode mode, QTextStream &out, const AST &as
     out << "\n"
            "#include <QtRemoteObjects/qremoteobjectnode.h>\n";
 
-    if (mode == MERGED) {
+    if (mode == Mode::Merged) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectsource.h>\n";
         if (hasModel)
             out << "#include <QtRemoteObjects/qremoteobjectabstractitemmodelreplica.h>\n";
-    } else if (mode == REPLICA) {
+    } else if (mode == Mode::Replica) {
         out << "#include <QtRemoteObjects/qremoteobjectpendingcall.h>\n";
         out << "#include <QtRemoteObjects/qremoteobjectreplica.h>\n";
         if (hasModel)
@@ -382,13 +321,13 @@ QString RepCodeGenerator::typeForMode(const ASTProperty &property, RepCodeGenera
         return property.type;
 
     if (property.type.startsWith(QStringLiteral("QAbstractItemModel")))
-        return mode == REPLICA ? property.type + QStringLiteral("Replica*") : property.type + QStringLiteral("*");
+        return mode == Mode::Replica ? property.type + QStringLiteral("Replica*") : property.type + QStringLiteral("*");
 
     switch (mode) {
-    case REPLICA: return property.type + QStringLiteral("Replica*");
-    case SIMPLE_SOURCE:
+    case Mode::Replica: return property.type + QStringLiteral("Replica*");
+    case Mode::SimpleSource:
         Q_FALLTHROUGH();
-    case SOURCE: return property.type + QStringLiteral("Source*");
+    case Mode::Source: return property.type + QStringLiteral("Source*");
     default: qCritical("Invalid mode");
     }
 
@@ -401,7 +340,7 @@ void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty 
         out << "    virtual ";
     else
         out << "    ";
-    out << "void set" << cap(property.name) << "(" << typeForMode(property, SIMPLE_SOURCE) << " " << property.name << ")";
+    out << "void set" << cap(property.name) << "(" << typeForMode(property, Mode::SimpleSource) << " " << property.name << ")";
     if (generateOverride)
         out << " override";
     out << Qt::endl;
@@ -415,13 +354,11 @@ void RepCodeGenerator::generateSimpleSetter(QTextStream &out, const ASTProperty 
 
 void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
 {
-    QByteArray podData = pod.name.toLatin1();
+    m_globalEnumsPODs[pod.name] = podSignature(pod);
     QStringList equalityCheck;
-    for (const PODAttribute &attr : pod.attributes) {
+    for (const PODAttribute &attr : pod.attributes)
         equalityCheck << QStringLiteral("left.%1() == right.%1()").arg(attr.name);
-        podData += attr.name.toLatin1() + typeData(attr.type, m_globalEnumsPODs);
-    }
-    m_globalEnumsPODs[pod.name] = podData;
+
     out << "class " << pod.name << "\n"
            "{\n"
            "    Q_GADGET\n"
@@ -606,17 +543,17 @@ void RepCodeGenerator::generateStreamOperatorsForEnums(QTextStream &out, const Q
 
 void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass &astClass, const QString &metaTypeRegistrationCode)
 {
-    const QString className = (astClass.name + (mode == REPLICA ? QStringLiteral("Replica") : mode == SOURCE ? QStringLiteral("Source") : QStringLiteral("SimpleSource")));
-    if (mode == REPLICA)
+    const QString className = (astClass.name + (mode == Mode::Replica ? QStringLiteral("Replica") : mode == Mode::Source ? QStringLiteral("Source") : QStringLiteral("SimpleSource")));
+    if (mode == Mode::Replica)
         out << "class " << className << " : public QRemoteObjectReplica" << Qt::endl;
-    else if (mode == SIMPLE_SOURCE)
+    else if (mode == Mode::SimpleSource)
         out << "class " << className << " : public " << astClass.name << "Source" << Qt::endl;
     else
         out << "class " << className << " : public QObject" << Qt::endl;
 
     out << "{" << Qt::endl;
     out << "    Q_OBJECT" << Qt::endl;
-    if (mode != SIMPLE_SOURCE) {
+    if (mode != Mode::SimpleSource) {
         out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, \"" << astClass.name << "\")" << Qt::endl;
         out << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \"" << QLatin1String(classSignature(astClass)) << "\")" << Qt::endl;
         for (int i = 0; i < astClass.modelMetadata.count(); i++) {
@@ -635,7 +572,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         for (const ASTProperty &property : astClass.properties) {
             out << "    Q_PROPERTY(" << typeForMode(property, mode) << " " << property.name << " READ " << property.name;
             if (property.modifier == ASTProperty::Constant) {
-                if (mode == REPLICA) // We still need to notify when we get the initial value
+                if (mode == Mode::Replica) // We still need to notify when we get the initial value
                     out << " NOTIFY " << property.name << "Changed";
                 else
                     out << " CONSTANT";
@@ -644,7 +581,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             else if (property.modifier == ASTProperty::ReadWrite)
                 out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
             else if (property.modifier == ASTProperty::ReadPush || property.modifier == ASTProperty::SourceOnlySetter) {
-                if (mode == REPLICA) // The setter slot isn't known to the PROP
+                if (mode == Mode::Replica) // The setter slot isn't known to the PROP
                     out << " NOTIFY " << property.name << "Changed";
                 else // The Source can use the setter, since non-asynchronous
                     out << " WRITE set" << cap(property.name) << " NOTIFY " << property.name << "Changed";
@@ -662,7 +599,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "" << Qt::endl;
     out << "public:" << Qt::endl;
 
-    if (mode == REPLICA) {
+    if (mode == Mode::Replica) {
         out << "    " << className << "() : QRemoteObjectReplica() { initialize(); }" << Qt::endl;
         out << "    static void registerMetatypes()" << Qt::endl;
         out << "    {" << Qt::endl;
@@ -744,7 +681,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
         out << "        setProperties(properties);" << Qt::endl;
         out << "    }" << Qt::endl;
-    } else if (mode == SOURCE) {
+    } else if (mode == Mode::Source) {
         out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << Qt::endl;
         out << "    {" << Qt::endl;
         if (!metaTypeRegistrationCode.isEmpty())
@@ -763,7 +700,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             QStringList parameters;
             for (int index : constIndices) {
                 const ASTProperty &property = astClass.properties.at(index);
-                parameters.append(QString::fromLatin1("%1 %2 = %3").arg(typeForMode(property, SOURCE), property.name, property.defaultValue));
+                parameters.append(QString::fromLatin1("%1 %2 = %3").arg(typeForMode(property, Mode::Source), property.name, property.defaultValue));
             }
             parameters.append(QStringLiteral("QObject *parent = nullptr"));
             out << "    explicit " << className << "(" << parameters.join(QStringLiteral(", ")) << ") : " << astClass.name << "Source(parent)" << Qt::endl;
@@ -781,7 +718,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "" << Qt::endl;
     out << "public:" << Qt::endl;
 
-    if (mode == REPLICA && astClass.hasPersisted) {
+    if (mode == Mode::Replica && astClass.hasPersisted) {
         out << "    ~" << className << "() override {" << Qt::endl;
         out << "        QVariantList persisted;" << Qt::endl;
         for (int i = 0; i < astClass.properties.size(); i++) {
@@ -796,11 +733,11 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     }
     out << "" << Qt::endl;
 
-    if (mode != SIMPLE_SOURCE)
+    if (mode != Mode::SimpleSource)
         generateConversionFunctionsForEnums(out, astClass.enums);
 
     //Next output getter/setter
-    if (mode == REPLICA) {
+    if (mode == Mode::Replica) {
         int i = 0;
         for (const ASTProperty &property : astClass.properties) {
             auto type = typeForMode(property, mode);
@@ -832,7 +769,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             }
             out << "" << Qt::endl;
         }
-    } else if (mode == SOURCE) {
+    } else if (mode == Mode::Source) {
         for (const ASTProperty &property : astClass.properties)
             out << "    virtual " << typeForMode(property, mode) << " " << property.name << "() const = 0;" << Qt::endl;
         for (const ASTProperty &property : astClass.properties) {
@@ -854,7 +791,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         }
     }
 
-    if (mode != SIMPLE_SOURCE) {
+    if (mode != Mode::SimpleSource) {
         //Next output property signals
         if (!astClass.properties.isEmpty() || !astClass.signalsList.isEmpty()) {
             out << "" << Qt::endl;
@@ -872,7 +809,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             // update (once) when the value is initialized.  Put these last, so they don't mess
             // up the signal index order
             for (const ASTProperty &property : astClass.properties) {
-                if (mode == REPLICA && property.modifier == ASTProperty::Constant)
+                if (mode == Mode::Replica && property.modifier == ASTProperty::Constant)
                     out << "    void " << property.name << "Changed(" << fullyQualifiedTypeName(astClass, className, typeForMode(property, mode)) << " " << property.name << ");" << Qt::endl;
             }
         }
@@ -889,7 +826,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             for (const ASTProperty &property : astClass.properties) {
                 if (property.modifier == ASTProperty::ReadPush) {
                     const auto type = fullyQualifiedTypeName(astClass, className, property.type);
-                    if (mode != REPLICA) {
+                    if (mode != Mode::Replica) {
                         out << "    virtual void push" << cap(property.name) << "(" << type << " " << property.name << ")" << Qt::endl;
                         out << "    {" << Qt::endl;
                         out << "        set" << cap(property.name) << "(" << property.name << ");" << Qt::endl;
@@ -908,7 +845,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             const QList<ASTFunction> slotsList = transformEnumParams(astClass, astClass.slotsList, className);
             for (const ASTFunction &slot : slotsList) {
                 const auto returnType = fullyQualifiedTypeName(astClass, className, slot.returnType);
-                if (mode != REPLICA) {
+                if (mode != Mode::Replica) {
                     out << "    virtual " << returnType << " " << slot.name << "(" << slot.paramsAsString() << ") = 0;" << Qt::endl;
                 } else {
                     // TODO: Discuss whether it is a good idea to special-case for void here,
@@ -956,18 +893,18 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
     out << "private:" << Qt::endl;
 
     //Next output data members
-    if (mode == SIMPLE_SOURCE) {
+    if (mode == Mode::SimpleSource) {
         for (const ASTProperty &property : astClass.properties)
-            out << "    " << typeForMode(property, SOURCE) << " " << "m_" << property.name << ";" << Qt::endl;
+            out << "    " << typeForMode(property, Mode::Source) << " " << "m_" << property.name << ";" << Qt::endl;
     }
 
-    if (mode != SIMPLE_SOURCE)
+    if (mode != Mode::SimpleSource)
         out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << Qt::endl;
 
     out << "};" << Qt::endl;
     out << "" << Qt::endl;
 
-    if (mode != SIMPLE_SOURCE)
+    if (mode != Mode::SimpleSource)
         generateStreamOperatorsForEnums(out, astClass.enums, className);
 
     out << "" << Qt::endl;
@@ -1007,7 +944,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
     QList<qsizetype> propertyChangeIndex;
     for (qsizetype i = 0; i < propCount; ++i) {
         const ASTProperty &prop = astClass.properties.at(i);
-        const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(prop, SOURCE));
+        const QString propTypeName = fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(prop, Mode::Source));
         out << QString::fromLatin1("        m_properties[%1] = QtPrivate::qtro_property_index<ObjectType>(&ObjectType::%2, "
                               "static_cast<%3 (QObject::*)()>(nullptr),\"%2\");")
                              .arg(QString::number(i+1), prop.name, propTypeName) << Qt::endl;
@@ -1028,7 +965,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QString::fromLatin1("        m_signals[%1] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::%2Changed, "
                               "static_cast<void (QObject::*)(%3)>(nullptr),m_signalArgCount+%4,&m_signalArgTypes[%4]);")
                              .arg(QString::number(i+1), onChangeProperties.at(i).name,
-                                  fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(onChangeProperties.at(i), SOURCE)),
+                                  fullyQualifiedTypeName(astClass, QStringLiteral("typename ObjectType"), typeForMode(onChangeProperties.at(i), Mode::Source)),
                                   QString::number(i)) << Qt::endl;
 
     QList<ASTFunction> signalsList = transformEnumParams(astClass, astClass.signalsList, QStringLiteral("typename ObjectType"));
@@ -1188,7 +1125,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
                     .arg(QString::number(i), prop.name, prop.type) << Qt::endl;
             else
                 out << QString::fromLatin1("        case %1: return QByteArrayLiteral(\"%2Changed(%3)\");")
-                    .arg(QString::number(i), prop.name, typeForMode(prop, SOURCE)) << Qt::endl;
+                    .arg(QString::number(i), prop.name, typeForMode(prop, Mode::Source)) << Qt::endl;
         }
         for (int i = 0; i < signalCount; ++i)
         {

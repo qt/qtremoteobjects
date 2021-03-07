@@ -2,6 +2,7 @@
 
 add_subdirectory(server)
 add_subdirectory(cppclient)
+add_subdirectory(cbor_python)
 add_subdirectory(simpleswitch)
 add_subdirectory(websockets)
 if(TARGET Qt::Widgets)

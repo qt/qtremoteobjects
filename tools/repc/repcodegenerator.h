@@ -33,6 +33,8 @@
 #include <QSet>
 #include <QString>
 
+#include "utils.h"
+
 QT_BEGIN_NAMESPACE
 struct AST;
 struct ASTClass;
@@ -43,22 +45,13 @@ struct ASTProperty;
 class QIODevice;
 class QTextStream;
 
-class RepCodeGenerator
+class RepCodeGenerator : public GeneratorBase
 {
 public:
-    enum Mode
-    {
-        REPLICA,
-        SOURCE,
-        SIMPLE_SOURCE,
-        MERGED
-    };
-
     explicit RepCodeGenerator(QIODevice *outputDevice);
 
     void generate(const AST &ast, Mode mode, QString fileName);
 
-    QByteArray classSignature(const ASTClass &ac);
 private:
     void generateHeader(Mode mode, QTextStream &out, const AST &ast);
     QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
@@ -85,7 +78,6 @@ private:
 
 private:
     QIODevice *m_outputDevice;
-    QHash<QString, QByteArray> m_globalEnumsPODs;
 };
 
 QT_END_NAMESPACE

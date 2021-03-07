@@ -1,0 +1,9 @@
+#include <QtCore>
+
+class Simple
+{
+    PROP(int i = 2);
+    PROP(float f = -1. READWRITE);
+    SIGNAL(random(int i));
+    SLOT(void reset());
+};

@@ -14,11 +14,13 @@ SOURCES += \
     main.cpp \
     repcodegenerator.cpp \
     cppcodegenerator.cpp \
+    pythoncodegenerator.cpp \
     utils.cpp
 
 HEADERS += \
     repcodegenerator.h \
     cppcodegenerator.h \
+    pythoncodegenerator.h \
     utils.h
 
 QMAKE_TARGET_DESCRIPTION = "Qt Remote Objects Compiler"

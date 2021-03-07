@@ -35,6 +35,7 @@
 #include <qjsonarray.h>
 
 #include "cppcodegenerator.h"
+#include "pythoncodegenerator.h"
 #include "repcodegenerator.h"
 #include "repparser.h"
 #include "utils.h"
@@ -50,11 +51,18 @@ enum Mode {
     OutRep = 4,
     OutSource = 8,
     OutReplica = 16,
-    OutMerged = OutSource | OutReplica
+    OutPython = 32,
+    OutPyside = 64,
+    OutMerged = OutSource | OutReplica,
+    OutPyVariant = OutPython | OutPyside,
+    OutSelected = OutRep | OutMerged | OutPyVariant
 };
 
 static const QLatin1String REP("rep");
 static const QLatin1String JSON("json");
+static const QLatin1String PY("py");
+static const QLatin1String PYTHON("python");
+static const QLatin1String PYSIDE("pyside");
 static const QLatin1String REPLICA("replica");
 static const QLatin1String SOURCE("source");
 static const QLatin1String MERGED("merged");
@@ -140,6 +148,10 @@ int main(int argc, char **argv)
             mode |= OutSource;
         else if (outputType == MERGED)
             mode |= OutMerged;
+        else if (outputType == PY || outputType == PYTHON)
+            mode |= OutPython;
+        else if (outputType == PYSIDE)
+            mode |= OutPyside;
         else {
             fprintf(stderr, PROGRAM_NAME ": Unknown output type\"%s\".\n", qPrintable(outputType));
             parser.showHelp(1);
@@ -149,10 +161,12 @@ int main(int argc, char **argv)
     switch (files.count()) {
     case 2:
         outputFile = files.last();
-        if (!(mode & (OutRep | OutSource | OutReplica))) {
+        if (!(mode & (OutRep | OutSource | OutReplica | OutPython | OutPyside))) {
             // try to figure out the Out mode from file extension
             if (outputFile.endsWith(QLatin1String(".rep")))
                 mode |= OutRep;
+            if (outputFile.endsWith(QLatin1String(".py")))
+                mode |= OutPython;
         }
         Q_FALLTHROUGH();
     case 1:
@@ -171,7 +185,7 @@ int main(int argc, char **argv)
         fprintf(stderr, PROGRAM_NAME ": Unknown input type, please use -i option to specify one.\n");
         parser.showHelp(1);
     }
-    if (!(mode & (OutRep | OutSource | OutReplica))) {
+    if (!(mode & (OutSelected))) {
         fprintf(stderr, PROGRAM_NAME ": Unknown output type, please use -o option to specify one.\n");
         parser.showHelp(1);
     }
@@ -228,10 +242,15 @@ int main(int argc, char **argv)
         if (mode & OutRep) {
             CppCodeGenerator generator(&output);
             generator.generate(classes, parser.isSet(alwaysClassOption));
-        } else {
-            Q_ASSERT(mode & OutReplica);
+        } else if (mode & OutReplica) {
             RepCodeGenerator generator(&output);
-            generator.generate(classList2AST(classes), RepCodeGenerator::REPLICA, outputFile);
+            generator.generate(classList2AST(classes), GeneratorBase::Mode::Replica, outputFile);
+        } else if (mode & OutPyVariant) {
+            PythonCodeGenerator generator(&output);
+            if (mode & OutPython)
+                generator.generate(classList2AST(classes), PythonCodeGenerator::OutputStyle::DataStream);
+            else
+                generator.generate(classList2AST(classes), PythonCodeGenerator::OutputStyle::PySide);
         }
     } else {
         Q_ASSERT(!(mode & OutRep));
@@ -249,16 +268,24 @@ int main(int argc, char **argv)
 
         input.close();
 
-        RepCodeGenerator generator(&output);
-        if ((mode & OutMerged) == OutMerged)
-            generator.generate(repparser.ast(), RepCodeGenerator::MERGED, outputFile);
-        else if (mode & OutReplica)
-            generator.generate(repparser.ast(), RepCodeGenerator::REPLICA, outputFile);
-        else if (mode & OutSource)
-            generator.generate(repparser.ast(), RepCodeGenerator::SOURCE, outputFile);
-        else {
-            fprintf(stderr, PROGRAM_NAME ": Unknown mode.\n");
-            return 1;
+        if (mode & OutPyVariant) {
+            PythonCodeGenerator generator(&output);
+            if (mode & OutPython)
+                generator.generate(repparser.ast(), PythonCodeGenerator::OutputStyle::DataStream);
+            else
+                generator.generate(repparser.ast(), PythonCodeGenerator::OutputStyle::PySide);
+        } else {
+            RepCodeGenerator generator(&output);
+            if ((mode & OutMerged) == OutMerged)
+                generator.generate(repparser.ast(), GeneratorBase::Mode::Merged, outputFile);
+            else if (mode & OutReplica)
+                generator.generate(repparser.ast(), GeneratorBase::Mode::Replica, outputFile);
+            else if (mode & OutSource)
+                generator.generate(repparser.ast(), GeneratorBase::Mode::Source, outputFile);
+            else {
+                fprintf(stderr, PROGRAM_NAME ": Unknown mode.\n");
+                return 1;
+            }
         }
     }
 

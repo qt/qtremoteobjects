@@ -3,6 +3,7 @@ CONFIG += debug_and_release ordered
 SUBDIRS = \
     server \
     cppclient \
+    cbor_python \
     simpleswitch \
     websockets
 
