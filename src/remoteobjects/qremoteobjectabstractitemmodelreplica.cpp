@@ -746,6 +746,21 @@ void QAbstractItemModelReplicaImplementation::requestedHeaderData(QRemoteObjectP
     delete watcher;
 }
 
+/*!
+    \class QAbstractItemModelReplica
+    \inmodule QtRemoteObjects
+    \brief The QAbstractItemModelReplica class serves as a convenience class for
+    Replicas of Sources based on QAbstractItemModel.
+
+    QAbstractItemModelReplica makes replicating QAbstractItemModels more
+    efficient by employing caching and pre-fetching.
+
+    \sa QAbstractItemModel
+*/
+
+/*!
+    \internal
+*/
 QAbstractItemModelReplica::QAbstractItemModelReplica(QAbstractItemModelReplicaImplementation *rep, QtRemoteObjects::InitialAction action, const QList<int> &rolesHint)
     : QAbstractItemModel()
     , d(rep)
@@ -757,6 +772,9 @@ QAbstractItemModelReplica::QAbstractItemModelReplica(QAbstractItemModelReplicaIm
     connect(rep, &QAbstractItemModelReplicaImplementation::initialized, d.data(), &QAbstractItemModelReplicaImplementation::init);
 }
 
+/*!
+    Destroys the instance of QAbstractItemModelReplica.
+*/
 QAbstractItemModelReplica::~QAbstractItemModelReplica()
 {
 }
@@ -777,11 +795,18 @@ static QVariant findData(const CachedRowEntry &row, const QModelIndex &index, in
     return QVariant();
 }
 
+/*!
+    Returns a pointer to the QItemSelectionModel for the current
+    QAbstractItemModelReplica.
+*/
 QItemSelectionModel* QAbstractItemModelReplica::selectionModel() const
 {
     return d->m_selectionModel.data();
 }
 
+/*!
+    \reimp
+*/
 bool QAbstractItemModelReplica::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (role == Qt::UserRole - 1) {
@@ -812,6 +837,17 @@ bool QAbstractItemModelReplica::setData(const QModelIndex &index, const QVariant
     return true;
 }
 
+
+/*!
+    Returns the \a role data for the item at \a index if available in cache.
+    A default-constructed QVariant is returned if the index is invalid, the role
+    is not one of the available roles, the \l {Replica} is uninitialized or
+    the data was not available.
+    If the data was not available in cache it will be requested from the
+    \l {Source}.
+
+    \sa QAbstractItemModel::data(), hasData(), setData(), isInitialized()
+*/
 QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) const
 {
 
@@ -854,6 +890,10 @@ QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) co
     QMetaObject::invokeMethod(d.data(), "fetchPendingData", Qt::QueuedConnection);
     return QVariant{};
 }
+
+/*!
+    \reimp
+*/
 QModelIndex QAbstractItemModelReplica::parent(const QModelIndex &index) const
 {
     if (!index.isValid() || !index.internalPointer())
@@ -868,6 +908,10 @@ QModelIndex QAbstractItemModelReplica::parent(const QModelIndex &index) const
     Q_ASSERT(row >= 0);
     return createIndex(row, 0, parent->parent);
 }
+
+/*!
+    \reimp
+*/
 QModelIndex QAbstractItemModelReplica::index(int row, int column, const QModelIndex &parent) const
 {
     auto parentItem = d->cacheData(parent);
@@ -889,6 +933,10 @@ QModelIndex QAbstractItemModelReplica::index(int row, int column, const QModelIn
         parentItem->ensureChildren(row, row);
     return createIndex(row, column, reinterpret_cast<void*>(parentItem));
 }
+
+/*!
+    \reimp
+*/
 bool QAbstractItemModelReplica::hasChildren(const QModelIndex &parent) const
 {
     auto parentItem = d->cacheData(parent);
@@ -897,6 +945,10 @@ bool QAbstractItemModelReplica::hasChildren(const QModelIndex &parent) const
     else
         return parentItem ? parentItem->hasChildren : false;
 }
+
+/*!
+    \reimp
+*/
 int QAbstractItemModelReplica::rowCount(const QModelIndex &parent) const
 {
     auto parentItem = d->cacheData(parent);
@@ -912,6 +964,10 @@ int QAbstractItemModelReplica::rowCount(const QModelIndex &parent) const
 
     return parentItem ? parentItem->rowCount : 0;
 }
+
+/*!
+    \reimp
+*/
 int QAbstractItemModelReplica::columnCount(const QModelIndex &parent) const
 {
     if (parent.isValid() && parent.column() > 0)
@@ -924,6 +980,14 @@ int QAbstractItemModelReplica::columnCount(const QModelIndex &parent) const
     return std::max(0, parentItem->columnCount);
 }
 
+/*!
+    Returns the data for the given \a role and \a section in the header with the
+    specified \a orientation.
+
+    If the data is not available it will be requested from the \l {Source}.
+
+    \sa QAbstractItemModel::headerData
+*/
 QVariant QAbstractItemModelReplica::headerData(int section, Qt::Orientation orientation, int role) const
 {
     const int index = orientation == Qt::Horizontal ? 0 : 1;
@@ -945,17 +1009,39 @@ QVariant QAbstractItemModelReplica::headerData(int section, Qt::Orientation orie
     return QVariant();
 }
 
+/*!
+    \reimp
+*/
 Qt::ItemFlags QAbstractItemModelReplica::flags(const QModelIndex &index) const
 {
     CacheEntry *entry = d->cacheEntry(index);
     return entry ? entry->flags : Qt::NoItemFlags;
 }
 
+/*!
+    \fn void initialized()
+
+    The initialized signal is emitted the first time we receive data
+    from the \l {Source}.
+
+    \sa isInitialized()
+*/
+
+/*!
+    Returns \c true if this replica has been initialized with data from the
+    \l {Source} object. Returns \c false otherwise.
+
+    \sa initialized()
+*/
 bool QAbstractItemModelReplica::isInitialized() const
 {
     return d->isInitialized();
 }
 
+/*!
+    Returns \c true if there exists \a role data for the item at \a index.
+    Returns \c false in any other case.
+*/
 bool QAbstractItemModelReplica::hasData(const QModelIndex &index, int role) const
 {
     if (!d->isInitialized() || !index.isValid())
@@ -970,21 +1056,42 @@ bool QAbstractItemModelReplica::hasData(const QModelIndex &index, int role) cons
     return cached;
 }
 
+/*!
+    Returns the current size of the internal cache.
+    By default this is set to the value of the \c QTRO_NODES_CACHE_SIZE
+    environment variable, or a default of \c 1000 if it is invalid or doesn't
+    exist.
+
+    \sa setRootCacheSize
+*/
 size_t QAbstractItemModelReplica::rootCacheSize() const
 {
     return d->m_rootItem.children.cacheSize;
 }
 
+/*!
+    Sets the size of the internal cache to \a rootCacheSize.
+
+    \sa rootCacheSize
+*/
 void QAbstractItemModelReplica::setRootCacheSize(size_t rootCacheSize)
 {
     d->m_rootItem.children.setCacheSize(rootCacheSize);
 }
 
+/*!
+    Returns a list of available roles.
+
+    \sa QAbstractItemModel
+*/
 QList<int> QAbstractItemModelReplica::availableRoles() const
 {
     return d->availableRoles();
 }
 
+/*!
+    \reimp
+*/
 QHash<int, QByteArray> QAbstractItemModelReplica::roleNames() const
 {
     return d->roleNames();
