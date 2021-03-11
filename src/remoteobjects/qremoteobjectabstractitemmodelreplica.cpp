@@ -837,7 +837,6 @@ bool QAbstractItemModelReplica::setData(const QModelIndex &index, const QVariant
     return true;
 }
 
-
 /*!
     Returns the \a role data for the item at \a index if available in cache.
     A default-constructed QVariant is returned if the index is invalid, the role
@@ -848,27 +847,63 @@ bool QAbstractItemModelReplica::setData(const QModelIndex &index, const QVariant
 
     \sa QAbstractItemModel::data(), hasData(), setData(), isInitialized()
 */
-QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) const
+QVariant QAbstractItemModelReplica::data(const QModelIndex &index, int role) const
 {
-
-    if (!d->isInitialized()) {
-        qCDebug(QT_REMOTEOBJECT_MODELS)<<"Data not initialized yet";
-        return QVariant();
-    }
-
     if (!index.isValid())
         return QVariant();
 
-    if (!availableRoles().contains(role))
-        return QVariant();
+    QModelRoleData roleData(role);
+    multiData(index, roleData);
+    return roleData.data();
+}
 
-    auto item = d->cacheData(index);
-    if (item) {
-        bool cached = false;
-        QVariant result = findData(item->cachedRowEntry, index, role, &cached);
-        if (cached)
-            return result;
+/*!
+  \reimp
+*/
+void QAbstractItemModelReplica::multiData(const QModelIndex &index,
+                                          QModelRoleDataSpan roleDataSpan) const
+{
+    Q_ASSERT(checkIndex(index, CheckIndexOption::IndexIsValid));
+
+    if (!d->isInitialized()) {
+        qCDebug(QT_REMOTEOBJECT_MODELS)<<"Data not initialized yet";
+
+        for (auto &roleData : roleDataSpan)
+            roleData.clearData();
+        return;
     }
+
+    QList<int> rolesToFetch;
+    const auto roles = availableRoles();
+    if (auto item = d->cacheData(index); item) {
+        // If the index is found in cache, try to find the data for each role
+        for (auto &roleData : roleDataSpan) {
+            const auto role = roleData.role();
+            if (roles.contains(role)) {
+                bool cached = false;
+                QVariant result = findData(item->cachedRowEntry, index, role, &cached);
+                if (cached) {
+                    roleData.setData(std::move(result));
+                } else {
+                    roleData.clearData();
+                    rolesToFetch.push_back(role);
+                }
+            } else {
+                roleData.clearData();
+            }
+        }
+    } else {
+        // If the index is not found in cache, schedule all roles for fetching
+        for (auto &roleData : roleDataSpan) {
+            const auto role = roleData.role();
+            if (roles.contains(role))
+                rolesToFetch.push_back(role);
+            roleData.clearData();
+        }
+    }
+
+    if (rolesToFetch.empty())
+        return;
 
     auto parentItem = d->cacheData(index.parent());
     Q_ASSERT(parentItem);
@@ -880,15 +915,12 @@ QVariant QAbstractItemModelReplica::data(const QModelIndex & index, int role) co
     Q_ASSERT(toQModelIndex(start, this).isValid());
 
     RequestedData data;
-    QList<int> roles;
-    roles << role;
     data.start = start;
     data.end = end;
-    data.roles = roles;
+    data.roles = rolesToFetch;
     d->m_requestedData.push_back(data);
-    qCDebug(QT_REMOTEOBJECT_MODELS) << "FETCH PENDING DATA" << start << end << roles;
+    qCDebug(QT_REMOTEOBJECT_MODELS) << "FETCH PENDING DATA" << start << end << rolesToFetch;
     QMetaObject::invokeMethod(d.data(), "fetchPendingData", Qt::QueuedConnection);
-    return QVariant{};
 }
 
 /*!

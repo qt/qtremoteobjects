@@ -41,13 +41,26 @@
 
 #include <QtCore/qitemselectionmodel.h>
 
-// consider evaluating performance difference with item data
-inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model, const QList<int> &roles)
+inline QList<QModelRoleData> createModelRoleData(const QList<int> &roles)
 {
-    QVariantList result;
-    result.reserve(roles.size());
+    QList<QModelRoleData> roleData;
+    roleData.reserve(roles.size());
     for (int role : roles)
-        result << model->data(index, role);
+        roleData.emplace_back(role);
+    return roleData;
+}
+
+// consider evaluating performance difference with item data
+inline QVariantList collectData(const QModelIndex &index, const QAbstractItemModel *model,
+                                QModelRoleDataSpan roleDataSpan)
+{
+    model->multiData(index, roleDataSpan);
+
+    QVariantList result;
+    result.reserve(roleDataSpan.size());
+    for (auto &roleData : roleDataSpan)
+        result.push_back(std::move(roleData.data()));
+
     return result;
 }
 
@@ -154,12 +167,13 @@ DataEntries QAbstractItemModelSourceAdapter::replicaRowRequest(IndexList start, 
     Q_ASSERT_X(endRow >= 0 && endRow < rowCount, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(endRow).arg(rowCount)));
     Q_ASSERT_X(endColumn >= 0 && endColumn < columnCount, __FUNCTION__, qPrintable(QString(QLatin1String("0 <= %1 < %2")).arg(endColumn).arg(columnCount)));
 
+    auto roleData = createModelRoleData(roles);
     for (int row = startRow; row <= endRow; ++row) {
         for (int column = startColumn; column <= endColumn; ++column) {
             const QModelIndex current = m_model->index(row, column, parent);
             Q_ASSERT(current.isValid());
             const IndexList currentList = toModelIndexList(current, m_model);
-            const QVariantList data = collectData(current, m_model, roles);
+            const QVariantList data = collectData(current, m_model, roleData);
             const bool hasChildren = m_model->hasChildren(current);
             const Qt::ItemFlags flags = m_model->flags(current);
             qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentList << "data=" << data;
@@ -252,11 +266,12 @@ QList<IndexValuePair> QAbstractItemModelSourceAdapter::fetchTree(const QModelInd
     if (!columnCount || !rowCount)
         return entries;
     entries.reserve(std::min(rowCount * columnCount, int(size)));
+    auto roleData = createModelRoleData(roles);
     for (int row = 0; row < rowCount && size > 0; ++row)
         for (int column = 0; column < columnCount && size > 0; ++column) {
             const auto index = m_model->index(row, column, parent);
             const IndexList currentList = toModelIndexList(index, m_model);
-            const QVariantList data = collectData(index, m_model, roles);
+            const QVariantList data = collectData(index, m_model, roleData);
             const bool hasChildren = m_model->hasChildren(index);
             const Qt::ItemFlags flags = m_model->flags(index);
             int rc = m_model->rowCount(index);
