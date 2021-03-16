@@ -63,16 +63,21 @@ int main(int argc, char **argv)
 
     QApplication app(argc, argv);
 
-
-
+//! [ObjectNode creation]
     QRemoteObjectNode node(QUrl(QStringLiteral("local:registry")));
     node.setHeartbeatInterval(1000);
+//! [ObjectNode creation]
+//! [Model acquisition]
+    QScopedPointer<QAbstractItemModelReplica> model(node.acquireModel(QStringLiteral("RemoteModel")));
+//! [Model acquisition]
+
+//! [QTreeView-creation]
     QTreeView view;
     view.setWindowTitle(QStringLiteral("RemoteView"));
     view.resize(640,480);
-    QScopedPointer<QAbstractItemModelReplica> model(node.acquireModel(QStringLiteral("RemoteModel")));
     view.setModel(model.data());
     view.show();
+//! [QTreeView-creation]
 
     return app.exec();
 }

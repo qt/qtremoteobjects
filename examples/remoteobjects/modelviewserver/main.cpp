@@ -54,6 +54,7 @@
 #include <QStandardItemModel>
 #include <QStandardItem>
 
+#include <memory>
 
 struct TimerHandler : public QObject
 {
@@ -108,18 +109,14 @@ QList<QStandardItem*> addChild(int numChildren, int nestingLevel)
     return result;
 }
 
-int main(int argc, char *argv[])
+std::unique_ptr<QStandardItemModel> createModel()
 {
-    QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
-                                     "qt.remoteobjects.warning=false");
-    QApplication app(argc, argv);
-
+    std::unique_ptr<QStandardItemModel> sourceModel = std::make_unique<QStandardItemModel>();
     const int modelSize = 100000;
     QStringList list;
-    QStandardItemModel sourceModel;
     QStringList hHeaderList;
     hHeaderList << QStringLiteral("First Column with spacing") << QStringLiteral("Second Column with spacing");
-    sourceModel.setHorizontalHeaderLabels(hHeaderList);
+    sourceModel->setHorizontalHeaderLabels(hHeaderList);
     list.reserve(modelSize);
     for (int i = 0; i < modelSize; ++i) {
         QStandardItem *firstItem = new QStandardItem(QStringLiteral("FancyTextNumber %1").arg(i));
@@ -130,8 +127,7 @@ int main(int argc, char *argv[])
             firstItem->setBackground(Qt::red);
         QList<QStandardItem*> row;
         row << firstItem << secondItem;
-        sourceModel.invisibleRootItem()->appendRow(row);
-        //sourceModel.appendRow(row);
+        sourceModel->invisibleRootItem()->appendRow(row);
         list << QStringLiteral("FancyTextNumber %1").arg(i);
     }
 
@@ -140,28 +136,50 @@ int main(int argc, char *argv[])
         {Qt::DisplayRole, "_text"},
         {Qt::BackgroundRole, "_color"}
     };
-    sourceModel.setItemRoleNames(roleNames);
+    sourceModel->setItemRoleNames(roleNames);
+    return sourceModel;
+}
+
+int main(int argc, char *argv[])
+{
+    QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
+                                     "qt.remoteobjects.warning=false");
+    QApplication app(argc, argv);
+
+    qDebug() << "Creating registry host";
+//! [RegistryHost setup]
+    QRemoteObjectRegistryHost node(QUrl(QStringLiteral("local:registry")));
+//! [RegistryHost setup]
+
+//! [Model-creation and role-selection]
+    std::unique_ptr<QStandardItemModel> sourceModel = createModel();
 
     QList<int> roles;
     roles << Qt::DisplayRole << Qt::BackgroundRole;
+//! [Model-creation and role-selection]
 
-    qDebug() << "Creating registry host";
-    QRemoteObjectRegistryHost node(QUrl(QStringLiteral("local:registry")));
-
+//! [Model-remoting]
     QRemoteObjectHost node2(QUrl(QStringLiteral("local:replica")), QUrl(QStringLiteral("local:registry")));
-    node2.enableRemoting(&sourceModel, QStringLiteral("RemoteModel"), roles);
+    node2.enableRemoting(sourceModel.get(), QStringLiteral("RemoteModel"), roles);
+//! [Model-remoting]
 
+//! [TreeView-creation]
     QTreeView view;
     view.setWindowTitle(QStringLiteral("SourceView"));
-    view.setModel(&sourceModel);
+    view.setModel(sourceModel.get());
     view.show();
+//! [TreeView-creation]
+
+//! [Automated actions]
     TimerHandler handler;
-    handler.model = &sourceModel;
+    handler.model = sourceModel.get();
     QTimer::singleShot(5000, &handler, &TimerHandler::changeData);
     QTimer::singleShot(10000, &handler, &TimerHandler::insertData);
     QTimer::singleShot(11000, &handler, &TimerHandler::changeFlags);
     QTimer::singleShot(12000, &handler, &TimerHandler::removeData);
     QTimer::singleShot(13000, &handler, &TimerHandler::moveData);
+//! [Automated actions]
+
 
     return app.exec();
 }

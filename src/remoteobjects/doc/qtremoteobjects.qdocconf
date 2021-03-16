@@ -37,10 +37,10 @@ headerdirs  += .. \
 sourcedirs  += .. \
                 ../../remoteobjects
 
-exampledirs += ../../../examples/RemoteObjects \
+exampledirs += ../../../examples/remoteobjects \
                snippets/
 
-examplesinstallpath = RemoteObjects
+examplesinstallpath = remoteobjects
 
 imagedirs   += images
 
