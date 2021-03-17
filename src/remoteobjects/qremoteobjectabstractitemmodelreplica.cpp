@@ -1018,7 +1018,7 @@ int QAbstractItemModelReplica::columnCount(const QModelIndex &parent) const
 
     If the data is not available it will be requested from the \l {Source}.
 
-    \sa QAbstractItemModel::headerData
+    \sa QAbstractItemModel::headerData()
 */
 QVariant QAbstractItemModelReplica::headerData(int section, Qt::Orientation orientation, int role) const
 {
@@ -1051,7 +1051,7 @@ Qt::ItemFlags QAbstractItemModelReplica::flags(const QModelIndex &index) const
 }
 
 /*!
-    \fn void initialized()
+    \fn void QAbstractItemModelReplica::initialized()
 
     The initialized signal is emitted the first time we receive data
     from the \l {Source}.
@@ -1094,7 +1094,7 @@ bool QAbstractItemModelReplica::hasData(const QModelIndex &index, int role) cons
     environment variable, or a default of \c 1000 if it is invalid or doesn't
     exist.
 
-    \sa setRootCacheSize
+    \sa setRootCacheSize()
 */
 size_t QAbstractItemModelReplica::rootCacheSize() const
 {
@@ -1104,7 +1104,7 @@ size_t QAbstractItemModelReplica::rootCacheSize() const
 /*!
     Sets the size of the internal cache to \a rootCacheSize.
 
-    \sa rootCacheSize
+    \sa rootCacheSize()
 */
 void QAbstractItemModelReplica::setRootCacheSize(size_t rootCacheSize)
 {
