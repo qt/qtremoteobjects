@@ -83,7 +83,7 @@ void WebSocketIoDevice::close()
 
 qint64 WebSocketIoDevice::readData(char *data, qint64 maxlen)
 {
-    auto sz = std::min(int(maxlen), m_buffer.size());
+    auto sz = std::min(maxlen, qint64(m_buffer.size()));
     if (sz <= 0)
         return sz;
     memcpy(data, m_buffer.constData(), size_t(sz));
