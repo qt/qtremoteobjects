@@ -35,22 +35,6 @@
 
 #include <QRemoteObjectHost>
 
-
-/*
- To generate certificates you can use the following commands:
-
-openssl genrsa -out rootCA.key 2048
-openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1825 -out rootCA.pem -subj "/C=US/ST=Oregon/L=Portland"
-
-openssl genrsa -out client.key 2048
-openssl req -new -key client.key -out client.csr -subj "/C=US/ST=Oregon/L=Portland/CN=127.0.0.1"
-openssl x509 -req -in client.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out client.crt -days 1825 -sha256
-
-openssl genrsa -out server.key 2048
-openssl req -new -key server.key -out server.csr -subj "/C=US/ST=Oregon/L=Salem/CN=127.0.0.1"
-openssl x509 -req -in server.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out server.crt -days 1825 -sha256
-*/
-
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
