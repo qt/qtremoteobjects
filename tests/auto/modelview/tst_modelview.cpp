@@ -41,37 +41,6 @@
 
 namespace {
 
-template <class Storage>
-bool waitForSignal(QVector<Storage> *storage, QSignalSpy *spy)
-{
-    if (!storage || !spy)
-        return false;
-    const int maxRuns = 10;
-    int runs = 0;
-    const int storageSize = storage->size();
-    QVector<Storage> rowsToRemove;
-    while (runs < maxRuns) {
-        ++runs;
-        if (spy->wait() && !spy->isEmpty()){
-
-            foreach (const Storage &row, *storage) {
-                for (int i = 0; i < spy->size(); ++i) {
-                    const QList<QVariant> &signal = spy->at(i);
-                    if (row.match(signal)) {
-                        rowsToRemove.append(row);
-                        break;
-                    }
-                }
-            }
-            foreach (const Storage &row, rowsToRemove)
-                storage->removeAll(row);
-            if (storage->isEmpty())
-                break;
-        }
-    }
-    return storage->isEmpty() && spy->size() == storageSize;
-}
-
 QList<QStandardItem*> createInsertionChildren(int num, const QString& name, const QColor &background)
 {
     QList<QStandardItem*> children;
@@ -83,40 +52,61 @@ QList<QStandardItem*> createInsertionChildren(int num, const QString& name, cons
     return children;
 }
 
-struct InsertedRow
+class RowsWatcher : public WaitHelper
 {
-    InsertedRow(const QModelIndex &index = QModelIndex(), int start = -1, int end = -1)
-        : m_index(index)
-        , m_start(start)
-        , m_end(end){}
-    bool match(const QList<QVariant> &signal) const
+public:
+    RowsWatcher(const QAbstractItemModel *model, int expectedRowsCount)
+        : WaitHelper(), m_model(model), m_expectedRowsCount(expectedRowsCount)
     {
-        if (signal.size() != 3)
-            return false;
-        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[1].type() == QVariant::nameToType("int")
-                                   && signal[2].type() == QVariant::nameToType("int");
-        if (!matchingTypes)
-            return false;
-        const QModelIndex otherIndex = signal[0].value<QModelIndex>();
-        const int otherStart = signal[1].value<int>();
-        const int otherEnd = signal[2].value<int>();
-        return compareIndices(m_index, otherIndex) && (m_start == otherStart) && (m_end == otherEnd);
+        connect(m_model, &QAbstractItemModel::rowsInserted, this,
+                [this](const QModelIndex &parent, int first, int last) {
+                    const auto columnCount = m_model->columnCount(parent);
+                    for (int row = first; row <= last; ++row) {
+                        for (int column = 0; column < columnCount; ++column)
+                            m_changedData.append(m_model->index(row, column, parent));
+                    }
+                    onNumRowsChanged(parent, first, last);
+                });
+
+        connect(m_model, &QAbstractItemModel::rowsRemoved, this, &RowsWatcher::onNumRowsChanged);
     }
 
-    bool operator==(const QList<QVariant> &signal) const
+    void onNumRowsChanged(const QModelIndex &parent, int first, int last)
     {
-        return match(signal);
+        const auto compare = [=](const RowData &row) {
+            return (row.m_start == first && row.m_end == last
+                    && compareIndices(row.m_index, parent));
+        };
+        QVERIFY(std::find_if(m_pendingRows.begin(), m_pendingRows.end(), compare)
+                != m_pendingRows.end());
+
+        m_currentRowsCount += last - first + 1;
+        if (m_currentRowsCount == m_expectedRowsCount)
+            finish();
     }
 
-    bool operator==(const InsertedRow &other) const
+    void scheduleRowsToWatch(const QModelIndex &index, int start, int end)
     {
-        return m_index == other.m_index && m_start == other.m_start && m_end == other.m_end;
+        m_pendingRows.push_back(RowData(index, start, end));
     }
 
-    QModelIndex m_index;
-    int m_start;
-    int m_end;
+    QVector<QModelIndex> changedData() const { return m_changedData; }
+
+private:
+    struct RowData
+    {
+        RowData(const QModelIndex &idx = QModelIndex(), int s = -1, int e = -1)
+            : m_index(idx), m_start(s), m_end(e) {}
+        QModelIndex m_index;
+        int m_start;
+        int m_end;
+    };
+
+    const QAbstractItemModel *m_model;
+    QVector<RowData> m_pendingRows;
+    QVector<QModelIndex> m_changedData;
+    int m_currentRowsCount = 0;
+    const int m_expectedRowsCount;
 };
 
 QTextStream cout(stdout, QIODevice::WriteOnly);
@@ -780,49 +770,18 @@ void TestModelView::testDataInsertion()
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
+    const int insertedRowsCount = 9;
+    RowsWatcher watcher(model.data(), insertedRowsCount);
     QVector<QModelIndex> pending;
 
     QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
-    QVector<InsertedRow> insertedRows;
-    QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsInserted);
-    m_sourceModel.insertRows(2, 9);
-    insertedRows.append(InsertedRow(QModelIndex(), 2, 10));
-    const int maxRuns = 10;
-    int runs = 0;
-    QVector<InsertedRow> rowsToRemove;
-    while (runs < maxRuns) {
-        ++runs;
-        if (rowSpy.wait() && !rowSpy.isEmpty()){
+    m_sourceModel.insertRows(2, insertedRowsCount);
 
-            foreach (const InsertedRow &irow, insertedRows) {
-                for (int i = 0; i < rowSpy.size(); ++i) {
-                    const QList<QVariant> &signal = rowSpy.at(i);
-                    if (irow.match(signal)) {
-                        //fetch the data of the inserted index
-                        const QModelIndex &parent = signal.at(0).value<QModelIndex>();
-                        const int start = signal.at(1).value<int>();
-                        const int end = signal.at(2).value<int>();
-                        const int columnCount = model->columnCount(parent);
-                        for (int row = start; row <= end; ++row)
-                            for (int column = 0; column < columnCount; ++column) {
-                                model->data(model->index(row, column, parent), Qt::DisplayRole);
-                                model->data(model->index(row, column, parent), Qt::BackgroundRole);
-                                pending.append(model->index(row, column, parent));
-                            }
-                        rowsToRemove.append(irow);
-                        break;
-                    }
-                }
-            }
-            foreach (const InsertedRow &irow, rowsToRemove)
-                insertedRows.removeAll(irow);
-            if (insertedRows.isEmpty())
-                break;
-        }
-
-    }
-    QCOMPARE(rowSpy.count(), 1);
+    watcher.scheduleRowsToWatch(QModelIndex(), 2, 2 + insertedRowsCount - 1);
+    QVERIFY(watcher.wait());
     QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
+
+    pending.append(watcher.changedData());
 
     // change one row to check for inconsistencies
     m_sourceModel.setData(m_sourceModel.index(0, 1), QColor(Qt::green), Qt::BackgroundRole);
@@ -844,27 +803,25 @@ void TestModelView::testDataInsertionTree()
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
-    const QVector<int> roles = model->availableRoles();
-
-    QVector<InsertedRow> insertedRows;
-    QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsInserted);
+    const int insertedRowsCount = 9;
+    const int insertedChildRowsCount = 4;
+    RowsWatcher watcher(model.data(), insertedRowsCount + insertedChildRowsCount);
 
     QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
 
-    for (int i = 0; i < 9; ++ i) {
-        insertedRows.append(InsertedRow(QModelIndex(), 2 + i, 2 + i));
+    for (int i = 0; i < insertedRowsCount; ++i) {
+        watcher.scheduleRowsToWatch(QModelIndex(), 2 + i, 2 + i);
         m_sourceModel.insertRow(2 + i, createInsertionChildren(2, QStringLiteral("insertedintree"), Qt::darkRed));
         const QModelIndex childIndex = m_sourceModel.index(2 + i, 0);
         const QModelIndex childIndex2 = m_sourceModel.index(2 + i, 1);
         pending.append(childIndex);
         pending.append(childIndex2);
-
     }
     const QModelIndex parent = m_sourceModel.index(10, 0);
     QStandardItem* parentItem = m_sourceModel.item(10, 0);
-    for (int i = 0; i < 4; ++ i) {
-        insertedRows.append(InsertedRow(parent, i, i));
+    for (int i = 0; i < insertedChildRowsCount; ++i) {
+        watcher.scheduleRowsToWatch(parent, i, i);
         parentItem->insertRow(i, createInsertionChildren(2, QStringLiteral("insertedintreedeep"), Qt::darkCyan));
         const QModelIndex childIndex = m_sourceModel.index(0, 0, parent);
         const QModelIndex childIndex2 = m_sourceModel.index(0, 1, parent);
@@ -874,42 +831,10 @@ void TestModelView::testDataInsertionTree()
         pending.append(childIndex2);
     }
 
-    const int maxRuns = 10;
-    int runs = 0;
-    QVector<InsertedRow> rowsToRemove;
-    while (runs < maxRuns) {
-        ++runs;
-        if (rowSpy.wait() && !rowSpy.isEmpty()){
-
-            foreach (const InsertedRow &irow, insertedRows) {
-                for (int i = 0; i < rowSpy.size(); ++i) {
-                    const QList<QVariant> &signal = rowSpy.at(i);
-                    if (irow.match(signal)) {
-                        //fetch the data of the inserted index
-                        const QModelIndex &parent = signal.at(0).value<QModelIndex>();
-                        const int start = signal.at(1).value<int>();
-                        const int end = signal.at(2).value<int>();
-                        const int columnCount = model->columnCount(parent);
-                        for (int row = start; row <= end; ++row)
-                            for (int column = 0; column < columnCount; ++column) {
-                                model->data(model->index(row, column, parent), Qt::DisplayRole);
-                                model->data(model->index(row, column, parent), Qt::BackgroundRole);
-                                pending.append(model->index(row, column, parent));
-                            }
-                        rowsToRemove.append(irow);
-                        break;
-                    }
-                }
-            }
-            foreach (const InsertedRow &irow, rowsToRemove)
-                insertedRows.removeAll(irow);
-            if (insertedRows.isEmpty())
-                break;
-        }
-
-    }
-    QVERIFY(rowSpy.count() == 13);
+    QVERIFY(watcher.wait());
     QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
+
+    pending.append(watcher.changedData());
 
     // change one row to check for inconsistencies
 
@@ -933,21 +858,23 @@ void TestModelView::testDataRemoval()
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
-    QVector<InsertedRow> removedRows;
-    QSignalSpy rowSpy(model.data(), &QAbstractItemModelReplica::rowsRemoved);
-
     const QModelIndex parent = m_sourceModel.index(10, 0);
-    m_sourceModel.removeRows(0, 4, parent);
-    removedRows.append(InsertedRow(parent, 0, 3));
-    QVERIFY(waitForSignal(&removedRows, &rowSpy));
-    rowSpy.clear();
-    QCOMPARE(m_sourceModel.rowCount(parent), model->rowCount(model->index(10, 0)));
-    m_sourceModel.removeRows(2, 9);
-    removedRows.append(InsertedRow(QModelIndex(), 2, 10));
-    QVERIFY(waitForSignal(&removedRows, &rowSpy));
-
-
-    QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
+    {
+        const int removedRowsCount = 4;
+        RowsWatcher watcher(model.data(), removedRowsCount);
+        m_sourceModel.removeRows(0, removedRowsCount, parent);
+        watcher.scheduleRowsToWatch(parent, 0, removedRowsCount - 1);
+        QVERIFY(watcher.wait());
+        QCOMPARE(m_sourceModel.rowCount(parent), model->rowCount(model->index(10, 0)));
+    }
+    {
+        const int removedRowsCount = 9;
+        RowsWatcher watcher(model.data(), removedRowsCount);
+        m_sourceModel.removeRows(2, removedRowsCount);
+        watcher.scheduleRowsToWatch(QModelIndex(), 2, 2 + removedRowsCount - 1);
+        QVERIFY(watcher.wait());
+        QCOMPARE(m_sourceModel.rowCount(), model->rowCount());
+    }
 
     // change one row to check for inconsistencies
 
