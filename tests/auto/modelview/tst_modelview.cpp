@@ -779,7 +779,6 @@ void TestModelView::testDataInsertion()
     RowsWatcher watcher(model.data(), insertedRowsCount);
     QVector<QModelIndex> pending;
 
-    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     m_sourceModel.insertRows(2, insertedRowsCount);
 
     watcher.scheduleRowsToWatch(QModelIndex(), 2, 2 + insertedRowsCount - 1);
@@ -792,8 +791,7 @@ void TestModelView::testDataInsertion()
     m_sourceModel.setData(m_sourceModel.index(0, 1), QColor(Qt::green), Qt::BackgroundRole);
     m_sourceModel.setData(m_sourceModel.index(0, 1), QLatin1String("foo"), Qt::DisplayRole);
     pending.append(model->index(0, 1));
-    WaitForDataChanged w(pending, &dataChangedSpy);
-
+    WaitForDataChanged w(model.data(), pending);
 
     QVERIFY(w.wait());
     compareData(&m_sourceModel, model.data());
@@ -812,7 +810,6 @@ void TestModelView::testDataInsertionTree()
     const int insertedChildRowsCount = 4;
     RowsWatcher watcher(model.data(), insertedRowsCount + insertedChildRowsCount);
 
-    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
 
     for (int i = 0; i < insertedRowsCount; ++i) {
@@ -844,7 +841,7 @@ void TestModelView::testDataInsertionTree()
     // change one row to check for inconsistencies
 
     pending << m_sourceModel.index(0, 0, parent);
-    WaitForDataChanged w(pending, &dataChangedSpy);
+    WaitForDataChanged w(model.data(), pending);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
 
@@ -884,9 +881,8 @@ void TestModelView::testDataRemoval()
     // change one row to check for inconsistencies
 
     QVector<QModelIndex> pending;
-    QSignalSpy dataChangedSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     pending << m_sourceModel.index(0, 0, parent);
-    WaitForDataChanged w(pending, &dataChangedSpy);
+    WaitForDataChanged w(model.data(), pending);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
 
@@ -992,8 +988,6 @@ void TestModelView::testSetData()
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
-    QSignalSpy dataChangedSpy(&m_sourceModel, &QStandardItemModel::dataChanged);
-    QSignalSpy dataChangedReplicaSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
     QVector<QModelIndex> pendingReplica;
     for (int row = 0, numRows = model->rowCount(); row < numRows; ++row) {
@@ -1005,9 +999,9 @@ void TestModelView::testSetData()
             pendingReplica.append(model->index(row, column));
         }
     }
-    WaitForDataChanged waiter(pending, &dataChangedSpy);
+    WaitForDataChanged waiter(&m_sourceModel, pending);
     QVERIFY(waiter.wait());
-    WaitForDataChanged waiterReplica(pendingReplica, &dataChangedReplicaSpy);
+    WaitForDataChanged waiterReplica(model.data(), pendingReplica);
     QVERIFY(waiterReplica.wait());
     compareData(&m_sourceModel, model.data());
 }
@@ -1023,8 +1017,6 @@ void TestModelView::testSetDataTree()
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
     //fetched and verified initial state, now setData on the client
-    QSignalSpy dataChangedSpy(&m_sourceModel, &QStandardItemModel::dataChanged);
-    QSignalSpy dataChangedReplicaSpy(model.data(), &QAbstractItemModelReplica::dataChanged);
     QVector<QModelIndex> pending;
     QVector<QModelIndex> pendingReplica;
 
@@ -1052,9 +1044,9 @@ void TestModelView::testSetDataTree()
             }
         }
     }
-    WaitForDataChanged waiter(pending, &dataChangedSpy);
+    WaitForDataChanged waiter(&m_sourceModel, pending);
     QVERIFY(waiter.wait());
-    WaitForDataChanged waiterReplica(pendingReplica, &dataChangedReplicaSpy);
+    WaitForDataChanged waiterReplica(model.data(), pendingReplica);
     QVERIFY(waiterReplica.wait());
     compareData(&m_sourceModel, model.data());
 }

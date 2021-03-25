@@ -4,6 +4,7 @@ QT += testlib remoteobjects
 QT -= gui
 
 SOURCES += tst_proxy.cpp
+HEADERS += $$PWD/../shared/model_utilities.h
 
 REPC_MERGED += engine.rep
 REPC_MERGED += subclass.rep
