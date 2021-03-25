@@ -29,6 +29,48 @@
 #include <QtTest/QtTest>
 #include <QModelIndex>
 
+// Helper class which can be used by tests for starting a task and
+// waiting for its completion. It takes care of running an event
+// loop while waiting, until finished() method is called (or the
+// timeout is reached).
+class WaitHelper : public QObject
+{
+    Q_OBJECT
+
+public:
+    WaitHelper() { m_promise.reportStarted(); }
+
+    ~WaitHelper()
+    {
+        if (m_promise.future().isRunning())
+            m_promise.reportFinished();
+    }
+
+    /*
+        Starts an event loop and waits until finish() method is called
+        or the timeout is reached.
+    */
+    bool wait(int timeout = 30000)
+    {
+        if (m_promise.future().isFinished())
+            return true;
+
+        QFutureWatcher<void> watcher;
+        QSignalSpy watcherSpy(&watcher, &QFutureWatcher<void>::finished);
+        watcher.setFuture(m_promise.future());
+        return watcherSpy.wait(timeout);
+    }
+
+protected:
+    /*
+        The derived classes need to call this method to stop waiting.
+    */
+    void finish() { m_promise.reportFinished(); }
+
+private:
+    QFutureInterface<void> m_promise;
+};
+
 namespace {
 
 inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
