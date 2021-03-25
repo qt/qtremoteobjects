@@ -309,11 +309,11 @@ int getRandomNumber(int min, int max)
     return res;
 }
 
-class FetchData : public QObject
+class FetchData : public WaitHelper
 {
-    Q_OBJECT
 public:
-    FetchData(const QAbstractItemModelReplica *replica) : QObject(), m_replica(replica), isFinished(false) {
+    FetchData(const QAbstractItemModelReplica *replica) : WaitHelper(), m_replica(replica)
+    {
         if (!m_replica->isInitialized()) {
             QEventLoop l;
             connect(m_replica, &QAbstractItemModelReplica::initialized, &l, &QEventLoop::quit);
@@ -323,6 +323,18 @@ public:
         connect(m_replica, &QAbstractItemModelReplica::dataChanged, this, &FetchData::dataChanged);
         connect(m_replica, &QAbstractItemModelReplica::rowsInserted, this, &FetchData::rowsInserted);
     }
+
+    bool fetchAndWait(int timeout = 15000)
+    {
+        addAll();
+        fetch();
+        return wait(timeout);
+    }
+
+private:
+    const QAbstractItemModelReplica *m_replica;
+    QHash<QPersistentModelIndex, QList<int>> m_pending;
+    QSet<QPersistentModelIndex> m_waitForInsertion;
 
     void addData(const QModelIndex &index, const QList<int> &roles)
     {
@@ -359,9 +371,8 @@ public:
 
     void fetch()
     {
-        isFinished = m_pending.isEmpty() && m_waitForInsertion.isEmpty();
-        if (isFinished) {
-            emitFetched();
+        if (m_pending.isEmpty() && m_waitForInsertion.isEmpty()) {
+            finish();
             return;
         }
         QHash<QPersistentModelIndex, QList<int>> pending(m_pending);
@@ -373,30 +384,6 @@ public:
                 Q_UNUSED(v)
             }
         }
-    }
-
-    bool fetchAndWait(int timeout = 15000)
-    {
-        QEventLoop l;
-        QTimer::singleShot(timeout, &l, &QEventLoop::quit);
-        connect(this, &FetchData::fetched, &l, &QEventLoop::quit);
-        fetch();
-        l.exec();
-        return isFinished;
-    }
-
-signals:
-    void fetched();
-
-private:
-    const QAbstractItemModelReplica *m_replica;
-    QHash<QPersistentModelIndex, QList<int>> m_pending;
-    QSet<QPersistentModelIndex> m_waitForInsertion;
-    bool isFinished;
-
-    void emitFetched()
-    {
-        QTimer::singleShot(0, this, &FetchData::fetched);
     }
 
     void rowsInserted(const QModelIndex &parent, int first, int last)
@@ -476,10 +463,8 @@ private:
             }
         }
 
-        isFinished = m_pending.isEmpty() && m_waitForInsertion.isEmpty();
-        if (isFinished) {
-            emitFetched();
-        }
+        if (m_pending.isEmpty() && m_waitForInsertion.isEmpty())
+            finish();
     }
 };
 
@@ -615,7 +600,6 @@ void TestModelView::testEmptyModel()
     model->setRootCacheSize(1000);
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareData(&emptyModel, model.data());
@@ -627,7 +611,6 @@ void TestModelView::testInitialData()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareData(&m_sourceModel, model.data());
@@ -639,7 +622,6 @@ void TestModelView::testInitialDataTree()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareTreeData(&m_sourceModel, model.data());
@@ -651,7 +633,6 @@ void TestModelView::testHeaderData()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     // ask for all Data members first, so we don't have to wait for update signals
@@ -674,7 +655,6 @@ void TestModelView::testDataChangedTree()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareTreeData(&m_sourceModel, model.data());
@@ -722,7 +702,6 @@ void TestModelView::testFlags()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QSignalSpy dataChangedSpy(model.data(),  &QAbstractItemModelReplica::dataChanged);
@@ -748,7 +727,6 @@ void TestModelView::testDataChanged()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QSignalSpy dataChangedSpy(model.data(),  &QAbstractItemModelReplica::dataChanged);
@@ -771,7 +749,6 @@ void TestModelView::testDataInsertion()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     const int insertedRowsCount = 9;
@@ -802,7 +779,6 @@ void TestModelView::testDataInsertionTree()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     const int insertedRowsCount = 9;
@@ -856,7 +832,6 @@ void TestModelView::testDataRemoval()
     qputenv("QTRO_NODES_CACHE_SIZE", "1000");
     model->setRootCacheSize(1000);
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     const QPersistentModelIndex parent = m_sourceModel.index(10, 0);
@@ -897,7 +872,6 @@ void TestModelView::testRoleNames()
     // Set a bigger cache enough to keep all the data otherwise the last test will fail
     repModel->setRootCacheSize(1500);
     FetchData f(repModel.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     // test custom role names
@@ -939,7 +913,6 @@ void TestModelView::testServerInsertDataTree()
     QTRY_COMPARE(testTreeModel.rowCount(), model->rowCount());
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     compareData(&testTreeModel, model.data());
@@ -966,7 +939,6 @@ void TestModelView::testModelTest()
     QAbstractItemModelTester test(repModel.data(), QAbstractItemModelTester::FailureReportingMode::Fatal);
 
     FetchData f(repModel.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
     Q_UNUSED(test)
 }
@@ -977,7 +949,6 @@ void TestModelView::testSortFilterModel()
     QScopedPointer<QAbstractItemModelReplica> repModel( client.acquireModel(QStringLiteral("test")));
 
     FetchData f(repModel.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     QSortFilterProxyModel clientSort;
@@ -996,7 +967,6 @@ void TestModelView::testSetData()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
@@ -1025,7 +995,6 @@ void TestModelView::testSetDataTree()
     QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
     compareTreeData(&m_sourceModel, model.data(), model->availableRoles());
 
@@ -1078,7 +1047,6 @@ void TestModelView::testSelectionFromReplica()
     QItemSelectionModel *replicaSelectionModel = model->selectionModel();
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     replicaSelectionModel->setCurrentIndex(model->index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
@@ -1099,7 +1067,6 @@ void TestModelView::testSelectionFromSource()
     QItemSelectionModel *replicaSelectionModel = model->selectionModel();
 
     FetchData f(model.data());
-    f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
     selectionModel.setCurrentIndex(simpleModel.index(1,0), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Current);
