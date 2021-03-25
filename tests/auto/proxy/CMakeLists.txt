@@ -6,6 +6,7 @@
 qt_internal_add_test(tst_proxy
     SOURCES
         tst_proxy.cpp
+        ../shared/model_utilities.h
     PUBLIC_LIBRARIES
         Qt::RemoteObjects
 )

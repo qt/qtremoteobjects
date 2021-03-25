@@ -86,55 +86,20 @@ inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
     return true;
 }
 
-struct WaitForDataChanged
+struct WaitForDataChanged : public WaitHelper
 {
-    struct IndexPair
+    WaitForDataChanged(const QAbstractItemModel *model, const QList<QModelIndex> &pending)
+        : WaitHelper(), m_model(model), m_pending(pending)
     {
-        QModelIndex topLeft;
-        QModelIndex bottomRight;
-    };
+        connect(m_model, &QAbstractItemModel::dataChanged, this,
+                [this](const QModelIndex &topLeft, const QModelIndex &bottomRight,
+                       const QList<int> &roles) {
+                    Q_UNUSED(roles)
 
-    WaitForDataChanged(const QList<QModelIndex> &pending, QSignalSpy *spy) : m_pending(pending), m_spy(spy){}
-    bool wait()
-    {
-        Q_ASSERT(m_spy);
-        const int maxRuns = std::min(m_pending.size(), static_cast<qsizetype>(100));
-        int runs = 0;
-        bool cancel = false;
-        while (!cancel) {
-            const int numSignals = m_spy->size();
-            for (int i = 0; i < numSignals; ++i) {
-                const QList<QVariant> &signal = m_spy->takeFirst();
-                IndexPair pair = extractPair(signal);
-                checkAndRemoveRange(pair.topLeft, pair.bottomRight);
-                cancel = m_pending.isEmpty();
-            }
-            if (!cancel)
-                m_spy->wait();
-            ++runs;
-            if (runs >= maxRuns)
-                cancel = true;
-        }
-        return runs < maxRuns;
-    }
-
-    static IndexPair extractPair(const QList<QVariant> &signal)
-    {
-        IndexPair pair;
-        if (signal.size() != 3)
-            return pair;
-        const static QMetaType indexType = QMetaType::fromType<QModelIndex>();
-        const static QMetaType vectorType = QMetaType::fromType<QList<int>>();
-        const bool matchingTypes = signal[0].metaType() == indexType
-                                   && signal[1].metaType() == indexType
-                                   && signal[2].metaType() == vectorType;
-        if (!matchingTypes)
-            return pair;
-        const QModelIndex topLeft = signal[0].value<QModelIndex>();
-        const QModelIndex bottomRight = signal[1].value<QModelIndex>();
-        pair.topLeft = topLeft;
-        pair.bottomRight = bottomRight;
-        return pair;
+                    checkAndRemoveRange(topLeft, bottomRight);
+                    if (m_pending.isEmpty())
+                        finish();
+                });
     }
 
     void checkAndRemoveRange(const QModelIndex &topLeft, const QModelIndex &bottomRight)
@@ -155,8 +120,9 @@ struct WaitForDataChanged
                         m_pending.end());
     }
 
+private:
+    const QAbstractItemModel *m_model = nullptr;
     QList<QModelIndex> m_pending;
-    QSignalSpy *m_spy;
 };
 
 } // namespace
