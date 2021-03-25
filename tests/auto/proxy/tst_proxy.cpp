@@ -224,7 +224,6 @@ void ProxyTest::testProxy()
             QCOMPARE(QSet<int>::fromList(rep->tracks()->availableRoles().toList()),
                      QSet<int>::fromList(model.roleNames().keys()));
         }
-        QSignalSpy dataSpy(rep->tracks(), &QAbstractItemModelReplica::dataChanged);
         QVector<QModelIndex> pending;
         QTRY_COMPARE(rep->tracks()->rowCount(), model.rowCount());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
@@ -235,10 +234,10 @@ void ProxyTest::testProxy()
             pending.append(index);
         }
         if (useProxy) { // A first batch of updates will be the empty proxy values
-            WaitForDataChanged w(pending, &dataSpy);
+            WaitForDataChanged w(rep->tracks(), pending);
             QVERIFY(w.wait());
         }
-        WaitForDataChanged w(pending, &dataSpy);
+        WaitForDataChanged w(rep->tracks(), pending);
         QVERIFY(w.wait());
         for (int i = 0; i < rep->tracks()->rowCount(); i++)
         {
@@ -304,10 +303,10 @@ void ProxyTest::testProxy()
             pending.append(index);
         }
         if (useProxy) { // A first batch of updates will be the empty proxy values
-            WaitForDataChanged w(pending, &dataSpy);
+            WaitForDataChanged w(tracksReplica, pending);
             QVERIFY(w.wait());
         }
-        WaitForDataChanged w(pending, &dataSpy);
+        WaitForDataChanged w(tracksReplica, pending);
         QVERIFY(w.wait());
         for (int i = 0; i < tracksReplica->rowCount(); i++)
         {
