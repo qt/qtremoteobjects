@@ -840,7 +840,7 @@ void TestModelView::testDataInsertionTree()
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
 
-    w.wait();
+    QVERIFY(w.wait());
 
     compareTreeData(&m_sourceModel, model.data());
 }
@@ -855,9 +855,9 @@ void TestModelView::testDataRemoval()
     f.addAll();
     QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
 
-    const QModelIndex parent = m_sourceModel.index(10, 0);
+    const QPersistentModelIndex parent = m_sourceModel.index(10, 0);
     {
-        const int removedRowsCount = 4;
+        const int removedRowsCount = 3;
         RowsWatcher watcher(model.data(), removedRowsCount);
         m_sourceModel.removeRows(0, removedRowsCount, parent);
         watcher.scheduleRowsToWatch(parent, 0, removedRowsCount - 1);
@@ -865,7 +865,7 @@ void TestModelView::testDataRemoval()
         QCOMPARE(m_sourceModel.rowCount(parent), model->rowCount(model->index(10, 0)));
     }
     {
-        const int removedRowsCount = 9;
+        const int removedRowsCount = 8;
         RowsWatcher watcher(model.data(), removedRowsCount);
         m_sourceModel.removeRows(2, removedRowsCount);
         watcher.scheduleRowsToWatch(QModelIndex(), 2, 2 + removedRowsCount - 1);
@@ -881,7 +881,7 @@ void TestModelView::testDataRemoval()
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QColor(Qt::green), Qt::BackgroundRole);
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
 
-    w.wait();
+    QVERIFY(w.wait());
 
     compareTreeData(&m_sourceModel, model.data());
 }
