@@ -75,8 +75,11 @@ QByteArray QtPrivate::qtro_classinfo_signature(const QMetaObject *metaObject)
     return QByteArray{};
 }
 
-inline bool qtro_is_cloned_method(const QMetaObject *mobj, int local_method_index)
+inline bool qtro_is_cloned_method(const QMetaObject *mobj, int index)
 {
+    int local_method_index = index - mobj->methodOffset();
+    if (local_method_index < 0 && mobj->superClass())
+        return qtro_is_cloned_method(mobj->superClass(), index);
     const auto priv = reinterpret_cast<const QtPrivate::QMetaObjectPrivate*>(mobj->d.data);
     Q_ASSERT(local_method_index < priv->methodCount);
     int handle = priv->methodData + 5 * local_method_index;
@@ -191,9 +194,8 @@ void QRemoteObjectSourceBase::setConnections()
         const auto targetMeta = isAdapter ? m_adapter->metaObject() : meta;
 
         // don't connect cloned signals, or we end up with multiple emissions
-        if (qtro_is_cloned_method(targetMeta, sourceIndex - targetMeta->methodOffset()))
+        if (qtro_is_cloned_method(targetMeta, sourceIndex))
             continue;
-
         // This basically connects the parent Signals (note, all dynamic properties have onChange
         //notifications, thus signals) to us.  Normally each Signal is mapped to a unique index,
         //but since we are forwarding them all, we keep the offset constant.

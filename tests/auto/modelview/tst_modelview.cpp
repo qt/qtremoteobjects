@@ -499,6 +499,7 @@ private slots:
     void testInitialData();
     void testInitialDataTree();
     void testHeaderData();
+    void testHeaderDataChange();
     void testFlags();
     void testDataChanged();
     void testDataChangedTree();
@@ -648,6 +649,34 @@ void TestModelView::testHeaderData()
         QCOMPARE(model->headerData(i, Qt::Vertical, Qt::DisplayRole), m_sourceModel.headerData(i, Qt::Vertical, Qt::DisplayRole));
     for (int i = 0; i < m_sourceModel.columnCount(); ++i)
         QCOMPARE(model->headerData(i, Qt::Horizontal, Qt::DisplayRole), m_sourceModel.headerData(i, Qt::Horizontal, Qt::DisplayRole));
+}
+
+void TestModelView::testHeaderDataChange()
+{
+    _SETUP_TEST_
+    QString newHeader = QStringLiteral("New header name");
+    QScopedPointer<QAbstractItemModelReplica> model(client.acquireModel("test"));
+
+    FetchData f(model.data());
+    QVERIFY(f.fetchAndWait(MODELTEST_WAIT_TIME));
+    QVERIFY(model->headerData(0, Qt::Horizontal, Qt::DisplayRole).toString() != newHeader);
+
+    QSignalSpy spyHeader(model.data(), &QAbstractItemModelReplica::headerDataChanged);
+    m_sourceModel.setHeaderData(0, Qt::Horizontal, newHeader, Qt::DisplayRole);
+    spyHeader.wait();
+    QTRY_COMPARE(model->headerData(0, Qt::Horizontal, Qt::DisplayRole).toString(), newHeader);
+
+    spyHeader.clear();
+    m_sourceModel.setHeaderData(1, Qt::Horizontal, newHeader, Qt::DisplayRole);
+    spyHeader.wait();
+    QTRY_COMPARE(model->headerData(1, Qt::Horizontal, Qt::DisplayRole).toString(), newHeader);
+
+    QString anotherHeader = QStringLiteral("Modified header name");
+    m_sourceModel.setHeaderData(0, Qt::Horizontal, anotherHeader, Qt::DisplayRole);
+    spyHeader.wait();
+
+    QTRY_COMPARE(model->headerData(0, Qt::Horizontal, Qt::DisplayRole).toString(), anotherHeader);
+    QCOMPARE(model->headerData(1, Qt::Horizontal, Qt::DisplayRole).toString(), newHeader);
 }
 
 void TestModelView::testDataChangedTree()
