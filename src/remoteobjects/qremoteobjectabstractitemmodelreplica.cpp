@@ -264,6 +264,8 @@ void QAbstractItemModelReplicaImplementation::onRowsInserted(const QtPrivate::In
     auto parentItem = cacheData(parentIndex);
     q->beginInsertRows(parentIndex, start, end);
     parentItem->insertChildren(start, end);
+    for (int i = start; i <= end; ++i)
+        m_headerData[1].append(CacheEntry());
     q->endInsertRows();
     if (!parentItem->hasChildren && parentItem->columnCount > 0) {
         parentItem->hasChildren = true;
@@ -290,6 +292,8 @@ void QAbstractItemModelReplicaImplementation::onColumnsInserted(const QtPrivate:
             return;
     q->beginInsertColumns(parentIndex, start, end);
     parentItem->columnCount += end - start + 1;
+    for (int i = start; i <= end; ++i)
+        m_headerData[0].append(CacheEntry());
     q->endInsertColumns();
     if (!parentItem->hasChildren && parentItem->children.size() > 0) {
         parentItem->hasChildren = true;
@@ -311,6 +315,7 @@ void QAbstractItemModelReplicaImplementation::onRowsRemoved(const QtPrivate::Ind
     q->beginRemoveRows(parentIndex, start, end);
     if (parentItem)
         parentItem->removeChildren(start, end);
+    m_headerData[1].erase(m_headerData[1].begin() + start, m_headerData[1].begin() + end + 1);
     q->endRemoveRows();
 }
 
@@ -669,7 +674,7 @@ void QAbstractItemModelReplicaImplementation::onHeaderDataChanged(Qt::Orientatio
     // TODO clean cache
     const int index = orientation == Qt::Horizontal ? 0 : 1;
     QList<CacheEntry> &entries = m_headerData[index];
-    for (int i = first; i < last; ++i )
+    for (int i = first; i <= last && i < entries.size(); ++i )
         entries[i].data.clear();
     emit q->headerDataChanged(orientation, first, last);
 }
