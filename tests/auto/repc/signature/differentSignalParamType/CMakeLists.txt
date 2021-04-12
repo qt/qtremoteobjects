@@ -1,4 +1,3 @@
-# Generated from differentSignalParamType.pro.
 
 #####################################################################
 ## differentSignalParamType Binary:

@@ -1,4 +1,3 @@
-# Generated from subclassreplica.pro.
 
 #####################################################################
 ## tst_subclassreplicatest Test:

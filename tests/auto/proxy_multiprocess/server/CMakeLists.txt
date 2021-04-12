@@ -1,4 +1,3 @@
-# Generated from server.pro.
 
 #####################################################################
 ## proxy_multiprocess_server Binary:

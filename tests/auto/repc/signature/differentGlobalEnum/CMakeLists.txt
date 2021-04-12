@@ -1,4 +1,3 @@
-# Generated from differentGlobalEnum.pro.
 
 #####################################################################
 ## differentGlobalEnum Binary:

@@ -1,4 +1,3 @@
-# Generated from signature.pro.
 
 add_subdirectory(signatureServer)
 add_subdirectory(matchAndQuit)

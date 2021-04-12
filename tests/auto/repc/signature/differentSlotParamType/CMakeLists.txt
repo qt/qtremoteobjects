@@ -1,4 +1,3 @@
-# Generated from differentSlotParamType.pro.
 
 #####################################################################
 ## differentSlotParamType Binary:

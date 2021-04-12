@@ -1,4 +1,3 @@
-# Generated from differentSlotType.pro.
 
 #####################################################################
 ## differentSlotType Binary:

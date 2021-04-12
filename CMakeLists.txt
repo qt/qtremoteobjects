@@ -1,5 +1,3 @@
-# Generated from qtremoteobjects.pro.
-
 cmake_minimum_required(VERSION 3.16)
 
 include(.cmake.conf)
@@ -10,10 +8,8 @@ project(QtRemoteObjects
     LANGUAGES CXX C
 )
 
-# special case begin
 find_package(Qt6 ${PROJECT_VERSION} CONFIG REQUIRED COMPONENTS BuildInternals Core Network)
 find_package(Qt6 ${PROJECT_VERSION} CONFIG OPTIONAL_COMPONENTS Gui Widgets Quick QuickTest)
-# special case end
 
 if(NOT TARGET Qt::Network)
     message(NOTICE "Skipping the build as the condition \"TARGET Qt::Network\" is not met.")
@@ -21,7 +17,6 @@ if(NOT TARGET Qt::Network)
 endif()
 qt_build_repo()
 
-# special case begin
 if(NOT QT_BUILD_STANDALONE_TESTS)
     # Copy mkspecs for users preferring qmake builds
     set(mkspecs_install_dir "${INSTALL_MKSPECSDIR}")
@@ -32,4 +27,3 @@ if(NOT QT_BUILD_STANDALONE_TESTS)
         FILES_MATCHING PATTERN "*.pr[if]"
     )
 endif()
-# special case end

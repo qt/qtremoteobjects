@@ -1,4 +1,3 @@
-# Generated from external.pro.
 
 #####################################################################
 ## tst_integration_external Test:

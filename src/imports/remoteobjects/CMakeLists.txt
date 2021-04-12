@@ -1,12 +1,11 @@
-# Generated from remoteobjects.pro.
 
 #####################################################################
 ## qtremoteobjects Plugin:
 #####################################################################
 
-qt_internal_add_qml_module(declarative_remoteobjects # special case
+qt_internal_add_qml_module(declarative_remoteobjects
     URI "QtRemoteObjects"
-    VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}" # special case
+    VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}"
     CLASSNAME QtRemoteObjectsPlugin
     SKIP_TYPE_REGISTRATION
     GENERATE_QMLTYPES

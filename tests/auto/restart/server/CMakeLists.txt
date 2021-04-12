@@ -1,4 +1,3 @@
-# Generated from server.pro.
 
 #####################################################################
 ## restart_server Binary:

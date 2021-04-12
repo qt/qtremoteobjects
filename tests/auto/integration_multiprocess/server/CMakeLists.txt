@@ -1,4 +1,3 @@
-# Generated from server.pro.
 
 #####################################################################
 ## integration_multiprocess_server Binary:

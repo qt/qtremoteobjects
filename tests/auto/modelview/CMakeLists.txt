@@ -1,4 +1,3 @@
-# Generated from modelview.pro.
 
 #####################################################################
 ## tst_modelview Test:

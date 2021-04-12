@@ -1,4 +1,3 @@
-# Generated from differentSignalParamCount.pro.
 
 #####################################################################
 ## differentSignalParamCount Binary:

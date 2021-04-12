@@ -1,4 +1,3 @@
-# Generated from matchAndQuit.pro.
 
 #####################################################################
 ## matchAndQuit Binary:

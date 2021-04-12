@@ -1,4 +1,3 @@
-# Generated from scrambledSlots.pro.
 
 #####################################################################
 ## scrambledSlots Binary:

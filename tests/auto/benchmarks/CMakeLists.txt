@@ -1,4 +1,3 @@
-# Generated from benchmarks.pro.
 
 #####################################################################
 ## tst_benchmarkstest Test:

@@ -1,4 +1,3 @@
-# Generated from remoteobjects.pro.
 
 #####################################################################
 ## RemoteObjects Module:
@@ -65,4 +64,4 @@ qt_internal_add_docs(RemoteObjects
     doc/qtremoteobjects.qdocconf
 )
 
-include(Qt6RemoteObjectsMacros.cmake)    # special case
+include(Qt6RemoteObjectsMacros.cmake)

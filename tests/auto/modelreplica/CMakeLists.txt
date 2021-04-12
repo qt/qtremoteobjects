@@ -1,4 +1,3 @@
-# Generated from modelreplica.pro.
 
 #####################################################################
 ## tst_modelreplicatest Test:

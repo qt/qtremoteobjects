@@ -1,4 +1,3 @@
-# Generated from differentSlotCount.pro.
 
 #####################################################################
 ## differentSlotCount Binary:

@@ -1,4 +1,3 @@
-# Generated from differentSignalCount.pro.
 
 #####################################################################
 ## differentSignalCount Binary:

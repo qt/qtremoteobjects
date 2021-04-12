@@ -1,4 +1,3 @@
-# Generated from repc.pro.
 
 add_subdirectory(enums)
 add_subdirectory(pods)

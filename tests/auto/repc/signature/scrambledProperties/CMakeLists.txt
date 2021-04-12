@@ -1,4 +1,3 @@
-# Generated from scrambledProperties.pro.
 
 #####################################################################
 ## scrambledProperties Binary:

@@ -1,4 +1,3 @@
-# Generated from client.pro.
 
 #####################################################################
 ## integration_external_client Binary:

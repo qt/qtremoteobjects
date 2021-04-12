@@ -1,4 +1,3 @@
-# Generated from integration.pro.
 
 #####################################################################
 ## tst_integration Test:
@@ -29,9 +28,4 @@ qt6_add_repc_merged(tst_integration
             pod.rep
 )
 
-# special case begin
 add_dependencies(tst_integration localsockettestserver)
-# special case end
-
-## Scopes:
-#####################################################################

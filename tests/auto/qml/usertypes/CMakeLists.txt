@@ -1,4 +1,3 @@
-# Generated from usertypes.pro.
 
 #####################################################################
 ## tst_usertypes Test:

@@ -1,4 +1,3 @@
-# Generated from tst.pro.
 
 #####################################################################
 ## tst_integration_multiprocess Test:

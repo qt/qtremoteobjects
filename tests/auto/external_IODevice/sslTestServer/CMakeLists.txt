@@ -1,4 +1,3 @@
-# Generated from sslTestServer.pro.
 
 #####################################################################
 ## sslTestServer Binary:

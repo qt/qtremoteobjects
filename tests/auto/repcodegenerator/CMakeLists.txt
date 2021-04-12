@@ -1,4 +1,3 @@
-# Generated from repcodegenerator.pro.
 
 #####################################################################
 ## tst_repcodegenerator Test:

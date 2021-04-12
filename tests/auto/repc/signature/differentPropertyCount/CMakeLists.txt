@@ -1,4 +1,3 @@
-# Generated from differentPropertyCount.pro.
 
 #####################################################################
 ## differentPropertyCount Binary:

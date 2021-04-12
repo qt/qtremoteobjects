@@ -1,4 +1,3 @@
-# Generated from client.pro.
 
 #####################################################################
 ## proxy_multiprocess_client Binary:

@@ -1,4 +1,3 @@
-# Generated from repparser.pro.
 
 #####################################################################
 ## RepParser Module:
@@ -6,8 +5,6 @@
 
 qt_internal_add_module(RepParser
     HEADER_MODULE
-    SOURCES
-        # qregexparser.h          # special case
     PUBLIC_LIBRARIES
         Qt::Core
 )

@@ -1,4 +1,3 @@
-# Generated from scrambledSignals.pro.
 
 #####################################################################
 ## scrambledSignals Binary:

@@ -1,7 +1,6 @@
-# Generated from auto.pro.
 
 add_subdirectory(benchmarks)
-# add_subdirectory(cmake) # special case
+# add_subdirectory(cmake)
 add_subdirectory(modelreplica)
 add_subdirectory(modelview)
 add_subdirectory(pods)
@@ -11,7 +10,7 @@ add_subdirectory(repc)
 add_subdirectory(repcodegenerator)
 add_subdirectory(repparser)
 add_subdirectory(subclassreplica)
-if(QT_FEATURE_ssl) # special case
+if(QT_FEATURE_ssl)
     add_subdirectory(external_IODevice)
 endif()
 if(TARGET Qt::Qml)
@@ -23,8 +22,5 @@ if(QT_FEATURE_process)
     add_subdirectory(integration_external)
     add_subdirectory(restart)
 endif()
-
-# special case begin
 add_subdirectory(localsockettestserver)
 add_subdirectory(integration)
-# special case end

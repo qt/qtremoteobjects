@@ -1,4 +1,3 @@
-# Generated from tst_client.pro.
 
 #####################################################################
 ## tst_external_IODevice Test:

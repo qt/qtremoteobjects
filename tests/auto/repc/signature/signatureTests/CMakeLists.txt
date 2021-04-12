@@ -1,4 +1,3 @@
-# Generated from signatureTests.pro.
 
 #####################################################################
 ## tst_signature Test:

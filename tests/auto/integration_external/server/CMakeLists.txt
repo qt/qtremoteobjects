@@ -1,4 +1,3 @@
-# Generated from server.pro.
 
 #####################################################################
 ## integration_external_server Binary:

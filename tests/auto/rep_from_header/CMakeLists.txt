@@ -1,4 +1,3 @@
-# Generated from rep_from_header.pro.
 
 #####################################################################
 ## tst_rep_from_header Test:

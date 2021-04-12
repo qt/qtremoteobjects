@@ -1,4 +1,3 @@
-# Generated from signatureServer.pro.
 
 #####################################################################
 ## signatureServer Binary:
