@@ -48,9 +48,9 @@ qmlRegisterType<MyTypeReplica>("custom",1,0,"MyTypeReplica")
 \endcode
 
 And then used from QML in conjunction with the base type Node:
-\qml \QtMinorVersion
-import QtQuick 2.0
-import QtRemoteObjects 5.\1
+\qml
+import QtQuick
+import QtRemoteObjects
 import custom 1.0
 
 Item {
@@ -78,8 +78,8 @@ console.log(myType.myProp) // logs "Hello World", as the new text has not yet be
 
 The QML types in this module can be imported into your application using the following import
 statement in your .qml file:
-\qml \QtMinorVersion
-import QtRemoteObjects 5.\1
+\qml
+import QtRemoteObjects
 \endqml
 
 \section1 QML Types

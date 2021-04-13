@@ -37,111 +37,23 @@
 **
 ****************************************************************************/
 
-#include <QtRemoteObjects/qremoteobjectnode.h>
-#include <QtRemoteObjects/qremoteobjectsettingsstore.h>
-#include <QtRemoteObjects/qremoteobjectpendingcall.h>
-#include <QTimer>
-#include <QQmlExtensionPlugin>
-#include <QJSValue>
-#include <QtQml/private/qjsvalue_p.h>
-#include <QtQml/qqmlengine.h>
-#include <qqmlinfo.h>
-#include <qqml.h>
+#include "qremoteobjectsqml_p.h"
+#include <QtQml/qqmlextensionplugin.h>
+
+extern void qml_register_types_QtRemoteObjects();
 
 QT_BEGIN_NAMESPACE
 
-struct QtQmlRemoteObjectsResponse {
-    QJSValue promise;
-    QTimer *timer;
-};
-
-
-// documentation updates for this class can be made in remoteobjects-qml.qdoc
-class QtQmlRemoteObjects : public QObject
-{
-    Q_OBJECT
-public:
-    ~QtQmlRemoteObjects() {
-        auto i = m_callbacks.begin();
-        while (i != m_callbacks.end()) {
-            delete i.key();
-            delete i.value().timer;
-            i = m_callbacks.erase(i);
-        }
-    }
-
-    Q_INVOKABLE QJSValue watch(const QRemoteObjectPendingCall &reply, int timeout = 30000) {
-        if (m_accessiblePromise.isUndefined())
-            m_accessiblePromise = qmlEngine(this)->evaluate("(function() { var obj = {}; obj.promise = new Promise(function(resolve, reject) { obj.resolve = resolve; obj.reject = reject; }); return obj; })");
-
-        QRemoteObjectPendingCallWatcher *watcher = new QRemoteObjectPendingCallWatcher(reply);
-
-        QJSValue promise = m_accessiblePromise.call();
-        QtQmlRemoteObjectsResponse response;
-        response.promise = promise;
-        response.timer = new QTimer();
-        response.timer->setSingleShot(true);
-        m_callbacks.insert(watcher, response);
-
-        // handle timeout
-        connect(response.timer, &QTimer::timeout, [this, watcher]() {
-            auto i = m_callbacks.find(watcher);
-            if (i == m_callbacks.end()) {
-                qmlWarning(this) << "could not find callback for watcher.";
-                return;
-            }
-
-            QJSValue v(QLatin1String("timeout"));
-            i.value().promise.property("reject").call(QJSValueList() << v);
-
-            delete i.key();
-            delete i.value().timer;
-            m_callbacks.erase(i);
-        });
-
-        // handle success
-        connect(watcher, &QRemoteObjectPendingCallWatcher::finished, [this](QRemoteObjectPendingCallWatcher *self) {
-            auto i = m_callbacks.find(self);
-            if (i == m_callbacks.end()) {
-                qmlWarning(this) << "could not find callback for watcher.";
-                return;
-            }
-            QJSValue v =  qmlEngine(this)->toScriptValue(self->returnValue());
-            i.value().promise.property("resolve").call(QJSValueList() << v);
-
-            delete i.key();
-            delete i.value().timer;
-            m_callbacks.erase(i);
-        });
-
-        response.timer->start(timeout);
-        return promise.property("promise");
-    }
-
-private:
-    QHash<QRemoteObjectPendingCallWatcher*,QtQmlRemoteObjectsResponse> m_callbacks;
-    QJSValue m_accessiblePromise;
-};
-
-class QtRemoteObjectsPlugin : public QQmlExtensionPlugin
+class QtRemoteObjectsPlugin : public QQmlEngineExtensionPlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID QQmlExtensionInterface_iid)
 
 public:
-    void registerTypes(const char *uri) override
+    QtRemoteObjectsPlugin(QObject *parent = nullptr) : QQmlEngineExtensionPlugin(parent)
     {
-        // The minor version used to be the current Qt 5 minor. For compatibility it is the last
-        // Qt 5 release.
-        qmlRegisterModule(uri, 5, 15);
-
-        qmlRegisterUncreatableType<QRemoteObjectAbstractPersistedStore>(uri, 5, 12, "PersistedStore", "Cannot create PersistedStore");
-
-        qmlRegisterType<QRemoteObjectNode>(uri, 5, 12, "Node");
-        qmlRegisterType<QRemoteObjectSettingsStore>(uri, 5, 12, "SettingsStore");
-        qmlRegisterSingletonType<QtQmlRemoteObjects>(uri, 5, 14, "QtRemoteObjects", [](QQmlEngine *, QJSEngine*){return new QtQmlRemoteObjects();});
-        qmlRegisterType<QRemoteObjectHost>(uri, 5, 15, "Host");
-        qmlProtectModule(uri, 5);
+        volatile auto registration = &qml_register_types_QtRemoteObjects;
+        Q_UNUSED(registration)
     }
 };
 

@@ -9,7 +9,10 @@ qt_internal_add_qml_module(declarative_remoteobjects # special case
     VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}" # special case
     CLASSNAME QtRemoteObjectsPlugin
     SKIP_TYPE_REGISTRATION
+    GENERATE_QMLTYPES
+    INSTALL_QMLTYPES
     SOURCES
+        qremoteobjectsqml_p.h
         plugin.cpp
     PUBLIC_LIBRARIES
         Qt::Core
