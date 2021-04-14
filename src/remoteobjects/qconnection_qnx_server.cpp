@@ -154,7 +154,7 @@ void QQnxNativeServerPrivate::thread_func()
 
     qCDebug(QT_REMOTEOBJECT) << "Server thread_func running";
 
-    while (running.load()) {
+    while (running.loadRelaxed()) {
         // wait for messages and pulses
         int rcvid = MsgReceive(attachStruct->chid, &recv_buf, sizeof(_pulse), &msg_info);
         qCDebug(QT_REMOTEOBJECT) << "MsgReceive unblocked.  Rcvid" << rcvid << " Scoid" << msg_info.scoid;
@@ -235,7 +235,7 @@ void QQnxNativeServerPrivate::thread_func()
             }
                 break;
             case _PULSE_CODE_UNBLOCK:
-                if (running.load()) {
+                if (running.loadRelaxed()) {
                     // did we forget to Reply to our client?
                     qCWarning(QT_REMOTEOBJECT) << "got an unblock pulse, did you forget to reply to your client?";
                     WARN_ON_ERROR(MsgError, recv_buf.pulse.value.sival_int, EINTR)

@@ -57,7 +57,11 @@ qt_internal_extend_target(RemoteObjects CONDITION QNX
         qconnection_qnx_server.cpp qconnection_qnx_server.h qconnection_qnx_server_p.h
 )
 
-qt_internal_extend_target(RemoteObjects CONDITION (QNX) AND (DEFINES ___contains___USE_HAM)
+if(QNX)
+    option(USE_HAM "Use QNX's High Availability Manager (ham)" OFF)
+endif()
+
+qt_internal_extend_target(RemoteObjects CONDITION QNX AND USE_HAM
     PUBLIC_LIBRARIES
         ham
 )

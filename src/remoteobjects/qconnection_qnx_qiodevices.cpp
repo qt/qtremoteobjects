@@ -644,7 +644,7 @@ qint64 QIOQnxSource::writeData(const char *data, qint64 size)
     d->obuffer.append(QByteArray(data, isize));
     d->obLock.unlock();
 
-    if (!d->m_serverClosing.load()) {
+    if (!d->m_serverClosing.loadRelaxed()) {
         d->m_event.sigev_value.sival_int = isize;
         WARN_ON_ERROR(MsgDeliverEvent, d->rcvid, &(d->m_event))
     }
