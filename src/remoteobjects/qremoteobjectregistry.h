@@ -45,19 +45,22 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectRegistryPrivate;
+class QRemoteObjectNodePrivate;
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectRegistry : public QRemoteObjectReplica
 {
     Q_OBJECT
     Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "Registry")
 
-    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations)
+    Q_PROPERTY(QRemoteObjectSourceLocations sourceLocations READ sourceLocations STORED false
+               BINDABLE bindableSourceLocations)
 
 public:
     ~QRemoteObjectRegistry() override;
     static void registerMetatypes();
 
     QRemoteObjectSourceLocations sourceLocations() const;
+    QBindable<QRemoteObjectSourceLocations> bindableSourceLocations() const;
 
 Q_SIGNALS:
     void remoteObjectAdded(const QRemoteObjectSourceLocation &entry);
@@ -70,12 +73,14 @@ protected Q_SLOTS:
 
 private:
     void initialize() override;
+    void notifySourceLocationsChanged();
 
     explicit QRemoteObjectRegistry(QObject *parent = nullptr);
     explicit QRemoteObjectRegistry(QRemoteObjectNode *node, const QString &name, QObject *parent = nullptr);
 
     Q_DECLARE_PRIVATE(QRemoteObjectRegistry)
     friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);
+    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNodePrivate);
 };
 
 QT_END_NAMESPACE

@@ -50,6 +50,13 @@ class QRemoteObjectRegistryPrivate : public QObjectPrivate
 {
     Q_DECLARE_PUBLIC(QRemoteObjectRegistry)
 
+    QRemoteObjectSourceLocations sourceLocationsActualCalculation() const
+    {
+        return q_func()->propAsVariant(0).value<QRemoteObjectSourceLocations>();
+    }
+    Q_OBJECT_COMPUTED_PROPERTY(QRemoteObjectRegistryPrivate, QRemoteObjectSourceLocations,
+                               sourceLocations,
+                               &QRemoteObjectRegistryPrivate::sourceLocationsActualCalculation)
     QRemoteObjectSourceLocations hostedSources;
 };
 
@@ -132,13 +139,23 @@ void QRemoteObjectRegistry::initialize()
     setProperties(properties);
 }
 
+void QRemoteObjectRegistry::notifySourceLocationsChanged()
+{
+    d_func()->sourceLocations.notify();
+}
+
 /*!
     Returns a QRemoteObjectSourceLocations object, which includes the name
     and additional information of all sources known to the registry.
 */
 QRemoteObjectSourceLocations QRemoteObjectRegistry::sourceLocations() const
 {
-    return propAsVariant(0).value<QRemoteObjectSourceLocations>();
+    return d_func()->sourceLocations.value();
+}
+
+QBindable<QRemoteObjectSourceLocations> QRemoteObjectRegistry::bindableSourceLocations() const
+{
+    return &d_func()->sourceLocations;
 }
 
 /*!

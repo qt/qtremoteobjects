@@ -480,6 +480,90 @@ private slots:
         QCOMPARE(instances, QStringList({"Engine2"}));
     }
 
+    void registrySourceLocationBindings()
+    {
+        QFETCH_GLOBAL(QUrl, registryUrl);
+        QFETCH_GLOBAL(QUrl, hostUrl);
+        if (registryUrl.isEmpty())
+            QSKIP("Skipping registry tests for external QIODevice types.");
+
+        setupRegistry();
+        setupHost(true);
+        setupClient(true);
+
+        QVERIFY(host->registry()->sourceLocations().empty());
+        QVERIFY(client->registry()->sourceLocations().empty());
+
+        QVERIFY(host->registry()->bindableSourceLocations().isReadOnly());
+        QVERIFY(client->registry()->bindableSourceLocations().isReadOnly());
+
+        Engine e1;
+        const auto engine1 = QStringLiteral("Engine1");
+        Engine e2;
+        const auto engine2 = QStringLiteral("Engine2");
+
+        QRemoteObjectSourceLocations expectedSourceLocations;
+        expectedSourceLocations[engine1] = { QStringLiteral("Engine"), hostUrl };
+
+        int hostSrcLocationsChanged = 0;
+        auto hostHandler = host->registry()->bindableSourceLocations().onValueChanged([&] {
+            QCOMPARE(host->registry()->sourceLocations(), expectedSourceLocations);
+            ++hostSrcLocationsChanged;
+        });
+
+        int clientSrcLocationsChanged = 0;
+        auto clientHandler = client->registry()->bindableSourceLocations().onValueChanged([&] {
+            QCOMPARE(client->registry()->sourceLocations(), expectedSourceLocations);
+            ++clientSrcLocationsChanged;
+        });
+
+        QProperty<QRemoteObjectSourceLocations> hostObserver;
+        hostObserver.setBinding([&] { return host->registry()->sourceLocations(); });
+
+        QProperty<QRemoteObjectSourceLocations> clientObserver;
+        clientObserver.setBinding([&] { return client->registry()->sourceLocations(); });
+
+        QSignalSpy hostSpy(host->registry(), &QRemoteObjectRegistry::remoteObjectAdded);
+        QSignalSpy clientSpy(client->registry(), &QRemoteObjectRegistry::remoteObjectAdded);
+
+        host->enableRemoting(&e1, engine1);
+        QTRY_COMPARE(hostSpy.count(), 1);
+        QTRY_COMPARE(clientSpy.count(), 1);
+        QCOMPARE(hostObserver.value(), host->registry()->sourceLocations());
+        QCOMPARE(clientObserver.value(), client->registry()->sourceLocations());
+        QCOMPARE(hostObserver.value(), clientObserver.value());
+        QCOMPARE(hostObserver.value(), expectedSourceLocations);
+        QCOMPARE(hostSrcLocationsChanged, 1);
+        QCOMPARE(clientSrcLocationsChanged, 1);
+
+        expectedSourceLocations[engine2] = { QStringLiteral("Engine"), hostUrl };
+        host->enableRemoting(&e2, engine2);
+        QTRY_COMPARE(hostSpy.count(), 2);
+        QTRY_COMPARE(clientSpy.count(), 2);
+        QCOMPARE(hostObserver.value(), host->registry()->sourceLocations());
+        QCOMPARE(clientObserver.value(), client->registry()->sourceLocations());
+        QCOMPARE(hostObserver.value(), clientObserver.value());
+        QCOMPARE(hostObserver.value(), expectedSourceLocations);
+        QCOMPARE(hostSrcLocationsChanged, 2);
+        QCOMPARE(clientSrcLocationsChanged, 2);
+
+        // Test source removal
+        host->disableRemoting(&e1);
+        expectedSourceLocations.remove(engine1);
+        QSignalSpy srcRemovedHostSpy(host->registry(), &QRemoteObjectRegistry::remoteObjectRemoved);
+        QSignalSpy srcRemovedClientSpy(client->registry(),
+                                       &QRemoteObjectRegistry::remoteObjectRemoved);
+
+        QTRY_COMPARE(srcRemovedHostSpy.count(), 1);
+        QTRY_COMPARE(srcRemovedClientSpy.count(), 1);
+        QCOMPARE(hostObserver.value(), host->registry()->sourceLocations());
+        QCOMPARE(clientObserver.value(), client->registry()->sourceLocations());
+        QCOMPARE(hostObserver.value(), clientObserver.value());
+        QCOMPARE(hostObserver.value(), expectedSourceLocations);
+        QCOMPARE(hostSrcLocationsChanged, 3);
+        QCOMPARE(clientSrcLocationsChanged, 3);
+    }
+
     void registryAddedTest()
     {
         QFETCH_GLOBAL(QUrl, registryUrl);
