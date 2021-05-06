@@ -6,7 +6,7 @@ CONFIG += plugin
 REPC_REPLICA += $$PWD/../timemodel.rep
 
 DESTDIR = imports/TimeExample
-TARGET  = qmlqtimeexampleplugin
+TARGET  = qmlqrotimeexampleplugin
 
 SOURCES += plugin.cpp
 
