@@ -34,35 +34,14 @@ target_link_libraries(SslCppClient PUBLIC
 
 
 # Resources:
-set_source_files_properties("../sslserver/cert/client.crt"
-    PROPERTIES QT_RESOURCE_ALIAS "client.crt"
-)
-set_source_files_properties("../sslserver/cert/client.key"
-    PROPERTIES QT_RESOURCE_ALIAS "client.key"
-)
-set_source_files_properties("../sslserver/cert/rootCA.key"
-    PROPERTIES QT_RESOURCE_ALIAS "rootCA.key"
-)
-set_source_files_properties("../sslserver/cert/rootCA.pem"
-    PROPERTIES QT_RESOURCE_ALIAS "rootCA.pem"
-)
-set_source_files_properties("../sslserver/cert/rootCA.srl"
-    PROPERTIES QT_RESOURCE_ALIAS "rootCA.srl"
-)
-set_source_files_properties("../sslserver/cert/server.crt"
-    PROPERTIES QT_RESOURCE_ALIAS "server.crt"
-)
-set_source_files_properties("../sslserver/cert/server.key"
-    PROPERTIES QT_RESOURCE_ALIAS "server.key"
-)
 set(cert_resource_files
-    "client.crt"
-    "client.key"
-    "rootCA.key"
-    "rootCA.pem"
-    "rootCA.srl"
-    "server.crt"
-    "server.key"
+    "../sslserver/cert/client.crt"
+    "../sslserver/cert/client.key"
+    "../sslserver/cert/rootCA.key"
+    "../sslserver/cert/rootCA.pem"
+    "../sslserver/cert/rootCA.srl"
+    "../sslserver/cert/server.crt"
+    "../sslserver/cert/server.key"
 )
 
 qt6_add_resources(SslCppClient "cert"

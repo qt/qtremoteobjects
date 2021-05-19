@@ -43,35 +43,14 @@ target_link_libraries(wsserver PUBLIC
 
 
 # Resources:
-set_source_files_properties("../common/cert/client.crt"
-    PROPERTIES QT_RESOURCE_ALIAS "client.crt"
-)
-set_source_files_properties("../common/cert/client.key"
-    PROPERTIES QT_RESOURCE_ALIAS "client.key"
-)
-set_source_files_properties("../common/cert/rootCA.key"
-    PROPERTIES QT_RESOURCE_ALIAS "rootCA.key"
-)
-set_source_files_properties("../common/cert/rootCA.pem"
-    PROPERTIES QT_RESOURCE_ALIAS "rootCA.pem"
-)
-set_source_files_properties("../common/cert/rootCA.srl"
-    PROPERTIES QT_RESOURCE_ALIAS "rootCA.srl"
-)
-set_source_files_properties("../common/cert/server.crt"
-    PROPERTIES QT_RESOURCE_ALIAS "server.crt"
-)
-set_source_files_properties("../common/cert/server.key"
-    PROPERTIES QT_RESOURCE_ALIAS "server.key"
-)
 set(cert_resource_files
-    "client.crt"
-    "client.key"
-    "rootCA.key"
-    "rootCA.pem"
-    "rootCA.srl"
-    "server.crt"
-    "server.key"
+    "../common/cert/client.crt"
+    "../common/cert/client.key"
+    "../common/cert/rootCA.key"
+    "../common/cert/rootCA.pem"
+    "../common/cert/rootCA.srl"
+    "../common/cert/server.crt"
+    "../common/cert/server.key"
 )
 
 qt6_add_resources(wsserver "cert"

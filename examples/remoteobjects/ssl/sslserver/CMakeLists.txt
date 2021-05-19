@@ -36,13 +36,13 @@ target_link_libraries(sslserver PUBLIC
 
 # Resources:
 set(cert_resource_files
-    "client.crt"
-    "client.key"
-    "rootCA.key"
-    "rootCA.pem"
-    "rootCA.srl"
-    "server.crt"
-    "server.key"
+    "cert/client.crt"
+    "cert/client.key"
+    "cert/rootCA.key"
+    "cert/rootCA.pem"
+    "cert/rootCA.srl"
+    "cert/server.crt"
+    "cert/server.key"
 )
 
 qt6_add_resources(sslserver "cert"
