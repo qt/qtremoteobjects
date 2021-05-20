@@ -1,11 +1,10 @@
-
 #####################################################################
 ## tst_parser Test:
 #####################################################################
 
 set(REPPARSER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/repparser")
 
-qt_add_test(tst_parser
+qt_internal_add_test(tst_parser
     SOURCES
         tst_parser.cpp
     INCLUDE_DIRECTORIES
@@ -24,7 +23,7 @@ qt_process_qlalr(
 ## Scopes:
 #####################################################################
 
-qt_extend_target(tst_parser CONDITION MSVC
+qt_internal_extend_target(tst_parser CONDITION MSVC
     COMPILE_OPTIONS
         /wd4129
 )
