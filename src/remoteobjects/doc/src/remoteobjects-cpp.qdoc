@@ -37,10 +37,15 @@
 
     \snippet doc_src_remoteobjects.h qtremoteobject_include
 
-    To link against the module, add this line to your qmake \c{.pro} file:
+    To link against the module using CMake, add the following lines to your \c cmake file:
 
-    \snippet snippets.pro project_file_include
+    \snippet cmake-macros/CMakeLists.txt remote_objects_cmake
 
+    \snippet cmake-macros/CMakeLists.txt remote_objects_cmake_link
+
+    To link against the module using \c qmake, add this line to your \c{.pro} file:
+
+    \snippet doc_src_simpleswitch.cpp simpleSwitch_remoteobjectsadd_example1
 
     For more information, see \l{Getting Started with Qt Remote Objects}.
 */

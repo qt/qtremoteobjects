@@ -57,12 +57,23 @@ In \c simpleswitch.rep,
         connected to the \c echoSwitchState(bool newstate) signal.
 \endlist
 
-For repc to process this file, add the following line to your \c .pro file:
+For repc to process this file, add the following line to your \c cmake file:
+
+\snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_add_repc_source
+
+If you're using \c qmake:
 
 \snippet doc_src_simpleswitch.cpp simpleSwitch_repsource_example1
 
-The \c REPC_SOURCE variable is only relevant for the Qt Remote Object module,
-so you need to add it to your project as well:
+These instructions are only relevant for the Qt Remote Object module,
+so you need to add it to your project as well. If you're using CMake,
+add:
+
+\snippet cmake-macros/CMakeLists.txt remote_objects_cmake
+
+\snippet cmake-macros/CMakeLists.txt remote_objects_cmake_link
+
+If you're using \c qmake:
 
 \snippet doc_src_simpleswitch.cpp simpleSwitch_remoteobjectsadd_example1
 
@@ -141,8 +152,13 @@ this example gets the state of switch from the \l {Source} and echoes it back.
 
 We use the same API definition file as we did on the source side,
 \c SimpleSwitch.rep, to create a \l {Replica} header file using the \l {repc}.
-Include the following line in your client side \c .pro file, specifying a
-\c .rep file input:
+If you're using \c cmake, include the following line in your client side
+\c cmake file, specifying a \c .rep file input:
+
+\snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_add_repc_replica
+
+If you're using \c qmake, add the following line to your client side \c .pro
+file:
 
 \snippet doc_src_simpleswitch.cpp simpleSwitch_clientrep_example1
 
