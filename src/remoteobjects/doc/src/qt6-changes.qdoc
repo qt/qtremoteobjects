@@ -51,4 +51,36 @@
     no longer accepts implicit conversion from string literals
     (i.e. \c{node.instances("abc");}). Instead, you could use a UTF-16
     string literal (\c{node.instances(u"abc")}).
+
+    \section1 CMake changes
+
+    The \c cmake instructions for calling \l repc and adding the generated
+    \c .rep files to a CMake project have slightly changed. Instead of the
+    \c qt5_generate_repc macro, you should now use \c qt6_add_repc_source,
+    \c qt6_add_repc_replica and \c qt6_add_repc_merged functions.
+    For example, the following code:
+
+    \code
+    set(SOURCES
+        main.cpp
+        simpleswitch.cpp
+    )
+
+    qt5_generate_repc(SOURCES simpleswitch.rep SOURCE)
+    add_executable(directconnectserver ${SOURCES})
+    \endcode
+
+    Should change to:
+
+    \code
+    set(SOURCES
+        main.cpp
+        simpleswitch.cpp
+    )
+    add_executable(directconnectserver ${SOURCES})
+    qt6_add_repc_source(directconnectserver simpleswitch.rep)
+    \endcode
+
+    More detailed descriptions for these CMake functions can be found
+    \l {CMake functions} {here}.
 */
