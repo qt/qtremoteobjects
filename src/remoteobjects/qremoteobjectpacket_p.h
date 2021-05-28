@@ -178,7 +178,12 @@ class CodecBase
 {
 public:
     CodecBase() = default;
+    CodecBase(const CodecBase &) = default;
+    CodecBase(CodecBase &&) = default;
+    CodecBase &operator=(const CodecBase &) = default;
+    CodecBase &operator=(CodecBase &&) = default;
     virtual ~CodecBase() = default;
+
     virtual void serializeObjectListPacket(const ObjectInfoList &) = 0;
     virtual void deserializeObjectListPacket(QDataStream &in, ObjectInfoList &) = 0;
     virtual void serializeInitPacket(const QRemoteObjectRootSource *) = 0;

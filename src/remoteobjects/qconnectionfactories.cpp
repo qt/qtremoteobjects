@@ -387,9 +387,9 @@ QtROClientFactory *QtROClientFactory::instance()
     \sa {qRegisterRemoteObjectsServer}
 */
 
-QT_END_NAMESPACE
-
 IoDeviceBasePrivate::IoDeviceBasePrivate() : QObjectPrivate()
 {
     m_dataStream.setVersion(dataStreamVersion);
 }
+
+QT_END_NAMESPACE
