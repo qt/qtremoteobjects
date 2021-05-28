@@ -56,8 +56,8 @@
 
     The \c cmake instructions for calling \l repc and adding the generated
     \c .rep files to a CMake project have slightly changed. Instead of the
-    \c qt5_generate_repc macro, you should now use \c qt6_add_repc_source,
-    \c qt6_add_repc_replica and \c qt6_add_repc_merged functions.
+    \c qt5_generate_repc macro, you should now use \c qt6_add_repc_sources,
+    \c qt6_add_repc_replicas and \c qt6_add_repc_merged functions.
     For example, the following code:
 
     \code
@@ -78,7 +78,7 @@
         simpleswitch.cpp
     )
     add_executable(directconnectserver ${SOURCES})
-    qt6_add_repc_source(directconnectserver simpleswitch.rep)
+    qt6_add_repc_sources(directconnectserver simpleswitch.rep)
     \endcode
 
     More detailed descriptions for these CMake functions can be found

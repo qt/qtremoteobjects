@@ -9,7 +9,7 @@ qt_internal_add_test(tst_pods
     PUBLIC_LIBRARIES
         Qt::RemoteObjects
 )
-qt6_add_repc_replica(tst_pods
+qt6_add_repc_replicas(tst_pods
     pods.h
 )
 

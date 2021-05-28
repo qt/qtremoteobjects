@@ -15,7 +15,7 @@ qt_internal_add_executable(proxy_multiprocess_client
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(proxy_multiprocess_client
+qt6_add_repc_replicas(proxy_multiprocess_client
     ../subclass.rep
 )
 

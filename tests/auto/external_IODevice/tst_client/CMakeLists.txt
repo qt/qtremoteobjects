@@ -31,6 +31,6 @@ qt_internal_add_resource(tst_external_IODevice "cert"
         ${cert_resource_files}
 )
 
-qt6_add_repc_replica(tst_external_IODevice
+qt6_add_repc_replicas(tst_external_IODevice
     ../pingpong.rep
 )

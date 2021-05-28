@@ -13,6 +13,6 @@ qt_internal_add_executable(differentSlotCount
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(differentSlotCount
+qt6_add_repc_replicas(differentSlotCount
     mismatch.rep
 )

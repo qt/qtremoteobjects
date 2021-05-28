@@ -41,7 +41,7 @@ target_link_libraries(qmlqrotimeexampleplugin PUBLIC
     Qt::RemoteObjects
 )
 
-qt6_add_repc_replica(qmlqrotimeexampleplugin
+qt6_add_repc_replicas(qmlqrotimeexampleplugin
     ../timemodel.rep
 )
 

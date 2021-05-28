@@ -13,7 +13,7 @@ qt_internal_add_executable(state
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(state
+qt6_add_repc_replicas(state
     mismatch.rep
 )
 

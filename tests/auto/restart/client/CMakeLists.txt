@@ -13,7 +13,7 @@ qt_internal_add_executable(restart_client
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(restart_client
+qt6_add_repc_replicas(restart_client
     ../subclass.rep
 )
 

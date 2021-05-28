@@ -13,6 +13,6 @@ qt_internal_add_executable(differentGlobalEnum
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(differentGlobalEnum
+qt6_add_repc_replicas(differentGlobalEnum
     mismatch.rep
 )

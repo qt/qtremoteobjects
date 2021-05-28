@@ -17,7 +17,7 @@ qt_internal_add_executable(proxy_multiprocess_server
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_source(proxy_multiprocess_server
+qt6_add_repc_sources(proxy_multiprocess_server
     ../subclass.rep
 )
 

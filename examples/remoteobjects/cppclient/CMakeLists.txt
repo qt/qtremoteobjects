@@ -30,7 +30,7 @@ target_link_libraries(CppClient PUBLIC
     Qt::RemoteObjects
 )
 
-qt6_add_repc_replica(CppClient
+qt6_add_repc_replicas(CppClient
     timemodel.rep
 )
 

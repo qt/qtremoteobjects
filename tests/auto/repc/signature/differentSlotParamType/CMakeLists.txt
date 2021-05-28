@@ -13,6 +13,6 @@ qt_internal_add_executable(differentSlotParamType
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(differentSlotParamType
+qt6_add_repc_replicas(differentSlotParamType
     mismatch.rep
 )

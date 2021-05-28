@@ -31,7 +31,7 @@ target_link_libraries(server PUBLIC
     Qt::RemoteObjects
 )
 
-qt6_add_repc_source(server
+qt6_add_repc_sources(server
     ../timemodel.rep
 )
 

@@ -13,6 +13,6 @@ qt_internal_add_executable(scrambledSlots
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(scrambledSlots
+qt6_add_repc_replicas(scrambledSlots
     mismatch.rep
 )

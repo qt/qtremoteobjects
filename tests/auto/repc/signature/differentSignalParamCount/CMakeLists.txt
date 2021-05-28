@@ -13,6 +13,6 @@ qt_internal_add_executable(differentSignalParamCount
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(differentSignalParamCount
+qt6_add_repc_replicas(differentSignalParamCount
     mismatch.rep
 )

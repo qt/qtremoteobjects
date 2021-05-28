@@ -36,7 +36,7 @@ qt_internal_add_resource(sslTestServer "cert"
         ${cert_resource_files}
 )
 
-qt6_add_repc_source(sslTestServer
+qt6_add_repc_sources(sslTestServer
     ../pingpong.rep
 )
 

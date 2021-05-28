@@ -13,7 +13,7 @@ qt_internal_add_executable(integration_external_client
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(integration_external_client
+qt6_add_repc_replicas(integration_external_client
     ../MyInterface.rep
 )
 

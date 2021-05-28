@@ -12,11 +12,11 @@ qt_internal_add_test(tst_benchmarkstest
         Qt::Network
         Qt::RemoteObjects
 )
-qt6_add_repc_source(tst_benchmarkstest
+qt6_add_repc_sources(tst_benchmarkstest
     ../repfiles/localdatacenter.rep
     ../repfiles/tcpdatacenter.rep
 )
-qt6_add_repc_replica(tst_benchmarkstest
+qt6_add_repc_replicas(tst_benchmarkstest
         ../repfiles/localdatacenter.rep
         ../repfiles/tcpdatacenter.rep
 )

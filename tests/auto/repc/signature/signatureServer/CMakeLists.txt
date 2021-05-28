@@ -14,7 +14,7 @@ qt_internal_add_executable(signatureServer
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_source(signatureServer
+qt6_add_repc_sources(signatureServer
     ../server.rep
 )
 

@@ -53,7 +53,7 @@ qt6_add_resources(SslCppClient "cert"
         ${cert_resource_files}
 )
 
-qt6_add_repc_replica(SslCppClient
+qt6_add_repc_replicas(SslCppClient
     timemodel.rep
 )
 

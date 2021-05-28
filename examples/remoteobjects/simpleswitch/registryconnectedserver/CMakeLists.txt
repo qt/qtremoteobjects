@@ -31,7 +31,7 @@ target_link_libraries(registryconnectedserver PUBLIC
     Qt::RemoteObjects
 )
 
-qt6_add_repc_source(registryconnectedserver
+qt6_add_repc_sources(registryconnectedserver
     simpleswitch.rep
 )
 

@@ -13,6 +13,6 @@ qt_internal_add_executable(scrambledSignals
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(scrambledSignals
+qt6_add_repc_replicas(scrambledSignals
     mismatch.rep
 )

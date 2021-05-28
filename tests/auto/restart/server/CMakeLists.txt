@@ -14,7 +14,7 @@ qt_internal_add_executable(restart_server
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_source(restart_server
+qt6_add_repc_sources(restart_server
     ../subclass.rep
 )
 

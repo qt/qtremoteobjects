@@ -13,6 +13,6 @@ qt_internal_add_executable(scrambledProperties
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(scrambledProperties
+qt6_add_repc_replicas(scrambledProperties
     mismatch.rep
 )

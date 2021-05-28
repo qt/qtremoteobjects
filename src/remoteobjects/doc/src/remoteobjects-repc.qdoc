@@ -380,10 +380,10 @@
 
     \section1 CMake functions
 
-    \section2 qt6_add_repc_replica
+    \section2 qt6_add_repc_replicas
 
     \code
-    qt6_add_repc_replica(target rep_files)
+    qt6_add_repc_replicas(target rep_files)
     \endcode
 
     Runs repc and generates the \l Replica header files based on the given \c rep_files.
@@ -395,10 +395,10 @@
 
     The generated file(s) will be of the form \c {rep_<replica file base>_replica.h}.
 
-    \section2 qt6_add_repc_source
+    \section2 qt6_add_repc_sources
 
     \code
-    qt6_add_repc_source(target rep_files)
+    qt6_add_repc_sources(target rep_files)
     \endcode
 
     Runs repc and generates the \l Source header files based on the given \c rep_files.

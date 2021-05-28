@@ -14,7 +14,7 @@ qt_internal_add_executable(integration_multiprocess_server
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_source(integration_multiprocess_server
+qt6_add_repc_sources(integration_multiprocess_server
     ../MyInterface.rep
     ../PodInterface.rep
 )

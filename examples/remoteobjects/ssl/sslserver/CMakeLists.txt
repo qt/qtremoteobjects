@@ -54,7 +54,7 @@ qt6_add_resources(sslserver "cert"
         ${cert_resource_files}
 )
 
-qt6_add_repc_source(sslserver
+qt6_add_repc_sources(sslserver
     ../../timemodel.rep
 )
 

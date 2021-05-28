@@ -13,6 +13,6 @@ qt_internal_add_executable(differentPropertyCount
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(differentPropertyCount
+qt6_add_repc_replicas(differentPropertyCount
     mismatch.rep
 )

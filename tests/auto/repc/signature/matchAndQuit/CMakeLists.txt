@@ -13,7 +13,7 @@ qt_internal_add_executable(matchAndQuit
         Qt::RemoteObjects
         Qt::Test
 )
-qt6_add_repc_replica(matchAndQuit
+qt6_add_repc_replicas(matchAndQuit
     ../server.rep
 )
 

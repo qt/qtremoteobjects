@@ -9,7 +9,7 @@ qt_internal_add_test(tst_enums
     PUBLIC_LIBRARIES
         Qt::RemoteObjects
 )
-qt6_add_repc_replica(tst_enums
+qt6_add_repc_replicas(tst_enums
     enums.rep
 )
 

@@ -72,13 +72,13 @@ function(qt6_add_repc_files type target)
 endfunction()
 
 # Add .rep source files to a target to generate source header files
-function(qt6_add_repc_source target)
+function(qt6_add_repc_sources target)
     list(POP_FRONT ARGV)
     qt6_add_repc_files(source ${target} FILES ${ARGV})
 endfunction()
 
 # Add .rep source files to a target to generate replica header files
-function(qt6_add_repc_replica target)
+function(qt6_add_repc_replicas target)
     list(POP_FRONT ARGV)
     qt6_add_repc_files(replica ${target} FILES ${ARGV})
 endfunction()

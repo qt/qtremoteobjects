@@ -20,13 +20,13 @@ set(SOURCES
 )
 
 #! [simpleSwitch_cmake_add_repc_source]
-qt6_add_repc_source(directconnectserver
+qt6_add_repc_sources(directconnectserver
     simpleswitch.rep
 )
 #! [simpleSwitch_cmake_add_repc_source]
 
 #! [simpleSwitch_cmake_add_repc_replica]
-qt6_add_repc_replica(directconnectclient
+qt6_add_repc_replicas(directconnectclient
     simpleswitch.rep
 )
 #! [simpleSwitch_cmake_add_repc_replica]
