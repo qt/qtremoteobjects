@@ -24,7 +24,6 @@ qt6_add_qml_module(qmlqrotimeexampleplugin
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/imports/TimeExample"
     VERSION 1.0
     URI "TimeExample"
-    INSTALL_LOCATION ${INSTALL_EXAMPLEDIR}
 )
 
 target_sources(qmlqrotimeexampleplugin PRIVATE
