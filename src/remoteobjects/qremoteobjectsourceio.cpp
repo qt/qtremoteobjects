@@ -155,7 +155,7 @@ void QRemoteObjectSourceIo::unregisterSource(QRemoteObjectSourceBase *source)
 
 void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 {
-    IoDeviceBase *connection = qobject_cast<IoDeviceBase*>(conn);
+    QtROIoDeviceBase *connection = qobject_cast<QtROIoDeviceBase*>(conn);
     m_connections.remove(connection);
 
     qRODebug(this) << "OnServerDisconnect";
@@ -173,7 +173,7 @@ void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 void QRemoteObjectSourceIo::onServerRead(QObject *conn)
 {
     // Assert the invariant here conn is of type QIODevice
-    IoDeviceBase *connection = qobject_cast<IoDeviceBase*>(conn);
+    QtROIoDeviceBase *connection = qobject_cast<QtROIoDeviceBase*>(conn);
     QRemoteObjectPacketTypeEnum packetType;
 
     do {
@@ -294,17 +294,17 @@ void QRemoteObjectSourceIo::handleConnection()
 {
     qRODebug(this) << "handleConnection" << m_connections;
 
-    ServerIoDevice *conn = m_server->nextPendingConnection();
+    QtROServerIoDevice *conn = m_server->nextPendingConnection();
     newConnection(conn);
 }
 
-void QRemoteObjectSourceIo::newConnection(IoDeviceBase *conn)
+void QRemoteObjectSourceIo::newConnection(QtROIoDeviceBase *conn)
 {
     m_connections.insert(conn);
-    connect(conn, &IoDeviceBase::readyRead, this, [this, conn]() {
+    connect(conn, &QtROIoDeviceBase::readyRead, this, [this, conn]() {
         onServerRead(conn);
     });
-    connect(conn, &IoDeviceBase::disconnected, this, [this, conn]() {
+    connect(conn, &QtROIoDeviceBase::disconnected, this, [this, conn]() {
         onServerDisconnect(conn);
     });
 

@@ -734,7 +734,7 @@ DataStreamPacket::DataStreamPacket(quint16 id)
     *this << id;
 }
 
-void CodecBase::send(const QSet<IoDeviceBase *> &connections)
+void CodecBase::send(const QSet<QtROIoDeviceBase *> &connections)
 {
     const auto bytearray = getPayload();
     for (auto conn : connections)
@@ -742,7 +742,7 @@ void CodecBase::send(const QSet<IoDeviceBase *> &connections)
     reset();
 }
 
-void CodecBase::send(const QList<IoDeviceBase *> &connections)
+void CodecBase::send(const QList<QtROIoDeviceBase *> &connections)
 {
     const auto bytearray = getPayload();
     for (auto conn : connections)
@@ -750,7 +750,7 @@ void CodecBase::send(const QList<IoDeviceBase *> &connections)
     reset();
 }
 
-void CodecBase::send(IoDeviceBase *connection)
+void CodecBase::send(QtROIoDeviceBase *connection)
 {
     const auto bytearray = getPayload();
     connection->write(bytearray);

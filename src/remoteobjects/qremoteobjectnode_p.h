@@ -90,7 +90,7 @@ public:
     ~QRemoteObjectMetaObjectManager();
 
     const QMetaObject *metaObjectForType(const QString &type);
-    QMetaObject *addDynamicType(IoDeviceBase* connection, QDataStream &in);
+    QMetaObject *addDynamicType(QtROIoDeviceBase* connection, QDataStream &in);
     void addFromMetaObject(const QMetaObject *);
 
 private:
@@ -156,11 +156,11 @@ public:
     void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry);
     void onRemoteObjectSourceRemoved(const QRemoteObjectSourceLocation &entry);
     void onRegistryInitialized();
-    void onShouldReconnect(ClientIoDevice *ioDevice);
+    void onShouldReconnect(QtROClientIoDevice *ioDevice);
 
     virtual QReplicaImplementationInterface *handleNewAcquire(const QMetaObject *meta, QRemoteObjectReplica *instance, const QString &name);
     void handleReplicaConnection(const QString &name);
-    void handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, IoDeviceBase *connection);
+    void handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, QtROIoDeviceBase *connection);
     void initialize();
 private:
     bool checkSignatures(const QByteArray &a, const QByteArray &b);
@@ -168,7 +168,7 @@ private:
 public:
     struct SourceInfo
     {
-        IoDeviceBase* device;
+        QtROIoDeviceBase* device;
         QString typeName;
         QByteArray objectSignature;
     };
@@ -178,7 +178,7 @@ public:
     QHash<QString, QWeakPointer<QReplicaImplementationInterface> > replicas;
     QMap<QString, SourceInfo> connectedSources;
     QMap<QString, QRemoteObjectNode::RemoteObjectSchemaHandler> schemaHandlers;
-    QSet<ClientIoDevice*> pendingReconnect;
+    QSet<QtROClientIoDevice*> pendingReconnect;
     QSet<QUrl> requestedUrls;
     QRemoteObjectRegistry *registry;
     int retryInterval;

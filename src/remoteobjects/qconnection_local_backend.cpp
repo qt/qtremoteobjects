@@ -42,10 +42,10 @@
 QT_BEGIN_NAMESPACE
 
 LocalClientIo::LocalClientIo(QObject *parent)
-    : ClientIoDevice(parent)
+    : QtROClientIoDevice(parent)
     , m_socket(new QLocalSocket(this))
 {
-    connect(m_socket, &QLocalSocket::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket, &QLocalSocket::readyRead, this, &QtROClientIoDevice::readyRead);
     connect(m_socket, &QLocalSocket::errorOccurred, this, &LocalClientIo::onError);
     connect(m_socket, &QLocalSocket::stateChanged, this, &LocalClientIo::onStateChanged);
 }
@@ -121,11 +121,11 @@ void LocalClientIo::onStateChanged(QLocalSocket::LocalSocketState state)
 }
 
 LocalServerIo::LocalServerIo(QLocalSocket *conn, QObject *parent)
-    : ServerIoDevice(parent), m_connection(conn)
+    : QtROServerIoDevice(parent), m_connection(conn)
 {
     m_connection->setParent(this);
-    connect(conn, &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
-    connect(conn, &QLocalSocket::disconnected, this, &ServerIoDevice::disconnected);
+    connect(conn, &QIODevice::readyRead, this, &QtROServerIoDevice::readyRead);
+    connect(conn, &QLocalSocket::disconnected, this, &QtROServerIoDevice::disconnected);
 }
 
 QIODevice *LocalServerIo::connection() const
@@ -149,7 +149,7 @@ LocalServerImpl::~LocalServerImpl()
     m_server.close();
 }
 
-ServerIoDevice *LocalServerImpl::configureNewConnection()
+QtROServerIoDevice *LocalServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
         return nullptr;

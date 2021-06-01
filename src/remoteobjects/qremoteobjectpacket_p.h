@@ -210,9 +210,9 @@ public:
     virtual void deserializeInitPacket(QDataStream &, QVariantList &) = 0;
     virtual void deserializeInvokeReplyPacket(QDataStream &in, int &ackedSerialId,
                                               QVariant &value) = 0;
-    void send(const QSet<IoDeviceBase *> &connections);
-    void send(const QVector<IoDeviceBase *> &connections);
-    void send(IoDeviceBase *connection);
+    void send(const QSet<QtROIoDeviceBase *> &connections);
+    void send(const QVector<QtROIoDeviceBase *> &connections);
+    void send(QtROIoDeviceBase *connection);
 
 protected:
     // A payload can consist of one or more packets

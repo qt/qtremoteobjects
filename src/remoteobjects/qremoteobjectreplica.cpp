@@ -107,7 +107,7 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
     connect(&m_heartbeatTimer, &QTimer::timeout, this, [this] {
         // TODO: Revisit if a baseclass method can be used to avoid specialized cast
         // conditional logic.
-        auto clientIo = qobject_cast<ClientIoDevice *>(connectionToSource);
+        auto clientIo = qobject_cast<QtROClientIoDevice *>(connectionToSource);
         if (m_pendingCalls.contains(0)) {
             m_pendingCalls.take(0);
             // The source didn't respond in time, disconnect the connection
@@ -468,7 +468,7 @@ void QConnectedReplicaImplementation::setProperty(int i, const QVariant &prop)
     m_propertyStorage[i] = prop;
 }
 
-void QConnectedReplicaImplementation::setConnection(IoDeviceBase *conn)
+void QConnectedReplicaImplementation::setConnection(QtROIoDeviceBase *conn)
 {
     if (connectionToSource.isNull()) {
         connectionToSource = conn;

@@ -78,7 +78,7 @@ public:
                         const QString &typeName);
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = nullptr);
     bool disableRemoting(QObject *object);
-    void newConnection(IoDeviceBase *conn);
+    void newConnection(QtROIoDeviceBase *conn);
 
     QUrl serverAddress() const;
 
@@ -97,11 +97,11 @@ public:
     void unregisterSource(QRemoteObjectSourceBase *source);
 
     QHash<QIODevice*, quint32> m_readSize;
-    QSet<IoDeviceBase*> m_connections;
+    QSet<QtROIoDeviceBase*> m_connections;
     QHash<QObject *, QRemoteObjectRootSource*> m_objectToSourceMap;
     QMap<QString, QRemoteObjectSourceBase*> m_sourceObjects;
     QMap<QString, QRemoteObjectRootSource*> m_sourceRoots;
-    QHash<IoDeviceBase*, QUrl> m_registryMapping;
+    QHash<QtROIoDeviceBase*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
     // TODO should have some sort of manager for the codec
     QScopedPointer<QRemoteObjectPackets::CodecBase> m_codec{new QRemoteObjectPackets::QDataStreamCodec};

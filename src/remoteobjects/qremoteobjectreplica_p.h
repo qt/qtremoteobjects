@@ -66,7 +66,7 @@ QT_BEGIN_NAMESPACE
 
 class QRemoteObjectReplica;
 class QRemoteObjectSource;
-class IoDeviceBase;
+class QtROIoDeviceBase;
 
 class QReplicaImplementationInterface
 {
@@ -165,7 +165,7 @@ public:
     QRemoteObjectPendingCall sendCommandWithReply(int serialId);
     bool waitForFinished(const QRemoteObjectPendingCall &call, int timeout) override;
     void notifyAboutReply(int ackedSerialId, const QVariant &value) override;
-    void setConnection(IoDeviceBase *conn);
+    void setConnection(QtROIoDeviceBase *conn);
     void setDisconnected();
 
     void _q_send(QMetaObject::Call call, int index, const QVariantList &args) override;
@@ -176,7 +176,7 @@ public:
     QList<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
     QList<int> m_childIndices;
-    QPointer<IoDeviceBase> connectionToSource;
+    QPointer<QtROIoDeviceBase> connectionToSource;
 
     // pending call data
     int m_curSerialId = 1; // 0 is reserved for heartbeat signals

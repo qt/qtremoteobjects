@@ -58,7 +58,7 @@
 QT_BEGIN_NAMESPACE
 
 /*!
-    QtRO provides ClientIoDevice, ServerIoDevice and QConnectionAbstractServer
+    QtRO provides QtROClientIoDevice, QtROServerIoDevice and QConnectionAbstractServer
     as abstract interfaces to allow different backends to be used by QtRO. The
     concept behind these classes is that there needs to be a Host node, which
     has an address that can be connected to. Then there is a client object,
@@ -78,10 +78,10 @@ QT_BEGIN_NAMESPACE
     logic for the client-side and server-side QIODevice are very different.
     Thus, three additional backend classes are needed as well.
 
-    QnxClientIo implements the QtRO ClientIoDevice wrapper around the QNX
+    QnxClientIo implements the QtRO QtROClientIoDevice wrapper around the QNX
     specific QQnxNativeIo QIODevice (the client-side QIODevice).
 
-    QnxServerIo implements the QtRO ServerIoDevice wrapper around the QNX
+    QnxServerIo implements the QtRO QtROServerIoDevice wrapper around the QNX
     specific QIOQnxSource QIODevice (the server-side QIODevice).
 
     QnxServerImpl implements the QtRO QConnectionAbstractServer wrapper around
@@ -93,7 +93,7 @@ QT_BEGIN_NAMESPACE
     QLocalServer/QLocalSocket QPA for QNX.
 */
 
-class QnxClientIo final : public ClientIoDevice
+class QnxClientIo final : public QtROClientIoDevice
 {
     Q_OBJECT
 
@@ -116,7 +116,7 @@ private:
     QQnxNativeIo *m_socket;
 };
 
-class QnxServerIo final : public ServerIoDevice
+class QnxServerIo final : public QtROServerIoDevice
 {
 public:
     explicit QnxServerIo(QSharedPointer<QIOQnxSource> conn, QObject *parent = nullptr);
@@ -139,7 +139,7 @@ public:
     ~QnxServerImpl() override;
 
     bool hasPendingConnections() const override;
-    ServerIoDevice *configureNewConnection() override;
+    QtROServerIoDevice *configureNewConnection() override;
     QUrl address() const override;
     bool listen(const QUrl &address) override;
     QAbstractSocket::SocketError serverError() const override;

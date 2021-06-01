@@ -61,7 +61,7 @@
 QT_BEGIN_NAMESPACE
 
 class QRemoteObjectSourceIo;
-class IoDeviceBase;
+class QtROIoDeviceBase;
 
 class QRemoteObjectSourceBase : public QObject
 {
@@ -86,7 +86,7 @@ public:
     struct Private {
         Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root);
         QRemoteObjectSourceIo *m_sourceIo;
-        QList<IoDeviceBase*> m_listeners;
+        QList<QtROIoDeviceBase*> m_listeners;
         // Pointer to codec, not owned by Private.  We can assume it is valid.
         QRemoteObjectPackets::CodecBase *codec;
 
@@ -123,8 +123,8 @@ public:
 
     bool isRoot() const override { return true; }
     QString name() const override { return m_name; }
-    void addListener(IoDeviceBase *io, bool dynamic = false);
-    int removeListener(IoDeviceBase *io, bool shouldSendRemove = false);
+    void addListener(QtROIoDeviceBase *io, bool dynamic = false);
+    int removeListener(QtROIoDeviceBase *io, bool shouldSendRemove = false);
 
     QString m_name;
 };
