@@ -69,12 +69,12 @@ static const QLatin1String protocolVersion("QtRO 1.3");
 
 }
 
-class ExternalIoDevice : public IoDeviceBase
+class QtROExternalIoDevice : public QtROIoDeviceBase
 {
     Q_OBJECT
 
 public:
-    explicit ExternalIoDevice(QIODevice *device, QObject *parent=nullptr);
+    explicit QtROExternalIoDevice(QIODevice *device, QObject *parent=nullptr);
     QIODevice *connection() const override;
     bool isOpen() const override;
 
@@ -82,13 +82,13 @@ protected:
     void doClose() override;
     QString deviceType() const override;
 private:
-    Q_DECLARE_PRIVATE(ExternalIoDevice)
+    Q_DECLARE_PRIVATE(QtROExternalIoDevice)
 };
 
-class IoDeviceBasePrivate : public QObjectPrivate
+class QtROIoDeviceBasePrivate : public QObjectPrivate
 {
 public:
-    IoDeviceBasePrivate();
+    QtROIoDeviceBasePrivate();
 
     // TODO Remove stream()
     QDataStream &stream() { return m_dataStream; }
@@ -98,23 +98,23 @@ public:
     QDataStream m_dataStream;
     QSet<QString> m_remoteObjects;
     QRemoteObjectPackets::CodecBase *m_codec { nullptr };
-    Q_DECLARE_PUBLIC(IoDeviceBase)
+    Q_DECLARE_PUBLIC(QtROIoDeviceBase)
 };
 
-class ClientIoDevicePrivate : public IoDeviceBasePrivate
+class QtROClientIoDevicePrivate : public QtROIoDeviceBasePrivate
 {
 public:
-    ClientIoDevicePrivate() : IoDeviceBasePrivate() { }
+    QtROClientIoDevicePrivate() : QtROIoDeviceBasePrivate() { }
     QUrl m_url;
-    Q_DECLARE_PUBLIC(ClientIoDevice)
+    Q_DECLARE_PUBLIC(QtROClientIoDevice)
 };
 
-class ExternalIoDevicePrivate : public IoDeviceBasePrivate
+class QtROExternalIoDevicePrivate : public QtROIoDeviceBasePrivate
 {
 public:
-    ExternalIoDevicePrivate(QIODevice *device) : IoDeviceBasePrivate(), m_device(device) { }
+    QtROExternalIoDevicePrivate(QIODevice *device) : QtROIoDeviceBasePrivate(), m_device(device) { }
     QPointer<QIODevice> m_device;
-    Q_DECLARE_PUBLIC(ExternalIoDevice)
+    Q_DECLARE_PUBLIC(QtROExternalIoDevice)
 };
 
 QT_END_NAMESPACE

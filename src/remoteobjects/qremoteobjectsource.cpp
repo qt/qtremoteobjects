@@ -281,7 +281,7 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
     // removeListener tries to modify d->m_listeners, this is O(N²),
     // so clear d->m_listeners prior to calling unregister (consume loop).
     // We can do this, because we don't care about the return value of removeListener() here.
-    for (IoDeviceBase *io : qExchange(d->m_listeners, {})) {
+    for (QtROIoDeviceBase *io : qExchange(d->m_listeners, {})) {
         removeListener(io, true);
     }
     delete d;
@@ -402,7 +402,7 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
     d->codec->send(d->m_listeners);
 }
 
-void QRemoteObjectRootSource::addListener(IoDeviceBase *io, bool dynamic)
+void QRemoteObjectRootSource::addListener(QtROIoDeviceBase *io, bool dynamic)
 {
     d->m_listeners.append(io);
     d->isDynamic = d->isDynamic || dynamic;
@@ -417,7 +417,7 @@ void QRemoteObjectRootSource::addListener(IoDeviceBase *io, bool dynamic)
     }
 }
 
-int QRemoteObjectRootSource::removeListener(IoDeviceBase *io, bool shouldSendRemove)
+int QRemoteObjectRootSource::removeListener(QtROIoDeviceBase *io, bool shouldSendRemove)
 {
     d->m_listeners.removeAll(io);
     if (shouldSendRemove)

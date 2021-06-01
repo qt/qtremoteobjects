@@ -42,10 +42,10 @@
 QT_BEGIN_NAMESPACE
 
 QnxClientIo::QnxClientIo(QObject *parent)
-    : ClientIoDevice(parent)
+    : QtROClientIoDevice(parent)
     , m_socket(new QQnxNativeIo(this))
 {
-    connect(m_socket, &QQnxNativeIo::readyRead, this, &ClientIoDevice::readyRead);
+    connect(m_socket, &QQnxNativeIo::readyRead, this, &QtROClientIoDevice::readyRead);
     connect(m_socket,
             static_cast<void(QQnxNativeIo::*)(QAbstractSocket::SocketError)>(&QQnxNativeIo::error),
             this,
@@ -119,10 +119,10 @@ void QnxClientIo::onStateChanged(QAbstractSocket::SocketState state)
 }
 
 QnxServerIo::QnxServerIo(QSharedPointer<QIOQnxSource> conn, QObject *parent)
-    : ServerIoDevice(parent), m_connection(conn)
+    : QtROServerIoDevice(parent), m_connection(conn)
 {
-    connect(conn.data(), &QIODevice::readyRead, this, &ServerIoDevice::readyRead);
-    connect(conn.data(), &QIOQnxSource::disconnected, this, &ServerIoDevice::disconnected);
+    connect(conn.data(), &QIODevice::readyRead, this, &QtROServerIoDevice::readyRead);
+    connect(conn.data(), &QIOQnxSource::disconnected, this, &QtROServerIoDevice::disconnected);
 }
 
 QIODevice *QnxServerIo::connection() const
@@ -149,7 +149,7 @@ QnxServerImpl::~QnxServerImpl()
     m_server.close();
 }
 
-ServerIoDevice *QnxServerImpl::configureNewConnection()
+QtROServerIoDevice *QnxServerImpl::configureNewConnection()
 {
     if (!m_server.isListening())
         return nullptr;

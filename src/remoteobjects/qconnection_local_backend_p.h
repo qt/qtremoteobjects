@@ -58,7 +58,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class LocalClientIo final : public ClientIoDevice
+class LocalClientIo final : public QtROClientIoDevice
 {
     Q_OBJECT
 
@@ -81,7 +81,7 @@ private:
     QLocalSocket* m_socket;
 };
 
-class LocalServerIo final : public ServerIoDevice
+class LocalServerIo final : public QtROServerIoDevice
 {
     Q_OBJECT
 public:
@@ -105,7 +105,7 @@ public:
     ~LocalServerImpl() override;
 
     bool hasPendingConnections() const override;
-    ServerIoDevice *configureNewConnection() override;
+    QtROServerIoDevice *configureNewConnection() override;
     QUrl address() const override;
     bool listen(const QUrl &address) override;
     QAbstractSocket::SocketError serverError() const override;

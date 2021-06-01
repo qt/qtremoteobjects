@@ -92,21 +92,21 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
 
 /*!
     All communication between nodes happens through some form of QIODevice with
-    an associated QDataStream to handle marshalling of Qt types. IoDeviceBase
+    an associated QDataStream to handle marshalling of Qt types. QtROIoDeviceBase
     is an abstract base class that provides a consistent interface to QtRO, yet
     can be extended to support different types of QIODevice.
  */
-IoDeviceBase::IoDeviceBase(QObject *parent) : QObject(*new IoDeviceBasePrivate, parent) { }
+QtROIoDeviceBase::QtROIoDeviceBase(QObject *parent) : QObject(*new QtROIoDeviceBasePrivate, parent) { }
 
-IoDeviceBase::IoDeviceBase(IoDeviceBasePrivate &dptr, QObject *parent) : QObject(dptr, parent) { }
+QtROIoDeviceBase::QtROIoDeviceBase(QtROIoDeviceBasePrivate &dptr, QObject *parent) : QObject(dptr, parent) { }
 
-IoDeviceBase::~IoDeviceBase()
+QtROIoDeviceBase::~QtROIoDeviceBase()
 {
 }
 
-bool IoDeviceBase::read(QRemoteObjectPacketTypeEnum &type, QString &name)
+bool QtROIoDeviceBase::read(QRemoteObjectPacketTypeEnum &type, QString &name)
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     qCDebug(QT_REMOTEOBJECT_IO) << deviceType() << "read()" << d->m_curReadSize << bytesAvailable();
 
     if (d->m_curReadSize == 0) {
@@ -126,98 +126,98 @@ bool IoDeviceBase::read(QRemoteObjectPacketTypeEnum &type, QString &name)
     return fromDataStream(d->m_dataStream, type, name);
 }
 
-void IoDeviceBase::write(const QByteArray &data)
+void QtROIoDeviceBase::write(const QByteArray &data)
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     if (connection()->isOpen() && !d->m_isClosing)
         connection()->write(data);
 }
 
-void IoDeviceBase::write(const QByteArray &data, qint64 size)
+void QtROIoDeviceBase::write(const QByteArray &data, qint64 size)
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     if (connection()->isOpen() && !d->m_isClosing)
         connection()->write(data.data(), size);
 }
 
-bool IoDeviceBase::isOpen() const
+bool QtROIoDeviceBase::isOpen() const
 {
     return !isClosing();
 }
 
-void IoDeviceBase::close()
+void QtROIoDeviceBase::close()
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     d->m_isClosing = true;
     doClose();
 }
 
-qint64 IoDeviceBase::bytesAvailable() const
+qint64 QtROIoDeviceBase::bytesAvailable() const
 {
     return connection()->bytesAvailable();
 }
 
-void IoDeviceBase::initializeDataStream()
+void QtROIoDeviceBase::initializeDataStream()
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     d->m_dataStream.setDevice(connection());
     d->m_dataStream.resetStatus();
 }
 
-bool IoDeviceBase::isClosing() const
+bool QtROIoDeviceBase::isClosing() const
 {
-    Q_D(const IoDeviceBase);
+    Q_D(const QtROIoDeviceBase);
     return d->m_isClosing;
 }
 
-void IoDeviceBase::addSource(const QString &name)
+void QtROIoDeviceBase::addSource(const QString &name)
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     d->m_remoteObjects.insert(name);
 }
 
-void IoDeviceBase::removeSource(const QString &name)
+void QtROIoDeviceBase::removeSource(const QString &name)
 {
-    Q_D(IoDeviceBase);
+    Q_D(QtROIoDeviceBase);
     d->m_remoteObjects.remove(name);
 }
 
-QSet<QString> IoDeviceBase::remoteObjects() const
+QSet<QString> QtROIoDeviceBase::remoteObjects() const
 {
-    Q_D(const IoDeviceBase);
+    Q_D(const QtROIoDeviceBase);
     return d->m_remoteObjects;
 }
 
-ClientIoDevice::ClientIoDevice(QObject *parent) : IoDeviceBase(*new ClientIoDevicePrivate, parent)
+QtROClientIoDevice::QtROClientIoDevice(QObject *parent) : QtROIoDeviceBase(*new QtROClientIoDevicePrivate, parent)
 {
 }
 
-ClientIoDevice::~ClientIoDevice()
+QtROClientIoDevice::~QtROClientIoDevice()
 {
     if (!isClosing())
         close();
 }
 
-void ClientIoDevice::disconnectFromServer()
+void QtROClientIoDevice::disconnectFromServer()
 {
     doDisconnectFromServer();
     emit shouldReconnect(this);
 }
 
-QUrl ClientIoDevice::url() const
+QUrl QtROClientIoDevice::url() const
 {
-    Q_D(const ClientIoDevice);
+    Q_D(const QtROClientIoDevice);
     return d->m_url;
 }
 
-QString ClientIoDevice::deviceType() const
+QString QtROClientIoDevice::deviceType() const
 {
-    return QStringLiteral("ClientIoDevice");
+    return QStringLiteral("QtROClientIoDevice");
 }
 
-void ClientIoDevice::setUrl(const QUrl &url)
+void QtROClientIoDevice::setUrl(const QUrl &url)
 {
-    Q_D(ClientIoDevice);
+    Q_D(QtROClientIoDevice);
     d->m_url = url;
 }
 
@@ -226,13 +226,13 @@ void ClientIoDevice::setUrl(const QUrl &url)
     problem is that they behave differently, so this class adds some
     consistency.
  */
-ServerIoDevice::ServerIoDevice(QObject *parent) : IoDeviceBase(parent)
+QtROServerIoDevice::QtROServerIoDevice(QObject *parent) : QtROIoDeviceBase(parent)
 {
 }
 
-QString ServerIoDevice::deviceType() const
+QString QtROServerIoDevice::deviceType() const
 {
-    return QStringLiteral("ServerIoDevice");
+    return QStringLiteral("QtROServerIoDevice");
 }
 
 QConnectionAbstractServer::QConnectionAbstractServer(QObject *parent)
@@ -244,49 +244,49 @@ QConnectionAbstractServer::~QConnectionAbstractServer()
 {
 }
 
-ServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
+QtROServerIoDevice *QConnectionAbstractServer::nextPendingConnection()
 {
-    ServerIoDevice *iodevice = configureNewConnection();
+    QtROServerIoDevice *iodevice = configureNewConnection();
     iodevice->initializeDataStream();
     return iodevice;
 }
 
-ExternalIoDevice::ExternalIoDevice(QIODevice *device, QObject *parent)
-    : IoDeviceBase(*new ExternalIoDevicePrivate(device), parent)
+QtROExternalIoDevice::QtROExternalIoDevice(QIODevice *device, QObject *parent)
+    : QtROIoDeviceBase(*new QtROExternalIoDevicePrivate(device), parent)
 {
-    Q_D(ExternalIoDevice);
+    Q_D(QtROExternalIoDevice);
     initializeDataStream();
     connect(device, &QIODevice::aboutToClose, this, [d]() { d->m_isClosing = true; });
-    connect(device, &QIODevice::readyRead, this, &ExternalIoDevice::readyRead);
+    connect(device, &QIODevice::readyRead, this, &QtROExternalIoDevice::readyRead);
     auto meta = device->metaObject();
     if (-1 != meta->indexOfSignal(SIGNAL(disconnected())))
         connect(device, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 }
 
-QIODevice *ExternalIoDevice::connection() const
+QIODevice *QtROExternalIoDevice::connection() const
 {
-    Q_D(const ExternalIoDevice);
+    Q_D(const QtROExternalIoDevice);
     return d->m_device;
 }
 
-bool ExternalIoDevice::isOpen() const
+bool QtROExternalIoDevice::isOpen() const
 {
-    Q_D(const ExternalIoDevice);
+    Q_D(const QtROExternalIoDevice);
     if (!d->m_device)
         return false;
-    return d->m_device->isOpen() && IoDeviceBase::isOpen();
+    return d->m_device->isOpen() && QtROIoDeviceBase::isOpen();
 }
 
-void ExternalIoDevice::doClose()
+void QtROExternalIoDevice::doClose()
 {
-    Q_D(ExternalIoDevice);
+    Q_D(QtROExternalIoDevice);
     if (isOpen())
         d->m_device->close();
 }
 
-QString ExternalIoDevice::deviceType() const
+QString QtROExternalIoDevice::deviceType() const
 {
-    return QStringLiteral("ExternalIoDevice");
+    return QStringLiteral("QtROExternalIoDevice");
 }
 
 /*!
@@ -381,7 +381,7 @@ QtROClientFactory *QtROClientFactory::instance()
     \sa {qRegisterRemoteObjectsServer}
 */
 
-IoDeviceBasePrivate::IoDeviceBasePrivate() : QObjectPrivate()
+QtROIoDeviceBasePrivate::QtROIoDeviceBasePrivate() : QObjectPrivate()
 {
     m_dataStream.setVersion(dataStreamVersion);
 }

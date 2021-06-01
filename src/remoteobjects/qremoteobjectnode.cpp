@@ -78,7 +78,7 @@ struct ManagedGadgetTypeEntry
 
 static QMutex s_managedTypesMutex;
 static QHash<int, ManagedGadgetTypeEntry> s_managedTypes;
-static QHash<int, QSet<IoDeviceBase*>> s_trackedConnections;
+static QHash<int, QSet<QtROIoDeviceBase*>> s_trackedConnections;
 
 static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
@@ -757,7 +757,7 @@ const QMetaObject *QRemoteObjectMetaObjectManager::metaObjectForType(const QStri
     return dynamicTypes.value(type);
 }
 
-static void trackConnection(int typeId, IoDeviceBase *connection)
+static void trackConnection(int typeId, QtROIoDeviceBase *connection)
 {
     QMutexLocker lock(&s_managedTypesMutex);
     if (s_trackedConnections[typeId].contains(connection))
@@ -778,7 +778,7 @@ static void trackConnection(int typeId, IoDeviceBase *connection)
     // Unregister the type only when the connection is destroyed
     // Do not unregister types when the connections is discconected, because
     // if it gets reconnected it will not register the types again
-    QObject::connect(connection, &IoDeviceBase::destroyed, unregisterIfNotUsed);
+    QObject::connect(connection, &QtROIoDeviceBase::destroyed, unregisterIfNotUsed);
 }
 
 struct EnumPair {
@@ -879,7 +879,7 @@ static TypeInfo *registerEnum(const QByteArray &name, uint size=4u)
     return result;
 }
 
-static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
+static int registerGadgets(QtROIoDeviceBase *connection, Gadgets &gadgets, QByteArray typeName)
 {
     const auto &gadget = gadgets.take(typeName);
     // TODO Look at having registerGadgets return QMetaType index of the id of the type
@@ -979,7 +979,7 @@ static int registerGadgets(IoDeviceBase *connection, Gadgets &gadgets, QByteArra
     return gadgetTypeId;
 }
 
-static void registerAllGadgets(IoDeviceBase *connection, Gadgets &gadgets)
+static void registerAllGadgets(QtROIoDeviceBase *connection, Gadgets &gadgets)
 {
     while (!gadgets.isEmpty())
         registerGadgets(connection, gadgets, gadgets.constBegin().key());
@@ -1000,7 +1000,7 @@ static void deserializeEnum(QDataStream &ds, EnumData &enumData)
     }
 }
 
-static void parseGadgets(IoDeviceBase *connection, QDataStream &in)
+static void parseGadgets(QtROIoDeviceBase *connection, QDataStream &in)
 {
     quint32 qtEnums, numGadgets;
     in >> qtEnums; // Qt enums - just need registration
@@ -1037,7 +1037,7 @@ static void parseGadgets(IoDeviceBase *connection, QDataStream &in)
     registerAllGadgets(connection, gadgets);
 }
 
-QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(IoDeviceBase *connection, QDataStream &in)
+QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QtROIoDeviceBase *connection, QDataStream &in)
 {
     QMetaObjectBuilder builder;
     builder.setSuperClass(&QRemoteObjectReplica::staticMetaObject);
@@ -1218,17 +1218,17 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
         return true;
     }
 
-    ClientIoDevice *connection = QtROClientFactory::instance()->create(address, q);
+    QtROClientIoDevice *connection = QtROClientFactory::instance()->create(address, q);
     if (!connection) {
-        qROPrivWarning() << "Could not create ClientIoDevice for client. Invalid url/scheme provided?" << address;
+        qROPrivWarning() << "Could not create QtROClientIoDevice for client. Invalid url/scheme provided?" << address;
         return false;
     }
     qROPrivDebug() << "Opening connection to" << address.toString();
     qROPrivDebug() << "Replica Connection isValid" << connection->isOpen();
-    QObject::connect(connection, &ClientIoDevice::shouldReconnect, q, [this, connection]() {
+    QObject::connect(connection, &QtROClientIoDevice::shouldReconnect, q, [this, connection]() {
         onShouldReconnect(connection);
     });
-    QObject::connect(connection, &IoDeviceBase::readyRead, q, [this, connection]() {
+    QObject::connect(connection, &QtROIoDeviceBase::readyRead, q, [this, connection]() {
         onClientRead(connection);
     });
     connection->connectToServer();
@@ -1315,7 +1315,7 @@ void QRemoteObjectNodePrivate::onRegistryInitialized()
     }
 }
 
-void QRemoteObjectNodePrivate::onShouldReconnect(ClientIoDevice *ioDevice)
+void QRemoteObjectNodePrivate::onShouldReconnect(QtROClientIoDevice *ioDevice)
 {
     Q_Q(QRemoteObjectNode);
 
@@ -1385,7 +1385,7 @@ void QRemoteObjectNodePrivate::handleReplicaConnection(const QString &name)
     }
 }
 
-void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, IoDeviceBase *connection)
+void QRemoteObjectNodePrivate::handleReplicaConnection(const QByteArray &sourceSignature, QConnectedReplicaImplementation *rep, QtROIoDeviceBase *connection)
 {
     if (!checkSignatures(rep->m_objectSignature, sourceSignature)) {
         qROPrivWarning() << "Signature mismatch for" << rep->m_metaObject->className() << (rep->m_objectName.isEmpty() ? QLatin1String("(unnamed)") : rep->m_objectName);
@@ -1414,7 +1414,7 @@ QReplicaImplementationInterface *QRemoteObjectHostBasePrivate::handleNewAcquire(
 void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 {
     using namespace QRemoteObjectPackets;
-    IoDeviceBase *connection = qobject_cast<IoDeviceBase*>(obj);
+    QtROIoDeviceBase *connection = qobject_cast<QtROIoDeviceBase*>(obj);
     QRemoteObjectPacketTypeEnum packetType;
     Q_ASSERT(connection);
     auto &codec = connection->d_func()->m_codec;
@@ -2297,8 +2297,8 @@ void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
         qWarning() << "A null or closed QIODevice was passed to addClientSideConnection().  Ignoring.";
         return;
     }
-    ExternalIoDevice *device = new ExternalIoDevice(ioDevice, this);
-    connect(device, &IoDeviceBase::readyRead, this, [d, device]() {
+    QtROExternalIoDevice *device = new QtROExternalIoDevice(ioDevice, this);
+    connect(device, &QtROIoDeviceBase::readyRead, this, [d, device]() {
         d->onClientRead(device);
     });
     if (device->bytesAvailable())
@@ -2583,7 +2583,7 @@ void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
     }
     if (!d->remoteObjectIo)
         d->remoteObjectIo = new QRemoteObjectSourceIo(this);
-    ExternalIoDevice *device = new ExternalIoDevice(ioDevice, this);
+    QtROExternalIoDevice *device = new QtROExternalIoDevice(ioDevice, this);
     return d->remoteObjectIo->newConnection(device);
 }
 
