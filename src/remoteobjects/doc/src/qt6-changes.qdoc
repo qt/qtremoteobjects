@@ -52,6 +52,21 @@
     (i.e. \c{node.instances("abc");}). Instead, you could use a UTF-16
     string literal (\c{node.instances(u"abc")}).
 
+    \section2 Changes to classes for custom transport backend support
+
+    The "semi-private" \c IoDeviceBase, \c ServerIoDevice, and \c ClientIoDevice
+    classes are now renamed to \c QtROIoDeviceBase, \c QtROServerIoDevice, and
+    \c QtROClientIoDevice respectively, to be consistent with naming in Qt.
+    They are also moved from the private \c qconnectionfactories_p.h header to
+    \c qconnectionfactories.h.
+
+    \note These classes are provided to give more flexibility for implementing
+    custom communication protocols for Qt Remote Objects, but there are no
+    source or binary compatibility guarantees for them. We recommend using the
+    QRemoteObjectNode::addClientSideConnection() and
+    QRemoteObjectHostBase::addHostSideConnection() methods, if you need
+    support for \l {External QIODevices} {external} communication channels.
+
     \section1 CMake changes
 
     The \c cmake instructions for calling \l repc and adding the generated
