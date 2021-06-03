@@ -89,6 +89,10 @@ class IoDeviceBasePrivate : public QObjectPrivate
 {
 public:
     IoDeviceBasePrivate();
+
+    // TODO Remove stream()
+    QDataStream &stream() { return m_dataStream; }
+
     bool m_isClosing = false;
     quint32 m_curReadSize = 0;
     QDataStream m_dataStream;

@@ -164,12 +164,6 @@ void IoDeviceBase::initializeDataStream()
     d->m_dataStream.resetStatus();
 }
 
-QDataStream &IoDeviceBase::stream()
-{
-    Q_D(IoDeviceBase);
-    return d->m_dataStream;
-}
-
 bool IoDeviceBase::isClosing() const
 {
     Q_D(const IoDeviceBase);

@@ -1452,7 +1452,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             break;
         case QRemoteObjectPacketTypeEnum::ObjectList:
         {
-            codec->deserializeObjectListPacket(connection->stream(), rxObjects);
+            codec->deserializeObjectListPacket(connection->d_func()->stream(), rxObjects);
             qROPrivDebug() << "newObjects:" << rxObjects;
             // We need to make sure all of the source objects are in connectedSources before we add connections,
             // otherwise nested QObjects could fail (we want to acquire children before parents, and the object
@@ -1478,7 +1478,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             qROPrivDebug() << "InitPacket-->" << rxName << this;
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             //Use m_rxArgs (a QVariantList to hold the properties QVariantList)
-            codec->deserializeInitPacket(connection->stream(), rxArgs);
+            codec->deserializeInitPacket(connection->d_func()->stream(), rxArgs);
             if (rep)
             {
                 handlePointerToQObjectProperties(rep.data(), rxArgs);
@@ -1491,8 +1491,8 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::InitDynamicPacket:
         {
             qROPrivDebug() << "InitDynamicPacket-->" << rxName << this;
-            const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection, connection->stream());
-            codec->deserializeInitPacket(connection->stream(), rxArgs);
+            const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection, connection->d_func()->stream());
+            codec->deserializeInitPacket(connection->d_func()->stream(), rxArgs);
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep)
             {
@@ -1523,7 +1523,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::PropertyChangePacket:
         {
             int propertyIndex;
-            codec->deserializePropertyChangePacket(connection->stream(), propertyIndex, rxValue);
+            codec->deserializePropertyChangePacket(connection->d_func()->stream(), propertyIndex, rxValue);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 QConnectedReplicaImplementation *connectedRep = nullptr;
@@ -1554,7 +1554,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::InvokePacket:
         {
             int call, index, serialId, propertyIndex;
-            codec->deserializeInvokePacket(connection->stream(), call, index, rxArgs, serialId, propertyIndex);
+            codec->deserializeInvokePacket(connection->d_func()->stream(), call, index, rxArgs, serialId, propertyIndex);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 static QVariant null(QMetaType::fromType<QObject *>(), nullptr);
@@ -1589,7 +1589,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::InvokeReplyPacket:
         {
             int ackedSerialId;
-            codec->deserializeInvokeReplyPacket(connection->stream(), ackedSerialId, rxValue);
+            codec->deserializeInvokeReplyPacket(connection->d_func()->stream(), ackedSerialId, rxValue);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 qROPrivDebug() << "Received InvokeReplyPacket ack'ing serial id:" << ackedSerialId;

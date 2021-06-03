@@ -191,7 +191,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         case AddObject:
         {
             bool isDynamic;
-            m_codec->deserializeAddObjectPacket(connection->stream(), isDynamic);
+            m_codec->deserializeAddObjectPacket(connection->d_func()->stream(), isDynamic);
             qRODebug(this) << "AddObject" << m_rxName << isDynamic;
             if (m_sourceRoots.contains(m_rxName)) {
                 QRemoteObjectRootSource *root = m_sourceRoots[m_rxName];
@@ -218,7 +218,7 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
         case InvokePacket:
         {
             int call, index, serialId, propertyId;
-            m_codec->deserializeInvokePacket(connection->stream(), call, index, m_rxArgs, serialId, propertyId);
+            m_codec->deserializeInvokePacket(connection->d_func()->stream(), call, index, m_rxArgs, serialId, propertyId);
             if (m_rxName == QLatin1String("Registry") && !m_registryMapping.contains(connection)) {
                 const QRemoteObjectSourceLocation loc = m_rxArgs.first().value<QRemoteObjectSourceLocation>();
                 m_registryMapping[connection] = loc.second.hostUrl;

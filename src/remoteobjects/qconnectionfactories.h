@@ -77,8 +77,6 @@ public:
     virtual qint64 bytesAvailable() const;
     virtual QIODevice *connection() const = 0;
     void initializeDataStream();
-    // TODO Remove stream()
-    QDataStream &stream();
     bool isClosing() const;
     void addSource(const QString &);
     void removeSource(const QString &);
@@ -97,6 +95,7 @@ private:
     Q_DECLARE_PRIVATE(IoDeviceBase)
     friend class QRemoteObjectNodePrivate;
     friend class QConnectedReplicaImplementation;
+    friend class QRemoteObjectSourceIo;
 };
 
 class Q_REMOTEOBJECTS_EXPORT ServerIoDevice : public IoDeviceBase
