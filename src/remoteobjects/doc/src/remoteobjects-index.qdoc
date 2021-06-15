@@ -116,7 +116,12 @@ Consider a service that provides access to a printer. In QtRO terms:
     \li \l {Qt Remote Objects Source}{Sources}
     \li \l {Qt Remote Objects Replica}{Replicas}
     \li \l {Qt Remote Objects Registry}{Registry}
-    \li \l {Qt Remote Objects - External QIODevices}{External QIODevices}
+    \li Using Custom Transports
+        \list
+        \li \l {Qt Remote Objects - External QIODevices}{External QIODevices}
+        \li \l {APIs for Implementing Custom Transport Backends}
+               {Implementing Custom Transport Backends}
+        \endlist
     \li \l {Qt Remote Objects Compiler}{Compiler}
     \li \l {Remote Object Interaction}
     \li \l {Troubleshooting Qt Remote Objects}{Troubleshooting}
