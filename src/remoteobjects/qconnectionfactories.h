@@ -41,11 +41,14 @@
 #define QCONNECTIONFACTORIES_H
 
 //
-//  N O T E
-//  -------
+//  W A R N I N G
+//  -------------
 //
-// This file includes "internal" components.  They are exported
-// to allow new QIODevice channels to be added to extend QtRO.
+// This file is part of the QtRO internal API and is not meant to be used
+// in applications. It contains "internal" components, which are exported
+// to allow new QIODevice channels to be added to extend QtRO. Usage of these
+// APIs may make your code source and binary incompatible with future versions
+// of Qt.
 //
 
 #include <QtNetwork/qabstractsocket.h>
