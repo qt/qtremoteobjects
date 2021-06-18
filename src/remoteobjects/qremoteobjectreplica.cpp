@@ -107,21 +107,29 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
     connect(&m_heartbeatTimer, &QTimer::timeout, this, [this] {
         // TODO: Revisit if a baseclass method can be used to avoid specialized cast
         // conditional logic.
-        auto clientIo = qobject_cast<QtROClientIoDevice *>(connectionToSource);
+
         if (m_pendingCalls.contains(0)) {
             m_pendingCalls.take(0);
             // The source didn't respond in time, disconnect the connection
-            if (clientIo)
-                clientIo->disconnectFromServer();
-            else if (connectionToSource)
-                connectionToSource->close();
+            if (connectionToSource) {
+                auto clientIo = qobject_cast<QtROClientIoDevice *>(connectionToSource);
+                if (clientIo)
+                    clientIo->disconnectFromServer();
+                else
+                    connectionToSource->close();
+            }
         } else {
+            if (connectionToSource.isNull()) {
+                qCDebug(QT_REMOTEOBJECT) << "Ignoring heartbeat as there is no source connected.";
+                return;
+            }
             connectionToSource->d_func()->m_codec->serializePingPacket(m_objectName);
             if (sendCommandWithReply(0).d->serialId == -1) {
                 m_heartbeatTimer.stop();
+                auto clientIo = qobject_cast<QtROClientIoDevice *>(connectionToSource);
                 if (clientIo)
                     clientIo->disconnectFromServer();
-                else if (connectionToSource)
+                else
                     connectionToSource->close();
             }
         }
@@ -188,11 +196,9 @@ void QRemoteObjectReplicaImplementation::emitNotified()
 
 bool QConnectedReplicaImplementation::sendCommand()
 {
-    if (connectionToSource.isNull() || !connectionToSource->isOpen()) {
-        if (connectionToSource.isNull())
-            qCWarning(QT_REMOTEOBJECT) << "connectionToSource is null";
+    Q_ASSERT(connectionToSource);
+    if (!connectionToSource->isOpen())
         return false;
-    }
 
     connectionToSource->d_func()->m_codec->send(connectionToSource);
     if (m_heartbeatTimer.interval())
@@ -361,6 +367,10 @@ void QConnectedReplicaImplementation::_q_send(QMetaObject::Call call, int index,
     static const bool debugArgs = qEnvironmentVariableIsSet("QT_REMOTEOBJECT_DEBUG_ARGUMENTS");
 
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod || call == QMetaObject::WriteProperty);
+    if (connectionToSource.isNull()) {
+        qCWarning(QT_REMOTEOBJECT) << "connectionToSource is null";
+        return;
+    }
 
     if (call == QMetaObject::InvokeMetaMethod) {
         if (debugArgs) {
@@ -388,6 +398,10 @@ void QConnectedReplicaImplementation::_q_send(QMetaObject::Call call, int index,
 QRemoteObjectPendingCall QConnectedReplicaImplementation::_q_sendWithReply(QMetaObject::Call call, int index, const QVariantList &args)
 {
     Q_ASSERT(call == QMetaObject::InvokeMetaMethod);
+    if (connectionToSource.isNull()) {
+        qCWarning(QT_REMOTEOBJECT) << "connectionToSource is null";
+        return QRemoteObjectPendingCall();
+    }
 
     qCDebug(QT_REMOTEOBJECT) << "Send" << call << this->m_metaObject->method(index).name() << index << args << connectionToSource;
     int serialId = (m_curSerialId == std::numeric_limits<int>::max() ? 1 : m_curSerialId++);
@@ -479,6 +493,7 @@ void QConnectedReplicaImplementation::setConnection(QtROIoDeviceBase *conn)
 
 void QConnectedReplicaImplementation::setDisconnected()
 {
+    Q_ASSERT(connectionToSource);
     connectionToSource.clear();
     setState(QRemoteObjectReplica::State::Suspect);
     for (const int index : childIndices()) {
@@ -491,6 +506,7 @@ void QConnectedReplicaImplementation::setDisconnected()
 
 void QConnectedReplicaImplementation::requestRemoteObjectSource()
 {
+    Q_ASSERT(connectionToSource);
     connectionToSource->d_func()->m_codec->serializeAddObjectPacket(m_objectName, needsDynamicInitialization());
     sendCommand();
 }
