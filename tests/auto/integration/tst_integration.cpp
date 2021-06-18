@@ -1506,6 +1506,23 @@ private slots:
         QVERIFY(res == false);
     }
 
+    void startClientWithoutHost()
+    {
+        setupClient();
+        QScopedPointer<EngineReplica> replica(client->acquire<EngineReplica>());
+        client->setHeartbeatInterval(10);
+        // Wait, to make sure there's no crash (QTBUG-94513)
+        QTest::qWait(200);
+
+        // Make sure creating the host afterwards works
+        setupHost();
+        Engine e;
+        e.setRpm(42);
+        host->enableRemoting(&e);
+
+        QVERIFY(replica->waitForSource());
+        QCOMPARE(replica->rpm(), e.rpm());
+    }
 };
 
 QTEST_MAIN(tst_Integration)
