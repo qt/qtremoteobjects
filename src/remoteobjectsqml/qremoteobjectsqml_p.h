@@ -92,9 +92,9 @@ public:
     Q_INVOKABLE QJSValue watch(const QRemoteObjectPendingCall &reply, int timeout = 30000)
     {
         if (m_accessiblePromise.isUndefined())
-            m_accessiblePromise = qmlEngine(this)->evaluate(
+            m_accessiblePromise = qmlEngine(this)->evaluate(QLatin1String(
                     "(function() { var obj = {}; obj.promise = new Promise(function(resolve, "
-                    "reject) { obj.resolve = resolve; obj.reject = reject; }); return obj; })");
+                    "reject) { obj.resolve = resolve; obj.reject = reject; }); return obj; })"));
 
         QRemoteObjectPendingCallWatcher *watcher = new QRemoteObjectPendingCallWatcher(reply);
 
@@ -114,7 +114,7 @@ public:
             }
 
             QJSValue v(QLatin1String("timeout"));
-            i.value().promise.property("reject").call(QJSValueList() << v);
+            i.value().promise.property(QLatin1String("reject")).call(QJSValueList() << v);
 
             delete i.key();
             delete i.value().timer;
@@ -130,7 +130,7 @@ public:
                         return;
                     }
                     QJSValue v = qmlEngine(this)->toScriptValue(self->returnValue());
-                    i.value().promise.property("resolve").call(QJSValueList() << v);
+                    i.value().promise.property(QLatin1String("resolve")).call(QJSValueList() << v);
 
                     delete i.key();
                     delete i.value().timer;
@@ -138,7 +138,7 @@ public:
                 });
 
         response.timer->start(timeout);
-        return promise.property("promise");
+        return promise.property(QLatin1String("promise"));
     }
 
 private:
