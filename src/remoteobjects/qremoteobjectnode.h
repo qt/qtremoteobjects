@@ -190,8 +190,8 @@ public:
     typedef std::function<bool(QStringView, QStringView)> RemoteObjectNameFilter;
     bool proxy(const QUrl &registryUrl, const QUrl &hostUrl={},
                RemoteObjectNameFilter filter=[](QStringView, QStringView) {return true; });
-    // ### Qt 6: Fix -> This should only be part of the QRemoteObjectRegistryHost type, since the
-    // reverse aspect requires the registry.
+    // TODO: Currently the reverse aspect requires the registry, so this is supported only for
+    // QRemoteObjectRegistryHost for now. Consider enabling it also for QRemoteObjectHost.
     bool reverseProxy(RemoteObjectNameFilter filter=[](QStringView, QStringView) {return true; });
 
 protected:

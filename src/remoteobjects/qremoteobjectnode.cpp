@@ -549,10 +549,14 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
     hostUrl needs to be provided to \l proxy for \l reverseProxy() to work. The
     \l reverseProxy() method allows a separate \a filter to be applied. This
     reverseProxy specific filter will receive notifications of new \l Source
-    objects on proxyNode and acquire them on the internal node if they pass the
-    reverseFilter.
+    objects on \c proxyNode and acquire them on the internal node if they pass the
+    \a filter.
 
     Returns \c true on success, \c false otherwise.
+
+    \note Currently the reverse proxy functionality is supported only for
+    QRemoteObjectRegistryHost. Calling this method on a QRemoteObjectHost node
+    will always return \c false.
 
     \sa proxy()
 */
