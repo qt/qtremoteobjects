@@ -11,7 +11,7 @@ qt_internal_add_module(RemoteObjects
         qconnectionfactories.cpp qconnectionfactories.h qconnectionfactories_p.h
         qremoteobjectabstractitemmodeladapter.cpp qremoteobjectabstractitemmodeladapter_p.h
         qremoteobjectabstractitemmodelreplica.cpp qremoteobjectabstractitemmodelreplica.h qremoteobjectabstractitemmodelreplica_p.h
-        qremoteobjectabstractitemmodeltypes.h
+        qremoteobjectabstractitemmodeltypes_p.h
         qremoteobjectdynamicreplica.cpp qremoteobjectdynamicreplica.h
         qremoteobjectnode.cpp qremoteobjectnode.h qremoteobjectnode_p.h
         qremoteobjectpacket.cpp qremoteobjectpacket_p.h

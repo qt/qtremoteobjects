@@ -51,7 +51,7 @@
 // We mean it.
 //
 
-#include "qremoteobjectabstractitemmodeltypes.h"
+#include "qremoteobjectabstractitemmodeltypes_p.h"
 #include "qremoteobjectsource.h"
 
 #include <QtCore/qsize.h>
