@@ -37,8 +37,19 @@
 **
 ****************************************************************************/
 
-#ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
-#define QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
+#ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_P_H
+#define QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_P_H
+
+//
+//  W A R N I N G
+//  -------------
+//
+// This file is not part of the Qt API. It exists purely as an
+// implementation detail. This header file may change from version to
+// version without notice, or even be removed.
+//
+// We mean it.
+//
 
 #include <QtCore/qabstractitemmodel.h>
 #include <QtCore/qdatastream.h>
@@ -248,4 +259,4 @@ Q_DECLARE_METATYPE(IndexValuePair)
 Q_DECLARE_METATYPE(Qt::Orientation)
 Q_DECLARE_METATYPE(QItemSelectionModel::SelectionFlags)
 
-#endif // QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_H
+#endif // QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_P_H
