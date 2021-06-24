@@ -84,12 +84,12 @@ public Q_SLOTS:
 
     QIntHash roleNames() const {return m_model->roleNames();}
 
-    QSize replicaSizeRequest(IndexList parentList);
-    DataEntries replicaRowRequest(IndexList start, IndexList end, QList<int> roles);
+    QSize replicaSizeRequest(QtPrivate::IndexList parentList);
+    QtPrivate::DataEntries replicaRowRequest(QtPrivate::IndexList start, QtPrivate::IndexList end, QList<int> roles);
     QVariantList replicaHeaderRequest(QList<Qt::Orientation> orientations, QList<int> sections, QList<int> roles);
-    void replicaSetCurrentIndex(IndexList index, QItemSelectionModel::SelectionFlags command);
-    void replicaSetData(const IndexList &index, const QVariant &value, int role);
-    MetaAndDataEntries replicaCacheRequest(size_t size, const QList<int> &roles);
+    void replicaSetCurrentIndex(QtPrivate::IndexList index, QItemSelectionModel::SelectionFlags command);
+    void replicaSetData(const QtPrivate::IndexList &index, const QVariant &value, int role);
+    QtPrivate::MetaAndDataEntries replicaCacheRequest(size_t size, const QList<int> &roles);
 
     void sourceDataChanged(const QModelIndex & topLeft, const QModelIndex & bottomRight, const QList<int> & roles = QList<int> ()) const;
     void sourceRowsInserted(const QModelIndex & parent, int start, int end);
@@ -100,17 +100,17 @@ public Q_SLOTS:
     void sourceLayoutChanged(const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint);
 Q_SIGNALS:
     void availableRolesChanged();
-    void dataChanged(IndexList topLeft, IndexList bottomRight, QList<int> roles) const;
-    void rowsInserted(IndexList parent, int start, int end) const;
-    void rowsRemoved(IndexList parent, int start, int end) const;
-    void rowsMoved(IndexList sourceParent, int sourceRow, int count, IndexList destinationParent, int destinationChild) const;
-    void currentChanged(IndexList current, IndexList previous);
-    void columnsInserted(IndexList parent, int start, int end) const;
-    void layoutChanged(IndexList parents, QAbstractItemModel::LayoutChangeHint hint);
+    void dataChanged(QtPrivate::IndexList topLeft, QtPrivate::IndexList bottomRight, QList<int> roles) const;
+    void rowsInserted(QtPrivate::IndexList parent, int start, int end) const;
+    void rowsRemoved(QtPrivate::IndexList parent, int start, int end) const;
+    void rowsMoved(QtPrivate::IndexList sourceParent, int sourceRow, int count, QtPrivate::IndexList destinationParent, int destinationChild) const;
+    void currentChanged(QtPrivate::IndexList current, QtPrivate::IndexList previous);
+    void columnsInserted(QtPrivate::IndexList parent, int start, int end) const;
+    void layoutChanged(QtPrivate::IndexList parents, QAbstractItemModel::LayoutChangeHint hint);
 
 private:
     QAbstractItemModelSourceAdapter();
-    QList<IndexValuePair> fetchTree(const QModelIndex &parent, size_t &size, const QList<int> &roles);
+    QList<QtPrivate::IndexValuePair> fetchTree(const QModelIndex &parent, size_t &size, const QList<int> &roles);
 
     QAbstractItemModel *m_model;
     QItemSelectionModel *m_selectionModel;
@@ -131,21 +131,21 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
         m_properties[2] = QtPrivate::qtro_property_index<AdapterType>(&AdapterType::roleNames, static_cast<QIntHash (QObject::*)()>(nullptr),"roleNames");
         m_signals[0] = 10;
         m_signals[1] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::availableRolesChanged, static_cast<void (QObject::*)()>(nullptr),m_signalArgCount+0,&m_signalArgTypes[0]);
-        m_signals[2] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::dataChanged, static_cast<void (QObject::*)(IndexList,IndexList,QList<int>)>(nullptr),m_signalArgCount+1,&m_signalArgTypes[1]);
-        m_signals[3] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(nullptr),m_signalArgCount+2,&m_signalArgTypes[2]);
-        m_signals[4] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsRemoved, static_cast<void (QObject::*)(IndexList,int,int)>(nullptr),m_signalArgCount+3,&m_signalArgTypes[3]);
-        m_signals[5] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsMoved, static_cast<void (QObject::*)(IndexList,int,int,IndexList,int)>(nullptr),m_signalArgCount+4,&m_signalArgTypes[4]);
-        m_signals[6] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::currentChanged, static_cast<void (QObject::*)(IndexList,IndexList)>(nullptr),m_signalArgCount+5,&m_signalArgTypes[5]);
+        m_signals[2] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::dataChanged, static_cast<void (QObject::*)(QtPrivate::IndexList,QtPrivate::IndexList,QList<int>)>(nullptr),m_signalArgCount+1,&m_signalArgTypes[1]);
+        m_signals[3] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsInserted, static_cast<void (QObject::*)(QtPrivate::IndexList,int,int)>(nullptr),m_signalArgCount+2,&m_signalArgTypes[2]);
+        m_signals[4] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsRemoved, static_cast<void (QObject::*)(QtPrivate::IndexList,int,int)>(nullptr),m_signalArgCount+3,&m_signalArgTypes[3]);
+        m_signals[5] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::rowsMoved, static_cast<void (QObject::*)(QtPrivate::IndexList,int,int,QtPrivate::IndexList,int)>(nullptr),m_signalArgCount+4,&m_signalArgTypes[4]);
+        m_signals[6] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::currentChanged, static_cast<void (QObject::*)(QtPrivate::IndexList,QtPrivate::IndexList)>(nullptr),m_signalArgCount+5,&m_signalArgTypes[5]);
         m_signals[7] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::modelReset, static_cast<void (QObject::*)()>(nullptr),m_signalArgCount+6,&m_signalArgTypes[6]);
         m_signals[8] = QtPrivate::qtro_signal_index<ObjectType>(&ObjectType::headerDataChanged, static_cast<void (QObject::*)(Qt::Orientation,int,int)>(nullptr),m_signalArgCount+7,&m_signalArgTypes[7]);
-        m_signals[9] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(IndexList,int,int)>(nullptr),m_signalArgCount+8,&m_signalArgTypes[8]);
-        m_signals[10] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::layoutChanged, static_cast<void (QObject::*)(IndexList,QAbstractItemModel::LayoutChangeHint)>(nullptr),m_signalArgCount+9,&m_signalArgTypes[9]);
+        m_signals[9] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::columnsInserted, static_cast<void (QObject::*)(QtPrivate::IndexList,int,int)>(nullptr),m_signalArgCount+8,&m_signalArgTypes[8]);
+        m_signals[10] = QtPrivate::qtro_signal_index<AdapterType>(&AdapterType::layoutChanged, static_cast<void (QObject::*)(QtPrivate::IndexList,QAbstractItemModel::LayoutChangeHint)>(nullptr),m_signalArgCount+9,&m_signalArgTypes[9]);
         m_methods[0] = 6;
-        m_methods[1] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(IndexList)>(nullptr),"replicaSizeRequest(IndexList)",m_methodArgCount+0,&m_methodArgTypes[0]);
-        m_methods[2] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(IndexList,IndexList,QList<int>)>(nullptr),"replicaRowRequest(IndexList,IndexList,QList<int>)",m_methodArgCount+1,&m_methodArgTypes[1]);
+        m_methods[1] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSizeRequest, static_cast<void (QObject::*)(QtPrivate::IndexList)>(nullptr),"replicaSizeRequest(QtPrivate::IndexList)",m_methodArgCount+0,&m_methodArgTypes[0]);
+        m_methods[2] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaRowRequest, static_cast<void (QObject::*)(QtPrivate::IndexList,QtPrivate::IndexList,QList<int>)>(nullptr),"replicaRowRequest(QtPrivate::IndexList,QtPrivate::IndexList,QList<int>)",m_methodArgCount+1,&m_methodArgTypes[1]);
         m_methods[3] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaHeaderRequest, static_cast<void (QObject::*)(QList<Qt::Orientation>,QList<int>,QList<int>)>(nullptr),"replicaHeaderRequest(QList<Qt::Orientation>,QList<int>,QList<int>)",m_methodArgCount+2,&m_methodArgTypes[2]);
-        m_methods[4] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(IndexList,QItemSelectionModel::SelectionFlags)>(nullptr),"replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)",m_methodArgCount+3,&m_methodArgTypes[3]);
-        m_methods[5] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(IndexList,QVariant,int)>(nullptr),"replicaSetData(IndexList,QVariant,int)",m_methodArgCount+4,&m_methodArgTypes[4]);
+        m_methods[4] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSetCurrentIndex, static_cast<void (QObject::*)(QtPrivate::IndexList,QItemSelectionModel::SelectionFlags)>(nullptr),"replicaSetCurrentIndex(QtPrivate::IndexList,QItemSelectionModel::SelectionFlags)",m_methodArgCount+3,&m_methodArgTypes[3]);
+        m_methods[5] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaSetData, static_cast<void (QObject::*)(QtPrivate::IndexList,QVariant,int)>(nullptr),"replicaSetData(QtPrivate::IndexList,QVariant,int)",m_methodArgCount+4,&m_methodArgTypes[4]);
         m_methods[6] = QtPrivate::qtro_method_index<AdapterType>(&AdapterType::replicaCacheRequest, static_cast<void (QObject::*)(size_t,QList<int>)>(nullptr),"replicaCacheRequest(size_t,QList<int>)",m_methodArgCount+5,&m_methodArgTypes[5]);
     }
 
@@ -207,26 +207,26 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     {
         switch (index) {
         case 0: return QByteArrayLiteral("availableRolesChanged()");
-        case 1: return QByteArrayLiteral("dataChanged(IndexList,IndexList,QList<int>)");
-        case 2: return QByteArrayLiteral("rowsInserted(IndexList,int,int)");
-        case 3: return QByteArrayLiteral("rowsRemoved(IndexList,int,int)");
-        case 4: return QByteArrayLiteral("rowsMoved(IndexList,int,int,IndexList,int)");
-        case 5: return QByteArrayLiteral("currentChanged(IndexList,IndexList)");
+        case 1: return QByteArrayLiteral("dataChanged(QtPrivate::IndexList,QtPrivate::IndexList,QList<int>)");
+        case 2: return QByteArrayLiteral("rowsInserted(QtPrivate::IndexList,int,int)");
+        case 3: return QByteArrayLiteral("rowsRemoved(QtPrivate::IndexList,int,int)");
+        case 4: return QByteArrayLiteral("rowsMoved(QtPrivate::IndexList,int,int,QtPrivate::IndexList,int)");
+        case 5: return QByteArrayLiteral("currentChanged(QtPrivate::IndexList,QtPrivate::IndexList)");
         case 6: return QByteArrayLiteral("resetModel()");
         case 7: return QByteArrayLiteral("headerDataChanged(Qt::Orientation,int,int)");
-        case 8: return QByteArrayLiteral("columnsInserted(IndexList,int,int)");
-        case 9: return QByteArrayLiteral("layoutChanged(IndexList,QAbstractItemModel::LayoutChangeHint)");
+        case 8: return QByteArrayLiteral("columnsInserted(QtPrivate::IndexList,int,int)");
+        case 9: return QByteArrayLiteral("layoutChanged(QtPrivate::IndexList,QAbstractItemModel::LayoutChangeHint)");
         }
         return QByteArrayLiteral("");
     }
     const QByteArray methodSignature(int index) const override
     {
         switch (index) {
-        case 0: return QByteArrayLiteral("replicaSizeRequest(IndexList)");
-        case 1: return QByteArrayLiteral("replicaRowRequest(IndexList,IndexList,QList<int>)");
+        case 0: return QByteArrayLiteral("replicaSizeRequest(QtPrivate::IndexList)");
+        case 1: return QByteArrayLiteral("replicaRowRequest(QtPrivate::IndexList,QtPrivate::IndexList,QList<int>)");
         case 2: return QByteArrayLiteral("replicaHeaderRequest(QList<Qt::Orientation>,QList<int>,QList<int>)");
-        case 3: return QByteArrayLiteral("replicaSetCurrentIndex(IndexList,QItemSelectionModel::SelectionFlags)");
-        case 4: return QByteArrayLiteral("replicaSetData(IndexList,QVariant,int)");
+        case 3: return QByteArrayLiteral("replicaSetCurrentIndex(QtPrivate::IndexList,QItemSelectionModel::SelectionFlags)");
+        case 4: return QByteArrayLiteral("replicaSetData(QtPrivate::IndexList,QVariant,int)");
         case 5: return QByteArrayLiteral("replicaCacheRequest(size_t,QList<int>)");
         }
         return QByteArrayLiteral("");
@@ -239,10 +239,10 @@ struct QAbstractItemAdapterSourceAPI : public SourceApiMap
     {
         switch (index) {
         case 0: return QByteArrayLiteral("QSize");
-        case 1: return QByteArrayLiteral("DataEntries");
+        case 1: return QByteArrayLiteral("QtPrivate::DataEntries");
         case 2: return QByteArrayLiteral("QVariantList");
         case 3: return QByteArrayLiteral("");
-        case 5: return QByteArrayLiteral("MetaAndDataEntries");
+        case 5: return QByteArrayLiteral("QtPrivate::MetaAndDataEntries");
         }
         return QByteArrayLiteral("");
     }
