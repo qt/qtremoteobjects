@@ -64,6 +64,8 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace QtPrivate {
+
 struct ModelIndex
 {
     ModelIndex() : row(-1), column(-1) {}
@@ -249,13 +251,15 @@ inline IndexList toModelIndexList(const QModelIndex &index, const QAbstractItemM
     return list;
 }
 
+} // namespace QtPrivate
+
 QT_END_NAMESPACE
 
-Q_DECLARE_METATYPE(ModelIndex)
-Q_DECLARE_METATYPE(IndexList)
-Q_DECLARE_METATYPE(DataEntries)
-Q_DECLARE_METATYPE(MetaAndDataEntries)
-Q_DECLARE_METATYPE(IndexValuePair)
+Q_DECLARE_METATYPE(QtPrivate::ModelIndex)
+Q_DECLARE_METATYPE(QtPrivate::IndexList)
+Q_DECLARE_METATYPE(QtPrivate::DataEntries)
+Q_DECLARE_METATYPE(QtPrivate::MetaAndDataEntries)
+Q_DECLARE_METATYPE(QtPrivate::IndexValuePair)
 Q_DECLARE_METATYPE(Qt::Orientation)
 Q_DECLARE_METATYPE(QItemSelectionModel::SelectionFlags)
 
