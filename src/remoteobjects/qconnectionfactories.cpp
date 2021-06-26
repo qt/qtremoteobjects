@@ -107,8 +107,41 @@ QtROIoDeviceBase::~QtROIoDeviceBase()
 bool QtROIoDeviceBase::read(QRemoteObjectPacketTypeEnum &type, QString &name)
 {
     Q_D(QtROIoDeviceBase);
-    qCDebug(QT_REMOTEOBJECT_IO) << deviceType() << "read()" << d->m_curReadSize << bytesAvailable();
+    qCDebug(QT_REMOTEOBJECT_IO) << deviceType() << "read()" << d->m_curReadSize
+                                << bytesAvailable();
 
+    if (!d->m_codec) {
+        // We haven't been initialized yet, this will be the handshake that sets the codec
+        char buffer[252] = {0};
+        if (d->m_curReadSize == 0) {
+            if (bytesAvailable() < 1)
+                return false;
+            connection()->read(buffer, 1);
+            d->m_curReadSize = static_cast<quint8>(buffer[0]);
+            if (d->m_curReadSize > 252 || d->m_curReadSize < 3) {
+                type = Invalid;
+                // We read data, but it is invalid.  The handler will close this connection.
+                return true;
+            }
+        }
+        if (bytesAvailable() < d->m_curReadSize)
+            return false;
+        connection()->read(buffer, 1);
+        quint8 tmp = static_cast<quint8>(buffer[0]);
+        if (tmp != Handshake) {
+            type = Invalid;
+            // We read data, but it is invalid.  The handler will close this connection.
+            return true;
+        }
+        type = Handshake;
+        connection()->read(buffer, 1);
+        // TODO pass revision back for setting up the codec
+        tmp = static_cast<quint8>(buffer[0]); // Revision
+        connection()->read(buffer, d->m_curReadSize-2);
+        name = QString::fromUtf8(buffer);
+        d->m_curReadSize = 0;
+        return true;
+    }
     if (d->m_curReadSize == 0) {
         if (bytesAvailable() < static_cast<int>(sizeof(quint32)))
             return false;
@@ -275,6 +308,12 @@ bool QtROExternalIoDevice::isOpen() const
     if (!d->m_device)
         return false;
     return d->m_device->isOpen() && QtROIoDeviceBase::isOpen();
+}
+
+void QtROExternalIoDevice::clearCodec()
+{
+    Q_D(QtROExternalIoDevice);
+    d->m_codec = nullptr;
 }
 
 void QtROExternalIoDevice::doClose()

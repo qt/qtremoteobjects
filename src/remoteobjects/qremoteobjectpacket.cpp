@@ -167,11 +167,10 @@ void QDataStreamCodec::serializeProperty(QDataStream &ds, const QRemoteObjectSou
     ds << encodeVariant(value);
 }
 
-void QDataStreamCodec::serializeHandshakePacket()
+void QDataStreamCodec::sendHandshakePacket(QtROIoDeviceBase* connection)
 {
-    m_packet.setId(Handshake);
-    m_packet << QString(protocolVersion);
-    m_packet.finishPacket();
+    auto codecName = QRemoteObjectStringLiterals::QDATASTREAM().toUtf8();
+    sendHandshake(connection, codecName);
 }
 
 void QDataStreamCodec::serializeInitPacket(const QRemoteObjectRootSource *source)
@@ -756,6 +755,18 @@ void CodecBase::send(QtROIoDeviceBase *connection)
     const auto bytearray = getPayload();
     connection->write(bytearray);
     reset();
+}
+
+void CodecBase::sendHandshake(QtROIoDeviceBase *connection, QByteArray &codecName, quint8 revision)
+{
+    Q_ASSERT(codecName.size() < 253);
+    codecName.prepend(static_cast<char>(revision));
+    quint8 handshake = (QRemoteObjectPacketTypeEnum::Handshake) & 0xff;
+    codecName.prepend(static_cast<char>(handshake));
+    quint8 size = (codecName.size()) & 0xff;
+    codecName.prepend(static_cast<char>(size));
+    connection->write(codecName);
+    reset();  // Reset in case derived class storage is used for codec
 }
 
 } // namespace QRemoteObjectPackets

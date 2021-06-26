@@ -558,7 +558,7 @@ QByteArrayList DynamicApiMap::methodParameterNames(int index) const
 }
 
 QRemoteObjectSourceBase::Private::Private(QRemoteObjectSourceIo *io, QRemoteObjectRootSource *root)
-    : m_sourceIo(io), codec(io->m_codec.data()), isDynamic(false), root(root)
+    : m_sourceIo(io), codec(io->m_codec), isDynamic(false), root(root)
 {
 }
 

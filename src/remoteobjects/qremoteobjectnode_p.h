@@ -131,6 +131,48 @@ struct ProxyReplicaInfo
     ~ProxyReplicaInfo() { delete replica; }
 };
 
+struct CodecManager
+{
+    CodecManager() {}
+    ~CodecManager()
+    {
+        qDeleteAll(codecs);
+    }
+    QRemoteObjectPackets::CodecBase *codec(const QString &codecName)
+    {
+        Q_ASSERT(availableCodecs.contains(codecName) || codecName == QtRemoteObjects::protocolVersion);
+        int i = codecName == QtRemoteObjects::protocolVersion ? 0 : availableCodecs.indexOf(codecName);
+        if (codecs.at(i))
+            return codecs.at(i);
+        QRemoteObjectPackets::CodecBase *codec;
+        switch (i) {
+        case 0:
+            codec = new QRemoteObjectPackets::QDataStreamCodec;
+            break;
+//        case 1:
+//            codec = new QRemoteObjectPackets::QCBorCodec;
+//            break;
+        default:
+            // Need something here so the compiler doesn't complain about using a "maybe
+            // uninitialized" value, even though we've checked against the available set of
+            // codecs.
+            qFatal("Tried to use an invalud codec: %s", qPrintable(codecName));
+            return nullptr;
+        }
+        codecs[i] = codec;
+        return codec;
+    }
+    bool contains(const QString &codecName)
+    {
+        // Qt5 QtRO compatibility
+        if (codecName == QtRemoteObjects::protocolVersion)
+            return true;
+        return availableCodecs.contains(codecName);
+    }
+    const static QStringList availableCodecs;
+    QList<QRemoteObjectPackets::CodecBase *> codecs = {nullptr, nullptr};
+};
+
 class QRemoteObjectNodePrivate : public QObjectPrivate
 {
 public:
@@ -191,6 +233,7 @@ public:
     QRemoteObjectAbstractPersistedStore *persistedStore;
     int m_heartbeatInterval = 0;
     QRemoteObjectMetaObjectManager dynamicTypeManager;
+    CodecManager codecManager;
     Q_DECLARE_PUBLIC(QRemoteObjectNode)
 };
 
@@ -204,6 +247,8 @@ public:
 public:
     QRemoteObjectSourceIo *remoteObjectIo;
     ProxyInfo *proxyInfo = nullptr;
+    // Default to QDatastream codec if setCodec isn't called on the node.
+    QString codecName = QRemoteObjectStringLiterals::QDATASTREAM();
     Q_DECLARE_PUBLIC(QRemoteObjectHostBase);
 };
 

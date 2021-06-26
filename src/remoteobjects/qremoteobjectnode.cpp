@@ -1323,6 +1323,8 @@ void QRemoteObjectNodePrivate::onShouldReconnect(QtROClientIoDevice *ioDevice)
 {
     Q_Q(QRemoteObjectNode);
 
+    // Clear ioDevice's codec.  A new Handshake will be sent on reconnect.
+    qobject_cast<QtROIoDeviceBase *>(ioDevice)->d_func()->m_codec = nullptr;
     const auto remoteObjects = ioDevice->remoteObjects();
     for (const QString &remoteObject : remoteObjects) {
         connectedSources.remove(remoteObject);
@@ -1445,13 +1447,12 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             break;
         }
         case QRemoteObjectPacketTypeEnum::Handshake:
-            if (rxName != QtRemoteObjects::protocolVersion) {
-                qWarning() << "*** Protocol Mismatch, closing connection ***. Got" << rxName << "expected" << QtRemoteObjects::protocolVersion;
+            if (!codecManager.contains(rxName)) {
+                qWarning() << "*** Protocol Mismatch, closing connection ***. Got" << rxName << "expected one of" << codecManager.availableCodecs << "or" << QtRemoteObjects::protocolVersion << "for Qt5 compatibility";
                 setLastError(QRemoteObjectNode::ProtocolMismatch);
                 connection->close();
             } else {
-                // TODO should have some sort of manager for the codec
-                codec = new QRemoteObjectPackets::QDataStreamCodec;
+                codec = codecManager.codec(rxName);
             }
             break;
         case QRemoteObjectPacketTypeEnum::ObjectList:
@@ -1996,7 +1997,7 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
         d->setLastError(HostUrlInvalid);
         return false;
     }
-    d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, this);
+    d->remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, d->codecManager.codec(codec()), this);
 
     if (allowedSchemas == AllowedSchemas::BuiltInSchemasOnly && !d->remoteObjectIo->startListening()) {
         d->setLastError(ListenFailed);
@@ -2305,6 +2306,10 @@ void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
     connect(device, &QtROIoDeviceBase::readyRead, this, [d, device]() {
         d->onClientRead(device);
     });
+    connect(device, &QtROIoDeviceBase::disconnected, this, [device]() {
+        // Clear the codec for handshake in case reconnect is possible.
+        device->clearCodec();
+    });
     if (device->bytesAvailable())
         d->onClientRead(device);
 }
@@ -2586,10 +2591,67 @@ void QRemoteObjectHostBase::addHostSideConnection(QIODevice *ioDevice)
         return;
     }
     if (!d->remoteObjectIo)
-        d->remoteObjectIo = new QRemoteObjectSourceIo(this);
+        d->remoteObjectIo = new QRemoteObjectSourceIo(d->codecManager.codec(codec()), this);
     QtROExternalIoDevice *device = new QtROExternalIoDevice(ioDevice, this);
     return d->remoteObjectIo->newConnection(device);
 }
+
+/*!
+    \since 6.2
+
+    Returns the serialization protocol (QDataStream, CBOR, etc) currently used
+    by this Node. Host nodes will default to QDataStream to provide the best
+    support for Qt types, but other codecs can provide interoperability with
+    non-Qt programs.
+
+    \sa setCodec(), availableCodecs()
+*/
+QString QRemoteObjectHostBase::codec() const
+{
+    Q_D(const QRemoteObjectHostBase);
+    return d->codecName;
+}
+
+/*!
+    \since 6.2
+
+    Sets the serialization protocol to the \a codecName protocol. Returns true
+    if the codec is set, false otherwise. The codec won't be set if an invalid
+    codec name is provided, or if this method is called after the codec is in
+    use (i.e., you can't change the codec once streaming data has started).
+
+    \sa codec(), availableCodecs()
+*/
+bool QRemoteObjectHostBase::setCodec(const QString &codecName)
+{
+    Q_D(QRemoteObjectHostBase);
+    if (!availableCodecs().contains(codecName)) {
+        qWarning() << "Invalid codec" << codecName << "provided to setCodec.  Known codecs:" << availableCodecs();
+        return false;
+    }
+    if (d->remoteObjectIo) {
+        qWarning() << "The codec cannot be changed once communication starts.";
+        return false;
+    }
+    d->codecName = codecName;
+    emit codecChanged(codecName);
+    return true;
+}
+
+/*!
+    \since 6.2
+
+    Lists the names of the available codecs.
+
+    \sa codec(), setCodec()
+*/
+QStringList QRemoteObjectHostBase::availableCodecs() const
+{
+    Q_D(const QRemoteObjectHostBase);
+    return d->codecManager.availableCodecs;
+}
+
+const QStringList CodecManager::availableCodecs = { QRemoteObjectStringLiterals::QDATASTREAM(), QRemoteObjectStringLiterals::CBOR() };
 
 /*!
     Returns a pointer to a \l Replica which is specifically derived from \l

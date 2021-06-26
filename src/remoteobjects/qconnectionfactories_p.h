@@ -77,6 +77,7 @@ public:
     explicit QtROExternalIoDevice(QIODevice *device, QObject *parent=nullptr);
     QIODevice *connection() const override;
     bool isOpen() const override;
+    void clearCodec();
 
 protected:
     void doClose() override;

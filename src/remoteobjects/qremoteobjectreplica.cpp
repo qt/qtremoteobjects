@@ -149,7 +149,7 @@ QConnectedReplicaImplementation::QConnectedReplicaImplementation(const QString &
 
 QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
 {
-    if (!connectionToSource.isNull()) {
+    if (!connectionToSource.isNull() && connectionToSource->d_func()->m_codec) {
         qCDebug(QT_REMOTEOBJECT) << "Replica deleted: sending RemoveObject to RemoteObjectSource" << m_objectName;
         connectionToSource->d_func()->m_codec->serializeRemoveObjectPacket(m_objectName);
         sendCommand();

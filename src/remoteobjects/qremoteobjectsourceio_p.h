@@ -69,8 +69,8 @@ class QRemoteObjectSourceIo : public QObject
 {
     Q_OBJECT
 public:
-    explicit QRemoteObjectSourceIo(const QUrl &address, QObject *parent = nullptr);
-    explicit QRemoteObjectSourceIo(QObject *parent = nullptr);
+    explicit QRemoteObjectSourceIo(const QUrl &address, QRemoteObjectPackets::CodecBase *codec, QObject *parent = nullptr);
+    explicit QRemoteObjectSourceIo(QRemoteObjectPackets::CodecBase *codec, QObject *parent = nullptr);
     ~QRemoteObjectSourceIo() override;
 
     bool startListening();
@@ -103,8 +103,7 @@ public:
     QMap<QString, QRemoteObjectRootSource*> m_sourceRoots;
     QHash<QtROIoDeviceBase*, QUrl> m_registryMapping;
     QScopedPointer<QConnectionAbstractServer> m_server;
-    // TODO should have some sort of manager for the codec
-    QScopedPointer<QRemoteObjectPackets::CodecBase> m_codec{new QRemoteObjectPackets::QDataStreamCodec};
+    QRemoteObjectPackets::CodecBase *m_codec;
     QString m_rxName;
     QVariantList m_rxArgs;
     QUrl m_address;

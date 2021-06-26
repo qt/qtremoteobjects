@@ -153,9 +153,9 @@ public:
         baseAddress = size; // Allow appending until reset() is called
     }
 
-    const QByteArray &payload()
+    // TODO: Better alternative than exposing this as a reference (here and getPayload below)?
+    QByteArray &payload()
     {
-        array.resize(size);
         return array;
     }
 
@@ -202,7 +202,7 @@ public:
                                          int &serialId, int &propertyIndex) = 0;
     virtual void serializeInvokeReplyPacket(const QString &name, int ackedSerialId,
                                             const QVariant &value) = 0;
-    virtual void serializeHandshakePacket() = 0;
+    virtual void sendHandshakePacket(QtROIoDeviceBase *connection) = 0;
     virtual void serializeRemoveObjectPacket(const QString &name) = 0;
     //There is no deserializeRemoveObjectPacket - no parameters other than id and name
     virtual void serializeAddObjectPacket(const QString &name, bool isDynamic) = 0;
@@ -211,13 +211,14 @@ public:
     virtual void deserializeInvokeReplyPacket(QDataStream &in, int &ackedSerialId,
                                               QVariant &value) = 0;
     void send(const QSet<QtROIoDeviceBase *> &connections);
-    void send(const QVector<QtROIoDeviceBase *> &connections);
+    void send(const QList<QtROIoDeviceBase *> &connections);
     void send(QtROIoDeviceBase *connection);
 
 protected:
     // A payload can consist of one or more packets
-    virtual const QByteArray &getPayload() = 0;
+    virtual QByteArray &getPayload() = 0;
     virtual void reset() {}
+    void sendHandshake(QtROIoDeviceBase* connection, QByteArray &codecName, quint8 revision=0);
 };
 
 class QDataStreamCodec : public CodecBase
@@ -238,7 +239,7 @@ public:
                                  int &serialId, int &propertyIndex) override;
     void serializeInvokeReplyPacket(const QString &name, int ackedSerialId,
                                     const QVariant &value) override;
-    void serializeHandshakePacket() override;
+    void sendHandshakePacket(QtROIoDeviceBase *connection) override;
     void serializeRemoveObjectPacket(const QString &name) override;
     void serializeAddObjectPacket(const QString &name, bool isDynamic) override;
     void deserializeAddObjectPacket(QDataStream &, bool &isDynamic) override;
@@ -247,7 +248,7 @@ public:
                                       QVariant &value) override;
 
 protected:
-    const QByteArray &getPayload() override {
+    QByteArray &getPayload() override {
         return m_packet.payload();
     }
     void reset() override {

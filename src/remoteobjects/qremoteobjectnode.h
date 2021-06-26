@@ -170,6 +170,8 @@ private:
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectHostBase : public QRemoteObjectNode
 {
     Q_OBJECT
+    Q_PROPERTY(QString codec READ codec WRITE setCodec NOTIFY codecChanged)
+
 public:
     enum AllowedSchemas { BuiltInSchemasOnly, AllowExternalRegistration };
     Q_ENUM(AllowedSchemas)
@@ -186,6 +188,9 @@ public:
     bool enableRemoting(QAbstractItemModel *model, const QString &name, const QList<int> roles, QItemSelectionModel *selectionModel = nullptr);
     Q_INVOKABLE bool disableRemoting(QObject *remoteObject);
     void addHostSideConnection(QIODevice *ioDevice);
+    QString codec() const;
+    bool setCodec(const QString &codecName);
+    Q_INVOKABLE QStringList availableCodecs() const;
 
     typedef std::function<bool(QStringView, QStringView)> RemoteObjectNameFilter;
     bool proxy(const QUrl &registryUrl, const QUrl &hostUrl={},
@@ -193,6 +198,9 @@ public:
     // TODO: Currently the reverse aspect requires the registry, so this is supported only for
     // QRemoteObjectRegistryHost for now. Consider enabling it also for QRemoteObjectHost.
     bool reverseProxy(RemoteObjectNameFilter filter=[](QStringView, QStringView) {return true; });
+
+Q_SIGNALS:
+    void codecChanged(const QString &codec);
 
 protected:
     virtual QUrl hostUrl() const;

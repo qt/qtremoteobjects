@@ -51,19 +51,21 @@ QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
 
-QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QObject *parent)
+QRemoteObjectSourceIo::QRemoteObjectSourceIo(const QUrl &address, QRemoteObjectPackets::CodecBase *codec, QObject *parent)
     : QObject(parent)
     , m_server(QtROServerFactory::instance()->isValid(address) ?
                QtROServerFactory::instance()->create(address, this) : nullptr)
+    , m_codec(codec)
     , m_address(address)
 {
     if (m_server == nullptr)
         qRODebug(this) << "Using" << m_address << "as external url.";
 }
 
-QRemoteObjectSourceIo::QRemoteObjectSourceIo(QObject *parent)
+QRemoteObjectSourceIo::QRemoteObjectSourceIo(QRemoteObjectPackets::CodecBase *codec, QObject *parent)
     : QObject(parent)
     , m_server(nullptr)
+    , m_codec(codec)
 {
 }
 
@@ -308,8 +310,9 @@ void QRemoteObjectSourceIo::newConnection(QtROIoDeviceBase *conn)
         onServerDisconnect(conn);
     });
 
-    m_codec->serializeHandshakePacket();
-    m_codec->send(conn);
+    m_codec->sendHandshakePacket(conn);
+    // Set the codec pointer on IoDeviceBase's private - otherwise it will try to look for a Handshake packet.
+    conn->d_func()->m_codec = m_codec;
 
     QRemoteObjectPackets::ObjectInfoList infos;
     infos.reserve(m_sourceRoots.size());
