@@ -59,7 +59,7 @@ QT_BEGIN_NAMESPACE
 using namespace QtRemoteObjects;
 using namespace QRemoteObjectStringLiterals;
 
-using GadgetType = QList<QVariant>;
+using GadgetType = QVariantList;
 
 struct ManagedGadgetTypeEntry
 {

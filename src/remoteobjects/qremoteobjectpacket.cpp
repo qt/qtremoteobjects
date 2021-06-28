@@ -194,7 +194,7 @@ void QDataStreamCodec::serializeProperties(const QRemoteObjectSourceBase *source
         serializeProperty(source, internalIndex);
 }
 
-bool deserializeQVariantList(QDataStream &s, QList<QVariant> &l)
+bool deserializeQVariantList(QDataStream &s, QVariantList &l)
 {
     // note: optimized version of: QDataStream operator>>(QDataStream& s, QList<T>& l)
     quint32 c;

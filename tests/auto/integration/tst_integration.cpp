@@ -788,7 +788,7 @@ private slots:
 
         spy.wait();
         QCOMPARE(spy.count(), 1);
-        const QList<QVariant> &arguments = spy.first();
+        const QVariantList &arguments = spy.first();
         bool ok;
         int res = arguments.at(0).toInt(&ok);
         QVERIFY(ok);
@@ -817,7 +817,7 @@ private slots:
         e.setRpm(3456);
         spy.wait();
         QCOMPARE(spy.count(), 1);
-        const QList<QVariant> &arguments = spy.first();
+        const QVariantList &arguments = spy.first();
         bool ok;
         int res = arguments.at(0).toInt(&ok);
         QVERIFY(ok);
@@ -1373,7 +1373,7 @@ private slots:
         emit t.send(data);
         spy.wait();
         QCOMPARE(spy.count(), 1);
-        const QList<QVariant> &arguments = spy.first();
+        const QVariantList &arguments = spy.first();
         QVERIFY(arguments.at(0).toByteArray() == data);
         QVERIFY(host->disableRemoting(&t));
     }
