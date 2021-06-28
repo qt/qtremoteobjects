@@ -44,6 +44,7 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qurl.h>
 #include <QtCore/qloggingcategory.h>
+#include <QtRemoteObjects/qtremoteobjectsexports.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -91,16 +92,6 @@ Q_DECLARE_METATYPE(QRemoteObjectSourceLocation)
 Q_DECLARE_METATYPE(QRemoteObjectSourceLocations)
 Q_DECLARE_METATYPE(QIntHash)
 QT_BEGIN_NAMESPACE
-
-#ifndef QT_STATIC
-#  if defined(QT_BUILD_REMOTEOBJECTS_LIB)
-#    define Q_REMOTEOBJECTS_EXPORT Q_DECL_EXPORT
-#  else
-#    define Q_REMOTEOBJECTS_EXPORT Q_DECL_IMPORT
-#  endif
-#else
-#  define Q_REMOTEOBJECTS_EXPORT
-#endif
 
 #define QCLASSINFO_REMOTEOBJECT_TYPE "RemoteObject Type"
 #define QCLASSINFO_REMOTEOBJECT_SIGNATURE "RemoteObject Signature"
