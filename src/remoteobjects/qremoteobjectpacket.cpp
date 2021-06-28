@@ -635,7 +635,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
             ds << QByteArray::fromRawData(prop.typeName(), qsizetype(qstrlen(prop.typeName())));
         }
         int enumCount = meta->enumeratorCount();
-        ds << enumCount;
+        ds << quint32(enumCount);
         for (int j = 0; j < enumCount; j++) {
             auto const enumMeta = meta->enumerator(j);
             serializeEnum(ds, enumMeta);
@@ -915,6 +915,7 @@ QRO_::QRO_(const QVariant &value)
         out << QByteArray::fromRawData(property.name(), qsizetype(qstrlen(property.name())));
         out << QByteArray::fromRawData(property.typeName(), qsizetype(qstrlen(property.typeName())));
     }
+    out << quint32(0); // PODs have no enums
     QDataStream ds(&parameters, QIODevice::WriteOnly);
     ds << value;
 #ifdef QTRO_VERBOSE_PROTOCOL
