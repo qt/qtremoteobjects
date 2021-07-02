@@ -1,7 +1,7 @@
 # Generated from server.pro.
 
 cmake_minimum_required(VERSION 3.14)
-project(server LANGUAGES CXX)
+project(remoteobjects_server LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -13,29 +13,29 @@ if(NOT DEFINED INSTALL_EXAMPLESDIR)
   set(INSTALL_EXAMPLESDIR "examples")
 endif()
 
-set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/server")
+set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/remoteobjects_server")
 
 find_package(Qt6 COMPONENTS RemoteObjects)
 find_package(Qt6 COMPONENTS Core)
 
-qt_add_executable(server
+qt_add_executable(remoteobjects_server
     main.cpp
     timemodel.cpp timemodel.h
 )
-set_target_properties(server PROPERTIES
+set_target_properties(remoteobjects_server PROPERTIES
     WIN32_EXECUTABLE FALSE
     MACOSX_BUNDLE TRUE
 )
-target_link_libraries(server PUBLIC
+target_link_libraries(remoteobjects_server PUBLIC
     Qt::Core
     Qt::RemoteObjects
 )
 
-qt6_add_repc_sources(server
+qt6_add_repc_sources(remoteobjects_server
     ../timemodel.rep
 )
 
-install(TARGETS server
+install(TARGETS remoteobjects_server
     RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
     BUNDLE DESTINATION "${INSTALL_EXAMPLEDIR}"
     LIBRARY DESTINATION "${INSTALL_EXAMPLEDIR}"
