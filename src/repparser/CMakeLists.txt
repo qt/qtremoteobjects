@@ -9,29 +9,7 @@ qt_internal_add_module(RepParser
         Qt::Core
 )
 
-#### Keys ignored in scope 1:.:.:repparser.pro:<TRUE>:
-# MODULE = "repparser"
-# OTHER_FILES = "$$PWD/parser.g"
-# def_build = "debug"
+qt_internal_module_info(module RepParser)
+qt_path_join(parser_install_dir "${QT_INSTALL_DIR}" "${INSTALL_INCLUDEDIR}" "${module}")
 
-## Scopes:
-#####################################################################
-
-#### Keys ignored in scope 2:.:.:repparser.pro:QT_CONFIG___contains___release,debug OR release:
-# def_build = "release"
-
-#### Keys ignored in scope 4:.:.:repparser.pro:lib_bundle:
-# FRAMEWORK_DATA.files = "$$PWD/parser.g"
-# FRAMEWORK_DATA.path = "Headers"
-# FRAMEWORK_DATA.version = "Versions"
-# QMAKE_BUNDLE_DATA = "FRAMEWORK_DATA"
-
-#### Keys ignored in scope 5:.:.:repparser.pro:else:
-# extra_headers.files = "$$PWD/parser.g"
-# extra_headers.path = "$$[QT_INSTALL_HEADERS]/$$MODULE_INCNAME"
-
-#### Keys ignored in scope 7:.:.:repparser.pro:NOT _PRO_FILE_PWD____equals____ss_OUT_PWD:
-# COPIES = "extra_headers"
-
-#### Keys ignored in scope 8:.:.:repparser.pro:else:
-# INSTALLS = "extra_headers"
+qt_copy_or_install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/parser.g" DESTINATION "${parser_install_dir}")
