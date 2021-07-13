@@ -10,6 +10,7 @@ qt_get_tool_target_name(target_name repc)
 qt_internal_add_tool(${target_name}
     TARGET_DESCRIPTION "Qt Remote Objects Compiler"
     TOOLS_TARGET RemoteObjects # special case
+    INSTALL_DIR "${INSTALL_LIBEXECDIR}"
     SOURCES
         cppcodegenerator.cpp cppcodegenerator.h
         main.cpp

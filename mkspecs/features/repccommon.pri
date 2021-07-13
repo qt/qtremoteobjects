@@ -5,8 +5,8 @@ contains(QMAKE_HOST.os, Windows) {
 }
 exists($$cmd): QT_TOOL.repc.binary = $$cmd
 
-# qtPrepareTool honors QT_TOOL.repc.binary if set
-qtPrepareTool(QMAKE_REPC, repc)
+# qtPrepareLibExecTool honors QT_TOOL.repc.binary if set
+qtPrepareLibExecTool(QMAKE_REPC, repc)
 
 REPC_INCLUDEPATHES = $$QT.remoteobjects.includes
 for (path, REPC_INCLUDEPATHES) {
