@@ -50,7 +50,7 @@ for(group, groups) {
     input_list = $${GROUP}_LIST
     json_list = $${GROUP}_JSONLIST
 
-    qtPrepareTool(MOC_CREATE_JSON, moc)
+    qtPrepareLibExecTool(MOC_CREATE_JSON, moc)
     $${group}_moc_json.output = ${QMAKE_FILE_BASE}.json
     $${group}_moc_json.CONFIG = no_link moc_verify
     $${group}_moc_json.commands = $$MOC_CREATE_JSON -o ${QMAKE_FILE_BASE} ${QMAKE_FILE_NAME} --output-json
