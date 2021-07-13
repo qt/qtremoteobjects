@@ -9,7 +9,7 @@ include(repcmerged.pri)
         REPC_INCLUDEPATH += -I $$shell_quote($$path)
     }
 
-    qtPrepareTool(MOC_CREATE_JSON, moc)
+    qtPrepareLibExecTool(MOC_CREATE_JSON, moc)
     moc_json.output = ${QMAKE_FILE_BASE}.json
     moc_json.CONFIG = no_link moc_verify
     moc_json.commands = $$MOC_CREATE_JSON -o ${QMAKE_FILE_BASE} ${QMAKE_FILE_NAME} --output-json
