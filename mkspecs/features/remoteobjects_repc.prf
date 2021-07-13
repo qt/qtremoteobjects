@@ -3,7 +3,7 @@ include(repcserver.pri)
 include(repcmerged.pri)
 
 !isEmpty(QOBJECT_REP) {
-    qtPrepareTool(QMAKE_REPC, repc)
+    qtPrepareLibExecTool(QMAKE_REPC, repc)
 
     for (path, QT.remoteobjects.includes) {
         REPC_INCLUDEPATH += -I $$shell_quote($$path)
