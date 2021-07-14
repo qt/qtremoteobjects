@@ -34,17 +34,17 @@
 #
 # $QT_END_LICENSE$
 
-function(qt6_add_repc_files type target)
+function(_qt_internal_add_repc_files type target)
     set(options)
     set(oneValueArgs)
-    set(multiValueArgs FILES)
+    set(multiValueArgs SOURCES)
 
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(outfiles)
     set(repc_incpath) ########### TODO
 
-    foreach(it ${ARGS_FILES})
+    foreach(it ${ARGS_SOURCES})
         get_filename_component(outfilename ${it} NAME_WE)
         get_filename_component(extension ${it} EXT)
         if ("${extension}" STREQUAL ".h" OR "${extension}" STREQUAL ".hpp")
@@ -74,19 +74,19 @@ endfunction()
 # Add .rep source files to a target to generate source header files
 function(qt6_add_repc_sources target)
     list(POP_FRONT ARGV)
-    qt6_add_repc_files(source ${target} FILES ${ARGV})
+    _qt_internal_add_repc_files(source ${target} SOURCES ${ARGV})
 endfunction()
 
 # Add .rep source files to a target to generate replica header files
 function(qt6_add_repc_replicas target)
     list(POP_FRONT ARGV)
-    qt6_add_repc_files(replica ${target} FILES ${ARGV})
+    _qt_internal_add_repc_files(replica ${target} SOURCES ${ARGV})
 endfunction()
 
 # Add .rep source files to a target to generate combined (source and replica) header files
 function(qt6_add_repc_merged target)
     list(POP_FRONT ARGV)
-    qt6_add_repc_files(merged ${target} FILES ${ARGV})
+    _qt_internal_add_repc_files(merged ${target} SOURCES ${ARGV})
 endfunction()
 
 # Create .rep interface file from QObject header
