@@ -41,3 +41,9 @@ add_executable(directconnectserver ${SOURCES})
 #! [remote_objects_cmake_link]
 target_link_libraries(directconnectserver PRIVATE Qt6::RemoteObjects)
 #! [remote_objects_cmake_link]
+
+#! [simpleSwitch_cmake_rep_from_header]
+qt6_rep_from_header(directconnectexample
+    simpleswitch.h
+)
+#! [cmake_rep_from_header]

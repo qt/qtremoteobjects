@@ -429,6 +429,19 @@
     \note Typically sources and replicas live in separate processes or devices, so
     this function is not commonly used.
 
+    \section2 qt6_rep_from_header
+
+    \code
+    qt6_rep_from_header(target header_files)
+    \endcode
+
+    Generates corresponding .rep files from the existing QObject \c header_files. For
+    example:
+
+    \snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_rep_from_header
+
+    This will generate a replica file called \c simpleswitch.rep in the build directory.
+
     \section1 qmake variables
     \section2 REPC_REPLICA
 
