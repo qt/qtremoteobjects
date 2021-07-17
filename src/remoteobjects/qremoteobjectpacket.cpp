@@ -484,13 +484,10 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
         serializeEnum(ds, enumerator);
     }
 
-    if (source->d->isDynamic) {
-        QSet<const QMetaObject *> gadgets;
-        QSet<QMetaEnum> enums;
-        recurseForGadgets(gadgets, enums, source);
-        serializeGadgets(ds, gadgets, enums, source);
-    } else
-        ds << quint32(0) << quint32(0); // qtEnums, numGadgets
+    QSet<const QMetaObject *> gadgets;
+    QSet<QMetaEnum> enums;
+    recurseForGadgets(gadgets, enums, source);
+    serializeGadgets(ds, gadgets, enums, source);
 
     const int numSignals = api->signalCount();
     ds << quint32(numSignals);  //Number of signals
