@@ -142,7 +142,6 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
 
     if (call == QMetaObject::ReadProperty || call == QMetaObject::WriteProperty) {
         QMetaProperty mp = metaObject()->property(saved_id);
-        int &status = *reinterpret_cast<int *>(argv[2]);
 
         if (call == QMetaObject::WriteProperty) {
             QVariantList args;
@@ -158,13 +157,6 @@ int QRemoteObjectDynamicReplica::qt_metacall(QMetaObject::Call call, int id, voi
                 const QVariant value = propAsVariant(id);
                 QMetaType::destruct(mp.userType(), argv[0]);
                 QMetaType::construct(mp.userType(), argv[0], value.data());
-            }
-            const bool readStatus = true;
-            // Caller supports QVariant returns? Then we can also report errors
-            // by storing an invalid variant.
-            if (!readStatus && argv[1]) {
-                status = 0;
-                reinterpret_cast<QVariant*>(argv[1])->clear();
             }
         }
 
