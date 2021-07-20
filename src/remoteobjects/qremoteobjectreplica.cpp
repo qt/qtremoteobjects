@@ -303,6 +303,13 @@ void QConnectedReplicaImplementation::setDynamicMetaObject(const QMetaObject *me
 
 void QRemoteObjectReplicaImplementation::setDynamicProperties(QVariantList &&values)
 {
+    const int offset = m_propertyOffset;
+    int propertyIndex = -1;
+    for (auto &prop : values) {
+        propertyIndex++;
+        const QMetaProperty property = m_metaObject->property(propertyIndex+offset);
+        prop = QRemoteObjectPackets::decodeVariant(std::move(prop), property.metaType());
+    }
     //rely on order of properties;
     setProperties(std::move(values));
 }
