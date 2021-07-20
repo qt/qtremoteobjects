@@ -73,7 +73,7 @@ class QReplicaImplementationInterface
 public:
     virtual ~QReplicaImplementationInterface() {}
     virtual const QVariant getProperty(int i) const = 0;
-    virtual void setProperties(const QVariantList &) = 0;
+    virtual void setProperties(QVariantList &&) = 0;
     virtual void setProperty(int i, const QVariant &) = 0;
     virtual bool isInitialized() const = 0;
     virtual QRemoteObjectReplica::State state() const = 0;
@@ -91,7 +91,7 @@ public:
     ~QStubReplicaImplementation() override;
 
     const QVariant getProperty(int i) const override;
-    void setProperties(const QVariantList &) override;
+    void setProperties(QVariantList &&) override;
     void setProperty(int i, const QVariant &) override;
     bool isInitialized() const override { return false; }
     QRemoteObjectReplica::State state() const override { return QRemoteObjectReplica::State::Uninitialized;}
@@ -112,7 +112,7 @@ public:
     bool needsDynamicInitialization() const;
 
     const QVariant getProperty(int i) const override = 0;
-    void setProperties(const QVariantList &) override = 0;
+    void setProperties(QVariantList &&) override = 0;
     void setProperty(int i, const QVariant &) override = 0;
     virtual bool isShortCircuit() const = 0;
     bool isInitialized() const override { return true; }
@@ -131,7 +131,7 @@ public:
 
     //Dynamic replica functions
     virtual void setDynamicMetaObject(const QMetaObject *meta);
-    virtual void setDynamicProperties(const QVariantList &values);
+    virtual void setDynamicProperties(QVariantList &&values);
 
     QString m_objectName;
     const QMetaObject *m_metaObject;
@@ -152,13 +152,13 @@ public:
     explicit QConnectedReplicaImplementation(const QString &name, const QMetaObject *, QRemoteObjectNode *);
     ~QConnectedReplicaImplementation() override;
     const QVariant getProperty(int i) const override;
-    void setProperties(const QVariantList &) override;
+    void setProperties(QVariantList &&) override;
     void setProperty(int i, const QVariant &) override;
     bool isShortCircuit() const final { return false; }
     bool isInitialized() const override;
     bool waitForSource(int timeout) override;
     QList<int> childIndices() const;
-    void initialize(QVariantList &values);
+    void initialize(QVariantList &&values);
     void configurePrivate(QRemoteObjectReplica *) override;
     void requestRemoteObjectSource();
     bool sendCommand();
@@ -172,7 +172,7 @@ public:
     QRemoteObjectPendingCall _q_sendWithReply(QMetaObject::Call call, int index, const QVariantList& args) override;
 
     void setDynamicMetaObject(const QMetaObject *meta) override;
-    void setDynamicProperties(const QVariantList&) override;
+    void setDynamicProperties(QVariantList &&) override;
     QList<QRemoteObjectReplica *> m_parentsNeedingConnect;
     QVariantList m_propertyStorage;
     QList<int> m_childIndices;
@@ -191,7 +191,7 @@ public:
     ~QInProcessReplicaImplementation() override;
 
     const QVariant getProperty(int i) const override;
-    void setProperties(const QVariantList &) override;
+    void setProperties(QVariantList &&) override;
     void setProperty(int i, const QVariant &) override;
     bool isShortCircuit() const final { return true; }
 

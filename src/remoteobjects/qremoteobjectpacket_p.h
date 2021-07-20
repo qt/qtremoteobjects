@@ -260,8 +260,8 @@ private:
     DataStreamPacket m_packet;
 };
 
-const QVariant encodeVariant(const QVariant &value);
-QVariant &decodeVariant(QVariant &value, QMetaType metaType);
+QVariant encodeVariant(const QVariant &value);
+QVariant decodeVariant(QVariant &&value, QMetaType metaType);
 
 } // namespace QRemoteObjectPackets
 

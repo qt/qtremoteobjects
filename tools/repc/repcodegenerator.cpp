@@ -742,7 +742,7 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             }
             out << "        }" << Qt::endl;
         }
-        out << "        setProperties(properties);" << Qt::endl;
+        out << "        setProperties(std::move(properties));" << Qt::endl;
         out << "    }" << Qt::endl;
     } else if (mode == SOURCE) {
         out << "    explicit " << className << "(QObject *parent = nullptr) : QObject(parent)" << Qt::endl;
