@@ -211,7 +211,7 @@ QList<int> QConnectedReplicaImplementation::childIndices() const
     return m_childIndices;
 }
 
-void QConnectedReplicaImplementation::initialize(QVariantList &values)
+void QConnectedReplicaImplementation::initialize(QVariantList &&values)
 {
     qCDebug(QT_REMOTEOBJECT) << "initialize()" << m_propertyStorage.size();
     const int nParam = int(values.size());
@@ -222,10 +222,12 @@ void QConnectedReplicaImplementation::initialize(QVariantList &values)
         changedProperties[i] = -1;
         if (m_propertyStorage[i] != values.at(i)) {
             const QMetaProperty property = m_metaObject->property(i+offset);
-            m_propertyStorage[i] = QRemoteObjectPackets::decodeVariant(values[i], property.metaType());
+            m_propertyStorage[i] = QRemoteObjectPackets::decodeVariant(std::move(values[i]), property.metaType());
             changedProperties[i] = i;
         }
-        qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name() << values.at(i).typeName() << values.at(i).toString();
+        qCDebug(QT_REMOTEOBJECT) << "SETPROPERTY" << i << m_metaObject->property(i+offset).name()
+                                 << m_propertyStorage[i].typeName()
+                                 << m_propertyStorage[i].toString();
     }
 
     Q_ASSERT(m_state.loadAcquire() < QRemoteObjectReplica::Valid || m_state.loadAcquire() == QRemoteObjectReplica::Suspect);
@@ -299,15 +301,15 @@ void QConnectedReplicaImplementation::setDynamicMetaObject(const QMetaObject *me
     }
 }
 
-void QRemoteObjectReplicaImplementation::setDynamicProperties(const QVariantList &values)
+void QRemoteObjectReplicaImplementation::setDynamicProperties(QVariantList &&values)
 {
     //rely on order of properties;
-    setProperties(values);
+    setProperties(std::move(values));
 }
 
-void QConnectedReplicaImplementation::setDynamicProperties(const QVariantList &values)
+void QConnectedReplicaImplementation::setDynamicProperties(QVariantList &&values)
 {
-    QRemoteObjectReplicaImplementation::setDynamicProperties(values);
+    QRemoteObjectReplicaImplementation::setDynamicProperties(std::move(values));
     for (QRemoteObjectReplica *obj : qExchange(m_parentsNeedingConnect, {}))
         configurePrivate(obj);
 
@@ -479,11 +481,11 @@ const QVariant QConnectedReplicaImplementation::getProperty(int i) const
     return m_propertyStorage[i];
 }
 
-void QConnectedReplicaImplementation::setProperties(const QVariantList &properties)
+void QConnectedReplicaImplementation::setProperties(QVariantList &&properties)
 {
     Q_ASSERT(m_propertyStorage.isEmpty());
     m_propertyStorage.reserve(properties.length());
-    m_propertyStorage = properties;
+    m_propertyStorage = std::move(properties);
 }
 
 void QConnectedReplicaImplementation::setProperty(int i, const QVariant &prop)
@@ -769,9 +771,9 @@ void QRemoteObjectReplica::initializeNode(QRemoteObjectNode *node, const QString
 /*!
     \internal
 */
-void QRemoteObjectReplica::setProperties(const QVariantList &properties)
+void QRemoteObjectReplica::setProperties(QVariantList &&properties)
 {
-    d_impl->setProperties(properties);
+    d_impl->setProperties(std::move(properties));
 }
 
 /*!
@@ -871,7 +873,7 @@ const QVariant QInProcessReplicaImplementation::getProperty(int i) const
     return connectionToSource->m_object->metaObject()->property(index).read(connectionToSource->m_object);
 }
 
-void QInProcessReplicaImplementation::setProperties(const QVariantList &)
+void QInProcessReplicaImplementation::setProperties(QVariantList &&)
 {
     //TODO some verification here maybe?
 }
@@ -935,11 +937,11 @@ const QVariant QStubReplicaImplementation::getProperty(int i) const
     return m_propertyStorage[i];
 }
 
-void QStubReplicaImplementation::setProperties(const QVariantList &properties)
+void QStubReplicaImplementation::setProperties(QVariantList &&properties)
 {
     Q_ASSERT(m_propertyStorage.isEmpty());
     m_propertyStorage.reserve(properties.length());
-    m_propertyStorage = properties;
+    m_propertyStorage = std::move(properties);
 }
 
 void QStubReplicaImplementation::setProperty(int i, const QVariant &prop)

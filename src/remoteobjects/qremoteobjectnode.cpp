@@ -1486,7 +1486,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             if (rep)
             {
                 handlePointerToQObjectProperties(rep.data(), rxArgs);
-                rep->initialize(rxArgs);
+                rep->initialize(std::move(rxArgs));
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
             }
@@ -1502,7 +1502,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             {
                 rep->setDynamicMetaObject(meta);
                 handlePointerToQObjectProperties(rep.data(), rxArgs);
-                rep->setDynamicProperties(rxArgs);
+                rep->setDynamicProperties(std::move(rxArgs));
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
             }
@@ -1548,7 +1548,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         QDataStream ds(typeInfo.parameters);
                         ds >> rxValue;
                     }
-                    rep->setProperty(propertyIndex, decodeVariant(rxValue, property.metaType()));
+                    rep->setProperty(propertyIndex, decodeVariant(std::move(rxValue), property.metaType()));
                 }
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
@@ -1572,7 +1572,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         if (signal.parameterType(i) == QMetaType::QVariant)
                             param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
                         else {
-                            decodeVariant(rxArgs[i], signal.parameterMetaType(i));
+                            rxArgs[i] = decodeVariant(std::move(rxArgs[i]), signal.parameterMetaType(i));
                             param[i + 1] = const_cast<void *>(rxArgs.at(i).data());
                         }
                     }
@@ -2226,12 +2226,12 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
         if (!childInfo.parameters.isEmpty())
             ds >> parameters;
         handlePointerToQObjectProperties(childRep.data(), parameters);
-        childRep->setDynamicProperties(parameters);
+        childRep->setDynamicProperties(std::move(parameters));
     } else {
         if (!childInfo.parameters.isEmpty())
             ds >> parameters;
         handlePointerToQObjectProperties(childRep.data(), parameters);
-        childRep->initialize(parameters);
+        childRep->initialize(std::move(parameters));
     }
 
     return retval;

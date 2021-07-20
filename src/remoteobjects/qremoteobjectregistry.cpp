@@ -136,7 +136,7 @@ void QRemoteObjectRegistry::initialize()
     properties << QVariant::fromValue(QRemoteObjectSourceLocations());
     properties << QVariant::fromValue(QRemoteObjectSourceLocation());
     properties << QVariant::fromValue(QRemoteObjectSourceLocation());
-    setProperties(properties);
+    setProperties(std::move(properties));
 }
 
 void QRemoteObjectRegistry::notifySourceLocationsChanged()

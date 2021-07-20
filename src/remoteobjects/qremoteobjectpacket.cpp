@@ -79,7 +79,7 @@ namespace QRemoteObjectPackets {
 // to integers (encodeVariant) when sending them.  On the receive side, the we know the
 // types of properties and the signatures for methods, so we can use that information to
 // decode the integer variant into an enum variant (via decodeVariant).
-const QVariant encodeVariant(const QVariant &value)
+QVariant encodeVariant(const QVariant &value)
 {
     const auto metaType = value.metaType();
     if (metaType.flags().testFlag(QMetaType::IsEnumeration)) {
@@ -103,7 +103,7 @@ const QVariant encodeVariant(const QVariant &value)
     return value;
 }
 
-QVariant &decodeVariant(QVariant &value, QMetaType metaType)
+QVariant decodeVariant(QVariant &&value, QMetaType metaType)
 {
     if (metaType.flags().testFlag(QMetaType::IsEnumeration)) {
 #ifdef QTRO_VERBOSE_PROTOCOL
@@ -114,7 +114,7 @@ QVariant &decodeVariant(QVariant &value, QMetaType metaType)
         qDebug() << "Converting to enum from integer type" << value << encoded;
 #endif
     }
-    return value;
+    return std::move(value);
 }
 
 void QDataStreamCodec::serializeProperty(const QRemoteObjectSourceBase *source, int internalIndex)

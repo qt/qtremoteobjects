@@ -105,7 +105,7 @@ void QAbstractItemModelReplicaImplementation::initialize()
     QVariantList properties;
     properties << QVariant::fromValue(QList<int>());
     properties << QVariant::fromValue(QIntHash());
-    setProperties(properties);
+    setProperties(std::move(properties));
 }
 
 void QAbstractItemModelReplicaImplementation::registerMetatypes()
