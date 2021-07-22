@@ -1,5 +1,11 @@
 ENUM Test {FALSE, TRUE}
 
+class TestChildClass
+{
+    PROP(int prop1);
+    PROP(double prop2);
+};
+
 class TestClass
 {
     ENUM ClassEnum {Null, One, Two}
@@ -12,6 +18,8 @@ class TestClass
 
     SLOT(bool slot1());
     SLOT(QString slot2());
+
+    CLASS childProp(TestChildClass);
 
     SIGNAL(signal1());
     SIGNAL(signal2());

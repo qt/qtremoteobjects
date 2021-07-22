@@ -62,6 +62,8 @@ private Q_SLOTS:
     {
         QRemoteObjectHost srcNode(QUrl(QStringLiteral("tcp://127.0.0.1:65214")));
         MyTestServer myTestServer{};
+        TestChildClassSimpleSource child;
+        myTestServer.setChildProp(&child);
 
         srcNode.enableRemoting(&myTestServer);
 
