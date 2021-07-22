@@ -66,6 +66,7 @@ private slots:
             _("differentGlobalEnum"),
             _("differentClassEnum"),
             _("differentPropertyCount"),
+            _("differentPropertyCountChild"),
             _("differentPropertyType"),
             _("scrambledProperties"),
             _("differentSlotCount"),

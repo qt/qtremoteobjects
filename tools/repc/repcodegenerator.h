@@ -85,7 +85,7 @@ private:
 
 private:
     QIODevice *m_outputDevice;
-    QHash<QString, QByteArray> m_globalEnumsPODs;
+    QHash<QString, QByteArray> m_globalTypes;
 };
 
 QT_END_NAMESPACE

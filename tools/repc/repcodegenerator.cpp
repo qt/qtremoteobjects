@@ -133,7 +133,7 @@ static QByteArray typeData(const QString &type, const QHash<QString, QByteArray>
         return it.value();
     const auto pos = type.lastIndexOf(QLatin1String("::"));
     if (pos > 0)
-            return typeData(type.mid(pos + 2), specialTypes);
+        return typeData(type.mid(pos + 2), specialTypes);
     return type.toLatin1();
 }
 
@@ -154,18 +154,39 @@ static QByteArray functionsData(const QList<ASTFunction> &functions, const QHash
 
 QByteArray RepCodeGenerator::classSignature(const ASTClass &ac)
 {
+    if (m_globalTypes.contains(ac.name))
+        return m_globalTypes[ac.name];
+
     QCryptographicHash checksum(QCryptographicHash::Sha1);
-    QHash<QString, QByteArray> localTypes = m_globalEnumsPODs;
+    QHash<QString, QByteArray> localTypes = m_globalTypes;
     for (const ASTEnum &e : ac.enums) // add local enums
         localTypes[e.name] = enumSignature(e);
 
     checksum.addData(ac.name.toLatin1());
 
     // Checksum properties
+    QSet<int> classIndices{ ac.subClassPropertyIndices.begin(), ac.subClassPropertyIndices.end() };
+    int propertyIndex = -1;
+    int modelIndex = 0;
     for (const ASTProperty &p : ac.properties) {
+        propertyIndex++;
         checksum.addData(p.name.toLatin1());
-        checksum.addData(typeData(p.type, localTypes));
-        checksum.addData(reinterpret_cast<const char *>(&p.modifier), sizeof(p.modifier));
+        if (p.type == QLatin1String("QAbstractItemModel")) {
+            QByteArrayList roles;
+            for (const auto &role : ac.modelMetadata[modelIndex++].roles)
+                roles << role.name.toLatin1();
+            std::sort(roles.begin(), roles.end());
+            checksum.addData(roles.join('_'));
+        } else if (classIndices.contains(propertyIndex)) {
+            checksum.addData(m_globalTypes[p.type]);
+        } else {
+            checksum.addData(typeData(p.type, localTypes));
+        }
+        ASTProperty::Modifier m = p.modifier;
+        // Treat ReadOnly and SourceOnlySetter the same (interface-wise they are)
+        if (m == ASTProperty::SourceOnlySetter)
+            m = ASTProperty::ReadOnly;
+        checksum.addData(reinterpret_cast<const char *>(&m), sizeof(m));
     }
 
     // Checksum signals
@@ -174,7 +195,9 @@ QByteArray RepCodeGenerator::classSignature(const ASTClass &ac)
     // Checksum slots
     checksum.addData(functionsData(ac.slotsList, localTypes));
 
-    return checksum.result().toHex();
+    m_globalTypes[ac.name] = checksum.result().toHex();
+
+    return m_globalTypes[ac.name];
 }
 
 void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
@@ -419,9 +442,9 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
     QStringList equalityCheck;
     for (const PODAttribute &attr : pod.attributes) {
         equalityCheck << QStringLiteral("left.%1() == right.%1()").arg(attr.name);
-        podData += attr.name.toLatin1() + typeData(attr.type, m_globalEnumsPODs);
+        podData += attr.name.toLatin1() + typeData(attr.type, m_globalTypes);
     }
-    m_globalEnumsPODs[pod.name] = podData;
+    m_globalTypes[pod.name] = podData;
     out << "class " << pod.name << "\n"
            "{\n"
            "    Q_GADGET\n"
@@ -472,7 +495,7 @@ void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QLis
         out << "    // non-repc generated QObjects." << Qt::endl;
     }
     for (const ASTEnum &en : enums) {
-        m_globalEnumsPODs[en.name] = enumSignature(en);
+        m_globalTypes[en.name] = enumSignature(en);
         out << "    enum " << en.name << " {" << Qt::endl;
         for (const ASTEnumParam &p : en.params)
             out << "        " << p.name << " = " << p.value << "," << Qt::endl;
