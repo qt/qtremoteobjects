@@ -43,7 +43,7 @@ target_link_libraries(directconnectserver PRIVATE Qt6::RemoteObjects)
 #! [remote_objects_cmake_link]
 
 #! [simpleSwitch_cmake_rep_from_header]
-qt6_rep_from_header(directconnectexample
+qt6_rep_from_headers(directconnectexample
     simpleswitch.h
 )
 #! [cmake_rep_from_header]

@@ -9,7 +9,7 @@ qt_internal_add_test(tst_rep_from_header
     PUBLIC_LIBRARIES
         Qt::RemoteObjects
 )
-qt6_rep_from_header(tst_rep_from_header pods.h)
+qt6_rep_from_headers(tst_rep_from_header pods.h)
 
 #### Keys ignored in scope 1:.:.:rep_from_header.pro:<TRUE>:
 # QOBJECT_REP = "$$REP_FILES"
