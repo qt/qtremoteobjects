@@ -62,6 +62,114 @@ const int QRemoteObjectSourceBase::qobjectPropertyOffset = QObject::staticMetaOb
 const int QRemoteObjectSourceBase::qobjectMethodOffset = QObject::staticMetaObject.methodCount();
 static const QByteArray s_classinfoRemoteobjectSignature(QCLASSINFO_REMOTEOBJECT_SIGNATURE);
 
+namespace QtPrivate {
+
+// The stringData, methodMatch and QMetaObjectPrivate methods are modified versions of the code
+// from qmetaobject_p.h/qmetaobject.cpp.  The modifications are based on our custom need to match
+// a method name that comes from the .rep file.
+// The QMetaObjectPrivate struct should only have members appended to maintain binary compatibility,
+// so we should be fine with only the listed version with the fields we use.
+inline const QByteArray apiStringData(const QMetaObject *mo, int index)
+{
+    uint offset = mo->d.stringdata[2*index];
+    uint length = mo->d.stringdata[2*index + 1];
+    const char *string = reinterpret_cast<const char *>(mo->d.stringdata) + offset;
+    return QByteArray::fromRawData(string, length);
+}
+
+
+// From QMetaMethod in qmetaobject.h
+struct Data {
+    enum { Size = 6 };
+
+    uint name() const { return d[0]; }
+    uint argc() const { return d[1]; }
+    uint parameters() const { return d[2]; }
+    uint tag() const { return d[3]; }
+    uint flags() const { return d[4]; }
+    uint metaTypeOffset() const { return d[5]; }
+    bool operator==(const Data &other) const { return d == other.d; }
+
+    const uint *d;
+};
+
+inline bool apiMethodMatch(const QMetaObject *m, const Data &data, const QByteArray &name, int argc,
+                           const int *types)
+{
+    if (data.argc() != uint(argc))
+        return false;
+    if (apiStringData(m, data.name()) != name)
+        return false;
+    int paramsIndex = data.parameters() + 1;
+    for (int i = 0; i < argc; ++i) {
+        uint typeInfo = m->d.data[paramsIndex + i];
+        if (typeInfo & 0x80000000) { // Custom/named type, compare names
+            const char *t = QMetaType(types[i]).name();
+            const auto type = QByteArray::fromRawData(t, qstrlen(t));
+            if (type != apiStringData(m, typeInfo & 0x7FFFFFFF))
+                return false;
+        } else if (types[i] != int(typeInfo))
+            return false;
+    }
+    return true;
+}
+
+struct QMetaObjectPrivate
+{
+    // revision 7 is Qt 5.0 everything lower is not supported
+    // revision 8 is Qt 5.12: It adds the enum name to QMetaEnum
+    enum { OutputRevision = 8 }; // Used by moc, qmetaobjectbuilder and qdbus
+
+    int revision;
+    int className;
+    int classInfoCount, classInfoData;
+    int methodCount, methodData;
+    int propertyCount, propertyData;
+    int enumeratorCount, enumeratorData;
+    int constructorCount, constructorData;
+    int flags;
+    int signalCount;
+};
+
+inline Data fromRelativeMethodIndex(const QMetaObject *mobj, int index)
+{
+    const auto priv = reinterpret_cast<const QMetaObjectPrivate*>(mobj->d.data);
+    return { mobj->d.data + priv->methodData + index * Data::Size };
+}
+
+int qtro_method_index_impl(const QMetaObject * staticMetaObj, const char *className,
+                                      const char *methodName, int *count, int const **types)
+{
+    int result = staticMetaObj->indexOfMethod(methodName);
+    if (result >= 0)
+        return result;
+    // We can have issues, specifically with enums, since the compiler can infer the class.  Since
+    // indexOfMethod() is doing string comparisons for registered types, "MyEnum" and "MyClass::MyEnum"
+    // won't match.
+    // Below is similar to QMetaObject->indexOfMethod, but template magic has already matched parameter
+    // types, so we need to find a match for the API method name + parameters.  Neither approach works
+    // 100%, as the below code doesn't match a parameter of type "size_t" (which the template match
+    // identifies as "ulong").  These subtleties can cause the below string comparison fails.
+    // There is no known case that would fail both methods.
+    // TODO: is there a way to make this a constexpr so a failure is detected at compile time?
+    int nameLength = strchr(methodName, '(') - methodName;
+    const auto name = QByteArray::fromRawData(methodName, nameLength);
+    for (const QMetaObject *m = staticMetaObj; m; m = m->d.superdata) {
+        const auto priv = reinterpret_cast<const QMetaObjectPrivate*>(m->d.data);
+        int i = (priv->methodCount - 1);
+        const int end = priv->signalCount;
+        for (; i >= end; --i) {
+            const Data data = fromRelativeMethodIndex(m, i);
+            if (apiMethodMatch(m, data, name, *count, *types))
+                return i + m->methodOffset();
+        }
+    }
+    qWarning() << "No matching method for" << methodName << "in the provided metaclass" << className;
+    return -1;
+}
+
+} // namespace QtPrivate
+
 QByteArray QtPrivate::qtro_classinfo_signature(const QMetaObject *metaObject)
 {
     if (!metaObject)
