@@ -380,67 +380,9 @@
 
     \section1 CMake functions
 
-    \section2 qt6_add_repc_replicas
+    The CMake functions for generating source and replica types are listed below.
 
-    \code
-    qt6_add_repc_replicas(target rep_files)
-    \endcode
-
-    Runs repc and generates the \l Replica header files based on the given \c rep_files.
-    Adds the generated files to \c target.
-
-    For example:
-
-    \snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_add_repc_replica
-
-    The generated file(s) will be of the form \c {rep_<replica file base>_replica.h}.
-
-    \section2 qt6_add_repc_sources
-
-    \code
-    qt6_add_repc_sources(target rep_files)
-    \endcode
-
-    Runs repc and generates the \l Source header files based on the given \c rep_files.
-    Adds the generated files to \c target.
-
-    For example:
-
-    \snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_add_repc_source
-
-    The generated file(s) will be of the form \c {rep_<replica file base>_source.h}.
-
-    \section2 qt6_add_repc_merged
-
-    \code
-    qt6_add_repc_merged(target rep_files)
-    \endcode
-
-    Runs repc and generates the \l Source and \l Replica header files based on the
-    given \c rep_files combined in a single header. Adds the generated files to
-    \c target.
-
-    For example:
-
-    \snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_add_repc_merged
-
-    The generated file(s) will be of the form \c {rep_<replica file base>_merged.h}.
-
-    \note Typically sources and replicas live in separate processes or devices, so
-    this function is not commonly used.
-
-    \section2 qt6_reps_from_headers
-
-    \code
-    qt6_reps_from_headers(target header_files)
-    \endcode
-
-    Generates corresponding .rep files from the existing QObject \c header_files. For
-    example:
-
-    \snippet cmake-macros/CMakeLists.txt simpleSwitch_cmake_rep_from_header
-
-    This will generate a replica file called \c simpleswitch.rep in the build directory.
+    \annotatedlist cmake-macros-qtremoteobjects
 
     \section1 qmake variables
     \section2 REPC_REPLICA
