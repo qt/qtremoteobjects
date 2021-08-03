@@ -429,10 +429,10 @@
     \note Typically sources and replicas live in separate processes or devices, so
     this function is not commonly used.
 
-    \section2 qt6_rep_from_headers
+    \section2 qt6_reps_from_headers
 
     \code
-    qt6_rep_from_headers(target header_files)
+    qt6_reps_from_headers(target header_files)
     \endcode
 
     Generates corresponding .rep files from the existing QObject \c header_files. For

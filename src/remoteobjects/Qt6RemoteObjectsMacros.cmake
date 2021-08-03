@@ -90,7 +90,7 @@ function(qt6_add_repc_merged target)
 endfunction()
 
 # Create .rep interface file from QObject header
-function(qt6_rep_from_headers target)
+function(qt6_reps_from_headers target)
     list(POP_FRONT ARGV)
     foreach(it ${ARGV})
         get_filename_component(outfilename ${it} NAME_WE)
@@ -135,11 +135,11 @@ if(NOT QT_NO_CREATE_VERSIONLESS_FUNCTIONS)
                                 "Please check the repc documentation for alternatives.")
         endif()
     endfunction()
-    function(qt_rep_from_headers)
+    function(qt_reps_from_headers)
         if(QT_DEFAULT_MAJOR_VERSION EQUAL 6)
-            qt6_rep_from_headers(${ARGN})
+            qt6_reps_from_headers(${ARGN})
         else()
-            message(FATAL_ERROR "qt_rep_from_headers() is only available in Qt 6. "
+            message(FATAL_ERROR "qt_reps_from_headers() is only available in Qt 6. "
                                 "Please check the repc documentation for alternatives.")
         endif()
     endfunction()
