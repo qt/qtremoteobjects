@@ -84,6 +84,21 @@ static bool isSequentialGadgetType(QMetaType metaType)
     return false;
 }
 
+static bool isAssociativeGadgetType(QMetaType metaType)
+{
+    if (QMetaType::canConvert(metaType, QMetaType::fromType<QAssociativeIterable>())) {
+        static QHash<int, bool> lookup;
+        if (!lookup.contains(metaType.id())) {
+            auto stubVariant = QVariant(metaType, nullptr);
+            auto asIterable = stubVariant.value<QAssociativeIterable>();
+            auto valueMetaType = asIterable.metaContainer().mappedMetaType();
+            lookup[metaType.id()] = valueMetaType.flags().testFlag(QMetaType::IsGadget);
+        }
+        return lookup[metaType.id()];
+    }
+    return false;
+}
+
 using namespace QtRemoteObjects;
 
 namespace QRemoteObjectPackets {
@@ -131,6 +146,20 @@ QVariant encodeVariant(const QVariant &value)
 #endif
         return QVariant::fromValue<QSQ_>(sequence);
     }
+    if (isAssociativeGadgetType(metaType)) { // Doesn't include QtROAssociativeContainer
+        QAS_ map(value);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Encoding associative container" << metaType.name() << "to QAS_ to transmit";
+#endif
+        return QVariant::fromValue<QAS_>(map);
+    }
+    if (metaType == QMetaType::fromType<QtROAssociativeContainer>()) {
+        QAS_ map(value);
+#ifdef QTRO_VERBOSE_PROTOCOL
+        qDebug() << "Encoding QtROAssociativeContainer container to QAS_ to transmit";
+#endif
+        return QVariant::fromValue<QAS_>(map);
+    }
     return value;
 }
 
@@ -173,9 +202,9 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
                     if (seqIter.metaContainer().canRemoveValue() || i == 0) {
                         for (quint32 ii = 0; ii < i; ii++)
                             seqIter.removeValue();
-                        qWarning("QSQ_: unable to load type '%s', returning an empty list.\n", valueTypeName.constData());
+                        qWarning("QSQ_: unable to load type '%s', returning an empty list.", valueTypeName.constData());
                     } else {
-                        qWarning("QSQ_: unable to load type '%s', returning a partial list.\n", valueTypeName.constData());
+                        qWarning("QSQ_: unable to load type '%s', returning a partial list.", valueTypeName.constData());
                     }
                     break;
                 }
@@ -193,6 +222,63 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
             value = QVariant(QMetaType::fromType<QtROSequentialContainer>(), &container);
 #ifdef QTRO_VERBOSE_PROTOCOL
             qDebug() << "Decoding QSQ_ to QtROSequentialContainer of"
+                     << container.m_valueTypeName;
+#endif
+        }
+    } else if (value.metaType() == QMetaType::fromType<QRemoteObjectPackets::QAS_>()) {
+        const auto *qas_ = static_cast<const QRemoteObjectPackets::QAS_ *>(value.constData());
+        QDataStream in(qas_->values);
+        auto containerType = QMetaType::fromName(qas_->typeName.constData());
+        bool isRegistered = containerType.isRegistered();
+        if (isRegistered) {
+            QVariant map{containerType, nullptr};
+            if (!map.canView<QAssociativeIterable>()) {
+                qWarning() << "Unsupported container" << qas_->typeName.constData()
+                           << "(not viewable)";
+                return QVariant();
+            }
+            QAssociativeIterable mapIter = map.view<QAssociativeIterable>();
+            if (!mapIter.metaContainer().canSetMappedAtKey()) {
+                qWarning() << "Unsupported container" << qas_->typeName.constData()
+                           << "(Unable to insert values)";
+                return QVariant();
+            }
+            QByteArray keyTypeName, valueTypeName;
+            quint32 count;
+            in >> keyTypeName;
+            QMetaType keyType = QMetaType::fromName(keyTypeName.constData());
+            QVariant key{keyType, nullptr};
+            in >> valueTypeName;
+            QMetaType valueType = QMetaType::fromName(valueTypeName.constData());
+            QVariant val{valueType, nullptr};
+            in >> count;
+            for (quint32 i = 0; i < count; i++) {
+                if (!keyType.load(in, key.data())) {
+                    map = QVariant{containerType, nullptr};
+                    qWarning("QAS_: unable to load key of type '%s', returning an empty map.",
+                             keyTypeName.constData());
+                    break;
+                }
+                if (!valueType.load(in, val.data())) {
+                    map = QVariant{containerType, nullptr};
+                    qWarning("QAS_: unable to load value of type '%s', returning an empty map.",
+                             valueTypeName.constData());
+                    break;
+                }
+                mapIter.setValue(key, val);
+            }
+            value = map;
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "Decoding QAS_ to associative container" << containerType.name()
+                     << valueTypeName << keyTypeName << count << mapIter.size() << map;
+#endif
+        } else {
+            QtROAssociativeContainer container{};
+            in >> container;
+            container.m_typeName = qas_->typeName;
+            value = QVariant(QMetaType::fromType<QtROAssociativeContainer>(), &container);
+#ifdef QTRO_VERBOSE_PROTOCOL
+            qDebug() << "Decoding QAS_ to QtROAssociativeContainer of"
                      << container.m_valueTypeName;
 #endif
         }
@@ -584,6 +670,8 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
             const auto metaType = QMetaType(api->signalParameterType(i, pi));
             if (isSequentialGadgetType(metaType))
                 signature.replace(metaType.name(), "QtROSequentialContainer");
+            else if (isAssociativeGadgetType(metaType))
+                signature.replace(metaType.name(), "QtROAssociativeContainer");
         }
 #ifdef QTRO_VERBOSE_PROTOCOL
         qDebug() << "  Signal" << i << "(signature =" << signature << "parameter names =" << api->signalParameterNames(i) << ")";
@@ -604,6 +692,8 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
             const auto metaType = QMetaType(api->methodParameterType(i, pi));
             if (isSequentialGadgetType(metaType))
                 signature.replace(metaType.name(), "QtROSequentialContainer");
+            else if (isAssociativeGadgetType(metaType))
+                signature.replace(metaType.name(), "QtROAssociativeContainer");
         }
         auto typeName = api->typeName(i);
         replace(typeName);
@@ -638,6 +728,11 @@ void QDataStreamCodec::serializeDefinition(QDataStream &ds, const QRemoteObjectS
                 ds << "QtROSequentialContainer";
 #ifdef QTRO_VERBOSE_PROTOCOL
                 qDebug() << "    Type:" << "QtROSequentialContainer";
+#endif
+            } else if (isAssociativeGadgetType(metaProperty.metaType())) {
+                ds << "QtROAssociativeContainer";
+#ifdef QTRO_VERBOSE_PROTOCOL
+                qDebug() << "    Type:" << "QtROAssociativeContainer";
 #endif
             } else {
                 ds << metaProperty.typeName();
@@ -856,7 +951,7 @@ QSQ_::QSQ_(const QVariant &variant)
             ds.resetStatus();
             ds << quint32(0);
             values.resize(ds.device()->pos());
-            qWarning("QSQ_: unable to save type '%s', sending empty list.\n", valueType.name());
+            qWarning("QSQ_: unable to save type '%s', sending empty list.", valueType.name());
             break;
         }
     }
@@ -873,6 +968,75 @@ QDataStream &operator>>(QDataStream &stream, QSQ_ &sequence)
 {
     stream >> sequence.typeName >> sequence.valueTypeName >> sequence.values;
     qCDebug(QT_REMOTEOBJECT) << "Deserializing " << sequence;
+    return stream;
+}
+
+QAS_::QAS_(const QVariant &variant)
+{
+    QAssociativeIterable map;
+    QMetaType keyType, valueType;
+    const QtROAssociativeContainer *container = nullptr;
+    if (variant.metaType() == QMetaType::fromType<QtROAssociativeContainer>()) {
+        container = static_cast<const QtROAssociativeContainer *>(variant.constData());
+        typeName = container->m_typeName;
+        keyType = container->m_keyType;
+        keyTypeName = container->m_keyTypeName;
+        valueType = container->m_valueType;
+        valueTypeName = container->m_valueTypeName;
+        map = QAssociativeIterable(reinterpret_cast<const QVariantMap *>(variant.constData()));
+    } else {
+        map = variant.value<QAssociativeIterable>();
+        typeName = QByteArray(variant.metaType().name());
+        keyType = map.metaContainer().keyMetaType();
+        keyTypeName = QByteArray(keyType.name());
+        valueType = map.metaContainer().mappedMetaType();
+        valueTypeName = QByteArray(valueType.name());
+    }
+
+#ifdef QTRO_VERBOSE_PROTOCOL
+    qDebug("Serializing POD map to QAS_ (type = %s, keyType = %s, valueType = %s), size = %lld",
+           typeName.constData(), keyTypeName.constData(), valueTypeName.constData(),
+           map.size());
+#endif
+    QDataStream ds(&values, QIODevice::WriteOnly);
+    ds << keyTypeName;
+    ds << valueTypeName;
+    auto pos = ds.device()->pos();
+    ds << quint32(map.size());
+    QAssociativeIterable::const_iterator iter = map.begin();
+    for (int i = 0; i < map.size(); i++) {
+        const QVariant &key = container ? container->m_keys.at(i) : iter.key();
+        if (!keyType.save(ds, key.data())) {
+            ds.device()->seek(pos);
+            ds.resetStatus();
+            ds << quint32(0);
+            values.resize(ds.device()->pos());
+            qWarning("QAS_: unable to save key '%s', sending empty map.", keyType.name());
+            break;
+        }
+        if (!valueType.save(ds, iter.value().data())) {
+            ds.device()->seek(pos);
+            ds.resetStatus();
+            ds << quint32(0);
+            values.resize(ds.device()->pos());
+            qWarning("QAS_: unable to save value '%s', sending empty map.", valueType.name());
+            break;
+        }
+        iter++;
+    }
+}
+
+QDataStream &operator<<(QDataStream &stream, const QAS_ &map)
+{
+    stream << map.typeName << map.keyTypeName << map.valueTypeName << map.values;
+    qCDebug(QT_REMOTEOBJECT) << "Serializing " << map;
+    return stream;
+}
+
+QDataStream &operator>>(QDataStream &stream, QAS_ &map)
+{
+    stream >> map.typeName >> map.keyTypeName >> map.valueTypeName >> map.values;
+    qCDebug(QT_REMOTEOBJECT) << "Deserializing " << map;
     return stream;
 }
 

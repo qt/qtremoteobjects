@@ -33,6 +33,9 @@
 #include <QCoreApplication>
 #include <QtTest/QtTest>
 
+static QMap<int, MyPOD> int_map{{1, initialValue},
+                                {16, initialValue}};
+
 class tst_Server_Process : public QObject
 {
     Q_OBJECT
@@ -62,6 +65,7 @@ private Q_SLOTS:
             parent.setVariant(QVariant::fromValue(42.0f));
             parent.setSimpleList(QList<QString>() << "one" << "two");
             parent.setPodList(QList<MyPOD>() << initialValue << initialValue);
+            parent.setIntMap(int_map);
         }
 
         if (templated)

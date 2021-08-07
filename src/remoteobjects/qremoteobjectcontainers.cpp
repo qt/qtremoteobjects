@@ -54,7 +54,7 @@ QDataStream &operator>>(QDataStream &ds, QtROSequentialContainer &p)
     QVariant value{p.m_valueType, nullptr};
     for (quint32 i = 0; i < count; i++) {
         if (!p.m_valueType.load(ds, value.data())) {
-            qWarning("QSQ_: unable to load type '%s', returning an empty list.\n", p.m_valueTypeName.constData());
+            qWarning("QSQ_: unable to load type '%s', returning an empty list.", p.m_valueTypeName.constData());
             p.clear();
             break;
         }
@@ -74,9 +74,66 @@ QDataStream &operator<<(QDataStream &ds, const QtROSequentialContainer &p)
             ds.device()->seek(pos);
             ds.resetStatus();
             ds << quint32(0);
-            qWarning("QSQ_: unable to save type '%s'.\n", p.m_valueTypeName.constData());
+            qWarning("QSQ_: unable to save type '%s'.", p.m_valueTypeName.constData());
             break;
         }
+    }
+    return ds;
+}
+
+QDataStream &operator>>(QDataStream &ds, QtROAssociativeContainer &p)
+{
+    QByteArray keyTypeName, valueTypeName;
+    quint32 count;
+    ds >> keyTypeName;
+    ds >> valueTypeName;
+    p.setTypes(keyTypeName, valueTypeName);
+    ds >> count;
+    p.m_keys.reserve(count);
+    QVariant key{p.m_keyType, nullptr};
+    QVariant value{p.m_valueType, nullptr};
+    for (quint32 i = 0; i < count; i++) {
+        if (!p.m_keyType.load(ds, key.data())) {
+            qWarning("QAS_: unable to load key '%s', returning an empty map.", p.m_keyTypeName.constData());
+            p.clear();
+            break;
+        }
+        if (!p.m_valueType.load(ds, value.data())) {
+            qWarning("QAS_: unable to load value '%s', returning an empty map.", p.m_valueTypeName.constData());
+            p.clear();
+            break;
+        }
+        p.insert(key.toString(), value);
+        p.m_keys.append(key);
+    }
+    return ds;
+}
+
+QDataStream &operator<<(QDataStream &ds, const QtROAssociativeContainer &p)
+{
+    ds << p.m_keyTypeName;
+    ds << p.m_valueTypeName;
+    auto pos = ds.device()->pos();
+    quint32 count = p.count();
+    ds << count;
+    QAssociativeIterable map(&p);
+    QAssociativeIterable::const_iterator iter = map.begin();
+    for (quint32 i = 0; i < count; i++) {
+        if (!p.m_keyType.save(ds, iter.key().data())) {
+            ds.device()->seek(pos);
+            ds.resetStatus();
+            ds << quint32(0);
+            qWarning("QAS_: unable to save type '%s'.", p.m_valueTypeName.constData());
+            break;
+        }
+        if (!p.m_valueType.save(ds, iter.value().data())) {
+            ds.device()->seek(pos);
+            ds.resetStatus();
+            ds << quint32(0);
+            qWarning("QAS_: unable to save type '%s'.", p.m_valueTypeName.constData());
+            break;
+        }
+        iter++;
     }
     return ds;
 }
