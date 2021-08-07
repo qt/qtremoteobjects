@@ -55,6 +55,7 @@
 #include "qremoteobjectsource.h"
 #include "qconnectionfactories.h"
 
+#include <QtCore/qassociativeiterable.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qpair.h>
@@ -158,6 +159,32 @@ inline QDebug operator<<(QDebug dbg, const QSQ_ &seq)
 QDataStream& operator<<(QDataStream &stream, const QSQ_ &info);
 
 QDataStream& operator>>(QDataStream &stream, QSQ_ &info);
+
+// Class for transmitting associative containers.  Needed because containers for
+// custom types (and even primitive types in Qt5) are not registered with the
+// metaObject system.  This wrapper allows us to create the desired container if
+// it is registered, or a QtROAssociativeContainer if it is not.
+// QtROAssociativeContainer is derived from QVariantMap, so it can be used from
+// QML similar to the API type.
+class QAS_
+{
+public:
+    QAS_() {}
+    explicit QAS_(const QVariant &lst);
+    QByteArray typeName, keyTypeName, valueTypeName;
+    QByteArray values;
+};
+
+inline QDebug operator<<(QDebug dbg, const QAS_ &seq)
+{
+    dbg.nospace() << "QAS_(typeName: " << seq.typeName << ", keyType: " << seq.keyTypeName
+                  << ", valueType: " << seq.valueTypeName << ", values: {" << seq.values <<")";
+    return dbg.space();
+}
+
+QDataStream& operator<<(QDataStream &stream, const QAS_ &info);
+
+QDataStream& operator>>(QDataStream &stream, QAS_ &info);
 
 //Helper class for creating a QByteArray from a QRemoteObjectPacket
 class DataStreamPacket : public QDataStream

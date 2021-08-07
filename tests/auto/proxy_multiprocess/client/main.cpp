@@ -33,6 +33,9 @@
 #include <QtRemoteObjects/qremoteobjectnode.h>
 #include <QtTest/QtTest>
 
+static QMap<int, MyPOD> int_map{{1, initialValue},
+                                {16, initialValue}};
+
 class tst_Client_Process : public QObject
 {
     Q_OBJECT
@@ -67,6 +70,7 @@ private Q_SLOTS:
             QCOMPARE(m_rep->variant(), QVariant::fromValue(42.0f));
             QCOMPARE(m_rep->simpleList(), QList<QString>() << "one" << "two");
             QCOMPARE(m_rep->podList(), QList<MyPOD>() << initialValue << initialValue);
+            QCOMPARE(m_rep->intMap(), int_map);
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);

@@ -1753,7 +1753,9 @@ void QRemoteObjectNodePrivate::initialize()
     qRegisterMetaType<QAbstractSocket::SocketError>(); //For queued qnx error()
     qRegisterMetaType<QRemoteObjectPackets::QRO_>();
     qRegisterMetaType<QRemoteObjectPackets::QSQ_>();
+    qRegisterMetaType<QRemoteObjectPackets::QAS_>();
     qRegisterMetaType<QtROSequentialContainer>();
+    qRegisterMetaType<QtROAssociativeContainer>();
     // To support dynamic MODELs, we need to make sure the types are registered
     QAbstractItemModelSourceAdapter::registerTypes();
 }
