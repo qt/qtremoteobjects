@@ -390,6 +390,7 @@ QtROClientFactory *QtROClientFactory::instance()
 QtROIoDeviceBasePrivate::QtROIoDeviceBasePrivate() : QObjectPrivate()
 {
     m_dataStream.setVersion(dataStreamVersion);
+    m_dataStream.setByteOrder(QDataStream::LittleEndian);
 }
 
 QT_END_NAMESPACE
