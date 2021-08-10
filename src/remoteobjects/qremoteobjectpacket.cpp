@@ -1131,6 +1131,7 @@ DataStreamPacket::DataStreamPacket(quint16 id)
     : QDataStream(&array, QIODevice::WriteOnly), baseAddress(0), size(0)
 {
     this->setVersion(QtRemoteObjects::dataStreamVersion);
+    this->setByteOrder(QDataStream::LittleEndian);
     *this << quint32(0);
     *this << id;
 }
