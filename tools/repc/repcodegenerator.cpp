@@ -385,6 +385,21 @@ QString RepCodeGenerator::formatDataMembers(const POD &pod)
     return out;
 }
 
+QString RepCodeGenerator::formatDebugOperator(const POD &pod)
+{
+    QString props;
+    int count = 0;
+    for (const PODAttribute &attribute : pod.attributes) {
+        if (count++ > 0)
+            props.append(QLatin1String(" << \", \""));
+        props.append(QLatin1String(" << \"%1: \" << obj.%1()").arg(attribute.name));
+    }
+
+    return QLatin1String("inline QDebug operator<<(QDebug dbg, const %1 &obj) {\n" \
+                         "    dbg.nospace() << \"%1(\" %2 << \")\";\n" \
+                         "    return dbg.maybeSpace();\n}\n\n").arg(pod.name, props);
+}
+
 QString RepCodeGenerator::formatMarshallingOperators(const POD &pod)
 {
     return QLatin1String("inline QDataStream &operator<<(QDataStream &ds, const ") + pod.name + QLatin1String(" &obj) {\n"
@@ -464,6 +479,7 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
         << "    return !(left == right);\n"
         << "}\n"
         << "\n"
+        << formatDebugOperator(pod)
         << formatMarshallingOperators(pod)
         << "\n"
            "\n"

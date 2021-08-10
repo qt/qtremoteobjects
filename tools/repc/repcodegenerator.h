@@ -77,6 +77,7 @@ private:
     QString formatPropertyGettersAndSetters(const POD &pod);
     QString formatSignals(const POD &pod);
     QString formatDataMembers(const POD &pod);
+    QString formatDebugOperator(const POD &pod);
     QString formatMarshallingOperators(const POD &pod);
     QString typeForMode(const ASTProperty &property, Mode mode);
 
