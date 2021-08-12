@@ -509,12 +509,12 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
 
 \code
     // myInternalHost is a node only visible on the device...
-    QRemoteObjectHost myInternalHost("local:MyHost");
+    QRemoteObjectHost myInternalHost("local:MyHost", "local:registry");
 
     // RegistryHost node, listening on port 12123, so visible to other
     // devices.  The node must be a RegistryHost, so the Sources on
     // the "outside" network can be forwarded to the inner network.
-    QRemoteObjectRegistryHost proxyNode("tcp://localhost:12123");
+    QRemoteObjectRegistryHost proxyNode("tcp://0.0.0.0:12123");
 
     // Enable proxying objects from nodes on the local machine's internal
     // QtRO bus.  Note the hostUrl parameter is now needed.
@@ -525,11 +525,10 @@ bool QRemoteObjectHostBase::proxy(const QUrl &registryUrl, const QUrl &hostUrl, 
     And from another device you create another node:
 
 \code
+    // Listen on a local port, and connect to "proxyNode" as the registry.
     // NB: localhost resolves to a different ip address than proxyNode
-    QRemoteObjectHost nodeOnRemoteDevice("tcp://localhost:23234");
-
-    // Connect to the target's proxyNode directly, or use a tcp registry...
-    nodeOnRemoteDevice.connectToNode("tcp://<target device>:12123");
+    QRemoteObjectHost nodeOnRemoteDevice("tcp://localhost:23234",
+                                         "tcp://<target device>:12123");
 
     // Because of the reverseProxy, we can expose objects on this device
     // and they will make their way to proxyNode...
