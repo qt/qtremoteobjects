@@ -45,6 +45,7 @@
 %token semicolon "[semicolon];"
 %token class "[class]class[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token pod "[pod]POD[ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*\\((?<types>[^\\)]*)\\);?[ \\t]*"
+%token flag "[flag][ \\t]*FLAG[ \t]*\\([ \t]*(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \t]+(?<enum>[A-Za-z_][A-Za-z0-9_]*)[ \t]*\\)[ \t]*"
 %token enum "[enum][ \\t]*ENUM[ \t]+(?:(?<class>class[ \t]+))?(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \t]*(?::[ \t]*(?<type>[a-zA-Z0-9 _:]*[a-zA-Z0-9_])[ \t]*)?"
 %token enum_param "[enum_param][ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \\t]*(=[ \\t]*(?<value>-\\d+|0[xX][0-9A-Fa-f]+|\\d+))?[ \\t]*"
 %token prop "[prop][ \\t]*PROP[ \\t]*\\((?<args>[^\\)]+)\\);?[ \\t]*"
@@ -168,8 +169,19 @@ struct ASTEnum
     bool isSigned;
     bool isScoped;
     int max;
+    int flagIndex = -1;
 };
 Q_DECLARE_TYPEINFO(ASTEnum, Q_RELOCATABLE_TYPE);
+
+struct ASTFlag
+{
+    explicit ASTFlag(const QString &name = {}, const QString &_enum = {});
+
+    bool isValid() const;
+    QString name;
+    QString _enum;
+};
+Q_DECLARE_TYPEINFO(ASTFlag, Q_RELOCATABLE_TYPE);
 
 struct ASTModelRole
 {
@@ -204,6 +216,7 @@ struct ASTClass
     QList<ASTFunction> signalsList;
     QList<ASTFunction> slotsList;
     QList<ASTEnum> enums;
+    QList<ASTFlag> flags;
     bool hasPersisted;
     QList<ASTModel> modelMetadata;
     QList<int> subClassPropertyIndices;
@@ -236,6 +249,7 @@ struct AST
     QList<ASTClass> classes;
     QList<POD> pods;
     QList<ASTEnum> enums;
+    QList<ASTFlag> flags;
     QList<QString> enumUses;
     QStringList preprocessorDirectives;
 };
@@ -382,6 +396,16 @@ QStringList ASTFunction::paramNames() const
 ASTEnum::ASTEnum(const QString &name)
     : name(name), isSigned(false), isScoped(false), max(0)
 {
+}
+
+ASTFlag::ASTFlag(const QString &name, const QString &_enum)
+    : name(name), _enum(_enum)
+{
+}
+
+bool ASTFlag::isValid() const
+{
+    return !name.isEmpty();
 }
 
 ASTClass::ASTClass(const QString &name)
@@ -682,6 +706,7 @@ Type: Enum;
     }
     break;
 ./
+Type: Flag | Flag Newlines;
 
 Comma: comma | comma Newlines;
 
@@ -733,7 +758,7 @@ Class: ClassStart Start Stop;
 ./
 
 ClassTypes: ClassType | ClassType ClassTypes;
-ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass | Comments;
+ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass | DecoratedClassFlag | Comments;
 ClassType: Enum;
 /.
     case $rule_number:
@@ -749,6 +774,7 @@ DecoratedProp: Prop | Comments Prop | Prop Newlines | Comments Prop Newlines;
 DecoratedModel: Model | Comments Model | Model Newlines | Comments Model Newlines;
 DecoratedClass: ChildRep | Comments ChildRep | ChildRep Newlines | Comments ChildRep Newlines;
 DecoratedEnumParam: EnumParam | Comments EnumParam | EnumParam Newlines | Comments EnumParam Newlines;
+DecoratedClassFlag: ClassFlag | Comments ClassFlag | ClassFlag Newlines | Comments ClassFlag Newlines;
 
 Start: start | Comments start | start Newlines | Comments start Newlines;
 Stop: stop | stop Newlines;
@@ -799,6 +825,29 @@ EnumParam: enum_param;
         } else if (m_astEnum.max < param.value)
             m_astEnum.max = param.value;
         m_astEnum.params << param;
+    }
+    break;
+./
+
+ClassFlag: flag;
+/.
+    case $rule_number:
+    {
+        const QString name = captured().value(QLatin1String("name"));
+        const QString _enum = captured().value(QLatin1String("enum"));
+        int enumIndex = 0;
+        for (auto &en : m_astClass.enums) {
+            if (en.name == _enum) {
+                en.flagIndex = m_astClass.flags.count();
+                break;
+            }
+            enumIndex++;
+        }
+        if (enumIndex == m_astClass.enums.count()) {
+            setErrorString(QLatin1String("FLAG: Unknown (class) enum: %1").arg(_enum));
+            return false;
+        }
+        m_astClass.flags.append(ASTFlag(name, _enum));
     }
     break;
 ./
@@ -911,6 +960,31 @@ UseEnum: use_enum;
         const QString name = captured().value(QLatin1String("name"));
 
         m_ast.enumUses.append(name);
+    }
+    break;
+./
+
+Flag: flag;
+/.
+    case $rule_number:
+    {
+        const QString name = captured().value(QLatin1String("name"));
+        const QString _enum = captured().value(QLatin1String("enum"));
+        int enumIndex = 0;
+        for (auto &en : m_ast.enums) {
+            if (en.name == _enum) {
+                en.flagIndex = m_ast.flags.count();
+                break;
+            }
+            if (en.name == _enum)
+                break;
+            enumIndex++;
+        }
+        if (enumIndex == m_ast.enums.count()) {
+            setErrorString(QLatin1String("FLAG: Unknown (global) enum: %1").arg(_enum));
+            return false;
+        }
+        m_ast.flags.append(ASTFlag(name, _enum));
     }
     break;
 ./

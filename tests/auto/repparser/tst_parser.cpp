@@ -402,16 +402,19 @@ void tst_Parser::testTypedEnums_data()
     QTest::addColumn<QString>("expectedtype");
     QTest::addColumn<bool>("inclass");
     QTest::addColumn<bool>("isscoped");
+    QTest::addColumn<bool>("isflag");
 
-    for (int i = 0; i <= 3; ++i) {
+    for (int i = 0; i <= 7; ++i) {
         bool inclass = i % 2 == 1;
-        bool isscoped = i > 1;
-        QString identifier = inclass ? QLatin1String("%1 %2 in class") : QLatin1String("%1 %2 outside class");
+        bool isscoped = i % 4 > 1;
+        bool isflag = i > 3;
+        QString identifier = inclass ? QLatin1String("%1 %2 %3 in class") : QLatin1String("%1 %2 %3 outside class");
         QString scopeString = isscoped ? QLatin1String("Scoped") : QLatin1String("Non-scoped");
-        QTest::newRow(identifier.arg(scopeString, "no type").toLatin1()) << "preset {presetNumber}" << QString() << inclass << isscoped;
-        QTest::newRow(identifier.arg(scopeString, "quint16").toLatin1()) << "preset : quint16 {presetNumber}" << "quint16" << inclass << isscoped;
-        QTest::newRow(identifier.arg(scopeString, "qint64").toLatin1()) << "preset : qint64 {presetNumber}" << "qint64" << inclass << isscoped;
-        QTest::newRow(identifier.arg(scopeString, "unsigned char").toLatin1()) << "preset: unsigned char {presetNumber}" << "unsigned char" << inclass << isscoped;
+        QString flagString = isflag ? QLatin1String("Flag") : QLatin1String("Enum");
+        QTest::newRow(identifier.arg(scopeString, flagString, "no type").toLatin1()) << "preset {presetNumber}" << QString() << inclass << isscoped << isflag;
+        QTest::newRow(identifier.arg(scopeString, flagString, "quint16").toLatin1()) << "preset : quint16 {presetNumber}" << "quint16" << inclass << isscoped << isflag;
+        QTest::newRow(identifier.arg(scopeString, flagString, "qint64").toLatin1()) << "preset : qint64 {presetNumber}" << "qint64" << inclass << isscoped << isflag;
+        QTest::newRow(identifier.arg(scopeString, flagString, "unsigned char").toLatin1()) << "preset: unsigned char {presetNumber}" << "unsigned char" << inclass << isscoped << isflag;
     }
 }
 
@@ -421,16 +424,23 @@ void tst_Parser::testTypedEnums()
     QFETCH(QString, expectedtype);
     QFETCH(bool, inclass);
     QFETCH(bool, isscoped);
+    QFETCH(bool, isflag);
 
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
-    if (!inclass)
+    if (!inclass) {
         stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration << Qt::endl;
+        if (isflag)
+            stream << "FLAG(MyFlags preset)" << Qt::endl;
+    }
     stream << "class TestClass" << Qt::endl;
     stream << "{" << Qt::endl;
-    if (inclass)
+    if (inclass) {
         stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration << Qt::endl;
+        if (isflag)
+            stream << "FLAG(MyFlags preset)" << Qt::endl;
+    }
     stream << "};" << Qt::endl;
     file.seek(0);
 
@@ -440,15 +450,23 @@ void tst_Parser::testTypedEnums()
     const AST ast = parser.ast();
     QCOMPARE(ast.classes.count(), 1);
     ASTEnum enums;
+    ASTFlag flags;
     if (inclass) {
         const ASTClass astClass = ast.classes.first();
         QCOMPARE(astClass.enums.count(), 1);
         enums = astClass.enums.first();
+        if (isflag)
+            flags = astClass.flags.first();
     } else {
         QCOMPARE(ast.enums.count(), 1);
         enums = ast.enums.first();
+        if (isflag)
+            flags = ast.flags.first();
     }
     QVERIFY(enums.isScoped == isscoped);
+    QVERIFY(enums.flagIndex == (isflag ? 0 : -1));
+    QVERIFY(flags.name == (isflag ? "MyFlags" : QString{}));
+    QVERIFY(flags._enum == (isflag ? "preset" : QString{}));
     QCOMPARE(enums.type, expectedtype);
     const QList<ASTEnumParam> paramList = enums.params;
     QVERIFY(paramList.count() == 1);
