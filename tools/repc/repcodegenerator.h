@@ -38,6 +38,7 @@ struct AST;
 struct ASTClass;
 struct POD;
 struct ASTEnum;
+struct ASTFlag;
 struct ASTProperty;
 
 class QIODevice;
@@ -66,7 +67,7 @@ private:
 
     void generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride = true);
     void generatePOD(QTextStream &out, const POD &pod);
-    void generateEnumGadget(QTextStream &out, const ASTEnum &en, const QString &className);
+    void generateEnumGadget(QTextStream &out, const ASTEnum &en, const ASTFlag &flag, const QString &className);
     void generateDeclarationsForEnums(QTextStream &out, const QList<ASTEnum> &enums, bool generateQENUM=true);
     QString formatQPropertyDeclarations(const POD &pod);
     QString formatConstructors(const POD &pod);

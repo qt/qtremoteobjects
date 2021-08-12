@@ -225,8 +225,12 @@ void RepCodeGenerator::generate(const AST &ast, Mode mode, QString fileName)
     }
 
     generateHeader(mode, stream, ast);
-    for (const ASTEnum &en : ast.enums)
-        generateEnumGadget(stream, en, QStringLiteral("%1Enum").arg(en.name));
+    for (const ASTEnum &en : ast.enums) {
+        ASTFlag flag;
+        if (en.flagIndex >= 0)
+            flag = ast.flags.at(en.flagIndex);
+        generateEnumGadget(stream, en, flag, QStringLiteral("%1Enum").arg(en.name));
+    }
     for (const POD &pod : ast.pods)
         generatePOD(stream, pod);
 
@@ -499,7 +503,7 @@ void RepCodeGenerator::generatePOD(QTextStream &out, const POD &pod)
 
 QString getEnumType(const ASTEnum &en)
 {
-    if (en.isScoped && !en.type.isEmpty())
+    if (!en.type.isEmpty())
         return en.type;
     if (en.isSigned) {
         if (en.max < 0x7F)
@@ -532,13 +536,12 @@ void RepCodeGenerator::generateDeclarationsForEnums(QTextStream &out, const QLis
 
         out << "    };\n";
 
-        if (generateQENUM) {
+        if (generateQENUM)
             out << "    Q_ENUM(" << en.name << ")\n";
-        }
     }
 }
 
-void RepCodeGenerator::generateEnumGadget(QTextStream &out, const ASTEnum &en, const QString &className)
+void RepCodeGenerator::generateEnumGadget(QTextStream &out, const ASTEnum &en, const ASTFlag &flag, const QString &className)
 {
     out << "class " << className << "\n"
            "{\n"
@@ -551,9 +554,15 @@ void RepCodeGenerator::generateEnumGadget(QTextStream &out, const ASTEnum &en, c
 
     auto enums = QList<ASTEnum>() << en;
     generateDeclarationsForEnums(out, enums);
+    if (flag.isValid()) {
+        out << "    Q_DECLARE_FLAGS(" << flag.name << ", " << flag._enum << ")\n";
+        out << "    Q_FLAG(" << flag.name << ")\n";
+    }
 
     out << "};\n\n";
 
+    if (flag.isValid())
+        out << "Q_DECLARE_OPERATORS_FOR_FLAGS(" << className << "::" << flag.name << ")\n\n";
 }
 
 QString RepCodeGenerator::generateMetaTypeRegistration(const QSet<QString> &metaTypes)
@@ -642,6 +651,10 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
             out << "" << Qt::endl;
             out << "public:" << Qt::endl;
             generateDeclarationsForEnums(out, astClass.enums);
+            for (const auto &flag : astClass.flags) {
+                out << "    Q_DECLARE_FLAGS(" << flag.name << ", " << flag._enum << ")\n";
+                out << "    Q_FLAG(" << flag.name << ")\n";
+            }
         }
     }
 
@@ -948,6 +961,10 @@ void RepCodeGenerator::generateClass(Mode mode, QTextStream &out, const ASTClass
         out << "    friend class QT_PREPEND_NAMESPACE(QRemoteObjectNode);" << Qt::endl;
 
     out << "};\n\n";
+    if (mode != SIMPLE_SOURCE) {
+        for (const ASTFlag &flag : astClass.flags)
+            out << "Q_DECLARE_OPERATORS_FOR_FLAGS(" << className << "::" << flag.name << ")\n\n";
+    }
 }
 
 void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astClass)
@@ -960,6 +977,8 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         // Include enum definition in SourceAPI
         generateDeclarationsForEnums(out, astClass.enums, false);
     }
+    for (const auto &flag : astClass.flags)
+        out << QLatin1String("    typedef QFlags<typename ObjectType::%1> %2;").arg(flag._enum, flag.name) << Qt::endl;
     out << QString::fromLatin1("    %1(ObjectType *object, const QString &name = QLatin1String(\"%2\"))").arg(className, astClass.name) << Qt::endl;
     out << QStringLiteral("        : SourceApiMap(), m_name(name)") << Qt::endl;
     out << QStringLiteral("    {") << Qt::endl;
@@ -967,16 +986,22 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         out << QStringLiteral("        Q_UNUSED(object)") << Qt::endl;
 
     const auto enumCount = astClass.enums.count();
+    const auto totalCount = enumCount + astClass.flags.count();
     for (int i : astClass.subClassPropertyIndices) {
         const ASTProperty &child = astClass.properties.at(i);
         out << QString::fromLatin1("        using %1_type_t = typename std::remove_pointer<decltype(object->%1())>::type;")
                                   .arg(child.name) << Qt::endl;
     }
-    out << QString::fromLatin1("        m_enums[0] = %1;").arg(enumCount) << Qt::endl;
+    out << QString::fromLatin1("        m_enums[0] = %1;").arg(totalCount) << Qt::endl;
     for (qsizetype i = 0; i < enumCount; ++i) {
         const auto enumerator = astClass.enums.at(i);
         out << QString::fromLatin1("        m_enums[%1] = ObjectType::staticMetaObject.indexOfEnumerator(\"%2\");")
-                             .arg(i+1).arg(enumerator.name) << Qt::endl;
+                                   .arg(i+1).arg(enumerator.name) << Qt::endl;
+    }
+    for (qsizetype i = enumCount; i < totalCount; ++i) {
+        const auto flag = astClass.flags.at(i - enumCount);
+        out << QString::fromLatin1("        m_enums[%1] = ObjectType::staticMetaObject.indexOfEnumerator(\"%2\");")
+                                   .arg(i+1).arg(flag.name) << Qt::endl;
     }
     const auto propCount = astClass.properties.count();
     out << QString::fromLatin1("        m_properties[0] = %1;").arg(propCount) << Qt::endl;
@@ -1282,7 +1307,7 @@ void RepCodeGenerator::generateSourceAPI(QTextStream &out, const ASTClass &astCl
         << QStringLiteral("\"}; }") << Qt::endl;
 
     out << QStringLiteral("") << Qt::endl;
-    out << QString::fromLatin1("    int m_enums[%1];").arg(enumCount + 1) << Qt::endl;
+    out << QString::fromLatin1("    int m_enums[%1];").arg(totalCount + 1) << Qt::endl;
     out << QString::fromLatin1("    int m_properties[%1];").arg(propCount+1) << Qt::endl;
     out << QString::fromLatin1("    int m_signals[%1];").arg(signalCount+changedCount+1) << Qt::endl;
     out << QString::fromLatin1("    int m_methods[%1];").arg(methodCount+1) << Qt::endl;
