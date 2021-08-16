@@ -26,7 +26,7 @@
 ****************************************************************************/
 
 /*!
-\qmlmodule QtRemoteObjects 5.\QtMinorVersion
+\qmlmodule QtRemoteObjects 6.\QtMinorVersion
 \title Qt Remote Objects QML Types
 \ingroup qmlmodules
 \brief Provides QML types for remote objects support.
