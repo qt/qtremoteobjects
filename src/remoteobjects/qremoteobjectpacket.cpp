@@ -103,6 +103,21 @@ using namespace QtRemoteObjects;
 
 namespace QRemoteObjectPackets {
 
+QMetaType transferTypeForEnum(QMetaType enumType)
+{
+    const auto size = enumType.sizeOf();
+    switch (size) {
+    case 1: return QMetaType::fromType<qint8>();
+    case 2: return QMetaType::fromType<qint16>();
+    case 4: return QMetaType::fromType<qint32>();
+    // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
+//                    case 8: args.push_back(QVariant(QMetaType::Int, argv[i + 1])); break;
+    default:
+        qCWarning(QT_REMOTEOBJECT_IO) << "Invalid enum detected (Dynamic Replica)" << enumType.name() << "with size" << size;
+        return QMetaType::fromType<qint32>();
+    }
+}
+
 // QDataStream sends QVariants of custom types by sending their typename, allowing decode
 // on the receiving side.  For QtRO and enums, this won't work, as the enums have different
 // scopes.  E.g., the examples have ParentClassSource::MyEnum and ParentClassReplica::MyEnum.
@@ -115,19 +130,10 @@ QVariant encodeVariant(const QVariant &value)
     const auto metaType = value.metaType();
     if (metaType.flags().testFlag(QMetaType::IsEnumeration)) {
         auto converted = QVariant(value);
-        const auto size = metaType.sizeOf();
-        switch (size) {
-        case 1: converted.convert(QMetaType::fromType<qint8>()); break;
-        case 2: converted.convert(QMetaType::fromType<qint16>()); break;
-        case 4: converted.convert(QMetaType::fromType<qint32>()); break;
-        // Qt currently only supports enum values of 4 or less bytes (QMetaEnum value(index) returns int)
-//        case 8: converted.convert(QMetaType::Long); break; // typeId for long from qmetatype.h
-        default:
-            qWarning() << "Invalid enum detected" << metaType.name() << "with size" << size;
-            converted.convert(QMetaType::fromType<qint32>());
-        }
+        auto transferType = transferTypeForEnum(metaType);
+        converted.convert(transferType);
 #ifdef QTRO_VERBOSE_PROTOCOL
-        qDebug() << "Converting from enum to integer type" << size << converted << value;
+        qDebug() << "Converting from enum to integer type" << transferType.sizeOf() << converted << value;
 #endif
         return converted;
     }
@@ -247,13 +253,22 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
             quint32 count;
             in >> keyTypeName;
             QMetaType keyType = QMetaType::fromName(keyTypeName.constData());
-            QVariant key{keyType, nullptr};
+            if (!keyType.isValid()) {
+                // This happens for class enums, where the passed keyType is <ClassName>::<enum>
+                // For a compiled replica, the keyType is <ClassName>Replica::<enum>
+                // Since the full typename is registered, we can pull the keyType from there
+                keyType = mapIter.metaContainer().keyMetaType();
+            }
+            QMetaType transferType = keyType;
+            if (keyType.flags().testFlag(QMetaType::IsEnumeration))
+                transferType = transferTypeForEnum(keyType);
+            QVariant key{transferType, nullptr};
             in >> valueTypeName;
             QMetaType valueType = QMetaType::fromName(valueTypeName.constData());
             QVariant val{valueType, nullptr};
             in >> count;
             for (quint32 i = 0; i < count; i++) {
-                if (!keyType.load(in, key.data())) {
+                if (!transferType.load(in, key.data())) {
                     map = QVariant{containerType, nullptr};
                     qWarning("QAS_: unable to load key of type '%s', returning an empty map.",
                              keyTypeName.constData());
@@ -265,7 +280,13 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
                              valueTypeName.constData());
                     break;
                 }
-                mapIter.setValue(key, val);
+                if (transferType != keyType) {
+                    QVariant enumKey(key);
+                    enumKey.convert(keyType);
+                    mapIter.setValue(enumKey, val);
+                } else {
+                    mapIter.setValue(key, val);
+                }
             }
             value = map;
 #ifdef QTRO_VERBOSE_PROTOCOL
@@ -974,7 +995,7 @@ QDataStream &operator>>(QDataStream &stream, QSQ_ &sequence)
 QAS_::QAS_(const QVariant &variant)
 {
     QAssociativeIterable map;
-    QMetaType keyType, valueType;
+    QMetaType keyType, transferType, valueType;
     const QtROAssociativeContainer *container = nullptr;
     if (variant.metaType() == QMetaType::fromType<QtROAssociativeContainer>()) {
         container = static_cast<const QtROAssociativeContainer *>(variant.constData());
@@ -992,6 +1013,46 @@ QAS_::QAS_(const QVariant &variant)
         valueType = map.metaContainer().mappedMetaType();
         valueTypeName = QByteArray(valueType.name());
     }
+    // Special handling for enums...
+    transferType = keyType;
+    if (keyType.flags().testFlag(QMetaType::IsEnumeration)) {
+        transferType = transferTypeForEnum(keyType);
+        auto meta = keyType.metaObject();
+        // If we are the source, make sure the typeName is converted for any downstream replicas
+        // the `meta` variable will be non-null when the enum is a class enum
+        if (meta && !container) {
+            const int ind = meta->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
+            if (ind >= 0) {
+                bool isFlag = keyTypeName.startsWith("QFlags<");
+                if (isFlag || keyTypeName.startsWith(meta->className())) {
+#ifdef QTRO_VERBOSE_PROTOCOL
+                    QByteArray orig(keyTypeName);
+#endif
+                    if (isFlag) {
+                        // Q_DECLARE_FLAGS(Flags, Enum) -> `typedef QFlags<Enum> Flags;`
+                        // We know we have an enum for `Flags` because we sent the enums
+                        // from the source, so we just need to look up the alias.
+                        keyTypeName = keyTypeName.mid(7);
+                        keyTypeName.chop(1); // Remove trailing '>'
+                        int index = keyTypeName.lastIndexOf(':');
+                        for (int i = meta->enumeratorOffset(); i < meta->enumeratorCount(); i++) {
+                            auto en = meta->enumerator(i);
+                            auto name = keyTypeName.data() + index + 1;
+                            if (en.isFlag() && qstrcmp(en.enumName(), name) == 0)
+                                keyTypeName.replace(index + 1, qstrlen(en.enumName()), en.name());
+                        }
+                    }
+                    keyTypeName.replace(meta->className(), meta->classInfo(ind).value());
+                    QByteArray repName(meta->classInfo(ind).value());
+                    repName.append("Replica");
+                    typeName.replace(meta->className(), repName);
+#ifdef QTRO_VERBOSE_PROTOCOL
+                    qDebug() << "Converted map key typename from" << orig << "to" << keyTypeName;
+#endif
+                }
+            }
+        }
+    }
 
 #ifdef QTRO_VERBOSE_PROTOCOL
     qDebug("Serializing POD map to QAS_ (type = %s, keyType = %s, valueType = %s), size = %lld",
@@ -1005,8 +1066,10 @@ QAS_::QAS_(const QVariant &variant)
     ds << quint32(map.size());
     QAssociativeIterable::const_iterator iter = map.begin();
     for (int i = 0; i < map.size(); i++) {
-        const QVariant &key = container ? container->m_keys.at(i) : iter.key();
-        if (!keyType.save(ds, key.data())) {
+        QVariant key(container ? container->m_keys.at(i) : iter.key());
+        if (transferType != keyType)
+            key.convert(transferType);
+        if (!transferType.save(ds, key.data())) {
             ds.device()->seek(pos);
             ds.resetStatus();
             ds << quint32(0);

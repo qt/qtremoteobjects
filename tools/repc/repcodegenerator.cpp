@@ -89,11 +89,16 @@ static bool hasScopedEnum(const ASTClass &classContext)
 
 static QString fullyQualifiedTypeName(const ASTClass& classContext, const QString &className, const QString &typeName)
 {
-    if (isClassEnum(classContext, typeName)) {
-        // type was defined in this class' context, prefix typeName with class name
-        return className + QStringLiteral("::") + typeName;
+    static const QRegularExpression re = QRegularExpression(QLatin1String("([^<>,\\s]+)"));
+    QString copy = typeName;
+    qsizetype offset = 0;
+    for (const QRegularExpressionMatch &match : re.globalMatch(typeName)) {
+        if (isClassEnum(classContext, match.captured(1))) {
+            copy.insert(match.capturedStart(1) + offset, className + QStringLiteral("::"));
+            offset += className.length() + 2;
+        }
     }
-    return typeName;
+    return copy;
 }
 
 // for enums we need to transform signal/slot arguments to include the class scope

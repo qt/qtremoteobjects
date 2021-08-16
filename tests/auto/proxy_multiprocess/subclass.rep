@@ -17,6 +17,8 @@ class SubClass
 class ParentClass
 {
     ENUM MyEnum {foo=1, bar=3, foobar=6}
+    ENUM class Position : unsigned short {position1=1, position2=2, position3=4}
+    FLAG (ActivePositions  Position)
     PROP(bool started = false)
     PROP(MyEnum myEnum=foo)
     PROP(QVariant variant)
@@ -26,6 +28,8 @@ class ParentClass
     PROP(QList<QString> simpleList)
     PROP(QList<MyPOD> podList)
     PROP(QMap<int, MyPOD> intMap)
+    PROP(QMap<ActivePositions, MyPOD> enumMap)
+    PROP(QHash<NS2::NamespaceEnum, MyPOD> podHash)
 
     SLOT(bool start())
     SLOT(bool quit())
