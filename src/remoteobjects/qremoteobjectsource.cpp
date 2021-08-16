@@ -100,15 +100,9 @@ inline bool apiMethodMatch(const QMetaObject *m, const Data &data, const QByteAr
         return false;
     if (apiStringData(m, data.name()) != name)
         return false;
-    int paramsIndex = data.parameters() + 1;
     for (int i = 0; i < argc; ++i) {
-        uint typeInfo = m->d.data[paramsIndex + i];
-        if (typeInfo & 0x80000000) { // Custom/named type, compare names
-            const char *t = QMetaType(types[i]).name();
-            const auto type = QByteArray::fromRawData(t, qstrlen(t));
-            if (type != apiStringData(m, typeInfo & 0x7FFFFFFF))
-                return false;
-        } else if (types[i] != int(typeInfo))
+        auto mt = QMetaType(m->d.metaTypes[data.metaTypeOffset() + i + 1]);
+        if (mt != QMetaType(types[i]))
             return false;
     }
     return true;

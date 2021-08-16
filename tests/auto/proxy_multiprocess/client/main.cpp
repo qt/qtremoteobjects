@@ -35,6 +35,13 @@
 
 static QMap<int, MyPOD> int_map{{1, initialValue},
                                 {16, initialValue}};
+static ParentClassReplica::ActivePositions flags1 = ParentClassReplica::Position::position1;
+static ParentClassReplica::ActivePositions flags2 = ParentClassReplica::Position::position2
+                                                    | ParentClassReplica::Position::position3;
+static QMap<ParentClassReplica::ActivePositions, MyPOD> my_map{{flags1, initialValue},
+                                                               {flags2, initialValue}};
+static QHash<NS2::NamespaceEnum, MyPOD> my_hash{{NS2::NamespaceEnum::Alpha, initialValue},
+                                                {NS2::NamespaceEnum::Charlie, initialValue}};
 
 class tst_Client_Process : public QObject
 {
@@ -71,6 +78,8 @@ private Q_SLOTS:
             QCOMPARE(m_rep->simpleList(), QList<QString>() << "one" << "two");
             QCOMPARE(m_rep->podList(), QList<MyPOD>() << initialValue << initialValue);
             QCOMPARE(m_rep->intMap(), int_map);
+            QCOMPARE(m_rep->enumMap(), my_map);
+            QCOMPARE(m_rep->podHash(), my_hash);
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);

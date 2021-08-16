@@ -314,6 +314,7 @@ private:
     DataStreamPacket m_packet;
 };
 
+QMetaType transferTypeForEnum(QMetaType enumType);
 QVariant encodeVariant(const QVariant &value);
 QVariant decodeVariant(QVariant &&value, QMetaType metaType);
 

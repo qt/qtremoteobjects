@@ -35,6 +35,13 @@
 
 static QMap<int, MyPOD> int_map{{1, initialValue},
                                 {16, initialValue}};
+static MyTestServer::ActivePositions flags1 = MyTestServer::Position::position1;
+static MyTestServer::ActivePositions flags2 = MyTestServer::Position::position2
+                                              | MyTestServer::Position::position3;
+static QMap<MyTestServer::ActivePositions, MyPOD> my_map{{flags1, initialValue},
+                                                         {flags2, initialValue}};
+static QHash<NS2::NamespaceEnum, MyPOD> my_hash{{NS2::NamespaceEnum::Alpha, initialValue},
+                                                {NS2::NamespaceEnum::Charlie, initialValue}};
 
 class tst_Server_Process : public QObject
 {
@@ -66,6 +73,8 @@ private Q_SLOTS:
             parent.setSimpleList(QList<QString>() << "one" << "two");
             parent.setPodList(QList<MyPOD>() << initialValue << initialValue);
             parent.setIntMap(int_map);
+            parent.setEnumMap(my_map);
+            parent.setPodHash(my_hash);
         }
 
         if (templated)

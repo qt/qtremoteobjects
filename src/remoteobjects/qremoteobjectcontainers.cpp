@@ -40,6 +40,7 @@
 #include <QtCore/qiodevice.h>
 
 #include "qremoteobjectcontainers_p.h"
+#include "qremoteobjectpacket_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -81,6 +82,12 @@ QDataStream &operator<<(QDataStream &ds, const QtROSequentialContainer &p)
     return ds;
 }
 
+const char *descopedName(QMetaType type) {
+    auto name = QByteArray::fromRawData(type.name(), qstrlen(type.name()));
+    int index = name.lastIndexOf(':'); // Returns -1 if not found
+    return type.name() + index + 1;
+}
+
 QDataStream &operator>>(QDataStream &ds, QtROAssociativeContainer &p)
 {
     QByteArray keyTypeName, valueTypeName;
@@ -90,10 +97,13 @@ QDataStream &operator>>(QDataStream &ds, QtROAssociativeContainer &p)
     p.setTypes(keyTypeName, valueTypeName);
     ds >> count;
     p.m_keys.reserve(count);
-    QVariant key{p.m_keyType, nullptr};
+    auto transferType = p.m_keyType;
+    if (p.m_keyType.flags().testFlag(QMetaType::IsEnumeration))
+        transferType = QRemoteObjectPackets::transferTypeForEnum(p.m_keyType);
+    QVariant key{transferType, nullptr};
     QVariant value{p.m_valueType, nullptr};
     for (quint32 i = 0; i < count; i++) {
-        if (!p.m_keyType.load(ds, key.data())) {
+        if (!transferType.load(ds, key.data())) {
             qWarning("QAS_: unable to load key '%s', returning an empty map.", p.m_keyTypeName.constData());
             p.clear();
             break;
@@ -103,8 +113,25 @@ QDataStream &operator>>(QDataStream &ds, QtROAssociativeContainer &p)
             p.clear();
             break;
         }
-        p.insert(key.toString(), value);
-        p.m_keys.append(key);
+        if (transferType != p.m_keyType) {
+            bool isFlag = false;
+            QVariant enumKey(key);
+            enumKey.convert(p.m_keyType);
+            p.m_keys.append(enumKey);
+            if (auto meta = p.m_keyType.metaObject()) {
+                int index = meta->indexOfEnumerator(descopedName(p.m_keyType));
+                isFlag = meta->enumerator(index).isFlag();
+            }
+            // If multiple flag values are set, toString() returns an empty string
+            // Thus, for flags, we convert the integer value to a string
+            if (isFlag)
+                p.insert(key.toString(), value);
+            else
+                p.insert(enumKey.toString(), value);
+        } else {
+            p.insert(key.toString(), value);
+            p.m_keys.append(key);
+        }
     }
     return ds;
 }
@@ -118,8 +145,19 @@ QDataStream &operator<<(QDataStream &ds, const QtROAssociativeContainer &p)
     ds << count;
     QAssociativeIterable map(&p);
     QAssociativeIterable::const_iterator iter = map.begin();
+    auto transferType = p.m_keyType;
+    if (p.m_keyType.flags().testFlag(QMetaType::IsEnumeration))
+        transferType = QRemoteObjectPackets::transferTypeForEnum(p.m_keyType);
+    bool keySaved;
     for (quint32 i = 0; i < count; i++) {
-        if (!p.m_keyType.save(ds, iter.key().data())) {
+        if (transferType != p.m_keyType) {
+            QVariant intKey(iter.key());
+            intKey.convert(transferType);
+            keySaved = transferType.save(ds, intKey.data());
+        } else {
+            keySaved = transferType.save(ds, iter.key().data());
+        }
+        if (!keySaved) {
             ds.device()->seek(pos);
             ds.resetStatus();
             ds << quint32(0);
