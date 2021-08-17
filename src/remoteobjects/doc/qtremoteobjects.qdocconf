@@ -40,6 +40,12 @@ sourcedirs  += .. \
 exampledirs += ../../../examples/remoteobjects \
                snippets/
 
+#add thumbnail images for the example docs that does not have an image.
+manifestmeta.thumbnail.names += "QtRemoteObjects/Model*" \
+                               "QtRemoteObjects/QML*" \
+                               "QtRemoteObjects/QtRemote*"
+
+
 examplesinstallpath = remoteobjects
 
 imagedirs   += images
