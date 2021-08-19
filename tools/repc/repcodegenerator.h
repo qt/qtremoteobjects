@@ -29,20 +29,16 @@
 #ifndef REPCODEGENERATOR_H
 #define REPCODEGENERATOR_H
 
+#include "repparser.h"
+
 #include <QList>
 #include <QSet>
 #include <QString>
+#include <QTextStream>
 
 QT_BEGIN_NAMESPACE
-struct AST;
-struct ASTClass;
-struct POD;
-struct ASTEnum;
-struct ASTFlag;
-struct ASTProperty;
 
 class QIODevice;
-class QTextStream;
 
 class RepCodeGenerator
 {
@@ -55,20 +51,20 @@ public:
         MERGED
     };
 
-    explicit RepCodeGenerator(QIODevice *outputDevice);
+    RepCodeGenerator(QIODevice *outputDevice, const AST &ast);
 
-    void generate(const AST &ast, Mode mode, QString fileName);
+    void generate(Mode mode, QString fileName);
 
     QByteArray classSignature(const ASTClass &ac);
 private:
-    void generateHeader(Mode mode, QTextStream &out, const AST &ast);
+    void generateHeader(Mode mode);
     QString generateMetaTypeRegistration(const QSet<QString> &metaTypes);
     QString generateMetaTypeRegistrationForPending(const QSet<QString> &metaTypes);
 
-    void generateSimpleSetter(QTextStream &out, const ASTProperty &property, bool generateOverride = true);
-    void generatePOD(QTextStream &out, const POD &pod);
-    void generateEnumGadget(QTextStream &out, const ASTEnum &en, const ASTFlag &flag, const QString &className);
-    void generateDeclarationsForEnums(QTextStream &out, const QList<ASTEnum> &enums, bool generateQENUM=true);
+    void generateSimpleSetter(const ASTProperty &property, bool generateOverride = true);
+    void generatePOD(const POD &pod);
+    void generateEnumGadget(const ASTEnum &en, const QString &className);
+    void generateDeclarationsForEnums(const QList<ASTEnum> &enums, bool generateQENUM=true);
     QString formatQPropertyDeclarations(const POD &pod);
     QString formatConstructors(const POD &pod);
     QString formatPropertyGettersAndSetters(const POD &pod);
@@ -78,12 +74,14 @@ private:
     QString formatMarshallingOperators(const POD &pod);
     QString typeForMode(const ASTProperty &property, Mode mode);
 
-    void generateClass(Mode mode, QTextStream &out, const ASTClass &astClasses, const QString &metaTypeRegistrationCode);
-    void generateSourceAPI(QTextStream &out, const ASTClass &astClass);
+    void generateClass(Mode mode, const ASTClass &astClasses,
+                       const QString &metaTypeRegistrationCode);
+    void generateSourceAPI(const ASTClass &astClass);
 
 private:
-    QIODevice *m_outputDevice;
     QHash<QString, QByteArray> m_globalTypes;
+    QTextStream m_stream;
+    AST m_ast;
 };
 
 QT_END_NAMESPACE
