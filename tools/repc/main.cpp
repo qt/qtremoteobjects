@@ -230,8 +230,8 @@ int main(int argc, char **argv)
             generator.generate(classes, parser.isSet(alwaysClassOption));
         } else {
             Q_ASSERT(mode & OutReplica);
-            RepCodeGenerator generator(&output);
-            generator.generate(classList2AST(classes), RepCodeGenerator::REPLICA, outputFile);
+            RepCodeGenerator generator(&output, classList2AST(classes));
+            generator.generate(RepCodeGenerator::REPLICA, outputFile);
         }
     } else {
         Q_ASSERT(!(mode & OutRep));
@@ -249,13 +249,13 @@ int main(int argc, char **argv)
 
         input.close();
 
-        RepCodeGenerator generator(&output);
+        RepCodeGenerator generator(&output, repparser.ast());
         if ((mode & OutMerged) == OutMerged)
-            generator.generate(repparser.ast(), RepCodeGenerator::MERGED, outputFile);
+            generator.generate(RepCodeGenerator::MERGED, outputFile);
         else if (mode & OutReplica)
-            generator.generate(repparser.ast(), RepCodeGenerator::REPLICA, outputFile);
+            generator.generate(RepCodeGenerator::REPLICA, outputFile);
         else if (mode & OutSource)
-            generator.generate(repparser.ast(), RepCodeGenerator::SOURCE, outputFile);
+            generator.generate(RepCodeGenerator::SOURCE, outputFile);
         else {
             fprintf(stderr, PROGRAM_NAME ": Unknown mode.\n");
             return 1;
