@@ -132,90 +132,9 @@ RepCodeGenerator::RepCodeGenerator(QIODevice *outputDevice, const AST &ast)
 {
 }
 
-static QByteArray enumSignature(const ASTEnum &e)
-{
-    QByteArray ret;
-    ret += e.name.toLatin1();
-    for (const ASTEnumParam &param : e.params)
-        ret += param.name.toLatin1() + QByteArray::number(param.value);
-    return ret;
-}
-
-static QByteArray typeData(const QString &type, const QHash<QString, QByteArray> &specialTypes)
-{
-    QHash<QString, QByteArray>::const_iterator it = specialTypes.find(type);
-    if (it != specialTypes.end())
-        return it.value();
-    const auto pos = type.lastIndexOf(QLatin1String("::"));
-    if (pos > 0)
-        return typeData(type.mid(pos + 2), specialTypes);
-    return type.toLatin1();
-}
-
-static QByteArray functionsData(const QList<ASTFunction> &functions,
-                                const QHash<QString, QByteArray> &specialTypes)
-{
-    QByteArray ret;
-    for (const ASTFunction &func : functions) {
-        ret += func.name.toLatin1();
-        for (const ASTDeclaration &param : func.params) {
-            ret += param.name.toLatin1();
-            ret += typeData(param.type, specialTypes);
-            ret += QByteArray(reinterpret_cast<const char *>(&param.variableType),
-                              sizeof(param.variableType));
-        }
-        ret += typeData(func.returnType, specialTypes);
-    }
-    return ret;
-}
-
 QByteArray RepCodeGenerator::classSignature(const ASTClass &ac)
 {
-    if (m_globalTypes.contains(ac.name))
-        return m_globalTypes[ac.name];
-
-    QCryptographicHash checksum(QCryptographicHash::Sha1);
-    QHash<QString, QByteArray> localTypes = m_globalTypes;
-    for (const ASTEnum &e : ac.enums) // add local enums
-        localTypes[e.name] = enumSignature(e);
-
-    checksum.addData(ac.name.toLatin1());
-
-    // Checksum properties
-    QSet<int> classIndices{ ac.subClassPropertyIndices.begin(),
-                            ac.subClassPropertyIndices.end() };
-    int propertyIndex = -1;
-    int modelIndex = 0;
-    for (const ASTProperty &p : ac.properties) {
-        propertyIndex++;
-        checksum.addData(p.name.toLatin1());
-        if (p.type == QLatin1String("QAbstractItemModel")) {
-            QByteArrayList roles;
-            for (const auto &role : ac.modelMetadata[modelIndex++].roles)
-                roles << role.name.toLatin1();
-            std::sort(roles.begin(), roles.end());
-            checksum.addData(roles.join('_'));
-        } else if (classIndices.contains(propertyIndex)) {
-            checksum.addData(m_globalTypes[p.type]);
-        } else {
-            checksum.addData(typeData(p.type, localTypes));
-        }
-        ASTProperty::Modifier m = p.modifier;
-        // Treat ReadOnly and SourceOnlySetter the same (interface-wise they are)
-        if (m == ASTProperty::SourceOnlySetter)
-            m = ASTProperty::ReadOnly;
-        checksum.addData(reinterpret_cast<const char *>(&m), sizeof(m));
-    }
-
-    // Checksum signals
-    checksum.addData(functionsData(ac.signalsList, localTypes));
-
-    // Checksum slots
-    checksum.addData(functionsData(ac.slotsList, localTypes));
-
-    m_globalTypes[ac.name] = checksum.result().toHex();
-
-    return m_globalTypes[ac.name];
+    return m_ast.typeSignatures[ac.name];
 }
 
 void RepCodeGenerator::generate(Mode mode, QString fileName)
@@ -483,13 +402,9 @@ void RepCodeGenerator::generateSimpleSetter(const ASTProperty &property, bool ge
 
 void RepCodeGenerator::generatePOD(const POD &pod)
 {
-    QByteArray podData = pod.name.toLatin1();
     QStringList equalityCheck;
-    for (const PODAttribute &attr : pod.attributes) {
+    for (const PODAttribute &attr : pod.attributes)
         equalityCheck << QStringLiteral("left.%1() == right.%1()").arg(attr.name);
-        podData += attr.name.toLatin1() + typeData(attr.type, m_globalTypes);
-    }
-    m_globalTypes[pod.name] = podData;
     m_stream << "class " << pod.name << "\n"
                 "{\n"
                 "    Q_GADGET\n"
@@ -545,7 +460,6 @@ void RepCodeGenerator::generateDeclarationsForEnums(const QList<ASTEnum> &enums,
     }
 
     for (const ASTEnum &en : enums) {
-        m_globalTypes[en.name] = enumSignature(en);
         m_stream << "    enum " << (en.isScoped ? "class " : "") << en.name
                  << (en.type.isEmpty() ? "" : " : ") << en.type << " {\n";
         for (const ASTEnumParam &p : en.params)

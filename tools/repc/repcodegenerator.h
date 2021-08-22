@@ -79,7 +79,6 @@ private:
     void generateSourceAPI(const ASTClass &astClass);
 
 private:
-    QHash<QString, QByteArray> m_globalTypes;
     QTextStream m_stream;
     AST m_ast;
 };

@@ -76,6 +76,19 @@
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
+class QCryptographicHash;
+
+struct AST;
+
+struct SignedType
+{
+    SignedType(const QString &name = QString());
+    virtual ~SignedType() {}
+    void generateSignature(AST &ast);
+    virtual QString typeName() const;
+    virtual void signature_impl(const AST &ast, QCryptographicHash &checksum) = 0;
+    QString name;
+};
 
 /// A property of a Class declaration
 struct ASTProperty
@@ -159,12 +172,14 @@ struct ASTEnumParam
 };
 Q_DECLARE_TYPEINFO(ASTEnumParam, Q_RELOCATABLE_TYPE);
 
-struct ASTEnum
+struct ASTEnum : public SignedType
 {
     explicit ASTEnum(const QString &name = QString());
+    void signature_impl(const AST &ast, QCryptographicHash &checksum) override;
+    QString typeName() const override;
 
-    QString name;
     QString type;
+    QString scope;
     QList<ASTEnumParam> params;
     bool isSigned;
     bool isScoped;
@@ -173,13 +188,15 @@ struct ASTEnum
 };
 Q_DECLARE_TYPEINFO(ASTEnum, Q_RELOCATABLE_TYPE);
 
-struct ASTFlag
+struct ASTFlag : public SignedType
 {
     explicit ASTFlag(const QString &name = {}, const QString &_enum = {});
+    void signature_impl(const AST &ast, QCryptographicHash &checksum) override;
+    QString typeName() const override;
 
     bool isValid() const;
-    QString name;
     QString _enum;
+    QString scope;
 };
 Q_DECLARE_TYPEINFO(ASTFlag, Q_RELOCATABLE_TYPE);
 
@@ -194,24 +211,28 @@ struct ASTModelRole
 };
 Q_DECLARE_TYPEINFO(ASTModelRole, Q_RELOCATABLE_TYPE);
 
-struct ASTModel
+struct ASTModel : public SignedType
 {
-    ASTModel(int index = -1) : propertyIndex(index) {}
+    ASTModel(const QString &name, const QString &scope, int index = -1)
+        : SignedType(name), scope(scope), propertyIndex(index) {}
+    void signature_impl(const AST &ast, QCryptographicHash &checksum) override;
+    QString typeName() const override;
 
     QList<ASTModelRole> roles;
+    QString scope;
     int propertyIndex;
 };
 Q_DECLARE_TYPEINFO(ASTModel, Q_RELOCATABLE_TYPE);
 
 /// A Class declaration
-struct ASTClass
+struct ASTClass : public SignedType
 {
     explicit ASTClass(const QString& name = QString());
+    void signature_impl(const AST &ast, QCryptographicHash &checksum) override;
 
     bool isValid() const;
     bool hasPointerObjects() const;
 
-    QString name;
     QList<ASTProperty> properties;
     QList<ASTFunction> signalsList;
     QList<ASTFunction> slotsList;
@@ -236,9 +257,10 @@ struct PODAttribute
 Q_DECLARE_TYPEINFO(PODAttribute, Q_RELOCATABLE_TYPE);
 
 // A POD declaration
-struct POD
+struct POD : public SignedType
 {
-    QString name;
+    void signature_impl(const AST &ast, QCryptographicHash &checksum) override;
+
     QList<PODAttribute> attributes;
 };
 Q_DECLARE_TYPEINFO(POD, Q_RELOCATABLE_TYPE);
@@ -252,6 +274,9 @@ struct AST
     QList<ASTFlag> flags;
     QList<QString> enumUses;
     QStringList preprocessorDirectives;
+    QHash<QString, QByteArray> typeSignatures;
+    QByteArray typeData(const QString &type, const QString &className) const;
+    QByteArray functionsData(const QList<ASTFunction> &functions, const QString &className) const;
 };
 Q_DECLARE_TYPEINFO(AST, Q_RELOCATABLE_TYPE);
 
@@ -300,6 +325,7 @@ QT_END_NAMESPACE
 /.
 #include "repparser.h"
 
+#include <QCryptographicHash>
 #include <QDebug>
 #include <QTextStream>
 
@@ -336,6 +362,22 @@ static QByteArray normalizeType(const QByteArray &ba)
     if (buf != stackbuf)
         delete [] buf;
     return result;
+}
+
+SignedType::SignedType(const QString &name) : name(name)
+{
+}
+
+void SignedType::generateSignature(AST &ast)
+{
+    QCryptographicHash checksum(QCryptographicHash::Sha1);
+    signature_impl(ast, checksum);
+    ast.typeSignatures[typeName()] = checksum.result().toHex();
+}
+
+QString SignedType::typeName() const
+{
+    return name;
 }
 
 ASTProperty::ASTProperty()
@@ -394,13 +436,49 @@ QStringList ASTFunction::paramNames() const
 }
 
 ASTEnum::ASTEnum(const QString &name)
-    : name(name), isSigned(false), isScoped(false), max(0)
+    : SignedType(name), isSigned(false), isScoped(false), max(0)
 {
 }
 
-ASTFlag::ASTFlag(const QString &name, const QString &_enum)
-    : name(name), _enum(_enum)
+void ASTEnum::signature_impl(const AST &ast, QCryptographicHash &checksum)
 {
+    Q_UNUSED(ast)
+    checksum.addData(name.toLatin1());
+    if (isScoped)
+        checksum.addData("class", qstrlen("class"));
+    if (!type.isEmpty())
+        checksum.addData(type.toLatin1());
+    for (const ASTEnumParam &param : params) {
+        checksum.addData(param.name.toLatin1());
+        checksum.addData(QByteArray::number(param.value));
+    }
+}
+
+QString ASTEnum::typeName() const
+{
+    if (scope.isEmpty())
+        return name;
+
+    return QLatin1String("%1::%2").arg(scope, name);
+}
+
+ASTFlag::ASTFlag(const QString &name, const QString &_enum)
+    : SignedType(name), _enum(_enum)
+{
+}
+
+void ASTFlag::signature_impl(const AST &ast, QCryptographicHash &checksum)
+{
+    checksum.addData(name.toLatin1());
+    checksum.addData(ast.typeData(_enum, scope));
+}
+
+QString ASTFlag::typeName() const
+{
+    if (scope.isEmpty())
+        return name;
+
+    return QLatin1String("%1::%2").arg(scope, name);
 }
 
 bool ASTFlag::isValid() const
@@ -408,9 +486,65 @@ bool ASTFlag::isValid() const
     return !name.isEmpty();
 }
 
-ASTClass::ASTClass(const QString &name)
-    : name(name), hasPersisted(false)
+void ASTModel::signature_impl(const AST &ast, QCryptographicHash &checksum)
 {
+    Q_UNUSED(ast)
+    QByteArrayList _roles;
+    for (const auto &role : roles)
+        _roles << role.name.toLatin1();
+    std::sort(_roles.begin(), _roles.end());
+    checksum.addData(_roles.join('_'));
+}
+
+QString ASTModel::typeName() const
+{
+    return QLatin1String("%1::%2").arg(scope, name);
+}
+
+ASTClass::ASTClass(const QString &name)
+    : SignedType(name), hasPersisted(false)
+{
+}
+
+void ASTClass::signature_impl(const AST &ast, QCryptographicHash &checksum)
+{
+    checksum.addData(name.toLatin1());
+
+    // Checksum properties
+    QSet<int> classIndices{ subClassPropertyIndices.begin(),
+                            subClassPropertyIndices.end() };
+    int propertyIndex = -1;
+    int modelIndex = 0;
+    for (const ASTProperty &p : properties) {
+        propertyIndex++;
+        checksum.addData(p.name.toLatin1());
+        if (p.type == QLatin1String("QAbstractItemModel"))
+            checksum.addData(ast.typeSignatures[modelMetadata[modelIndex++].typeName()]);
+        else if (classIndices.contains(propertyIndex))
+            checksum.addData(ast.typeSignatures[p.type]);
+        else
+            checksum.addData(ast.typeData(p.type, name));
+        ASTProperty::Modifier m = p.modifier;
+        // Treat ReadOnly and SourceOnlySetter the same (interface-wise they are)
+        if (m == ASTProperty::SourceOnlySetter)
+            m = ASTProperty::ReadOnly;
+        checksum.addData(reinterpret_cast<const char *>(&m), sizeof(m));
+    }
+
+    // Checksum signals
+    checksum.addData(ast.functionsData(signalsList, name));
+
+    // Checksum slots
+    checksum.addData(ast.functionsData(slotsList, name));
+}
+
+void POD::signature_impl(const AST &ast, QCryptographicHash &checksum)
+{
+    checksum.addData(name.toLatin1());
+    for (const PODAttribute &attr : attributes) {
+        checksum.addData(attr.name.toLatin1());
+        checksum.addData(ast.typeData(attr.type, name));
+    }
 }
 
 bool ASTClass::isValid() const
@@ -422,6 +556,47 @@ bool ASTClass::hasPointerObjects() const
 {
     int count = modelMetadata.size() + subClassPropertyIndices.size();
     return count > 0;
+}
+
+QByteArray AST::typeData(const QString &type, const QString &className) const
+{
+    static const QRegularExpression re = QRegularExpression(QLatin1String("([^<>,\\s]+)"));
+    if (type.contains(QLatin1Char('<'))) { // templated type
+        QByteArray result;
+        for (const QRegularExpressionMatch &match : re.globalMatch(type))
+            result += typeData(match.captured(1), className);
+        return result;
+    }
+    // Try enum/flags within the class first
+    if (!className.isEmpty()) {
+        auto classType = QLatin1String("%1::%2").arg(className, type);
+        auto it = typeSignatures.find(classType);
+        if (it != typeSignatures.end())
+            return it.value();
+    }
+    auto it = typeSignatures.find(type);
+    if (it != typeSignatures.end())
+        return it.value();
+    const auto pos = type.lastIndexOf(QLatin1String("::"));
+    if (pos > 0)
+        return typeData(type.mid(pos + 2), className);
+    return type.toLatin1();
+}
+
+QByteArray AST::functionsData(const QList<ASTFunction> &functions, const QString &className) const
+{
+    QByteArray ret;
+    for (const ASTFunction &func : functions) {
+        ret += func.name.toLatin1();
+        for (const ASTDeclaration &param : func.params) {
+            ret += param.name.toLatin1();
+            ret += typeData(param.type, className);
+            ret += QByteArray(reinterpret_cast<const char *>(&param.variableType),
+                              sizeof(param.variableType));
+        }
+        ret += typeData(func.returnType, className);
+    }
+    return ret;
 }
 
 RepParser::RepParser(QIODevice &outputDevice)
@@ -702,6 +877,7 @@ Type: Enum;
 /.
     case $rule_number:
     {
+        m_astEnum.generateSignature(m_ast);
         m_ast.enums.append(m_astEnum);
     }
     break;
@@ -735,6 +911,7 @@ Pod: pod;
         RepParser::TypeParser parseType;
         parseType.parseArguments(argString);
         parseType.appendPods(pod);
+        pod.generateSignature(m_ast);
         m_ast.pods.append(pod);
     }
     break;
@@ -752,6 +929,7 @@ Class: ClassStart Start Stop;
 /.
     case $rule_number:
     {
+        m_astClass.generateSignature(m_ast);
         m_ast.classes.append(m_astClass);
     }
     break;
@@ -763,6 +941,8 @@ ClassType: Enum;
 /.
     case $rule_number:
     {
+        m_astEnum.scope = m_astClass.name;
+        m_astEnum.generateSignature(m_ast);
         m_astClass.enums.append(m_astEnum);
     }
     break;
@@ -847,7 +1027,10 @@ ClassFlag: flag;
             setErrorString(QLatin1String("FLAG: Unknown (class) enum: %1").arg(_enum));
             return false;
         }
-        m_astClass.flags.append(ASTFlag(name, _enum));
+        auto flag = ASTFlag(name, _enum);
+        flag.scope = m_astClass.name;
+        flag.generateSignature(m_ast);
+        m_astClass.flags.append(flag);
     }
     break;
 ./
@@ -911,13 +1094,14 @@ Model: model;
 /.
     case $rule_number:
     {
-        ASTModel model(m_astClass.properties.size());
         const QString name = captured().value(QLatin1String("name")).trimmed();
         const QString argString = captured().value(QLatin1String("args")).trimmed();
 
+        ASTModel model(name, m_astClass.name, m_astClass.properties.size());
         if (!parseRoles(model, argString))
             return false;
 
+        model.generateSignature(m_ast);
         m_astClass.modelMetadata << model;
         m_astClass.properties << ASTProperty(QStringLiteral("QAbstractItemModel"), name, QStringLiteral("nullptr"), ASTProperty::SourceOnlySetter, false, true);
     }
@@ -984,7 +1168,9 @@ Flag: flag;
             setErrorString(QLatin1String("FLAG: Unknown (global) enum: %1").arg(_enum));
             return false;
         }
-        m_ast.flags.append(ASTFlag(name, _enum));
+        auto flag = ASTFlag(name, _enum);
+        flag.generateSignature(m_ast);
+        m_ast.flags.append(flag);
     }
     break;
 ./
