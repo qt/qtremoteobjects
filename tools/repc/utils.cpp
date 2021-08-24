@@ -53,7 +53,7 @@ namespace JSON
             qCritical() << "Invalid metadata json file. Unexpected Undefined value when looking for key:" << key;
         if (!json.isObject())
             qCritical() << "Invalid metadata json file. Input (" << json << ") is not an object when looking for key:" << key;
-        const QJsonValue value = json.toObject()[_(key)];
+        QJsonValue value = json.toObject()[_(key)];
         switch (type) {
             case JSON::Any: break;
             case JSON::Array:
