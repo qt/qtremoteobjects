@@ -92,7 +92,7 @@ QVariantList QRemoteObjectSettingsStore::restoreProperties(const QString &repNam
 {
     Q_D(QRemoteObjectSettingsStore);
     d->settings.beginGroup(repName + QLatin1Char('/') + QString::fromLatin1(repSig));
-    const QVariantList values = d->settings.value(QStringLiteral("values")).toList();
+    QVariantList values = d->settings.value(QStringLiteral("values")).toList();
     d->settings.endGroup();
     return values;
 }
