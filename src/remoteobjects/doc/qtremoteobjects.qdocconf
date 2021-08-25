@@ -25,7 +25,8 @@ qhp.QtRemoteObjects.subprojects.classes.sortPages = true
 depends += qtcore \
            qtnetwork \
            qtdoc \
-           qtcmake
+           qtcmake \
+           qmake
 
 tagfile                 = ../../../doc/qtremoteobjects/qtremoteobjects.tags
 
