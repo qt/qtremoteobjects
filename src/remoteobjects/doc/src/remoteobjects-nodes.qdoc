@@ -81,16 +81,24 @@ The table below summarizes the connection types available:
     \table 90%
     \header
         \li URL
-        \li Host Node
-        \li Connecting Node
+        \li Notes
     \row
-        \li \l {QUrl}("local:service")
-        \li \l {QLocalServer}("service")
-        \li \l {QLocalSocket}("service")
+        \li {QUrl}("local:service")
+        \li Uses (internally) {QLocalServer}/{QLocalSocket} classes to
+        communicate between nodes.
     \row
-        \li \l {QUrl}("tcp://192.168.1.1:9999")
-        \li \l {QTcpServer}("192.168.1.1",9999)
-        \li \l {QTcpSocket}("192.168.1.1",9999)
+        \li {QUrl}("tcp://192.168.1.1:9999")
+        \li Uses (internally) {QTcpServer}/{QTcpSocket} classes to
+        communicate between nodes.
+    \row
+        \li {QUrl}("qnx:service")
+        \li QNX OS only.  Uses a custom (named) channel for native
+        communication between nodes.
+    \row
+        \li {QUrl}("localabstract:service")
+        \li Since 6.2.  Linux/Android OSes only.  Uses an abstract namespace
+        for Unix domain sockets.  This allows QLocalSocket behavior to work on
+        non-writable devices.
     \endtable
 
 Nodes have a few \l{QRemoteObjectHostBase::enableRemoting()}

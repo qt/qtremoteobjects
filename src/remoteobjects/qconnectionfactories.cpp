@@ -296,8 +296,11 @@ QString QtROExternalIoDevice::deviceType() const
 */
 QtROServerFactory::QtROServerFactory()
 {
-#if defined(Q_OS_QNX)
+#ifdef Q_OS_QNX
     registerType<QnxServerImpl>(QStringLiteral("qnx"));
+#endif
+#ifdef Q_OS_LINUX
+    registerType<AbstractLocalServerImpl>(QStringLiteral("localabstract"));
 #endif
     registerType<LocalServerImpl>(QStringLiteral("local"));
     registerType<TcpServerImpl>(QStringLiteral("tcp"));
@@ -315,8 +318,11 @@ QtROServerFactory *QtROServerFactory::instance()
 */
 QtROClientFactory::QtROClientFactory()
 {
-#if defined(Q_OS_QNX)
+#ifdef Q_OS_QNX
     registerType<QnxClientIo>(QStringLiteral("qnx"));
+#endif
+#ifdef Q_OS_LINUX
+    registerType<AbstractLocalClientIo>(QStringLiteral("localabstract"));
 #endif
     registerType<LocalClientIo>(QStringLiteral("local"));
     registerType<TcpClientIo>(QStringLiteral("tcp"));

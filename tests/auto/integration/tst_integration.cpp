@@ -215,6 +215,9 @@ private slots:
         QTest::newRow("qnx") << QUrl(QLatin1String("qnx:replica")) << QUrl(QLatin1String("qnx:registry"));
 #endif
         QTest::newRow("local") << QUrl(QLatin1String("local:replicaLocalIntegration")) << QUrl(QLatin1String("local:registryLocalIntegration"));
+#ifdef Q_OS_LINUX
+        QTest::newRow("localabstract") << QUrl(QLatin1String("localabstract:replicaAbstractIntegration")) << QUrl(QLatin1String("localabstract:registryAbstractIntegration"));
+#endif
         QTest::newRow("external") << QUrl() << QUrl();
     }
 

@@ -77,6 +77,10 @@ void LocalClientIo::doDisconnectFromServer()
 
 void LocalClientIo::connectToServer()
 {
+#ifdef Q_OS_ANDROID
+    if (!m_socket->socketOptions().testFlag(QLocalSocket::AbstractNamespaceOption))
+        qWarning() << "It is recommended to use 'localabstract' over 'local' on Android.";
+#endif
     if (!isOpen())
         m_socket->connectToServer(url().path());
 }
@@ -173,6 +177,10 @@ QUrl LocalServerImpl::address() const
 
 bool LocalServerImpl::listen(const QUrl &address)
 {
+#ifdef Q_OS_ANDROID
+    if (!m_server.socketOptions().testFlag(QLocalServer::AbstractNamespaceOption))
+        qWarning() << "It is recommended to use 'localabstract' over 'local' on Android.";
+#endif
 #ifdef Q_OS_UNIX
     bool res = m_server.listen(address.path());
     if (!res) {
@@ -194,5 +202,30 @@ void LocalServerImpl::close()
 {
     m_server.close();
 }
+
+#ifdef Q_OS_LINUX
+
+AbstractLocalClientIo::AbstractLocalClientIo(QObject *parent)
+    : LocalClientIo(parent)
+{
+    m_socket->setSocketOptions(QLocalSocket::AbstractNamespaceOption);
+}
+
+AbstractLocalServerImpl::AbstractLocalServerImpl(QObject *parent)
+    : LocalServerImpl(parent)
+{
+    m_server.setSocketOptions(QLocalServer::AbstractNamespaceOption);
+}
+
+QUrl AbstractLocalServerImpl::address() const
+{
+    QUrl result;
+    result.setPath(m_server.serverName());
+    result.setScheme(QRemoteObjectStringLiterals::localabstract());
+
+    return result;
+}
+
+#endif // Q_OS_LINUX
 
 QT_END_NAMESPACE

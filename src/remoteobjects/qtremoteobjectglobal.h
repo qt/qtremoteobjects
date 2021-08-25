@@ -113,6 +113,7 @@ namespace QRemoteObjectStringLiterals {
 // it creates duplicate static data. Wrapping it in inline functions prevents it.
 
 inline QString local() { return QStringLiteral("local"); }
+inline QString localabstract() { return QStringLiteral("localabstract"); }
 inline QString tcp() { return QStringLiteral("tcp"); }
 inline QString CLASS() { return QStringLiteral("Class::%1"); }
 inline QString MODEL() { return QStringLiteral("Model::%1"); }
