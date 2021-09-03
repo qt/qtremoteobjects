@@ -42,6 +42,11 @@ function(_qt_internal_add_repc_files type target)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(outfiles)
+    if(QT_REPC_DEBUG_MODE)
+        set(debug "-d")
+    else()
+        set(debug "")
+    endif()
     set(repc_incpath) ########### TODO
 
     foreach(it ${ARGS_SOURCES})
@@ -61,7 +66,7 @@ function(_qt_internal_add_repc_files type target)
             ${QT_TOOL_PATH_SETUP_COMMAND}
             COMMAND
                 ${QT_CMAKE_EXPORT_NAMESPACE}::repc
-                -o ${type} ${repc_incpath} ${infile} ${outfile}
+                ${debug} -o ${type} ${repc_incpath} ${infile} ${outfile}
             MAIN_DEPENDENCY ${infile}
             DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::repc
             VERBATIM
