@@ -84,6 +84,17 @@ static bool hasScopedEnum(const ASTClass &classContext)
     return false;
 }
 
+static bool hasScopedEnum(const POD &pod)
+{
+    for (const ASTEnum &astEnum : pod.enums) {
+        if (astEnum.isScoped) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static QString fullyQualifiedName(const ASTClass& classContext, const QString &className,
                                   const QString &typeName)
 {
@@ -156,10 +167,26 @@ void RepCodeGenerator::generate(Mode mode, QString fileName)
         generatePOD(pod);
 
     QSet<QString> metaTypes;
+    QSet<QString> enumTypes;
     for (const POD &pod : m_ast.pods) {
         metaTypes << pod.name;
-        for (const PODAttribute &attribute : pod.attributes)
-            metaTypes << attribute.type;
+        // We register from within the code generated for classes, not PODs
+        // Thus, for enums/flags in PODs, we need the to prefix with the POD
+        // name.  The enumTypes set is used to make sure we don't try to
+        // register the non-prefixed name if it is used as a member variable
+        // type.
+        for (const ASTEnum &en : pod.enums) {
+            metaTypes << QLatin1String("%1::%2").arg(pod.name, en.name);
+            enumTypes << en.name;
+        }
+        for (const ASTFlag &flag : pod.flags) {
+            metaTypes << QLatin1String("%1::%2").arg(pod.name, flag.name);
+            enumTypes << flag.name;
+        }
+        for (const PODAttribute &attribute : pod.attributes) {
+            if (!enumTypes.contains(attribute.type))
+                metaTypes << attribute.type;
+        }
     }
     const QString metaTypeRegistrationCode = generateMetaTypeRegistration(metaTypes);
 
@@ -409,9 +436,16 @@ void RepCodeGenerator::generatePOD(const POD &pod)
                 "{\n"
                 "    Q_GADGET\n"
              << "\n"
-             <<      formatQPropertyDeclarations(pod)
-             << "public:\n"
-             <<      formatConstructors(pod)
+             <<      formatQPropertyDeclarations(pod);
+    if (hasScopedEnum(pod)) // See https://bugreports.qt.io/browse/QTBUG-73360
+        m_stream << "    Q_CLASSINFO(\"RegisterEnumClassesUnscoped\", \"false\")\n";
+    m_stream << "public:\n";
+    generateDeclarationsForEnums(pod.enums);
+    for (auto &flag : pod.flags) {
+        m_stream << "    Q_DECLARE_FLAGS(" << flag.name << ", " << flag._enum << ")\n";
+        m_stream << "    Q_FLAG(" << flag.name << ")\n";
+    }
+    m_stream <<      formatConstructors(pod)
              <<      formatPropertyGettersAndSetters(pod)
              << "private:\n"
              <<      formatDataMembers(pod)
@@ -427,8 +461,10 @@ void RepCodeGenerator::generatePOD(const POD &pod)
              << "}\n"
              << "\n"
              << formatDebugOperator(pod)
-             << formatMarshallingOperators(pod)
-             << "\n\n";
+             << formatMarshallingOperators(pod);
+    for (auto &flag : pod.flags)
+        m_stream << "Q_DECLARE_OPERATORS_FOR_FLAGS(" << pod.name << "::" << flag.name << ")\n";
+    m_stream << "\n";
 }
 
 QString getEnumType(const ASTEnum &en)
