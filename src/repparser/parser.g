@@ -45,22 +45,29 @@
 %token semicolon "[semicolon];"
 %token class "[class]class[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token pod "[pod]POD[ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*\\((?<types>[^\\)]*)\\);?[ \\t]*"
+%token pod2 "[pod2]POD[ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]+)[ \\t]*"
 %token flag "[flag][ \\t]*FLAG[ \t]*\\([ \t]*(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \t]+(?<enum>[A-Za-z_][A-Za-z0-9_]*)[ \t]*\\)[ \t]*"
 %token enum "[enum][ \\t]*ENUM[ \t]+(?:(?<class>class[ \t]+))?(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \t]*(?::[ \t]*(?<type>[a-zA-Z0-9 _:]*[a-zA-Z0-9_])[ \t]*)?"
-%token enum_param "[enum_param][ \\t]*(?<name>[A-Za-z_][A-Za-z0-9_]*)[ \\t]*(=[ \\t]*(?<value>-\\d+|0[xX][0-9A-Fa-f]+|\\d+))?[ \\t]*"
 %token prop "[prop][ \\t]*PROP[ \\t]*\\((?<args>[^\\)]+)\\);?[ \\t]*"
 %token use_enum "[use_enum]USE_ENUM[ \\t]*\\((?<name>[^\\)]*)\\);?[ \\t]*"
 %token signal "[signal][ \\t]*SIGNAL[ \\t]*\\([ \\t]*(?<name>\\S+)[ \\t]*\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token slot "[slot][ \\t]*SLOT[ \\t]*\\((?<type>[^\\(]*)\\((?<args>[^\\)]*)\\)[ \\t]*\\);?[ \\t]*"
 %token model "[model][ \\t]*MODEL[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<args>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
 %token childrep "[childrep][ \\t]*CLASS[ \\t]+(?<name>[A-Za-z_][A-Za-z0-9_]+)\\((?<type>[^\\)]+)\\)[ \\t]*;?[ \\t]*"
+%token qualifier "[qualifier][ \\t]*(?<value>const|unsigned|signed)[ \\t]*"
+%token passbyqual "[passbyqual][ \\t]*(?<value>&)[ \\t]*"
+%token symbol "[symbol][ \\t]*(?<symbol>[A-Za-z_][A-Za-z0-9_]*)[ \\t]*"
+%token value "[value][ \\t]*(?<value>-\\d+|0[xX][0-9A-Fa-f]+|\\d+)[ \\t]*"
 %token start "[start][ \\t]*\\{[ \\t]*"
 %token stop "[stop][ \\t]*\\};?[ \\t]*"
 %token comma "[comma],"
+%token equals "[equals]="
 %token comment "[comment](?<comment>[ \\t]*//[^\\n]*\\n)"
 %token mcomment "[mcomment,M](?<comment>/\\*(.*?)\\*/)"
 %token preprocessor_directive "[preprocessor_directive](?<preprocessor_directive>#[ \\t]*[^\\n]*\\n)"
 %token newline "[newline](\\r)?\\n"
+%token tstart "[tstart]<"
+%token tstop "[tstop]>[ \\t]*"
 
 %start TopLevel
 
@@ -262,6 +269,8 @@ struct POD : public SignedType
     void signature_impl(const AST &ast, QCryptographicHash &checksum) override;
 
     QList<PODAttribute> attributes;
+    QList<ASTEnum> enums;
+    QList<ASTFlag> flags;
 };
 Q_DECLARE_TYPEINFO(POD, Q_RELOCATABLE_TYPE);
 
@@ -314,6 +323,9 @@ private:
     AST m_ast;
 
     ASTClass m_astClass;
+    POD m_astPod;
+    QString m_symbol;
+    QString m_argString;
     ASTEnum m_astEnum;
     int m_astEnumValue;
 };
@@ -609,6 +621,8 @@ void RepParser::reset()
 {
     m_ast = AST();
     m_astClass = ASTClass();
+    m_astPod = POD();
+    m_argString.clear();
     m_astEnum = ASTEnum();
     //setDebug();
 }
@@ -870,6 +884,7 @@ Comments: Comment | Comment Comments;
 Comment: comment | comment Newlines | mcomment | mcomment Newlines;
 Type: PreprocessorDirective | PreprocessorDirective Newlines;
 Type: Pod | Pod Newlines;
+Type: Pod2;
 Type: Class;
 Type: UseEnum | UseEnum Newlines;
 Type: Comments | Comments Newlines;
@@ -885,6 +900,8 @@ Type: Enum;
 Type: Flag | Flag Newlines;
 
 Comma: comma | comma Newlines;
+
+Equals: equals;
 
 PreprocessorDirective: preprocessor_directive;
 /.
@@ -906,6 +923,10 @@ Pod: pod;
         if (argString.isEmpty()) {
             qWarning() << "[repc] - Ignoring POD with no data members.  POD name: " << qPrintable(pod.name);
             return true;
+        }
+        if (argString.contains(QLatin1String("ENUM"))) {
+            setErrorString(QLatin1String("ENUMs are only available in PODs using bracket syntax ('{'), not parentheses"));
+            return false;
         }
 
         RepParser::TypeParser parseType;
@@ -948,6 +969,126 @@ ClassType: Enum;
     break;
 ./
 
+Pod2: PodStart Start PodTypes Stop;
+/.
+    case $rule_number:
+./
+Pod2: PodStart Start Comments Stop;
+/.
+    case $rule_number:
+./
+Pod2: PodStart Start Stop;
+/.
+    case $rule_number:
+    {
+        RepParser::TypeParser parseType;
+        parseType.parseArguments(m_argString);
+        parseType.appendPods(m_astPod);
+        m_astPod.generateSignature(m_ast);
+        m_ast.pods.append(m_astPod);
+    }
+    break;
+./
+
+PodTypes: PodType | PodType Newlines | PodType CaptureComma PodTypes | PodType PodTypes | PodType Newlines PodTypes;
+PodType: DecoratedPODFlag | Comments;
+PodType: Enum;
+/.
+    case $rule_number:
+    {
+        m_astEnum.generateSignature(m_ast);
+        m_astPod.enums.append(m_astEnum);
+    }
+    break;
+./
+
+PodType: Parameter;
+Parameter: DecoratedParameterType ParameterName;
+
+DecoratedParameterType: ParameterType | Qualified ParameterType | ParameterType PassByReference | Qualified ParameterType PassByReference;
+
+ParameterType: SimpleType | TemplateType;
+
+TemplateType: TemplateTypename TStart ParameterTypes TStop;
+
+TemplateTypename: Symbol;
+/.
+    case $rule_number:
+    {
+        m_argString += m_symbol;
+    }
+    break;
+./
+
+TStart: tstart;
+/.
+    case $rule_number:
+    {
+        m_argString += QLatin1Char('<');
+    }
+    break;
+./
+
+TStop: tstop;
+/.
+    case $rule_number:
+    {
+        m_argString += QLatin1Char('>');
+    }
+    break;
+./
+
+Qualified: qualifier;
+/.
+    case $rule_number:
+    {
+        m_argString += captured().value(QLatin1String("value")).trimmed() + QLatin1Char(' ');
+    }
+    break;
+./
+
+PassByReference: passbyqual;
+/.
+    case $rule_number:
+    {
+        m_argString += QLatin1Char(' ') + captured().value(QLatin1String("value")).trimmed();
+    }
+    break;
+./
+
+ParameterTypes: DecoratedParameterType | DecoratedParameterType CaptureComma ParameterTypes;
+
+CaptureComma: comma;
+/.
+    case $rule_number:
+./
+CaptureComma: comma Newlines;
+/.
+    case $rule_number:
+    {
+        m_argString += QLatin1Char(',');
+    }
+    break;
+./
+
+SimpleType: Symbol;
+/.
+    case $rule_number:
+    {
+        m_argString += m_symbol;
+    }
+    break;
+./
+
+ParameterName: Symbol;
+/.
+    case $rule_number:
+    {
+        m_argString += QLatin1Char(' ') + m_symbol;
+    }
+    break;
+./
+
 DecoratedSlot: Slot | Comments Slot | Slot Newlines | Comments Slot Newlines;
 DecoratedSignal: Signal | Comments Signal | Signal Newlines | Comments Signal Newlines;
 DecoratedProp: Prop | Comments Prop | Prop Newlines | Comments Prop Newlines;
@@ -955,6 +1096,8 @@ DecoratedModel: Model | Comments Model | Model Newlines | Comments Model Newline
 DecoratedClass: ChildRep | Comments ChildRep | ChildRep Newlines | Comments ChildRep Newlines;
 DecoratedEnumParam: EnumParam | Comments EnumParam | EnumParam Newlines | Comments EnumParam Newlines;
 DecoratedClassFlag: ClassFlag | Comments ClassFlag | ClassFlag Newlines | Comments ClassFlag Newlines;
+
+DecoratedPODFlag: PODFlag | Comments PODFlag | PODFlag Newlines | Comments PODFlag Newlines;
 
 Start: start | Comments start | start Newlines | Comments start Newlines;
 Stop: stop | stop Newlines;
@@ -983,21 +1126,27 @@ EnumStart: enum;
 
 EnumParams: DecoratedEnumParam | DecoratedEnumParam Comma EnumParams;
 
-EnumParam: enum_param;
+EnumParam: Symbol;
 /.
     case $rule_number:
     {
         ASTEnumParam param;
-        param.name = captured().value(QStringLiteral("name")).trimmed();
-        QString value = captured().value(QStringLiteral("value"));
-        value.remove(QLatin1Char('='));
-        value = value.trimmed();
-        if (value.isEmpty())
-            param.value = ++m_astEnumValue;
-        else if (value.startsWith(QLatin1String("0x"), Qt::CaseInsensitive))
-            param.value = m_astEnumValue = value.toInt(0,16);
-        else
-            param.value = m_astEnumValue = value.toInt();
+        param.name = m_symbol;
+        param.value = ++m_astEnumValue;
+        if (m_astEnum.max < param.value)
+            m_astEnum.max = param.value;
+        m_astEnum.params << param;
+    }
+    break;
+./
+
+EnumParam: Symbol Equals Value;
+/.
+    case $rule_number:
+    {
+        ASTEnumParam param;
+        param.name = m_symbol;
+        param.value = m_astEnumValue;
         if (param.value < 0) {
             m_astEnum.isSigned = true;
             if (m_astEnum.max < -param.value)
@@ -1005,6 +1154,28 @@ EnumParam: enum_param;
         } else if (m_astEnum.max < param.value)
             m_astEnum.max = param.value;
         m_astEnum.params << param;
+    }
+    break;
+./
+
+Symbol: symbol;
+/.
+    case $rule_number:
+    {
+        m_symbol = captured().value(QStringLiteral("symbol")).trimmed();
+    }
+    break;
+./
+
+Value: value;
+/.
+    case $rule_number:
+    {
+        QString value = captured().value(QStringLiteral("value")).trimmed();
+        if (value.startsWith(QLatin1String("0x"), Qt::CaseInsensitive))
+            m_astEnumValue = value.toInt(0,16);
+        else
+            m_astEnumValue = value.toInt();
     }
     break;
 ./
@@ -1031,6 +1202,32 @@ ClassFlag: flag;
         flag.scope = m_astClass.name;
         flag.generateSignature(m_ast);
         m_astClass.flags.append(flag);
+    }
+    break;
+./
+
+PODFlag: flag;
+/.
+    case $rule_number:
+    {
+        const QString name = captured().value(QLatin1String("name"));
+        const QString _enum = captured().value(QLatin1String("enum"));
+        int enumIndex = 0;
+        for (auto &en : m_astPod.enums) {
+            if (en.name == _enum) {
+                en.flagIndex = m_astPod.flags.count();
+                break;
+            }
+            enumIndex++;
+        }
+        if (enumIndex == m_astPod.enums.count()) {
+            setErrorString(QLatin1String("FLAG: Unknown (pod) enum: %1").arg(_enum));
+            return false;
+        }
+        auto flag = ASTFlag(name, _enum);
+        flag.scope = m_astPod.name;
+        flag.generateSignature(m_ast);
+        m_astPod.flags.append(flag);
     }
     break;
 ./
@@ -1133,6 +1330,22 @@ ClassStart: class;
 
         // new Class declaration
         m_astClass = ASTClass(name);
+    }
+    break;
+./
+
+PodStart: pod2;
+/.
+    case $rule_number:
+./
+PodStart: pod2 Newlines;
+/.
+    case $rule_number:
+    {
+        // new POD declaration
+        m_astPod = POD();
+        m_astPod.name = captured().value(QLatin1String("name")).trimmed();
+        m_argString.clear();
     }
     break;
 ./

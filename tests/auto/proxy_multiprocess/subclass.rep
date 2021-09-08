@@ -5,7 +5,11 @@ USE_ENUM(Qt::DateFormat)
 USE_ENUM(NS::NamespaceEnum)
 USE_ENUM(NS2::NamespaceEnum)
 
-POD MyPOD(int i, float f, QString s)
+POD MyPOD{
+    ENUM class Position : unsigned short {position1=1, position2=2, position3=4}
+    FLAG (ActivePositions  Position)
+    ActivePositions positions, float f, QString s
+}
 POD VariantPOD(int i, int j)
 
 class SubClass
