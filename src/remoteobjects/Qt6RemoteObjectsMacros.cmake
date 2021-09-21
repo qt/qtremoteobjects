@@ -34,6 +34,31 @@
 #
 # $QT_END_LICENSE$
 
+# With a macOS framework Qt build, moc needs to be passed -F<framework-path> arguments to resolve
+# framework style includes like #include <QtCore/qobject.h>
+# Extract the location of the Qt frameworks by querying the imported location of QtRemoteObjects
+# framework parent directory.
+function(_qt_internal_get_remote_objects_framework_path out_var)
+    set(value "")
+    if(APPLE AND QT_FEATURE_framework)
+        get_target_property(ro_path ${QT_CMAKE_EXPORT_NAMESPACE}::RemoteObjects IMPORTED_LOCATION)
+        string(REGEX REPLACE "(.*)/Qt[^/]+\\.framework.*" "\\1" ro_fw_path "${ro_path}")
+        if(ro_fw_path)
+            set(value "${ro_fw_path}")
+        endif()
+    endif()
+    set(${out_var} "${value}" PARENT_SCOPE)
+endfunction()
+
+function(_qt_internal_get_remote_objects_framework_path_moc_options out_var)
+    _qt_internal_get_remote_objects_framework_path(ro_fw_path)
+    if(ro_fw_path)
+        set(${out_var} "OPTIONS" "-F${ro_fw_path}" PARENT_SCOPE)
+    else()
+        set(${out_var} "" PARENT_SCOPE)
+    endif()
+endfunction()
+
 function(_qt_internal_add_repc_files type target)
     set(options)
     set(oneValueArgs)
@@ -49,19 +74,28 @@ function(_qt_internal_add_repc_files type target)
     endif()
     set(repc_incpath) ########### TODO
 
+    _qt_internal_get_remote_objects_framework_path_moc_options(extra_moc_options)
     foreach(it ${ARGS_SOURCES})
         get_filename_component(outfilename ${it} NAME_WE)
         get_filename_component(extension ${it} EXT)
         if ("${extension}" STREQUAL ".h" OR "${extension}" STREQUAL ".hpp")
+            # This calls moc on an existing header file to extract metatypes json information
+            # which is then passed to the tool to generate another header.
             qt6_wrap_cpp(qtro_moc_files "${it}"
-                         __QT_INTERNAL_OUTPUT_MOC_JSON_FILES json_list)
+                         __QT_INTERNAL_OUTPUT_MOC_JSON_FILES json_list
+                         TARGET "${target}"
+                         ${extra_moc_options})
+
+            # Pass the generated metatypes .json file to the tool.
             set(infile ${json_list})
             set_source_files_properties(${qtro_moc_files} PROPERTIES HEADER_FILE_ONLY ON)
             list(APPEND outfiles ${qtro_moc_files})
         else()
+            # Pass the .rep file to the tool.
             get_filename_component(infile ${it} ABSOLUTE)
         endif()
         set(outfile ${CMAKE_CURRENT_BINARY_DIR}/rep_${outfilename}_${type}.h)
+
         add_custom_command(
             OUTPUT ${outfile}
             ${QT_TOOL_PATH_SETUP_COMMAND}
@@ -73,6 +107,14 @@ function(_qt_internal_add_repc_files type target)
             VERBATIM
         )
         list(APPEND outfiles ${outfile})
+
+        # The generated header file needs to be manually moc'ed (without using AUTOMOC) and then
+        # added as source to compile into the target.
+        qt6_wrap_cpp(qtro_moc_files "${outfile}" TARGET "${target}" ${extra_moc_options})
+        set_source_files_properties("${outfile}" PROPERTIES
+            GENERATED TRUE
+            SKIP_AUTOGEN ON)
+        list(APPEND outfiles ${qtro_moc_files})
     endforeach()
     target_sources(${target} PRIVATE ${outfiles})
 endfunction()
@@ -98,10 +140,16 @@ endfunction()
 # Create .rep interface file from QObject header
 function(qt6_reps_from_headers target)
     list(POP_FRONT ARGV)
+    _qt_internal_get_remote_objects_framework_path_moc_options(extra_moc_options)
+
     foreach(it ${ARGV})
         get_filename_component(outfilename ${it} NAME_WE)
+        # This calls moc on an existing header file to extract metatypes json information
+        # which is then passed to the tool to generate a .rep file.
         qt6_wrap_cpp(qtro_moc_files "${it}"
-                     __QT_INTERNAL_OUTPUT_MOC_JSON_FILES json_list)
+                     __QT_INTERNAL_OUTPUT_MOC_JSON_FILES json_list
+                     TARGET "${target}"
+                     ${extra_moc_options})
         set(infile ${json_list})
         set_source_files_properties(${qtro_moc_files} PROPERTIES HEADER_FILE_ONLY ON)
         list(APPEND outfiles ${qtro_moc_files})
