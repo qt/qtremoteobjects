@@ -31,7 +31,6 @@
 #include <QTest>
 
 #include <QByteArray>
-#include <QProcess>
 
 class tst_rep_from_header : public QObject {
     Q_OBJECT

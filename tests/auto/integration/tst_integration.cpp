@@ -30,7 +30,9 @@
 
 #include <QtTest/QtTest>
 #include <QMetaType>
+#if QT_CONFIG(process)
 #include <QProcess>
+#endif
 #include <QFileInfo>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -1413,7 +1415,7 @@ private slots:
         QVERIFY(invalidRegistry.lastError() == QRemoteObjectNode::RegistryNotAcquired);
     }
 
-#if defined(Q_OS_LINUX) || defined(Q_OS_DARWIN)
+#if QT_CONFIG(process) && (defined(Q_OS_LINUX) || defined(Q_OS_DARWIN))
     void localServerConnectionTest()
     {
         QFETCH_GLOBAL(QUrl, hostUrl);
