@@ -27,6 +27,7 @@ qt_internal_add_tool(${target_name}
     PUBLIC_LIBRARIES
         Qt::CorePrivate
 )
+qt_internal_return_unless_building_tools()
 
 # QLALR Grammars:
 qt_process_qlalr(
