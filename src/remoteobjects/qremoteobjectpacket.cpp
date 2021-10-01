@@ -391,11 +391,12 @@ bool deserializeQVariantList(QDataStream &s, QVariantList &l)
     quint32 c;
     s >> c;
 
-    Q_ASSERT(static_cast<quint32>(l.size()) == l.size());
-    if (static_cast<quint32>(l.size()) < c)
-        l.reserve(c);
-    else if (static_cast<quint32>(l.size()) > c)
-        l.resize(c);
+    const qsizetype count = static_cast<qsizetype>(c);
+    const qsizetype listSize = l.size();
+    if (listSize < count)
+        l.reserve(count);
+    else if (listSize > count)
+        l.resize(count);
 
     for (int i = 0; i < l.size(); ++i)
     {
@@ -403,7 +404,7 @@ bool deserializeQVariantList(QDataStream &s, QVariantList &l)
             return false;
         s >> l[i];
     }
-    for (auto i = l.size(); i < c; ++i)
+    for (auto i = l.size(); i < count; ++i)
     {
         if (s.atEnd())
             return false;
