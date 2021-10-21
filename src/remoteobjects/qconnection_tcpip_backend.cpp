@@ -162,7 +162,7 @@ ServerIoDevice *TcpServerImpl::configureNewConnection()
     if (!m_server.isListening())
         return nullptr;
 
-    return new TcpServerIo(m_server.nextPendingConnection());
+    return new TcpServerIo(m_server.nextPendingConnection(), this);
 }
 
 bool TcpServerImpl::hasPendingConnections() const
