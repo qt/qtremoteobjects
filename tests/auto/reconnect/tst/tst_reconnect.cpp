@@ -55,13 +55,15 @@ private slots:
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         env.insert("RO_URL", url);
         serverProc.setProcessEnvironment(env);
-        serverProc.start(TestUtils::findExecutable("server", "/server"), QStringList());
+        serverProc.start(TestUtils::findExecutable("qtro_reconnect_server", "/server"),
+                         QStringList());
         QVERIFY(serverProc.waitForStarted());
 
         QProcess clientProc;
         clientProc.setProcessChannelMode(QProcess::ForwardedChannels);
         clientProc.setProcessEnvironment(env);
-        clientProc.start(TestUtils::findExecutable("client", "/client"), QStringList());
+        clientProc.start(TestUtils::findExecutable("qtro_reconnect_client", "/client"),
+                         QStringList());
         qDebug() << "Started server and client process on:" << url;
         QVERIFY(clientProc.waitForStarted());
 
