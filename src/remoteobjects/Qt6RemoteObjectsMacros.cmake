@@ -159,6 +159,7 @@ function(qt6_reps_from_headers target)
                            ${QT_TOOL_PATH_SETUP_COMMAND}
                            ${repc_command} -o rep ${infile} ${outfile}
                            MAIN_DEPENDENCY ${infile}
+                           DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::repc
                            VERBATIM)
         list(APPEND outfiles ${outfile})
     endforeach()
