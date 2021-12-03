@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 #include "rep_MyInterface_replica.h"
+#include "rep_ExtPodInterface_merged.h"
 
 #include <QCoreApplication>
 #include <QtRemoteObjects/qremoteobjectnode.h>
@@ -157,6 +158,21 @@ private Q_SLOTS:
 
         QTRY_COMPARE(rep->enum1(), MyInterfaceReplica::Second);
         QTRY_COMPARE(rep->started(), false);
+    }
+
+    void testExtPodListSignals()
+    {
+        QScopedPointer<MyInterfaceReplica> rep(new MyInterfaceReplica());
+        rep->setNode(m_repNode.get());
+        QVERIFY(rep->waitForSource());
+
+        auto list = QList { ExtPOD(1, 1.1f, QStringLiteral("v1")),
+                            ExtPOD(2, 2.2f, QStringLiteral("v2")) };
+        rep->testExtPODListSlot(list);
+        QSignalSpy spy(rep.data(), &MyInterfaceReplica::testExtPODListSignal);
+        connect(rep.data(), &MyInterfaceReplica::testExtPODListSignal,
+                [list](const QList<ExtPOD> &l) { QCOMPARE(l, list); });
+        QTRY_COMPARE(spy.count(), 1);
     }
 
     void testPod()

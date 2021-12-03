@@ -205,6 +205,21 @@ void RepCodeGenerator::generate(Mode mode, QString fileName)
             pendingMetaTypes << function.returnType;
             for (const ASTDeclaration &decl : function.params) {
                 classMetaTypes << decl.type;
+
+                // Collect types packaged by Qt containers, to register their metatypes if needed
+                QRegularExpression re(
+                        QStringLiteral("(QList|QMap|QHash)<\\s*([\\w]+)\\s*(,\\s*([\\w]+))?\\s*>"));
+                QRegularExpressionMatch m = re.match(decl.type);
+                if (m.hasMatch()) {
+                    if (auto captured = m.captured(2);
+                        !captured.isNull() && !metaTypes.contains(captured)) {
+                        classMetaTypes << captured;
+                    }
+                    if (auto captured = m.captured(4);
+                        !captured.isNull() && !metaTypes.contains(captured)) {
+                        classMetaTypes << captured;
+                    }
+                }
             }
         };
         for (const ASTFunction &function : astClass.signalsList)

@@ -67,3 +67,8 @@ void MyTestServer::testEnumParamsInSlots(Enum1 enumSlotParam, bool slotParam2, i
     setStarted(slotParam2);
     emit testEnumParamsInSignals(enum1(), started(), QString::number(number));
 }
+
+void MyTestServer::testExtPODListSlot(const QList<ExtPOD> &l)
+{
+    emit testExtPODListSignal(l);
+}
