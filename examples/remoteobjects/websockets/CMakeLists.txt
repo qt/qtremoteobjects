@@ -1,6 +1,6 @@
 # Generated from websockets.pro.
 
 if(TARGET Qt::WebSockets AND TARGET Qt::Widgets)
-    add_subdirectory(wsclient)
-    add_subdirectory(wsserver)
+    qt_internal_add_example(wsclient)
+    qt_internal_add_example(wsserver)
 endif()
