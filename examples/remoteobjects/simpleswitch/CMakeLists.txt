@@ -1,7 +1,7 @@
 # Generated from simpleswitch.pro.
 
-add_subdirectory(directconnectclient)
-add_subdirectory(directconnectdynamicclient)
-add_subdirectory(directconnectserver)
-add_subdirectory(registryconnectedclient)
-add_subdirectory(registryconnectedserver)
+qt_internal_add_example(directconnectclient)
+qt_internal_add_example(directconnectdynamicclient)
+qt_internal_add_example(directconnectserver)
+qt_internal_add_example(registryconnectedclient)
+qt_internal_add_example(registryconnectedserver)

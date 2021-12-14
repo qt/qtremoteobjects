@@ -1,4 +1,4 @@
 # Generated from ssl.pro.
 
-add_subdirectory(sslserver)
-add_subdirectory(sslcppclient)
+qt_internal_add_example(sslserver)
+qt_internal_add_example(sslcppclient)
