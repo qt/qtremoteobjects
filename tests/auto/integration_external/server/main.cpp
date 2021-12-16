@@ -96,14 +96,20 @@ private Q_SLOTS:
         bool next = false;
         connect(&myTestServer, &MyTestServer::nextStep, [&next]{ next = true; });
         QTRY_VERIFY_WITH_TIMEOUT(next, 5000);
-        dev1.srcNode.disableRemoting(&myTestServer);
+
+        qDebug() << "Disable remoting";
+        QVERIFY(dev1.srcNode.disableRemoting(&myTestServer));
+
+        // Wait before changing the state
+        QTest::qWait(200);
 
         // Change a value while replica is suspect
         myTestServer.setEnum1(MyTestServer::First);
 
         // Share the object on a different "device", make sure registry updates and connects
+        qDebug() << "Enable remoting";
         Device dev2(extUrl2);
-        dev2.srcNode.enableRemoting(&myTestServer);
+        QVERIFY(dev2.srcNode.enableRemoting(&myTestServer));
 
         // wait for quit
         bool quit = false;

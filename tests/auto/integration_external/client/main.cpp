@@ -177,14 +177,13 @@ private Q_SLOTS:
         QSignalSpy stateSpy(m_rep.data(), &MyInterfaceReplica::stateChanged);
         QVERIFY(reply.waitForFinished());
 
-        QVERIFY(stateSpy.wait());
-        QVERIFY(m_rep->state() == QRemoteObjectReplica::Suspect);
+        QTRY_COMPARE(stateSpy.count(), 1);
+        QCOMPARE(m_rep->state(), QRemoteObjectReplica::Suspect);
 
-        stateSpy.clear();
-        QVERIFY(stateSpy.wait());
-        QVERIFY(m_rep->state() == QRemoteObjectReplica::Valid);
+        QTRY_COMPARE(stateSpy.count(), 2);
+        QCOMPARE(m_rep->state(), QRemoteObjectReplica::Valid);
         // Make sure we updated to the correct enum1 value
-        QVERIFY(m_rep->enum1() == MyInterfaceReplica::First);
+        QCOMPARE(m_rep->enum1(), MyInterfaceReplica::First);
     }
 
     void cleanupTestCase()
