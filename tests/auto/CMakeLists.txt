@@ -1,6 +1,6 @@
 
 add_subdirectory(benchmarks)
-# add_subdirectory(cmake)
+add_subdirectory(cmake)
 add_subdirectory(modelreplica)
 add_subdirectory(modelview)
 add_subdirectory(pods)
