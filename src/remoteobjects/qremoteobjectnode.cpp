@@ -1973,7 +1973,9 @@ void QRemoteObjectHostBase::setName(const QString &name)
 QUrl QRemoteObjectHostBase::hostUrl() const
 {
     Q_D(const QRemoteObjectHostBase);
-    return d->remoteObjectIo->serverAddress();
+    if (d->remoteObjectIo)
+        return d->remoteObjectIo->serverAddress();
+    return QUrl();
 }
 
 /*!
