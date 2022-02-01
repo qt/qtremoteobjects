@@ -457,7 +457,7 @@ void ASTEnum::signature_impl(const AST &ast, QCryptographicHash &checksum)
     Q_UNUSED(ast)
     checksum.addData(name.toLatin1());
     if (isScoped)
-        checksum.addData("class", qstrlen("class"));
+        checksum.addData("class");
     if (!type.isEmpty())
         checksum.addData(type.toLatin1());
     for (const ASTEnumParam &param : params) {
@@ -540,7 +540,7 @@ void ASTClass::signature_impl(const AST &ast, QCryptographicHash &checksum)
         // Treat ReadOnly and SourceOnlySetter the same (interface-wise they are)
         if (m == ASTProperty::SourceOnlySetter)
             m = ASTProperty::ReadOnly;
-        checksum.addData(reinterpret_cast<const char *>(&m), sizeof(m));
+        checksum.addData({reinterpret_cast<const char *>(&m), sizeof(m)});
     }
 
     // Checksum signals
