@@ -34,6 +34,8 @@
 
 \brief Creates C++ header files for replica types from the Qt Remote Objects .rep files.
 
+\cmakecommandsince 6.2
+
 \section1 Synopsis
 
 \badcode
@@ -64,6 +66,8 @@ in this case \c rep_simpleswitch_replica.h
 
 \brief Creates C++ header files for source types from the Qt Remote Objects .rep files.
 
+\cmakecommandsince 6.2
+
 \section1 Synopsis
 
 \badcode
@@ -93,6 +97,8 @@ in this case \c rep_simpleswitch_source.h
 \target qt6_add_repc_merged
 
 \brief Creates C++ header files for source and replica types from the Qt Remote Objects .rep files.
+
+\cmakecommandsince 6.2
 
 \section1 Synopsis
 
@@ -127,6 +133,8 @@ this function is not commonly used.
 \target qt6_reps_from_headers
 
 \brief Creates .rep files from the QObject header files.
+
+\cmakecommandsince 6.2
 
 \section1 Synopsis
 
