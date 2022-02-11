@@ -58,6 +58,7 @@
 #include <sys/netmgr.h>  //FOR ND_LOCAL_NODE
 #include <errno.h>
 #include <QtCore/qthread.h>
+#include <QtCore/private/qglobal_p.h>
 #ifdef USE_HAM
 # include <ha/ham.h>
 #endif

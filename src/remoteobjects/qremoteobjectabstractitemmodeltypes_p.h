@@ -61,6 +61,7 @@
 #include <QtCore/qsize.h>
 #include <QtCore/qvariant.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
+#include <QtCore/private/qglobal_p.h>
 
 QT_BEGIN_NAMESPACE
 

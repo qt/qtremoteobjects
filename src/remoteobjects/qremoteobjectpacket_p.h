@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 Ford Motor Company
+** Copyright (C) 2021 Ford Motor Company
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtRemoteObjects module of the Qt Toolkit.
@@ -64,6 +64,7 @@
 #include <QtCore/qvariant.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qdatastream.h>
+#include <QtCore/private/qglobal_p.h>
 
 #include <cstdlib>
 

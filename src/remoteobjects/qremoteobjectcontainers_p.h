@@ -53,6 +53,7 @@
 #include <QtCore/qassociativeiterable.h>
 #include <QtCore/qsequentialiterable.h>
 #include <QtCore/qvariant.h>
+#include <QtCore/private/qglobal_p.h>
 
 QT_BEGIN_NAMESPACE
 
