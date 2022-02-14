@@ -1,38 +1,33 @@
-# Generated from sslserver.pro.
-
 cmake_minimum_required(VERSION 3.16)
 project(sslserver LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
 if(NOT DEFINED INSTALL_EXAMPLESDIR)
-  set(INSTALL_EXAMPLESDIR "examples")
+    set(INSTALL_EXAMPLESDIR "examples")
 endif()
 
 set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/ssl/sslserver")
 
-find_package(Qt6 COMPONENTS RemoteObjects)
-find_package(Qt6 COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core RemoteObjects)
 
 qt_add_executable(sslserver
     main.cpp
     sslserver.cpp sslserver.h
     timemodel.cpp timemodel.h
 )
+
 set_target_properties(sslserver PROPERTIES
     WIN32_EXECUTABLE FALSE
     MACOSX_BUNDLE TRUE
 )
+
 target_link_libraries(sslserver PUBLIC
     Qt::Core
     Qt::RemoteObjects
     Qt::RemoteObjectsPrivate
 )
-
 
 # Resources:
 set(cert_resource_files

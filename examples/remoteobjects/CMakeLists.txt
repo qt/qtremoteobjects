@@ -1,5 +1,3 @@
-# Generated from remoteobjects.pro.
-
 qt_internal_add_example(remoteobjects_server)
 qt_internal_add_example(cppclient)
 add_subdirectory(simpleswitch)
@@ -8,7 +6,7 @@ if(TARGET Qt::Widgets)
     qt_internal_add_example(modelviewclient)
     qt_internal_add_example(modelviewserver)
 endif()
-if(QT_FEATURE_ssl) # special case
+if(QT_FEATURE_ssl)
     add_subdirectory(ssl)
 endif()
 if(TARGET Qt::Quick)
