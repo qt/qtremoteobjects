@@ -2666,7 +2666,7 @@ ProxyInfo::ProxyInfo(QRemoteObjectNode *node, QRemoteObjectHostBase *parent,
     , proxyFilter(filter)
 {
     const auto registry = node->registry();
-    proxyNode->setObjectName(QString::fromLatin1("_ProxyNode"));
+    proxyNode->setObjectName(QLatin1String("_ProxyNode"));
 
     connect(registry, &QRemoteObjectRegistry::remoteObjectAdded, this,
             [this](const QRemoteObjectSourceLocation &entry)
