@@ -98,6 +98,7 @@ void QnxClientIo::onError(QAbstractSocket::SocketError error)
     case QAbstractSocket::RemoteHostClosedError:
         m_socket->close();
         qCWarning(QT_REMOTEOBJECT) << "RemoteHostClosedError";
+        Q_FALLTHROUGH();
     case QAbstractSocket::HostNotFoundError:     //Host not there, wait and try again
     case QAbstractSocket::AddressInUseError:
     case QAbstractSocket::ConnectionRefusedError:
