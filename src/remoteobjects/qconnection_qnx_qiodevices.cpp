@@ -200,7 +200,7 @@ void QQnxNativeIoPrivate::thread_func()
             ibLock.lockForWrite();
             iov_t reply_vector[2];
             SETIOV(reply_vector, &bytesLeft, sizeof(bytesLeft));
-            SETIOV(reply_vector+1, buffer.reserve(len), len);
+            SETIOV(reply_vector+1, buffer.reserve(len), size_t(len));
             const int res = MsgSendv(serverId, tx_iov, 1, reply_vector, 2);
 
             if (res == -1) {
@@ -217,7 +217,7 @@ void QQnxNativeIoPrivate::thread_func()
                 msgType = MsgType::SOURCE_TX_RESP_REPEAT;
                 ibLock.lockForWrite();
                 SETIOV(reply_vector, &nTxRequestToIgnore, sizeof(nTxRequestToIgnore));
-                SETIOV(reply_vector+1, buffer.reserve(bytesLeft), bytesLeft);
+                SETIOV(reply_vector+1, buffer.reserve(bytesLeft), size_t(bytesLeft));
                 const int res = MsgSendv(serverId, tx_iov, 1, reply_vector, 2);
                 if (res == -1) {
                     buffer.chop(bytesLeft);
@@ -241,7 +241,7 @@ void QQnxNativeIoPrivate::thread_func()
             Q_ASSERT(len == payload.length());
 
             msgType = MsgType::REPLICA_TX_RECV;
-            SETIOV(tx_iov + 1, payload.constData(), len);
+            SETIOV(tx_iov + 1, payload.constData(), size_t(len));
             if (MsgSendvs(serverId, tx_iov, 2, nullptr, 0) == -1) {
                 WARNING(MsgSendvs);
                 obLock.lockForWrite();
