@@ -308,7 +308,7 @@ void QQnxNativeServerPrivate::thread_func()
 
             iov_t reply_vector[2];
             SETIOV(reply_vector, &bytesLeft, sizeof(bytesLeft));
-            SETIOV(reply_vector+1, data.data(), data.length());
+            SETIOV(reply_vector+1, data.data(), size_t(data.length()));
 
             FATAL_ON_ERROR(MsgReplyv, rcvid, EOK, reply_vector, 2)
         }
@@ -346,7 +346,7 @@ void QQnxNativeServerPrivate::thread_func()
             resp_repeat_iov.resize(buffers_taken+1);
             SETIOV(&resp_repeat_iov[0], &buffers_taken, sizeof(buffers_taken));
             for (int i = 1; i <= buffers_taken; ++i)
-                SETIOV(&resp_repeat_iov[i], qba_array.at(i-1).constData(), qba_array.at(i-1).length());
+                SETIOV(&resp_repeat_iov[i], qba_array.at(i-1).constData(), size_t(qba_array.at(i-1).length()));
             FATAL_ON_ERROR(MsgReplyv, rcvid, EOK, resp_repeat_iov.data(), buffers_taken+1)
         }
             break;
