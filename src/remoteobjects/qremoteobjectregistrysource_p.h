@@ -54,6 +54,8 @@
 #include "qtremoteobjectglobal.h"
 #include "private/qglobal_p.h"
 
+#include <QtCore/qobject.h>
+
 QT_BEGIN_NAMESPACE
 
 class QRegistrySource : public QObject

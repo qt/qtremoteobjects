@@ -42,6 +42,7 @@
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 
+#include <QtCore/qobject.h>
 #include <QtCore/qsharedpointer.h>
 
 Q_MOC_INCLUDE(<QtRemoteObjects/qremoteobjectnode.h>)
