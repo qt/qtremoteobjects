@@ -261,6 +261,7 @@ void RepCodeGenerator::generateHeader(Mode mode)
         "#include <QtCore/qobject.h>\n"
         "#include <QtCore/qdatastream.h>\n"
         "#include <QtCore/qvariant.h>\n"
+        "#include <QtCore/qmap.h>\n"
         "#include <QtCore/qmetatype.h>\n";
     bool hasModel = false;
     for (auto c : m_ast.classes)
