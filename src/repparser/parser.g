@@ -79,7 +79,9 @@
 #include <qregexparser.h>
 #include <QStringList>
 #include <QList>
+#include <QHash>
 #include <QRegularExpression>
+#include <QSet>
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
