@@ -29,6 +29,48 @@
 #include <QtTest/QtTest>
 #include <QModelIndex>
 
+// Helper class which can be used by tests for starting a task and
+// waiting for its completion. It takes care of running an event
+// loop while waiting, until finished() method is called (or the
+// timeout is reached).
+class WaitHelper : public QObject
+{
+    Q_OBJECT
+
+public:
+    WaitHelper() { m_promise.reportStarted(); }
+
+    ~WaitHelper()
+    {
+        if (m_promise.future().isRunning())
+            m_promise.reportFinished();
+    }
+
+    /*
+        Starts an event loop and waits until finish() method is called
+        or the timeout is reached.
+    */
+    bool wait(int timeout = 30000)
+    {
+        if (m_promise.future().isFinished())
+            return true;
+
+        QFutureWatcher<void> watcher;
+        QSignalSpy watcherSpy(&watcher, &QFutureWatcher<void>::finished);
+        watcher.setFuture(m_promise.future());
+        return watcherSpy.wait(timeout);
+    }
+
+protected:
+    /*
+        The derived classes need to call this method to stop waiting.
+    */
+    void finish() { m_promise.reportFinished(); }
+
+private:
+    QFutureInterface<void> m_promise;
+};
+
 namespace {
 
 inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
@@ -44,53 +86,20 @@ inline bool compareIndices(const QModelIndex &lhs, const QModelIndex &rhs)
     return true;
 }
 
-struct WaitForDataChanged
+struct WaitForDataChanged : public WaitHelper
 {
-    struct IndexPair
+    WaitForDataChanged(const QAbstractItemModel *model, const QVector<QModelIndex> &pending)
+        : WaitHelper(), m_model(model), m_pending(pending)
     {
-        QModelIndex topLeft;
-        QModelIndex bottomRight;
-    };
+        connect(m_model, &QAbstractItemModel::dataChanged, this,
+                [this](const QModelIndex &topLeft, const QModelIndex &bottomRight,
+                       const QVector<int> &roles) {
+                    Q_UNUSED(roles)
 
-    WaitForDataChanged(const QVector<QModelIndex> &pending, QSignalSpy *spy) : m_pending(pending), m_spy(spy){}
-    bool wait()
-    {
-        Q_ASSERT(m_spy);
-        const int maxRuns = std::min(m_pending.size(), 100);
-        int runs = 0;
-        bool cancel = false;
-        while (!cancel) {
-            const int numSignals = m_spy->size();
-            for (int i = 0; i < numSignals; ++i) {
-                const QList<QVariant> &signal = m_spy->takeFirst();
-                IndexPair pair = extractPair(signal);
-                checkAndRemoveRange(pair.topLeft, pair.bottomRight);
-                cancel = m_pending.isEmpty();
-            }
-            if (!cancel)
-                m_spy->wait();
-            ++runs;
-            if (runs >= maxRuns)
-                cancel = true;
-        }
-        return runs < maxRuns;
-    }
-
-    static IndexPair extractPair(const QList<QVariant> &signal)
-    {
-        IndexPair pair;
-        if (signal.size() != 3)
-            return pair;
-        const bool matchingTypes = signal[0].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[1].type() == QVariant::nameToType("QModelIndex")
-                                   && signal[2].type() == QVariant::nameToType("QVector<int>");
-        if (!matchingTypes)
-            return pair;
-        const QModelIndex topLeft = signal[0].value<QModelIndex>();
-        const QModelIndex bottomRight = signal[1].value<QModelIndex>();
-        pair.topLeft = topLeft;
-        pair.bottomRight = bottomRight;
-        return pair;
+                    checkAndRemoveRange(topLeft, bottomRight);
+                    if (m_pending.isEmpty())
+                        finish();
+                });
     }
 
     void checkAndRemoveRange(const QModelIndex &topLeft, const QModelIndex &bottomRight)
@@ -111,8 +120,9 @@ struct WaitForDataChanged
                         m_pending.end());
     }
 
+private:
+    const QAbstractItemModel *m_model = nullptr;
     QVector<QModelIndex> m_pending;
-    QSignalSpy *m_spy;
 };
 
 } // namespace

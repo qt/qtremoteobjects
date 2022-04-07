@@ -4,7 +4,7 @@ QT += testlib remoteobjects
 #QT -= gui
 
 SOURCES += $$PWD/tst_modelview.cpp $$PWD/modeltest.cpp
-HEADERS += $$PWD/modeltest.h
+HEADERS += $$PWD/modeltest.h $$PWD/../shared/model_utilities.h
 
 contains(QT_CONFIG, c++11): CONFIG += c++11
 
