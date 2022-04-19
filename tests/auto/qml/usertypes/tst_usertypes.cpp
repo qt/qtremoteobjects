@@ -32,6 +32,8 @@
 #include <qqmlcomponent.h>
 #include "rep_usertypes_merged.h"
 
+#include "../../../shared/testutils.h"
+
 class TypeWithReply : public TypeWithReplySimpleSource
 {
 public:
@@ -77,7 +79,7 @@ void tst_usertypes::extraPropertyInQml()
 {
     qmlRegisterType<SimpleClockReplica>("usertypes", 1, 0, "SimpleClockReplica");
 
-    QRemoteObjectRegistryHost host(QUrl("local:test"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":test"));
     SimpleClockSimpleSource clock;
     host.enableRemoting(&clock);
 
@@ -93,7 +95,7 @@ void tst_usertypes::extraPropertyInQml2()
 {
     qmlRegisterType<SimpleClockReplica>("usertypes", 1, 0, "SimpleClockReplica");
 
-    QRemoteObjectRegistryHost host(QUrl("local:test2"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":test2"));
     SimpleClockSimpleSource clock;
     clock.setHour(10);
     host.enableRemoting(&clock);
@@ -109,7 +111,7 @@ void tst_usertypes::extraPropertyInQml2()
 
 void tst_usertypes::extraPropertyInQmlComplex()
 {
-    QRemoteObjectRegistryHost host(QUrl("local:testExtraComplex"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":testExtraComplex"));
 
     SimpleClockSimpleSource clock;
     QStringListModel *model = new QStringListModel();
@@ -135,7 +137,7 @@ void tst_usertypes::modelInQml()
 {
     qmlRegisterType<TypeWithModelReplica>("usertypes", 1, 0, "TypeWithModelReplica");
 
-    QRemoteObjectRegistryHost host(QUrl("local:testModel"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":testModel"));
 
     QStringListModel *model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
@@ -160,7 +162,7 @@ void tst_usertypes::subObjectInQml()
 {
     qmlRegisterType<TypeWithSubObjectReplica>("usertypes", 1, 0, "TypeWithSubObjectReplica");
 
-    QRemoteObjectRegistryHost host(QUrl("local:testSubObject"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":testSubObject"));
 
     SimpleClockSimpleSource clock;
     TypeWithSubObjectSimpleSource source;
@@ -194,7 +196,7 @@ void tst_usertypes::complexInQml()
     QFETCH(bool, templated);
     QFETCH(bool, nullobject);
 
-    QRemoteObjectRegistryHost host(QUrl("local:testModel"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":testModel"));
 
     QStringListModel *model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
@@ -234,7 +236,7 @@ void tst_usertypes::watcherInQml()
 {
     qmlRegisterType<TypeWithReplyReplica>("usertypes", 1, 0, "TypeWithReplyReplica");
 
-    QRemoteObjectRegistryHost host(QUrl("local:testWatcher"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":testWatcher"));
     TypeWithReply source;
     host.enableRemoting(&source);
 
@@ -267,7 +269,7 @@ void tst_usertypes::hostInQml()
     QVERIFY(obj);
 
     QRemoteObjectNode node;
-    node.connectToNode(QUrl("local:testHost"));
+    node.connectToNode(QUrl(LOCAL_SOCKET ":testHost"));
     SimpleClockReplica *replica = node.acquire<SimpleClockReplica>();
     QTRY_COMPARE_WITH_TIMEOUT(replica->state(), QRemoteObjectReplica::Valid, 1000);
 
@@ -280,7 +282,7 @@ void tst_usertypes::twoReplicas()
 {
     qmlRegisterType<SimpleClockReplica>("usertypes", 1, 0, "SimpleClockReplica");
 
-    QRemoteObjectRegistryHost host(QUrl("local:testTwoReplicas"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":testTwoReplicas"));
     SimpleClockSimpleSource clock;
     clock.setHour(7);
     host.enableRemoting(&clock);
@@ -301,7 +303,7 @@ void tst_usertypes::remoteCompositeType()
     QScopedPointer<QObject> obj(c.create());
     QVERIFY(obj);
 
-    QRemoteObjectRegistryHost host(QUrl("local:remoteCompositeType"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":remoteCompositeType"));
     host.enableRemoting(obj.data(), "composite");
 }
 

@@ -36,6 +36,8 @@
 #include "rep_localdatacenter_replica.h"
 #include "rep_localdatacenter_source.h"
 
+#include "../../shared/testutils.h"
+
 class BenchmarksModel : public QAbstractListModel
 {
     // QAbstractItemModel interface
@@ -98,14 +100,14 @@ BenchmarksTest::BenchmarksTest()
 }
 
 void BenchmarksTest::initTestCase() {
-    m_basicServer.setHostUrl(QUrl(QStringLiteral("local:benchmark_replica")));
+    m_basicServer.setHostUrl(QUrl(QStringLiteral(LOCAL_SOCKET ":benchmark_replica")));
     dataCenterLocal.reset(new LocalDataCenterSimpleSource);
     dataCenterLocal->setData1(5);
     const bool remoted = m_basicServer.enableRemoting(dataCenterLocal.data());
     Q_ASSERT(remoted);
     Q_UNUSED(remoted)
 
-    m_basicClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
+    m_basicClient.connectToNode(QUrl(QStringLiteral(LOCAL_SOCKET ":benchmark_replica")));
     Q_ASSERT(m_basicClient.lastError() == QRemoteObjectNode::NoError);
 
     m_basicServer.enableRemoting(&m_sourceModel, QStringLiteral("BenchmarkRemoteModel"),
@@ -248,7 +250,7 @@ void BenchmarksTest::benchModelLinearAccess()
     // which are the last 50 items
     QBENCHMARK {
         QRemoteObjectNode localClient;
-        localClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
+        localClient.connectToNode(QUrl(QStringLiteral(LOCAL_SOCKET ":benchmark_replica")));
         QScopedPointer<QAbstractItemModelReplica> model(localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel")));
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
@@ -320,7 +322,7 @@ void BenchmarksTest::benchModelRandomAccess()
 {
     QBENCHMARK {
         QRemoteObjectNode localClient;
-        localClient.connectToNode(QUrl(QStringLiteral("local:benchmark_replica")));
+        localClient.connectToNode(QUrl(QStringLiteral(LOCAL_SOCKET ":benchmark_replica")));
         QScopedPointer<QAbstractItemModelReplica> model(localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel")));
         model->setRootCacheSize(5000); // we need to make room for all 5000 rows that we'll use
         QEventLoop loop;

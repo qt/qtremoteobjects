@@ -33,6 +33,8 @@
 #include <QCoreApplication>
 #include <QtTest/QtTest>
 
+#include "../../../shared/testutils.h"
+
 static QMap<int, MyPOD> int_map{{1, initialValue},
                                 {16, initialValue}};
 static MyTestServer::ActivePositions flags1 = MyTestServer::Position::position1;
@@ -54,7 +56,7 @@ private Q_SLOTS:
         bool templated = qEnvironmentVariableIsSet("TEMPLATED_REMOTING");
 
         qDebug() << "Starting tests:" << objectMode << "templated =" << templated;
-        QRemoteObjectRegistryHost srcNode(QUrl(QStringLiteral("local:testRegistry")));
+        QRemoteObjectRegistryHost srcNode(QUrl(QStringLiteral(LOCAL_SOCKET ":testRegistry")));
 
         MyTestServer parent;
         SubClassSimpleSource subclass;

@@ -35,6 +35,12 @@
 #include <QStandardPaths>
 #include <QCoreApplication>
 
+#ifdef Q_OS_ANDROID
+#define LOCAL_SOCKET "localabstract"
+#else
+#define LOCAL_SOCKET  "local"
+#endif
+
 namespace TestUtils {
 
 QString subFolder;
