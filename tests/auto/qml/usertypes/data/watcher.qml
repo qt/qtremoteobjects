@@ -7,7 +7,8 @@ TypeWithReplyReplica {
     property bool hasError
 
     node: Node {
-        registryUrl: "local:testWatcher"
+        property string local_socket: Qt.platform.os == "android" ? "localabstract" : "local"
+        registryUrl: local_socket + ":testWatcher"
     }
     onStateChanged: function(state) {
         if (state != TypeWithReplyReplica.Valid)

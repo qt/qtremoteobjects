@@ -8,7 +8,8 @@ Item {
 
     Node {
         id: sharedNode
-        registryUrl: "local:testTwoReplicas"
+        property string local_socket: Qt.platform.os == "android" ? "localabstract" : "local"
+        registryUrl: local_socket + ":testTwoReplicas"
     }
 
     SimpleClockReplica {

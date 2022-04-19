@@ -34,12 +34,14 @@
 #include <QRemoteObjectReplica>
 #include <QRemoteObjectNode>
 
-const QUrl localHostUrl = QUrl(QLatin1String("local:testHost"));
+#include "../../shared/testutils.h"
+
+const QUrl localHostUrl = QUrl(QLatin1String(LOCAL_SOCKET ":testHost"));
 const QUrl tcpHostUrl = QUrl(QLatin1String("tcp://127.0.0.1:9989"));
 const QUrl proxyNodeUrl = QUrl(QLatin1String("tcp://127.0.0.1:12123"));
 const QUrl remoteNodeUrl = QUrl(QLatin1String("tcp://127.0.0.1:23234"));
-const QUrl registryUrl = QUrl(QLatin1String("local:testRegistry"));
-const QUrl proxyHostUrl = QUrl(QLatin1String("local:fromProxy"));
+const QUrl registryUrl = QUrl(QLatin1String(LOCAL_SOCKET ":testRegistry"));
+const QUrl proxyHostUrl = QUrl(QLatin1String(LOCAL_SOCKET ":fromProxy"));
 
 #define SET_NODE_NAME(obj) (obj).setName(QLatin1String(#obj))
 

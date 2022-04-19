@@ -8,7 +8,8 @@ Item {
     }
 
     Host {
-        hostUrl: "local:testHost"
+        property string local_socket: Qt.platform.os == "android" ? "localabstract" : "local"
+        hostUrl: local_socket + ":testHost"
         Component.onCompleted: enableRemoting(clock)
     }
 

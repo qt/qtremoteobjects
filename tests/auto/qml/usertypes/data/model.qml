@@ -4,6 +4,7 @@ import usertypes 1.0
 
 TypeWithModelReplica {
     node: Node {
-        registryUrl: "local:testModel"
+        property string local_socket: Qt.platform.os == "android" ? "localabstract" : "local"
+        registryUrl: local_socket + ":testModel"
     }
 }

@@ -40,7 +40,7 @@ private slots:
     void testRun_data()
     {
         QTest::addColumn<QString>("url");
-        QTest::addRow("local") << QStringLiteral("local:replica");
+        QTest::addRow("local") << QStringLiteral(LOCAL_SOCKET ":replica");
         QTest::addRow("tcp") << QStringLiteral("tcp://127.0.0.1:65217");
     }
 

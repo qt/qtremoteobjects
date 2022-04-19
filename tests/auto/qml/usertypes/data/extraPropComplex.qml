@@ -7,7 +7,8 @@ ComplexTypeReplica {
     property QtObject object: QtObject {}
 
     node: Node {
-        registryUrl: "local:testExtraComplex"
+        property string local_socket: Qt.platform.os == "android" ? "localabstract" : "local"
+        registryUrl: local_socket + ":testExtraComplex"
     }
 }
 
