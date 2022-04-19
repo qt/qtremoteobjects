@@ -51,6 +51,8 @@
 #include "rep_localdatacenter_replica.h"
 #include "rep_tcpdatacenter_replica.h"
 
+#include "../../shared/testutils.h"
+
 #define SET_NODE_NAME(obj) (obj).setName(QLatin1String(#obj))
 
 //DUMMY impl for variant comparison
@@ -216,7 +218,7 @@ private slots:
 #ifdef __QNXNTO__
         QTest::newRow("qnx") << QUrl(QLatin1String("qnx:replica")) << QUrl(QLatin1String("qnx:registry"));
 #endif
-        QTest::newRow("local") << QUrl(QLatin1String("local:replicaLocalIntegration")) << QUrl(QLatin1String("local:registryLocalIntegration"));
+        QTest::newRow("local") << QUrl(QLatin1String(LOCAL_SOCKET ":replicaLocalIntegration")) << QUrl(QLatin1String(LOCAL_SOCKET ":registryLocalIntegration"));
 #ifdef Q_OS_LINUX
         QTest::newRow("localabstract") << QUrl(QLatin1String("localabstract:replicaAbstractIntegration")) << QUrl(QLatin1String("localabstract:registryAbstractIntegration"));
 #endif
@@ -1431,7 +1433,7 @@ private slots:
         QVERIFY(info.exists());
 
         QRemoteObjectNode localSocketTestClient;
-        const QUrl connection = QUrl(QStringLiteral("local:crashMe"));
+        const QUrl connection = QUrl(QStringLiteral(LOCAL_SOCKET ":crashMe"));
         const QString objectname = QStringLiteral("connectme");
         localSocketTestClient.connectToNode(connection);
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);
@@ -1465,7 +1467,7 @@ private slots:
         QVERIFY(info.exists());
 
         QRemoteObjectNode localSocketTestClient;
-        const QUrl connection = QUrl(QStringLiteral("local:crashMe"));
+        const QUrl connection = QUrl(QStringLiteral(LOCAL_SOCKET ":crashMe"));
         const QString objectname = QStringLiteral("connectme");
         localSocketTestClient.connectToNode(connection);
         QVERIFY(localSocketTestClient.lastError() == QRemoteObjectNode::NoError);

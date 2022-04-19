@@ -6,7 +6,8 @@ Item {
     property int result: replica.clock.hour
 
     property Node sharedNode: Node {
-        registryUrl: "local:testSubObject"
+        property string local_socket: Qt.platform.os == "android" ? "localabstract" : "local"
+        registryUrl: local_socket + ":testSubObject"
     }
 
     property TypeWithSubObjectReplica replica: TypeWithSubObjectReplica {

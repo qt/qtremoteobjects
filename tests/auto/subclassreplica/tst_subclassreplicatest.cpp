@@ -30,6 +30,8 @@
 #include <QtTest>
 #include "rep_class_merged.h"
 
+#include "../../shared/testutils.h"
+
 class SubClassReplicaTest : public QObject
 {
     Q_OBJECT
@@ -61,7 +63,7 @@ void SubClassReplicaTest::basicFunctions()
     QFETCH(bool, templated);
     QFETCH(bool, nullobject);
 
-    QRemoteObjectRegistryHost host(QUrl("local:test"));
+    QRemoteObjectRegistryHost host(QUrl(LOCAL_SOCKET ":test"));
     SubClassSimpleSource subclass1, subclass2;
     ParentClassSimpleSource parent;
     parent.setSub1(&subclass1);
@@ -87,7 +89,7 @@ void SubClassReplicaTest::basicFunctions()
     else
         host.enableRemoting(&parent);
 
-    QRemoteObjectNode client(QUrl("local:test"));
+    QRemoteObjectNode client(QUrl(LOCAL_SOCKET ":test"));
     const QScopedPointer<ParentClassReplica> replica(client.acquire<ParentClassReplica>());
     QVERIFY(replica->waitForSource(1000));
 
