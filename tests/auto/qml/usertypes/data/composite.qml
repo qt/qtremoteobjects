@@ -1,7 +1,8 @@
 import QtQuick 2.0
+import "../data" as MyComponents //for staric build resource path should be set
 
 QtObject {
-    property QtObject myTypeOk: MyType {} // this works
-    property MyType myType: MyType {} // this crashes
-    property MyType myType2 // this crashes (ensure solution works with null object)
+    property QtObject myTypeOk: MyComponents.MyType {} // this works
+    property MyComponents.MyType myType: MyComponents.MyType {} // this crashes
+    property MyComponents.MyType myType2 // this crashes (ensure solution works with null object)
 }
