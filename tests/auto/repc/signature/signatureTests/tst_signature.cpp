@@ -52,6 +52,9 @@ private slots:
 
     void testRun()
     {
+#ifdef Q_OS_ANDROID
+        QSKIP("QProcess doesn't support running user bundled binaries on Android");
+#endif
         qDebug() << "Starting signatureServer process";
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
