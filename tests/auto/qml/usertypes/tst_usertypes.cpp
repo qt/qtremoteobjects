@@ -30,6 +30,8 @@
 #include <QtTest>
 #include <qqmlengine.h>
 #include <qqmlcomponent.h>
+#include <QtQuickTestUtils/private/qmlutils_p.h>
+
 #include "rep_usertypes_merged.h"
 
 #include "../../../shared/testutils.h"
@@ -49,7 +51,7 @@ public:
     }
 };
 
-class tst_usertypes : public QObject
+class tst_usertypes : public QQmlDataTest
 {
     Q_OBJECT
 
@@ -70,7 +72,7 @@ private Q_SLOTS:
     void remoteCompositeType();
 };
 
-tst_usertypes::tst_usertypes()
+tst_usertypes::tst_usertypes() : QQmlDataTest(QT_QMLTEST_DATADIR)
 {
     qmlRegisterType<ComplexTypeReplica>("usertypes", 1, 0, "ComplexTypeReplica");
 }
@@ -84,7 +86,7 @@ void tst_usertypes::extraPropertyInQml()
     host.enableRemoting(&clock);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/extraprop.qml");
+    QQmlComponent c(&e, testFileUrl("extraprop.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -101,7 +103,7 @@ void tst_usertypes::extraPropertyInQml2()
     host.enableRemoting(&clock);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/extraprop2.qml");
+    QQmlComponent c(&e, testFileUrl("extraprop2.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -122,7 +124,7 @@ void tst_usertypes::extraPropertyInQmlComplex()
     host.enableRemoting(&source);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/extraPropComplex.qml");
+    QQmlComponent c(&e, testFileUrl("extraPropComplex.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -146,7 +148,7 @@ void tst_usertypes::modelInQml()
     host.enableRemoting<TypeWithModelSourceAPI>(&source);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/model.qml");
+    QQmlComponent c(&e, testFileUrl("model.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -170,7 +172,7 @@ void tst_usertypes::subObjectInQml()
     host.enableRemoting(&source);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/subObject.qml");
+    QQmlComponent c(&e, testFileUrl("subObject.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -212,7 +214,7 @@ void tst_usertypes::complexInQml()
         host.enableRemoting(&source);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/complex.qml");
+    QQmlComponent c(&e, testFileUrl("complex.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -241,7 +243,7 @@ void tst_usertypes::watcherInQml()
     host.enableRemoting(&source);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/watcher.qml");
+    QQmlComponent c(&e, testFileUrl("watcher.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -264,7 +266,7 @@ void tst_usertypes::hostInQml()
     qmlRegisterType<SimpleClockSimpleSource>("usertypes", 1, 0, "SimpleClockSimpleSource");
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/hosted.qml");
+    QQmlComponent c(&e, testFileUrl("hosted.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -288,7 +290,7 @@ void tst_usertypes::twoReplicas()
     host.enableRemoting(&clock);
 
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/twoReplicas.qml");
+    QQmlComponent c(&e, testFileUrl("twoReplicas.qml"));
     QObject *obj = c.create();
     QVERIFY(obj);
 
@@ -299,7 +301,7 @@ void tst_usertypes::twoReplicas()
 void tst_usertypes::remoteCompositeType()
 {
     QQmlEngine e;
-    QQmlComponent c(&e, SRCDIR "data/composite.qml");
+    QQmlComponent c(&e, testFileUrl("composite.qml"));
     QScopedPointer<QObject> obj(c.create());
     QVERIFY(obj);
 
