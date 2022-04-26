@@ -72,6 +72,9 @@ private slots:
 
     void testRun()
     {
+#ifdef Q_OS_ANDROID
+        QSKIP("QProcess doesn't support running user bundled binaries on Android");
+#endif
         QFETCH(RunMode, runMode);
         QFETCH(ObjectMode, objectMode);
 

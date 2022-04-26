@@ -46,6 +46,10 @@ private slots:
     }
     void testRun()
     {
+// TODO: This a limitation of QProcess on Android, QTBUG-88507 is relevant to this issue.
+#ifdef Q_OS_ANDROID
+        QSKIP("QProcess doesn't support running user bundled binaries on Android");
+#endif
         QProcess serverProc;
         serverProc.setProcessChannelMode(QProcess::ForwardedChannels);
         serverProc.start(TestUtils::findExecutable("sslTestServer", "/sslTestServer"),
