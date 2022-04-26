@@ -44,6 +44,12 @@ bool init(const QString &folder)
 {
     if (!TestUtils::rootFolder.isEmpty())
         return true;
+
+#ifdef Q_OS_ANDROID
+    // All libraries are at located at the native libraries folder
+    return true;
+#endif
+
     const auto appPath = QCoreApplication::applicationDirPath();
     auto dir = QDir(appPath);
     while (dir.dirName() != folder) {
