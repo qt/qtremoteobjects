@@ -11,7 +11,7 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
 endif()
 
 #! [remote_objects_cmake]
-find_package(Qt6 COMPONENTS RemoteObjects REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS RemoteObjects)
 #! [remote_objects_cmake]
 
 set(SOURCES
