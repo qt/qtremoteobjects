@@ -79,6 +79,7 @@ QAbstractItemModelSourceAdapter::QAbstractItemModelSourceAdapter(QAbstractItemMo
     connect(m_model, &QAbstractItemModel::columnsInserted, this, &QAbstractItemModelSourceAdapter::sourceColumnsInserted);
     connect(m_model, &QAbstractItemModel::rowsRemoved, this, &QAbstractItemModelSourceAdapter::sourceRowsRemoved);
     connect(m_model, &QAbstractItemModel::rowsMoved, this, &QAbstractItemModelSourceAdapter::sourceRowsMoved);
+    connect(m_model, &QAbstractItemModel::layoutChanged, this, &QAbstractItemModelSourceAdapter::sourceLayoutChanged);
     if (m_selectionModel)
         connect(m_selectionModel, &QItemSelectionModel::currentChanged, this, &QAbstractItemModelSourceAdapter::sourceCurrentChanged);
 }
@@ -246,6 +247,14 @@ void QAbstractItemModelSourceAdapter::sourceCurrentChanged(const QModelIndex & c
     IndexList previousIndex = toModelIndexList(previous, m_model);
     qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "current=" << currentIndex << "previous=" << previousIndex;
     emit currentChanged(currentIndex, previousIndex);
+}
+
+void QAbstractItemModelSourceAdapter::sourceLayoutChanged(const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint)
+{
+    IndexList indexes;
+    for (const QPersistentModelIndex &idx : parents)
+        indexes << toModelIndexList((QModelIndex)idx, m_model);
+    emit layoutChanged(indexes, hint);
 }
 
 QVector<IndexValuePair> QAbstractItemModelSourceAdapter::fetchTree(const QModelIndex &parent, size_t &size, const QVector<int> &roles)

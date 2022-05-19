@@ -141,6 +141,8 @@ void QAbstractItemModelReplicaImplementation::initializeModelConnections()
     connect(this, &QAbstractItemModelReplicaImplementation::currentChanged, this, &QAbstractItemModelReplicaImplementation::onCurrentChanged);
     connect(this, &QAbstractItemModelReplicaImplementation::modelReset, this, &QAbstractItemModelReplicaImplementation::onModelReset);
     connect(this, &QAbstractItemModelReplicaImplementation::headerDataChanged, this, &QAbstractItemModelReplicaImplementation::onHeaderDataChanged);
+    connect(this, &QAbstractItemModelReplicaImplementation::layoutChanged, this, &QAbstractItemModelReplicaImplementation::onLayoutChanged);
+
 }
 
 inline void removeIndexFromRow(const QModelIndex &index, const QVector<int> &roles, CachedRowEntry *entry)
@@ -691,6 +693,41 @@ void QAbstractItemModelReplicaImplementation::fetchPendingHeaderData()
     connect(watcher, &HeaderWatcher::finished, this, &QAbstractItemModelReplicaImplementation::requestedHeaderData);
     m_requestedHeaderData.clear();
     m_pendingRequests.push_back(watcher);
+}
+
+void QAbstractItemModelReplicaImplementation::onLayoutChanged(const IndexList &parents,
+                                                              QAbstractItemModel::LayoutChangeHint hint)
+{
+    QList<QPersistentModelIndex> indexes;
+    for (const ModelIndex &parent : qAsConst(parents)) {
+        const QModelIndex parentIndex = toQModelIndex(IndexList{parent}, q);
+        indexes << QPersistentModelIndex(parentIndex);
+    }
+    QRemoteObjectPendingCallWatcher *watcher;
+    auto call = replicaCacheRequest(m_rootItem.children.cacheSize, m_initialFetchRolesHint);
+    watcher = new QRemoteObjectPendingCallWatcher(call);
+    m_pendingRequests.push_back(watcher);
+    connect(watcher, &QRemoteObjectPendingCallWatcher::finished, this, [this, watcher, indexes, hint]() {
+        Q_ASSERT(watcher->returnValue().canConvert<MetaAndDataEntries>());
+        const QSize size = watcher->returnValue().value<MetaAndDataEntries>().size;
+
+        q->layoutAboutToBeChanged(indexes, hint);
+        m_rootItem.clear();
+        if (size.height() > 0) {
+            m_rootItem.rowCount = size.height();
+            m_rootItem.hasChildren = true;
+        }
+
+        m_rootItem.columnCount = size.width();
+        if (m_initialAction == QtRemoteObjects::PrefetchData) {
+            auto entries = watcher->returnValue().value<MetaAndDataEntries>();
+            for (int i = 0; i < entries.data.size(); ++i)
+                fillCache(entries.data[i], entries.roles);
+        }
+        m_pendingRequests.removeAll(watcher);
+        watcher->deleteLater();
+        emit q->layoutChanged(indexes, hint);
+    });
 }
 
 static inline QVector<QPair<int, int> > listRanges(const QVector<int> &list)

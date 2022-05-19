@@ -41,6 +41,10 @@ private Q_SLOTS:
     void basicFunctions();
     void basicFunctions_data();
     void nullModel();
+    void nestedSortFilterProxyModel_data() { basicFunctions_data(); }
+    void nestedSortFilterProxyModel();
+    void sortFilterProxyModel_data();
+    void sortFilterProxyModel();
 };
 
 void ModelreplicaTest::basicFunctions_data()
@@ -111,6 +115,91 @@ void ModelreplicaTest::nullModel()
     source.setTracks(model);
     QTRY_COMPARE(replica->tracks()->rowCount(), 4);
     QTRY_COMPARE(replica->tracks()->data(replica->tracks()->index(3, 0)), "New Track4");
+}
+
+void ModelreplicaTest::nestedSortFilterProxyModel()
+{
+    QFETCH(bool, templated);
+
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    auto model = new QStringListModel(this);
+    model->setStringList(QStringList() << "CCC" << "AAA" << "BBB");
+    auto proxyModel = new QSortFilterProxyModel(this);
+    proxyModel->setSourceModel(model);
+
+    MediaSimpleSource source;
+    source.setTracks(proxyModel);
+    if (templated)
+        host.enableRemoting<MediaSourceAPI>(&source);
+    else
+        host.enableRemoting(&source);
+
+    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
+    QSignalSpy tracksSpy(replica->tracks(), &QAbstractItemModelReplica::initialized);
+    QVERIFY(replica->waitForSource(300));
+    QVERIFY(tracksSpy.wait());
+    // Rep file only uses display role
+    QCOMPARE(QVector<int>{Qt::DisplayRole}, replica->tracks()->availableRoles());
+
+    QCOMPARE(proxyModel->rowCount(), replica->tracks()->rowCount());
+    for (int i = 0; i < replica->tracks()->rowCount(); i++) {
+        // We haven't received any data yet
+        QCOMPARE(QVariant(), replica->tracks()->data(replica->tracks()->index(i, 0)));
+    }
+
+    // Wait for data to be fetch and confirm
+    QCOMPARE(proxyModel->rowCount(), replica->tracks()->rowCount());
+    for (int i = 0; i < replica->tracks()->rowCount(); i++)
+        QTRY_COMPARE(proxyModel->data(proxyModel->index(i, 0), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
+
+    proxyModel->sort(0, Qt::AscendingOrder);
+    QCOMPARE(proxyModel->rowCount(), replica->tracks()->rowCount());
+    for (int i = 0; i < replica->tracks()->rowCount(); i++)
+        QTRY_COMPARE(proxyModel->data(proxyModel->index(i, 0), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
+}
+
+void ModelreplicaTest::sortFilterProxyModel_data()
+{
+    QTest::addColumn<bool>("prefetch");
+
+    QTest::newRow("size only") << false;
+    QTest::newRow("prefetch") << true;
+}
+
+void ModelreplicaTest::sortFilterProxyModel()
+{
+    QFETCH(bool, prefetch);
+
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    auto model = new QStringListModel(this);
+    model->setStringList(QStringList() << "CCC" << "AAA" << "BBB");
+    auto proxyModel = new QSortFilterProxyModel(this);
+    proxyModel->setSourceModel(model);
+
+    QVector<int> roles = { Qt::DisplayRole };
+    host.enableRemoting(proxyModel, "test", roles);
+
+    auto fetchMode = prefetch ? QtRemoteObjects::PrefetchData : QtRemoteObjects::FetchRootSize;
+    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    QScopedPointer<QAbstractItemModelReplica> replica(client.acquireModel("test", fetchMode));
+    QSignalSpy initSpy(replica.get(), &QAbstractItemModelReplica::initialized);
+    QVERIFY(initSpy.wait());
+
+    QCOMPARE(roles, replica->availableRoles());
+
+    // Wait for data to be fetch and confirm
+    QCOMPARE(proxyModel->rowCount(), replica->rowCount());
+    for (int i = 0; i < replica->rowCount(); i++)
+        QTRY_COMPARE(proxyModel->data(proxyModel->index(i, 0), Qt::DisplayRole),
+                     replica->data(replica->index(i, 0)));
+
+    proxyModel->sort(0, Qt::AscendingOrder);
+    QCOMPARE(proxyModel->rowCount(), replica->rowCount());
+
+    for (int i = 0; i < replica->rowCount(); i++)
+        QTRY_COMPARE(proxyModel->data(proxyModel->index(i, 0), Qt::DisplayRole),
+                     replica->data(replica->index(i, 0)));
 }
 
 QTEST_MAIN(ModelreplicaTest)
