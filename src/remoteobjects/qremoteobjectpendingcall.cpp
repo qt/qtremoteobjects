@@ -48,6 +48,8 @@
 
 QT_BEGIN_NAMESPACE
 
+QT_IMPL_METATYPE_EXTERN(QRemoteObjectPendingCall)
+
 QRemoteObjectPendingCallData::QRemoteObjectPendingCallData(int serialId, QRemoteObjectReplicaImplementation *replica)
     : replica(replica)
     , serialId(serialId)

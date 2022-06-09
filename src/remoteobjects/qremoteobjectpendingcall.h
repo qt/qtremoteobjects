@@ -83,7 +83,7 @@ private:
 };
 
 QT_END_NAMESPACE
-Q_DECLARE_METATYPE(QRemoteObjectPendingCall)
+QT_DECL_METATYPE_EXTERN(QRemoteObjectPendingCall, Q_REMOTEOBJECTS_EXPORT)
 QT_BEGIN_NAMESPACE
 
 class Q_REMOTEOBJECTS_EXPORT QRemoteObjectPendingCallWatcher: public QObject, public QRemoteObjectPendingCall

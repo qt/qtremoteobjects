@@ -49,6 +49,10 @@ Q_LOGGING_CATEGORY(QT_REMOTEOBJECT, "qt.remoteobjects", QtWarningMsg)
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_MODELS, "qt.remoteobjects.models", QtWarningMsg)
 Q_LOGGING_CATEGORY(QT_REMOTEOBJECT_IO, "qt.remoteobjects.io", QtWarningMsg)
 
+QT_IMPL_METATYPE_EXTERN(QRemoteObjectSourceLocation)
+QT_IMPL_METATYPE_EXTERN(QRemoteObjectSourceLocations)
+QT_IMPL_METATYPE_EXTERN(QIntHash)
+
 /*!
     \namespace QtRemoteObjects
     \inmodule QtRemoteObjects
