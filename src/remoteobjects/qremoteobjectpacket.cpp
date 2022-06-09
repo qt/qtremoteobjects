@@ -1162,4 +1162,6 @@ void CodecBase::send(QtROIoDeviceBase *connection)
 
 } // namespace QRemoteObjectPackets
 
+QT_IMPL_METATYPE_EXTERN_TAGGED(QRemoteObjectPackets::QRO_, QRemoteObjectPackets__QRO_)
+
 QT_END_NAMESPACE

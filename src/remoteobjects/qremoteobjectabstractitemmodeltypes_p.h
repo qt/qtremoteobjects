@@ -256,12 +256,16 @@ inline IndexList toModelIndexList(const QModelIndex &index, const QAbstractItemM
 
 QT_END_NAMESPACE
 
-Q_DECLARE_METATYPE(QtPrivate::ModelIndex)
-Q_DECLARE_METATYPE(QtPrivate::IndexList)
-Q_DECLARE_METATYPE(QtPrivate::DataEntries)
-Q_DECLARE_METATYPE(QtPrivate::MetaAndDataEntries)
-Q_DECLARE_METATYPE(QtPrivate::IndexValuePair)
-Q_DECLARE_METATYPE(Qt::Orientation)
-Q_DECLARE_METATYPE(QItemSelectionModel::SelectionFlags)
+QT_DECL_METATYPE_EXTERN_TAGGED(QtPrivate::ModelIndex, QtPrivate__ModelIndex, /* not exported */)
+QT_DECL_METATYPE_EXTERN_TAGGED(QtPrivate::IndexList, QtPrivate__IndexList, /* not exported */)
+QT_DECL_METATYPE_EXTERN_TAGGED(QtPrivate::DataEntries, QtPrivate__DataEntries, /* not exported */)
+QT_DECL_METATYPE_EXTERN_TAGGED(QtPrivate::MetaAndDataEntries, QtPrivate__MetaAndDataEntries,
+                               /* not exported */)
+QT_DECL_METATYPE_EXTERN_TAGGED(QtPrivate::IndexValuePair, QtPrivate__IndexValuePair,
+                               /* not exported */)
+QT_DECL_METATYPE_EXTERN_TAGGED(Qt::Orientation, Qt__Orientation, /* not exported */)
+QT_DECL_METATYPE_EXTERN_TAGGED(QItemSelectionModel::SelectionFlags,
+                               QItemSelectionModel__SelectionFlags,
+                               /* not exported */)
 
 #endif // QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_P_H

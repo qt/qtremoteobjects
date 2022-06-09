@@ -323,6 +323,7 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType);
 
 QT_END_NAMESPACE
 
-Q_DECLARE_METATYPE(QRemoteObjectPackets::QRO_)
+QT_DECL_METATYPE_EXTERN_TAGGED(QRemoteObjectPackets::QRO_, QRemoteObjectPackets__QRO_,
+                               /* not exported */)
 
 #endif

@@ -48,6 +48,15 @@
 
 QT_BEGIN_NAMESPACE
 
+QT_IMPL_METATYPE_EXTERN_TAGGED(QtPrivate::ModelIndex, QtPrivate__ModelIndex)
+QT_IMPL_METATYPE_EXTERN_TAGGED(QtPrivate::IndexList, QtPrivate__IndexList)
+QT_IMPL_METATYPE_EXTERN_TAGGED(QtPrivate::DataEntries, QtPrivate__DataEntries)
+QT_IMPL_METATYPE_EXTERN_TAGGED(QtPrivate::MetaAndDataEntries, QtPrivate__MetaAndDataEntries)
+QT_IMPL_METATYPE_EXTERN_TAGGED(QtPrivate::IndexValuePair, QtPrivate__IndexValuePair)
+QT_IMPL_METATYPE_EXTERN_TAGGED(Qt::Orientation, Qt__Orientation)
+QT_IMPL_METATYPE_EXTERN_TAGGED(QItemSelectionModel::SelectionFlags,
+                               QItemSelectionModel__SelectionFlags)
+
 inline QDebug operator<<(QDebug stream, const RequestedData &data)
 {
     return stream.nospace() << "RequestedData[start=" << data.start << ", end=" << data.end << ", roles=" << data.roles << "]";

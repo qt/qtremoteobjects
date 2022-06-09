@@ -88,9 +88,9 @@ typedef QHash<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocat
 typedef QHash<int, QByteArray> QIntHash;
 
 QT_END_NAMESPACE
-Q_DECLARE_METATYPE(QRemoteObjectSourceLocation)
-Q_DECLARE_METATYPE(QRemoteObjectSourceLocations)
-Q_DECLARE_METATYPE(QIntHash)
+QT_DECL_METATYPE_EXTERN(QRemoteObjectSourceLocation, Q_REMOTEOBJECTS_EXPORT)
+QT_DECL_METATYPE_EXTERN(QRemoteObjectSourceLocations, Q_REMOTEOBJECTS_EXPORT)
+QT_DECL_METATYPE_EXTERN(QIntHash, /* not exported */)
 QT_BEGIN_NAMESPACE
 
 #define QCLASSINFO_REMOTEOBJECT_TYPE "RemoteObject Type"
