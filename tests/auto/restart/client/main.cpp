@@ -78,7 +78,7 @@ private Q_SLOTS:
         QVERIFY(reply.waitForFinished());
 
         QSignalSpy advanceSpy(m_rep.data(), SIGNAL(advance()));
-        QVERIFY(advanceSpy.wait());
+        QVERIFY(advanceSpy.wait(15000));
         if (objectMode == QLatin1String("ObjectPointer")) {
             QVERIFY(m_rep->subClass() != nullptr);
             QCOMPARE(m_rep->subClass()->myPOD(), initialValue);
