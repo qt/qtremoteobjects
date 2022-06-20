@@ -109,12 +109,12 @@ struct ModelInfo
     QByteArray roles;
 };
 
-class SourceApiMap
+class Q_REMOTEOBJECTS_EXPORT SourceApiMap
 {
 protected:
     SourceApiMap() {}
 public:
-    virtual ~SourceApiMap() {}
+    virtual ~SourceApiMap();
     virtual QString name() const = 0;
     virtual QString typeName() const = 0;
     virtual QByteArray className() const { return typeName().toLatin1().append("Source"); }
