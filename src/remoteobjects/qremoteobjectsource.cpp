@@ -152,6 +152,9 @@ inline bool qtro_is_cloned_method(const QMetaObject *mobj, int index)
     return false;
 }
 
+SourceApiMap::~SourceApiMap()
+    = default;
+
 QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const SourceApiMap *api,
                                                  QObject *adapter)
     : QObject(obj),
