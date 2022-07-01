@@ -442,7 +442,10 @@ public:
         return cacheData(toQModelIndex(index, q));
     }
     inline CacheData* createCacheData(const QtPrivate::IndexList &index) const {
-        auto modelIndex = toQModelIndex(index, q);
+        bool ok = false;
+        auto modelIndex = toQModelIndex(index, q, &ok);
+        if (!ok)
+            return nullptr;
         cacheData(modelIndex.parent())->ensureChildren(modelIndex.row() , modelIndex.row());
         return cacheData(modelIndex);
     }
