@@ -33,7 +33,7 @@ void ModelreplicaTest::basicFunctions()
 {
     QFETCH(bool, templated);
 
-    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5550"));
     auto model = new QStringListModel();
     model->setStringList(QStringList() << "Track1" << "Track2" << "Track3");
     MediaSimpleSource source;
@@ -49,7 +49,7 @@ void ModelreplicaTest::basicFunctions()
     source2.setTracks(model2);
     host.enableRemoting(&source2);
 
-    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    QRemoteObjectNode client(QUrl("tcp://localhost:5550"));
     const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
     QSignalSpy tracksSpy(replica->tracks(), &QAbstractItemModelReplica::initialized);
     QVERIFY(replica->waitForSource(300));
@@ -83,11 +83,11 @@ void ModelreplicaTest::basicFunctions()
 
 void ModelreplicaTest::nullModel()
 {
-    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5550"));
     MediaSimpleSource source;
     host.enableRemoting(&source);
 
-    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    QRemoteObjectNode client(QUrl("tcp://localhost:5550"));
     const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
     QVERIFY(replica->waitForSource(300));
 
@@ -110,7 +110,7 @@ void ModelreplicaTest::nestedSortFilterProxyModel()
 {
     QFETCH(bool, templated);
 
-    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5550"));
     auto model = new QStringListModel(this);
     model->setStringList(QStringList() << "CCC" << "AAA" << "BBB");
     auto proxyModel = new QSortFilterProxyModel(this);
@@ -123,7 +123,7 @@ void ModelreplicaTest::nestedSortFilterProxyModel()
     else
         host.enableRemoting(&source);
 
-    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    QRemoteObjectNode client(QUrl("tcp://localhost:5550"));
     const QScopedPointer<MediaReplica> replica(client.acquire<MediaReplica>());
     QSignalSpy tracksSpy(replica->tracks(), &QAbstractItemModelReplica::initialized);
     QVERIFY(replica->waitForSource(300));
@@ -160,7 +160,7 @@ void ModelreplicaTest::sortFilterProxyModel()
 {
     QFETCH(bool, prefetch);
 
-    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5555"));
+    QRemoteObjectRegistryHost host(QUrl("tcp://localhost:5550"));
     auto model = new QStringListModel(this);
     model->setStringList(QStringList() << "CCC" << "AAA" << "BBB");
     auto proxyModel = new QSortFilterProxyModel(this);
@@ -170,7 +170,7 @@ void ModelreplicaTest::sortFilterProxyModel()
     host.enableRemoting(proxyModel, "test", roles);
 
     auto fetchMode = prefetch ? QtRemoteObjects::PrefetchData : QtRemoteObjects::FetchRootSize;
-    QRemoteObjectNode client(QUrl("tcp://localhost:5555"));
+    QRemoteObjectNode client(QUrl("tcp://localhost:5550"));
     QScopedPointer<QAbstractItemModelReplica> replica(client.acquireModel("test", fetchMode));
     QSignalSpy initSpy(replica.get(), &QAbstractItemModelReplica::initialized);
     QVERIFY(initSpy.wait());
