@@ -29,23 +29,24 @@ void tst_Enums::testMarshalling()
         const Qt::DayOfWeek format6 = Qt::Saturday;
         const Qt::DayOfWeek format7 = Qt::Sunday;
 
-        ds << format1 << format2 << format3 << format4 << format5 << format6 << format7;
+        ds << int(format1) << int(format2) << int(format3) << int(format4)
+           << int(format5) << int(format6) << int(format7);
     }
 
     ds.device()->seek(0);
 
     {
-        Qt::DayOfWeek format1, format2, format3, format4, format5, format6, format7;
+        int format1, format2, format3, format4, format5, format6, format7;
 
         ds >> format1 >> format2 >> format3 >> format4 >> format5 >> format6 >> format7;
 
-        QCOMPARE(format1, Qt::Monday);
-        QCOMPARE(format2, Qt::Tuesday);
-        QCOMPARE(format3, Qt::Wednesday);
-        QCOMPARE(format4, Qt::Thursday);
-        QCOMPARE(format5, Qt::Friday);
-        QCOMPARE(format6, Qt::Saturday);
-        QCOMPARE(format7, Qt::Sunday);
+        QCOMPARE(format1, int(Qt::Monday));
+        QCOMPARE(format2, int(Qt::Tuesday));
+        QCOMPARE(format3, int(Qt::Wednesday));
+        QCOMPARE(format4, int(Qt::Thursday));
+        QCOMPARE(format5, int(Qt::Friday));
+        QCOMPARE(format6, int(Qt::Saturday));
+        QCOMPARE(format7, int(Qt::Sunday));
     }
 }
 
