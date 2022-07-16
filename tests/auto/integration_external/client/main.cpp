@@ -117,9 +117,9 @@ private Q_SLOTS:
             QCOMPARE(paramNames.at(2), QByteArrayLiteral("__repc_variable_1"));
         }
 
-        int enumVal = 0;
+        MyInterfaceReplica::Enum1 enumVal = {};
         mo->invokeMethod(rep.data(), "testEnumParamsInSlots",
-                                    QGenericArgument("MyInterfaceReplica::Enum1", &enumVal),
+                                    Q_ARG(MyInterfaceReplica::Enum1, enumVal),
                                     Q_ARG(bool, true), Q_ARG(int, 1234));
 
         int enumIdx = mo->indexOfProperty("enum1");
