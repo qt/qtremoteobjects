@@ -27,7 +27,7 @@ qt_internal_add_tool(${target_name}
         RO_INSTALL_HEADERS=\"$$[QT_INSTALL_HEADERS]/QtRemoteObjects\"
     INCLUDE_DIRECTORIES
         ${REPPARSER_DIR}
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::CorePrivate
 )
 qt_internal_return_unless_building_tools()
