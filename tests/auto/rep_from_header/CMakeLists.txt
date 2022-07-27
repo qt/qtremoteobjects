@@ -9,7 +9,7 @@
 qt_internal_add_test(tst_rep_from_header
     SOURCES
         tst_rep_from_header.cpp
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
 )
 qt6_reps_from_headers(tst_rep_from_header pods.h)

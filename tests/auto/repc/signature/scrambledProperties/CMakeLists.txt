@@ -12,7 +12,7 @@ qt_internal_add_executable(scrambledProperties
         ../mismatch.cpp
     INCLUDE_DIRECTORIES
         ..
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
         Qt::Test
 )

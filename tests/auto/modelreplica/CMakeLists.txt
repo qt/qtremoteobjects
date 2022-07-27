@@ -11,7 +11,7 @@ qt_internal_add_test(tst_modelreplicatest
         tst_modelreplicatest.cpp
     DEFINES
         SRCDIR=\\\"${CMAKE_CURRENT_SOURCE_DIR}/\\\"
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
 )
 qt6_add_repc_merged(tst_modelreplicatest

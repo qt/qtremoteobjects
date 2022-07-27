@@ -14,7 +14,7 @@ qt_internal_add_executable(sslTestServer
         sslserver.cpp sslserver.h
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
         Qt::Test
 )

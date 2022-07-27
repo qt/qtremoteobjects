@@ -12,7 +12,7 @@ qt_internal_add_test(tst_parser
         tst_parser.cpp
     INCLUDE_DIRECTORIES
         ${REPPARSER_DIR}
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::CorePrivate
 )
 

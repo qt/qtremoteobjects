@@ -13,7 +13,7 @@ qt_internal_add_executable(restart_server
         mytestserver.cpp mytestserver.h
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
         Qt::Test
 )

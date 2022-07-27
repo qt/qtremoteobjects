@@ -9,7 +9,7 @@
 qt_internal_add_executable(localsockettestserver
     SOURCES
         main.cpp
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
     OUTPUT_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}

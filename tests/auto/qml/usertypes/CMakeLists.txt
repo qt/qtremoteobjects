@@ -13,7 +13,7 @@ list(APPEND test_data ${test_data_glob})
 qt_internal_add_test(tst_usertypes
     SOURCES
         tst_usertypes.cpp
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::Gui
         Qt::Qml
         Qt::RemoteObjects

@@ -10,7 +10,7 @@ qt_internal_add_test(tst_external_IODevice
     OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
     SOURCES
         tst_client.cpp
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
 )
 

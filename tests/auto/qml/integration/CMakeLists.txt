@@ -17,7 +17,7 @@ qt_internal_add_test(tst_qmlintegration
     QMLTEST
     SOURCES
         tst_integration.cpp
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::Gui
     TESTDATA ${test_data}
 )

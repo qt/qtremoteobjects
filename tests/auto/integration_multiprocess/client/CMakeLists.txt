@@ -12,7 +12,7 @@ qt_internal_add_executable(integration_multiprocess_client
         main.cpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::RemoteObjects
         Qt::Test
 )

@@ -10,7 +10,7 @@ qt_internal_add_test(tst_modelview
     SOURCES
         tst_modelview.cpp
         ../shared/model_utilities.h
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::Gui
         Qt::RemoteObjects
 )
