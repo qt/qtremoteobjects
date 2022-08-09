@@ -78,6 +78,7 @@ void QAbstractItemModelSourceAdapter::registerTypes()
     qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
     qRegisterMetaType<QSize>();
     qRegisterMetaType<QIntHash>();
+    qRegisterMetaType<QList<int>>();
 }
 
 QItemSelectionModel* QAbstractItemModelSourceAdapter::selectionModel() const

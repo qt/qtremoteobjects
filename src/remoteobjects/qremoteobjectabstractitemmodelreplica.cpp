@@ -98,6 +98,7 @@ void QAbstractItemModelReplicaImplementation::registerMetatypes()
     qRegisterMetaType<QItemSelectionModel::SelectionFlags>();
     qRegisterMetaType<QSize>();
     qRegisterMetaType<QIntHash>();
+    qRegisterMetaType<QList<int>>();
 }
 
 void QAbstractItemModelReplicaImplementation::initializeModelConnections()
