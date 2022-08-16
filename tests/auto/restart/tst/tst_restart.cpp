@@ -86,8 +86,10 @@ private slots:
         env.insert("RunMode", QVariant::fromValue(runMode).toString());
         env.insert("ObjectMode", QVariant::fromValue(objectMode).toString());
         serverProc.setProcessEnvironment(env);
-        serverProc.start(TestUtils::findExecutable("restart_server", "/server"),
-                         QStringList());
+        QStringList arguments;
+        if (runMode == ServerRestartFatal)
+            arguments.append("-nocrashhandler");
+        serverProc.start(TestUtils::findExecutable("restart_server", "/server"), arguments);
         QVERIFY(serverProc.waitForStarted());
 
         // wait for server start
