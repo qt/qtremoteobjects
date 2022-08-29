@@ -305,7 +305,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             regexCandidates[nextChar] = QList<int>();
             for (const QRegularExpression &re : qAsConst(m_regexes))
             {
-                QRegularExpressionMatch match = re.match(tmp, 0, QRegularExpression::PartialPreferFirstMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
+                QRegularExpressionMatch match = re.matchView(tmp, 0, QRegularExpression::PartialPreferFirstMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
                 //qDebug() << nextChar << tmp << match.hasMatch() << match.hasPartialMatch() << re.pattern();
                 if (match.hasMatch() || match.hasPartialMatch())
                     regexCandidates[nextChar] << i;
@@ -318,7 +318,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             //Seems like I should be able to run the regex on the entire string, but performance is horrible
             //unless I use a substring.
             //QRegularExpressionMatch match = m_regexes[i].match(m_buffer, m_loc, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption);
-            QRegularExpressionMatch match = m_regexes.at(i).match(buffer.mid(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
+            QRegularExpressionMatch match = m_regexes.at(i).matchView(buffer.mid(m_loc, m_maxMatchLen), 0, QRegularExpression::NormalMatch, QRegularExpression::AnchorAtOffsetMatchOption | QRegularExpression::DontCheckSubjectStringMatchOption);
             if (match.hasMatch()) {
                 if (m_debug)
                     candidates << MatchCandidate(m_tokenNames[i], match.captured(), i);
