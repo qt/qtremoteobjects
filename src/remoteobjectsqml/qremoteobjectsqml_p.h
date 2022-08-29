@@ -46,7 +46,6 @@
 
 #include <QtCore/qtimer.h>
 #include <QtQml/QJSValue>
-#include <QtQml/private/qjsvalue_p.h>
 #include <QtQml/qqml.h>
 #include <QtQml/qqmlengine.h>
 #include <QtQml/qqmlinfo.h>
