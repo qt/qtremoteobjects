@@ -65,6 +65,7 @@ private Q_SLOTS:
     void watcherInQml();
     void hostInQml();
     void twoReplicas();
+    void remoteCompositeType();
 };
 
 tst_usertypes::tst_usertypes()
@@ -291,6 +292,17 @@ void tst_usertypes::twoReplicas()
 
     QTRY_COMPARE_WITH_TIMEOUT(obj->property("result").value<int>(), 7, 300);
     QTRY_COMPARE_WITH_TIMEOUT(obj->property("result2").value<int>(), 7, 500);
+}
+
+void tst_usertypes::remoteCompositeType()
+{
+    QQmlEngine e;
+    QQmlComponent c(&e, SRCDIR "data/composite.qml");
+    QScopedPointer<QObject> obj(c.create());
+    QVERIFY(obj);
+
+    QRemoteObjectRegistryHost host(QUrl("local:remoteCompositeType"));
+    host.enableRemoting(obj.data(), "composite");
 }
 
 QTEST_MAIN(tst_usertypes)
