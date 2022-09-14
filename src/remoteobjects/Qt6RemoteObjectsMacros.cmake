@@ -40,8 +40,12 @@ function(_qt_internal_add_repc_files type target)
     set(repc_incpath) ########### TODO
 
     _qt_internal_get_remote_objects_framework_path_moc_options(extra_moc_options)
-    _qt_internal_wrap_tool_command(repc_command SET
-        "$<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::repc>")
+    _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
+    set(repc_command
+        COMMAND
+            "${tool_wrapper}"
+            "$<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::repc>"
+    )
     foreach(it ${ARGS_SOURCES})
         get_filename_component(outfilename ${it} NAME_WE)
         get_filename_component(extension ${it} EXT)
@@ -105,8 +109,12 @@ endfunction()
 function(qt6_reps_from_headers target)
     list(POP_FRONT ARGV)
     _qt_internal_get_remote_objects_framework_path_moc_options(extra_moc_options)
-    _qt_internal_wrap_tool_command(repc_command SET
-        "$<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::repc>")
+    _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
+    set(repc_command
+        COMMAND
+            "${tool_wrapper}"
+            "$<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::repc>"
+    )
 
     foreach(it ${ARGV})
         get_filename_component(outfilename ${it} NAME_WE)
@@ -121,7 +129,6 @@ function(qt6_reps_from_headers target)
         list(APPEND outfiles ${qtro_moc_files})
         set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${outfilename}.rep)
         add_custom_command(OUTPUT ${outfile}
-                           ${QT_TOOL_PATH_SETUP_COMMAND}
                            ${repc_command} -o rep ${infile} ${outfile}
                            MAIN_DEPENDENCY ${infile}
                            DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::repc
