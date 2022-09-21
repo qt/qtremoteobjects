@@ -4,8 +4,9 @@
 /*!
     \example ssl
     \title QtRemoteObjects SSL Example
+    \brief Setting up a secure Remote Object network using QSslSockets.
+    \ingroup qtremoteobjects-examples
 
-    This example shows how you can set up a secure Remote Object network using
-    QSslSockets! Encrypting communication is critical when you need to pass data
+    Encrypting communication is critical when you need to pass data
     through a network you don't have full control over.
 */

@@ -4,11 +4,11 @@
 /*!
     \example qmlmodelviewclient
     \title QML Model-View Client
+    \brief Making a QAbstractItemModelReplica available to QML and using it from QML.
+    \ingroup qtremoteobjects-examples
 
-    This is an alternate client application you can use along with the
-    \l {Model-View Server}.
+    This is an alternate client application you can use along with the \l {Model-View Server}.
 
-    This short example showcases how to quickly make a QAbstractItemModelReplica
-    available to and use from QML. See the \l {Model-View Client} example for a
+    See the \l {Model-View Client} example for a
     more detailed explanation on how the model is acquired and used.
 */

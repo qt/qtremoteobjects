@@ -4,13 +4,11 @@
 /*!
     \example modelviewserver
     \title Model-View Server
+    \brief Developing a simple server program that displays and makes changes to a QTreeView
+           which is made available on a Remote Objects network.
+    \ingroup qtremoteobjects-examples
 
-    This is the server-side application that accompanies the
-    \l {Model-View Client}.
-
-    This example showcases how to make a simple server program that displays
-    and makes changes to a QTreeView which is made available on a Remote
-    Objects network.
+    This is the server-side application that accompanies the \l {Model-View Client}.
 
     \snippet modelviewserver/main.cpp RegistryHost setup
 

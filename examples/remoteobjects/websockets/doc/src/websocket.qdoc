@@ -4,8 +4,9 @@
 /*!
     \example websockets
     \title QtRemoteObjects WebSockets Example
+    \brief Using a non-QIODevice-based transport (QWebSocket) with QtRemoteObjects.
+    \ingroup qtremoteobjects-examples
 
-    This example shows how you could use a non-QIODevice-based transport
-    (QWebSocket) with QtRemoteObjects. This is achieved by implementing a
-    small QIODevice-derived wrapper for QWebSocket.
+    This is achieved by implementing a small QIODevice-derived wrapper for QWebSocket.
+
 */

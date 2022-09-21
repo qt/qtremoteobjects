@@ -4,12 +4,11 @@
 /*!
     \example modelviewclient
     \title Model-View Client
+    \brief Developing a very simple client program which displays the content and changes
+           made on a server.
+    \ingroup qtremoteobjects-examples
 
-    This is the client-side application that accompanies the
-    \l {Model-View Server}.
-
-    This example showcases how to make a very simple client program which
-    displays the content and changes made on a server.
+    This is the client-side application that accompanies the \l {Model-View Server}.
 
     \snippet modelviewclient/main.cpp ObjectNode creation
 

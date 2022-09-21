@@ -13,7 +13,7 @@ qhp.QtRemoteObjects.virtualFolder       = remoteobjects
 qhp.QtRemoteObjects.indexTitle          = Qt Remote Objects
 qhp.QtRemoteObjects.indexRoot           =
 
-qhp.QtRemoteObjects.subprojects         = overviews classes repc
+qhp.QtRemoteObjects.subprojects         = overviews classes repc examples
 qhp.QtRemoteObjects.subprojects.overviews.title = Getting Started
 qhp.QtRemoteObjects.subprojects.overviews.indexTitle = Getting Started with Qt Remote Objects
 qhp.QtRemoteObjects.subprojects.overviews.selectors = fake:page,group,module
@@ -21,6 +21,9 @@ qhp.QtRemoteObjects.subprojects.classes.title = C++ Classes
 qhp.QtRemoteObjects.subprojects.classes.indexTitle = Qt Remote Objects C++ Classes
 qhp.QtRemoteObjects.subprojects.classes.selectors = class fake:headerfile
 qhp.QtRemoteObjects.subprojects.classes.sortPages = true
+qhp.QtRemoteObjects.subprojects.examples.title = Qt Remote Objects Examples
+qhp.QtRemoteObjects.subprojects.examples.indexTitle = Qt Remote Objects Examples
+qhp.QtRemoteObjects.subprojects.examples.selectors = fake:example
 
 depends += qtcore \
            qtnetwork \

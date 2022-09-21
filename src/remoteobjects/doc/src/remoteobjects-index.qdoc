@@ -110,6 +110,7 @@ See also the \l {Build with CMake} overview.
     \li \l {Remote Object Interaction}
     \li \l {Troubleshooting Qt Remote Objects}{Troubleshooting}
     \li \l {Qt Remote Objects Protocol Versioning}{Protocol Versioning}
+    \li \l {Qt Remote Objects Examples}{Examples}
  \endlist
 
 \section2 API Reference

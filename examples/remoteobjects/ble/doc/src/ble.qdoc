@@ -4,10 +4,11 @@
 /*!
     \example ble
     \title QtRemoteObjects Bluetooth LE Example
+    \brief Using QtBluetooth Low Energy (BT LE or BLE for short) as a transport medium with
+           Qt Remote Objects.
+    \ingroup qtremoteobjects-examples
 
-    This example shows how you could use QtBluetooth Low Energy (BT LE or BLE for
-    short) as a transport medium with Qt Remote Objects. This is achieved by wrapping the
-    bluetooth low energy transport logic in a \l QIODevice.
+    This is achieved by wrapping the bluetooth low energy transport logic in a \l QIODevice.
 
     The example consists of a client and server application which communicate over the bluetooth
     low energy radio.
