@@ -77,7 +77,7 @@ void ModelreplicaTest::basicFunctions()
     QSignalSpy otherTracksSpy(otherReplica->tracks(), &QAbstractItemModelReplica::initialized);
     QVERIFY(otherReplica->waitForSource(300));
     QVERIFY(otherTracksSpy.wait());
-    QCOMPARE(otherReplica->tracks()->availableRoles().count(), 2);
+    QCOMPARE(otherReplica->tracks()->availableRoles().size(), 2);
 
 }
 

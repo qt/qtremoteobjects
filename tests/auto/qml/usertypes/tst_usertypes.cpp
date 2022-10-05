@@ -252,7 +252,7 @@ void tst_usertypes::hostInQml()
 
     QSignalSpy spy(replica, &SimpleClockReplica::timeUpdated);
     spy.wait();
-    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.size(), 1);
 }
 
 void tst_usertypes::twoReplicas()

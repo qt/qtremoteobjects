@@ -19,7 +19,7 @@ private Q_SLOTS:
         QSharedPointer<TestClassReplica> rep{repNode.acquire<TestClassReplica>()};
         QSignalSpy stateChangedSpy(rep.data(), &QRemoteObjectReplica::stateChanged);
         QTRY_COMPARE(rep->state(), QRemoteObjectReplica::SignatureMismatch);
-        QCOMPARE(stateChangedSpy.count(), 1);
+        QCOMPARE(stateChangedSpy.size(), 1);
         auto args = stateChangedSpy.takeFirst();
         QCOMPARE(args.count(), 2);
         QCOMPARE(args.at(0).toInt(), int(QRemoteObjectReplica::SignatureMismatch));
@@ -33,7 +33,7 @@ private Q_SLOTS:
         QSharedPointer<QRemoteObjectDynamicReplica> rep{repNode.acquireDynamic("TestClass")};
         QSignalSpy stateChangedSpy(rep.data(), &QRemoteObjectReplica::stateChanged);
         QTRY_COMPARE(rep->state(), QRemoteObjectReplica::Valid);
-        QCOMPARE(stateChangedSpy.count(), 1);
+        QCOMPARE(stateChangedSpy.size(), 1);
         auto args = stateChangedSpy.takeFirst();
         QCOMPARE(args.count(), 2);
         QCOMPARE(args.at(0).toInt(), int(QRemoteObjectReplica::Valid));

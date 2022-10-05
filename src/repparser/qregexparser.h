@@ -186,7 +186,7 @@ QRegexParser<_Parser, _Table>::QRegexParser(int maxMatchLen) : d(new Data()), m_
         QRegularExpressionMatch match = re.match(text, 0, QRegularExpression::NormalMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
         if (match.hasMatch()) {
             const QString token = match.captured(1);
-            const bool multiline = match.captured(2).length() > 0;
+            const bool multiline = match.captured(2).size() > 0;
             const QString pattern = match.captured(3);
             m_tokenNames.append(token);
             int index = i;

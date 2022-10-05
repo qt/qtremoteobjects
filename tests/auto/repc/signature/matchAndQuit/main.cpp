@@ -24,7 +24,7 @@ private Q_SLOTS:
         QVERIFY(rep->quit().waitForFinished());
         QTRY_COMPARE(rep->state(), QRemoteObjectReplica::Suspect);
 
-        QCOMPARE(stateChangedSpy.count(), 2);
+        QCOMPARE(stateChangedSpy.size(), 2);
 
         // Test Default to Valid transition
         auto args = stateChangedSpy.takeFirst();

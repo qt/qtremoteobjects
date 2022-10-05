@@ -44,7 +44,7 @@ private Q_SLOTS:
             QVERIFY(m_rep->subClass() != nullptr);
             QCOMPARE(m_rep->subClass()->myPOD(), initialValue);
             QVERIFY(m_rep->tracks() != nullptr);
-            QVERIFY(tracksSpy.count() || tracksSpy.wait());
+            QVERIFY(tracksSpy.size() || tracksSpy.wait());
         } else {
             QVERIFY(m_rep->subClass() == nullptr);
             QVERIFY(m_rep->tracks() == nullptr);

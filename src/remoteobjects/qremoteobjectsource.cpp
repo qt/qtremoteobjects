@@ -170,7 +170,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
 
     setConnections();
 
-    const auto nChildren = api->m_models.count() + api->m_subclasses.count();
+    const auto nChildren = api->m_models.size() + api->m_subclasses.size();
     if (nChildren > 0) {
         QList<int> roles;
         const int numProperties = api->propertyCount();
@@ -315,7 +315,7 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
     if (newObject)
         setConnections();
 
-    const auto nChildren = m_api->m_models.count() + m_api->m_subclasses.count();
+    const auto nChildren = m_api->m_models.size() + m_api->m_subclasses.size();
     if (nChildren == 0)
         return;
 
@@ -466,7 +466,7 @@ void QRemoteObjectSourceBase::handleMetaCall(int index, QMetaObject::Call call, 
         propertyIndex = internalIndex;
     }
 
-    qCDebug(QT_REMOTEOBJECT) << "# Listeners" << d->m_listeners.length();
+    qCDebug(QT_REMOTEOBJECT) << "# Listeners" << d->m_listeners.size();
     qCDebug(QT_REMOTEOBJECT) << "Invoke args:" << m_object
                              << (call == 0 ? QLatin1String("InvokeMetaMethod") : QStringLiteral("Non-invoked call: %d").arg(call))
                              << m_api->signalSignature(index) << *marshalArgs(index, a);
@@ -499,7 +499,7 @@ int QRemoteObjectRootSource::removeListener(QtROIoDeviceBase *io, bool shouldSen
         d->codec->serializeRemoveObjectPacket(m_api->name());
         d->codec->send(io);
     }
-    return int(d->m_listeners.length());
+    return int(d->m_listeners.size());
 }
 
 int QRemoteObjectSourceBase::qt_metacall(QMetaObject::Call call, int methodId, void **a)
