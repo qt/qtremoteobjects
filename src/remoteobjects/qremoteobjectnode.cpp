@@ -1422,7 +1422,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             // We need to make sure all of the source objects are in connectedSources before we add connections,
             // otherwise nested QObjects could fail (we want to acquire children before parents, and the object
             // list is unordered)
-            for (const auto &remoteObject : qAsConst(rxObjects)) {
+            for (const auto &remoteObject : std::as_const(rxObjects)) {
                 qROPrivDebug() << "  connectedSources.contains(" << remoteObject << ")" << connectedSources.contains(remoteObject.name) << replicas.contains(remoteObject.name);
                 if (!connectedSources.contains(remoteObject.name)) {
                     connectedSources[remoteObject.name] = SourceInfo{connection, remoteObject.typeName, remoteObject.signature};
@@ -1432,7 +1432,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                         handleReplicaConnection(remoteObject.name);
                 }
             }
-            for (const auto &remoteObject : qAsConst(rxObjects)) {
+            for (const auto &remoteObject : std::as_const(rxObjects)) {
                 if (replicas.contains(remoteObject.name)) //We have a replica waiting on this remoteObject
                     handleReplicaConnection(remoteObject.name);
             }

@@ -303,7 +303,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
             const QStringView tmp = buffer.mid(m_loc,1);
             int i = 0;
             regexCandidates[nextChar] = QList<int>();
-            for (const QRegularExpression &re : qAsConst(m_regexes))
+            for (const QRegularExpression &re : std::as_const(m_regexes))
             {
                 QRegularExpressionMatch match = re.matchView(tmp, 0, QRegularExpression::PartialPreferFirstMatch, QRegularExpression::DontCheckSubjectStringMatchOption);
                 //qDebug() << nextChar << tmp << match.hasMatch() << match.hasPartialMatch() << re.pattern();
@@ -340,7 +340,7 @@ int QRegexParser<_Parser, _Table>::nextToken()
                 m_captured.insert(iter.value(), bestRegex.captured(iter.key()));
             if (m_debug) {
                 qDebug() << "Match candidates:";
-                for (const MatchCandidate &m : qAsConst(candidates)) {
+                for (const MatchCandidate &m : std::as_const(candidates)) {
                     QLatin1String result = m.index == best ? QLatin1String(" * ") : QLatin1String("   ");
                     qDebug() << qPrintable(result) << qPrintable(m.name) << qPrintable(escapeString(m.matchText));
                 }
