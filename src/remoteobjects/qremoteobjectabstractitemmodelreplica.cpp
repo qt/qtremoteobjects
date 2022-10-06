@@ -557,7 +557,7 @@ void QAbstractItemModelReplicaImplementation::fetchPendingData()
 
     std::vector<RequestedData> finalRequests;
     RequestedData curData;
-    for (const RequestedData &data : qExchange(m_requestedData, {})) {
+    for (const RequestedData &data : std::exchange(m_requestedData, {})) {
         qCDebug(QT_REMOTEOBJECT_MODELS) << Q_FUNC_INFO << "REQUESTED start=" << data.start << "end=" << data.end << "roles=" << data.roles;
 
         Q_ASSERT(!data.start.isEmpty());

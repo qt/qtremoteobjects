@@ -355,7 +355,7 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
     // removeListener tries to modify d->m_listeners, this is O(N²),
     // so clear d->m_listeners prior to calling unregister (consume loop).
     // We can do this, because we don't care about the return value of removeListener() here.
-    for (QtROIoDeviceBase *io : qExchange(d->m_listeners, {})) {
+    for (QtROIoDeviceBase *io : std::exchange(d->m_listeners, {})) {
         removeListener(io, true);
     }
     delete d;
