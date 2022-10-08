@@ -186,7 +186,7 @@ inline QModelIndex toQModelIndex(const IndexList &list, const QAbstractItemModel
     if (ok)
         *ok = true;
     QModelIndex result;
-    for (int i = 0; i < list.count(); ++i) {
+    for (int i = 0; i < list.size(); ++i) {
         const ModelIndex &index = list[i];
         if (ensureItem)
             const_cast<QAbstractItemModel *>(model)->setData(result, index.row, Qt::UserRole - 1);
