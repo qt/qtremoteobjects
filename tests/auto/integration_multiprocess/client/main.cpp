@@ -38,7 +38,7 @@ private Q_SLOTS:
         QSignalSpy spy(m_rep.data(), &MyInterfaceReplica::enum1Changed);
         QVERIFY(advanceSpy.wait());
 
-        QCOMPARE(spy.count(), 2);
+        QCOMPARE(spy.size(), 2);
         // END: Testing
 
         reply = m_rep->stop();
@@ -147,7 +147,7 @@ private Q_SLOTS:
         QSignalSpy spy(rep.data(), &MyInterfaceReplica::testExtPODListSignal);
         connect(rep.data(), &MyInterfaceReplica::testExtPODListSignal,
                 [list](const QList<ExtPOD> &l) { QCOMPARE(l, list); });
-        QTRY_COMPARE(spy.count(), 1);
+        QTRY_COMPARE(spy.size(), 1);
     }
 
     void testPod()

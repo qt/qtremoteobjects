@@ -32,7 +32,7 @@ QDataStream &operator<<(QDataStream &ds, const QtROSequentialContainer &p)
 {
     ds << p.m_valueTypeName;
     auto pos = ds.device()->pos();
-    quint32 count = p.count();
+    quint32 count = p.size();
     ds << count;
     for (quint32 i = 0; i < count; i++) {
         if (!p.m_valueType.save(ds, p.at(i).data())) {
@@ -105,7 +105,7 @@ QDataStream &operator<<(QDataStream &ds, const QtROAssociativeContainer &p)
     ds << p.m_keyTypeName;
     ds << p.m_valueTypeName;
     auto pos = ds.device()->pos();
-    quint32 count = p.count();
+    quint32 count = p.size();
     ds << count;
     QAssociativeIterable map(&p);
     QAssociativeIterable::const_iterator iter = map.begin();

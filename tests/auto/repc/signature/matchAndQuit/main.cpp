@@ -24,17 +24,17 @@ private Q_SLOTS:
         QVERIFY(rep->quit().waitForFinished());
         QTRY_COMPARE(rep->state(), QRemoteObjectReplica::Suspect);
 
-        QCOMPARE(stateChangedSpy.count(), 2);
+        QCOMPARE(stateChangedSpy.size(), 2);
 
         // Test Default to Valid transition
         auto args = stateChangedSpy.takeFirst();
-        QCOMPARE(args.count(), 2);
+        QCOMPARE(args.size(), 2);
         QCOMPARE(args.at(0).toInt(), int(QRemoteObjectReplica::Valid));
         QCOMPARE(args.at(1).toInt(), int(QRemoteObjectReplica::Default));
 
         // Test Valid to Suspect transition
         args = stateChangedSpy.takeFirst();
-        QCOMPARE(args.count(), 2);
+        QCOMPARE(args.size(), 2);
         QCOMPARE(args.at(0).toInt(), int(QRemoteObjectReplica::Suspect));
         QCOMPARE(args.at(1).toInt(), int(QRemoteObjectReplica::Valid));
     }

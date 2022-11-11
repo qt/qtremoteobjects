@@ -869,7 +869,7 @@ static int registerGadgets(QtROIoDeviceBase *connection, Gadgets &gadgets, QByte
         dynamicProperty.setReadable(true);
     }
     QList<TypeInfo *> enumsToBeAssignedMetaObject;
-    enumsToBeAssignedMetaObject.reserve(gadget.enums.length());
+    enumsToBeAssignedMetaObject.reserve(gadget.enums.size());
     for (const auto &enumData: gadget.enums) {
         auto enumBuilder = gadgetBuilder.addEnumerator(enumData.name);
         enumBuilder.setIsFlag(enumData.isFlag);

@@ -231,7 +231,7 @@ class RolenamesListModel : public QAbstractListModel
 {
 public:
     explicit RolenamesListModel(QObject *parent = nullptr) : QAbstractListModel(parent) { }
-    int rowCount(const QModelIndex &) const override { return int(m_list.length()); }
+    int rowCount(const QModelIndex &) const override { return int(m_list.size()); }
     QVariant data(const QModelIndex &index, int role) const override
     {
        if (role == Qt::UserRole)

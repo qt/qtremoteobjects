@@ -79,7 +79,7 @@ static QString fullyQualifiedName(const ASTClass& classContext, const QString &c
     for (const QRegularExpressionMatch &match : re.globalMatch(typeName)) {
         if (isClassEnum(classContext, match.captured(1))) {
             copy.insert(match.capturedStart(1) + offset, className + QStringLiteral("::"));
-            offset += className.length() + 2;
+            offset += className.size() + 2;
         }
     }
     return copy;
@@ -241,7 +241,7 @@ void RepCodeGenerator::generateHeader(Mode mode)
     bool hasModel = false;
     for (auto c : m_ast.classes)
     {
-        if (c.modelMetadata.count() > 0)
+        if (c.modelMetadata.size() > 0)
         {
             hasModel = true;
             break;
@@ -583,7 +583,7 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
                  << "\")" << Qt::endl;
         m_stream << "    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_SIGNATURE, \""
                  << QLatin1String(classSignature(astClass)) << "\")" << Qt::endl;
-        for (int i = 0; i < astClass.modelMetadata.count(); i++) {
+        for (int i = 0; i < astClass.modelMetadata.size(); i++) {
             const auto model = astClass.modelMetadata.at(i);
             const auto modelName = astClass.properties.at(model.propertyIndex).name;
             if (!model.roles.isEmpty()) {
@@ -656,7 +656,7 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
             m_stream << "    void setNode(QRemoteObjectNode *node) override" << Qt::endl;
             m_stream << "    {" << Qt::endl;
             m_stream << "        QRemoteObjectReplica::setNode(node);" << Qt::endl;
-            for (int index = 0; index < astClass.properties.count(); ++index) {
+            for (int index = 0; index < astClass.properties.size(); ++index) {
                 const ASTProperty &property = astClass.properties.at(index);
                 if (!property.isPointer)
                     continue;
@@ -685,7 +685,7 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
         m_stream << "        : QRemoteObjectReplica(ConstructWithNode)" << Qt::endl;
         m_stream << "    {" << Qt::endl;
         m_stream << "        initializeNode(node, name);" << Qt::endl;
-        for (int index = 0; index < astClass.properties.count(); ++index) {
+        for (int index = 0; index < astClass.properties.size(); ++index) {
             const ASTProperty &property = astClass.properties.at(index);
             if (!property.isPointer)
                 continue;
@@ -747,7 +747,7 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
         m_stream << "    }" << Qt::endl;
     } else {
         QList<int> constIndices;
-        for (int index = 0; index < astClass.properties.count(); ++index) {
+        for (int index = 0; index < astClass.properties.size(); ++index) {
             const ASTProperty &property = astClass.properties.at(index);
             if (property.modifier == ASTProperty::Constant)
                 constIndices.append(index);
@@ -1030,8 +1030,8 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
     if (!astClass.hasPointerObjects())
         m_stream << QStringLiteral("        Q_UNUSED(object)") << Qt::endl;
 
-    const auto enumCount = astClass.enums.count();
-    const auto totalCount = enumCount + astClass.flags.count();
+    const auto enumCount = astClass.enums.size();
+    const auto totalCount = enumCount + astClass.flags.size();
     for (int i : astClass.subClassPropertyIndices) {
         const ASTProperty &child = astClass.properties.at(i);
         m_stream << QString::fromLatin1("        using %1_type_t = typename std::remove_pointer<"
@@ -1051,7 +1051,7 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
                                         "indexOfEnumerator(\"%2\");")
                                         .arg(i+1).arg(flag.name) << Qt::endl;
     }
-    const auto propCount = astClass.properties.count();
+    const auto propCount = astClass.properties.size();
     m_stream << QString::fromLatin1("        m_properties[0] = %1;").arg(propCount) << Qt::endl;
     QList<ASTProperty> onChangeProperties;
     QList<qsizetype> propertyChangeIndex;
@@ -1080,7 +1080,7 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
             propertyChangeIndex << i + 1; //m_properties[0] is the count, so index is one higher
         }
     }
-    const auto signalCount = astClass.signalsList.count();
+    const auto signalCount = astClass.signalsList.size();
     const auto changedCount = onChangeProperties.size();
     m_stream << QString::fromLatin1("        m_signals[0] = %1;")
                                     .arg(signalCount+onChangeProperties.size()) << Qt::endl;
@@ -1111,13 +1111,13 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
                                              QString::number(changedCount+i))
                  << Qt::endl;
     }
-    const auto slotCount = astClass.slotsList.count();
+    const auto slotCount = astClass.slotsList.size();
     QList<ASTProperty> pushProps;
     for (const ASTProperty &property : astClass.properties) {
         if (property.modifier == ASTProperty::ReadPush)
             pushProps << property;
     }
-    const auto pushCount = pushProps.count();
+    const auto pushCount = pushProps.size();
     const auto methodCount = slotCount + pushCount;
     m_stream << QString::fromLatin1("        m_methods[0] = %1;").arg(methodCount) << Qt::endl;
     const QString objType = QStringLiteral("typename ObjectType::");
@@ -1337,7 +1337,7 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
             const auto paramsAsList = paramsAsString.split(QLatin1String(","));
             int enumCount = 0;
             QString enumString;
-            for (int j = 0; j < paramsAsList.count(); j++) {
+            for (int j = 0; j < paramsAsList.size(); j++) {
                 auto const p = paramsAsList.at(j);
                 if (isClassEnum(astClass, p)) {
                     paramsAsString.replace(paramsAsString.indexOf(p), p.size(),
@@ -1402,7 +1402,7 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
             const auto paramsAsList = paramsAsString.split(QLatin1String(","));
             int enumCount = 0;
             QString enumString;
-            for (int j = 0; j < paramsAsList.count(); j++) {
+            for (int j = 0; j < paramsAsList.size(); j++) {
                 auto const p = paramsAsList.at(j);
                 if (isClassEnum(astClass, p)) {
                     paramsAsString.replace(paramsAsString.indexOf(p), p.size(),

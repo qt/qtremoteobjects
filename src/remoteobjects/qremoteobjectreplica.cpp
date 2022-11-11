@@ -455,7 +455,7 @@ const QVariant QConnectedReplicaImplementation::getProperty(int i) const
 void QConnectedReplicaImplementation::setProperties(QVariantList &&properties)
 {
     Q_ASSERT(m_propertyStorage.isEmpty());
-    m_propertyStorage.reserve(properties.length());
+    m_propertyStorage.reserve(properties.size());
     m_propertyStorage = std::move(properties);
 }
 
@@ -566,7 +566,7 @@ void QConnectedReplicaImplementation::configurePrivate(QRemoteObjectReplica *rep
         // we are initializing an nth replica of the same type
         if (!firstReplicaInstance) {
             const int offset = m_propertyOffset;
-            const int nParam = int(m_propertyStorage.count());
+            const int nParam = int(m_propertyStorage.size());
             void *args[] = {nullptr, nullptr};
             for (int i = 0; i < nParam; ++i) {
                 const int notifyIndex = m_metaObject->property(i+offset).notifySignalIndex();
@@ -911,7 +911,7 @@ const QVariant QStubReplicaImplementation::getProperty(int i) const
 void QStubReplicaImplementation::setProperties(QVariantList &&properties)
 {
     Q_ASSERT(m_propertyStorage.isEmpty());
-    m_propertyStorage.reserve(properties.length());
+    m_propertyStorage.reserve(properties.size());
     m_propertyStorage = std::move(properties);
 }
 

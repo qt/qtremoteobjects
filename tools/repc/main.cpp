@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 
     const QStringList files = parser.positionalArguments();
 
-    if (files.count() > 2) {
+    if (files.size() > 2) {
         fprintf(stderr, "%s", qPrintable(QLatin1String(PROGRAM_NAME ": Too many input, output files specified: '") + files.join(QStringLiteral("' '")) + QStringLiteral("\'.\n")));
         parser.showHelp(1);
     }
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
         }
     }
 
-    switch (files.count()) {
+    switch (files.size()) {
     case 2:
         outputFile = files.last();
         if (!(mode & (OutRep | OutSource | OutReplica))) {

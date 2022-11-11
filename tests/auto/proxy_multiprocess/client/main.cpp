@@ -44,7 +44,7 @@ private Q_SLOTS:
             QCOMPARE(m_rep->subClass()->myPOD(), initialValue);
             QCOMPARE(m_rep->subClass()->i(), initialI);
             QVERIFY(m_rep->tracks() != nullptr);
-            QVERIFY(tracksSpy.count() || tracksSpy.wait());
+            QVERIFY(tracksSpy.size() || tracksSpy.wait());
             QCOMPARE(m_rep->myEnum(), ParentClassReplica::bar);
             QCOMPARE(m_rep->date(), Qt::RFC2822Date);
             QCOMPARE(m_rep->nsEnum(), NS::Bravo);
@@ -79,12 +79,12 @@ private Q_SLOTS:
         QVERIFY(reply.error() == QRemoteObjectPendingCall::NoError);
         QCOMPARE(reply.returnValue(), QVariant::fromValue(true));
         QVERIFY(enumSpy.wait());
-        QCOMPARE(enumSpy.count(), 1);
+        QCOMPARE(enumSpy.size(), 1);
         const auto arguments = enumSpy.takeFirst();
         QCOMPARE(arguments.at(0), QVariant::fromValue(ParentClassReplica::foo));
         QCOMPARE(arguments.at(1), QVariant::fromValue(ParentClassReplica::bar));
 
-        QVERIFY(advanceSpy.count() || advanceSpy.wait());
+        QVERIFY(advanceSpy.size() || advanceSpy.wait());
         QVERIFY(m_rep->subClass() != nullptr);
         QCOMPARE(m_rep->subClass()->myPOD(), updatedValue);
         QCOMPARE(m_rep->subClass()->i(), updatedI);

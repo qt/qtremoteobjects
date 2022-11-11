@@ -49,7 +49,7 @@ private Q_SLOTS:
         QSignalSpy spy(m_rep.data(), &MyInterfaceReplica::enum1Changed);
         QVERIFY(advanceSpy.wait());
 
-        QCOMPARE(spy.count(), 2);
+        QCOMPARE(spy.size(), 2);
         // END: Testing
 
         reply = m_rep->stop();
@@ -152,10 +152,10 @@ private Q_SLOTS:
         QSignalSpy stateSpy(m_rep.data(), &MyInterfaceReplica::stateChanged);
         QVERIFY(reply.waitForFinished());
 
-        QTRY_COMPARE(stateSpy.count(), 1);
+        QTRY_COMPARE(stateSpy.size(), 1);
         QCOMPARE(m_rep->state(), QRemoteObjectReplica::Suspect);
 
-        QTRY_COMPARE(stateSpy.count(), 2);
+        QTRY_COMPARE(stateSpy.size(), 2);
         QCOMPARE(m_rep->state(), QRemoteObjectReplica::Valid);
         // Make sure we updated to the correct enum1 value
         QCOMPARE(m_rep->enum1(), MyInterfaceReplica::First);

@@ -123,12 +123,12 @@ void ProxyTest::testProxy()
         QSignalSpy replicaSpy(rep, &EngineReplica::rpmChanged);
         rep->pushRpm(42);
         sourceSpy.wait();
-        QCOMPARE(sourceSpy.count(), 1);
+        QCOMPARE(sourceSpy.size(), 1);
         QCOMPARE(engine.rpm(), 42);
 
         // ... and the change makes it back to the replica
         replicaSpy.wait();
-        QCOMPARE(replicaSpy.count(), 1);
+        QCOMPARE(replicaSpy.size(), 1);
         QCOMPARE(rep->rpm(), 42);
     } else {
         replica.reset(client.acquireDynamic(QStringLiteral("Engine")));
@@ -156,12 +156,12 @@ void ProxyTest::testProxy()
         QVERIFY(pushMethod.invoke(replica.data(), Q_ARG(int, 42)));
 
         sourceSpy.wait();
-        QCOMPARE(sourceSpy.count(), 1);
+        QCOMPARE(sourceSpy.size(), 1);
         QCOMPARE(engine.rpm(), 42);
 
         // ... and the change makes it back to the replica
         replicaSpy.wait();
-        QCOMPARE(replicaSpy.count(), 1);
+        QCOMPARE(replicaSpy.size(), 1);
         QCOMPARE(rpmMeta.read(replica.data()).value<int>(), engine.rpm());
     }
 
@@ -170,7 +170,7 @@ void ProxyTest::testProxy()
     Q_ASSERT(res);
     QSignalSpy stateSpy(replica.data(), &QRemoteObjectReplica::stateChanged);
     stateSpy.wait();
-    QCOMPARE(stateSpy.count(), 1);
+    QCOMPARE(stateSpy.size(), 1);
     QCOMPARE(replica->state(), QRemoteObjectReplica::Suspect);
 
     // Now test subclass Source
@@ -198,7 +198,7 @@ void ProxyTest::testProxy()
         QVERIFY(rep->subClass() != nullptr);
         QCOMPARE(rep->subClass()->myPOD(), parent.subClass()->myPOD());
         QVERIFY(rep->tracks() != nullptr);
-        QVERIFY(tracksSpy.count() || tracksSpy.wait());
+        QVERIFY(tracksSpy.size() || tracksSpy.wait());
         // Rep file only uses display role, but proxy doesn't forward that yet
         if (!useProxy)
             QCOMPARE(rep->tracks()->availableRoles(), QList<int> { Qt::DisplayRole });
@@ -240,7 +240,7 @@ void ProxyTest::testProxy()
         QSignalSpy replicaSpy(rep, &ParentClassReplica::subClassChanged);
         parent.setSubClass(&updatedSubclass);
         replicaSpy.wait();
-        QCOMPARE(replicaSpy.count(), 1);
+        QCOMPARE(replicaSpy.size(), 1);
         QCOMPARE(rep->subClass()->myPOD(), parent.subClass()->myPOD());
         QCOMPARE(rep->subClass()->myPOD(), updatedValue);
     } else {
@@ -316,7 +316,7 @@ void ProxyTest::testProxy()
         QSignalSpy replicaSpy(replica.data(), QByteArray(QByteArrayLiteral("2")+subclassMeta.notifySignal().methodSignature().constData()));
         parent.setSubClass(&updatedSubclass);
         replicaSpy.wait();
-        QCOMPARE(replicaSpy.count(), 1);
+        QCOMPARE(replicaSpy.size(), 1);
         subclassQObjectPtr = subclassMeta.read(replica.data()).value<QObject *>();
         QVERIFY(subclassQObjectPtr != nullptr);
         subclassReplica = qobject_cast<QRemoteObjectDynamicReplica *>(subclassQObjectPtr);
