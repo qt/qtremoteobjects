@@ -817,13 +817,13 @@ void RepParser::TypeParser::generateFunctionParameter(QString variableName, cons
 
 void RepParser::TypeParser::appendParams(ASTFunction &slot)
 {
-    for (const ASTDeclaration &arg : qAsConst(arguments))
+    for (const ASTDeclaration &arg : std::as_const(arguments))
         slot.params << arg;
 }
 
 void RepParser::TypeParser::appendPods(POD &pods)
 {
-    for (const ASTDeclaration &arg : qAsConst(arguments)) {
+    for (const ASTDeclaration &arg : std::as_const(arguments)) {
         PODAttribute attr;
         attr.type = arg.type;
         attr.name = arg.name;

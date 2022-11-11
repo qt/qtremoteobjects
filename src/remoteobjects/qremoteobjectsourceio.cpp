@@ -124,7 +124,7 @@ void QRemoteObjectSourceIo::onServerDisconnect(QObject *conn)
 
     qRODebug(this) << "OnServerDisconnect";
 
-    for (QRemoteObjectRootSource *root : qAsConst(m_sourceRoots))
+    for (QRemoteObjectRootSource *root : std::as_const(m_sourceRoots))
         root->removeListener(connection);
 
     const QUrl location = m_registryMapping.value(connection);
@@ -277,7 +277,7 @@ void QRemoteObjectSourceIo::newConnection(QtROIoDeviceBase *conn)
 
     QRemoteObjectPackets::ObjectInfoList infos;
     infos.reserve(m_sourceRoots.size());
-    for (auto remoteObject : qAsConst(m_sourceRoots)) {
+    for (auto remoteObject : std::as_const(m_sourceRoots)) {
         infos << QRemoteObjectPackets::ObjectInfo{remoteObject->m_api->name(), remoteObject->m_api->typeName(), remoteObject->m_api->objectSignature()};
     }
     m_codec->serializeObjectListPacket(infos);

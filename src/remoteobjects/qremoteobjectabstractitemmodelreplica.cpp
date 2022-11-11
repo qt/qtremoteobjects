@@ -657,7 +657,7 @@ void QAbstractItemModelReplicaImplementation::fetchPendingHeaderData()
     QList<int> roles;
     QList<int> sections;
     QList<Qt::Orientation> orientations;
-    for (const RequestedHeaderData &data : qAsConst(m_requestedHeaderData)) {
+    for (const RequestedHeaderData &data : std::as_const(m_requestedHeaderData)) {
         roles.push_back(data.role);
         sections.push_back(data.section);
         orientations.push_back(data.orientation);
@@ -673,7 +673,7 @@ void QAbstractItemModelReplicaImplementation::onLayoutChanged(const QtPrivate::I
                                                               QAbstractItemModel::LayoutChangeHint hint)
 {
     QList<QPersistentModelIndex> indexes;
-    for (const QtPrivate::ModelIndex &parent : qAsConst(parents)) {
+    for (const QtPrivate::ModelIndex &parent : std::as_const(parents)) {
         const QModelIndex parentIndex = toQModelIndex(QtPrivate::IndexList{parent}, q);
         indexes << QPersistentModelIndex(parentIndex);
     }
