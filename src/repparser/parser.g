@@ -32,6 +32,8 @@
 %token newline "[newline](\\r)?\\n"
 %token tstart "[tstart]<"
 %token tstop "[tstop]>[ \\t]*"
+-- Define associativity for newline to resolve ambiguity when there are multiple
+%right newline
 
 %start TopLevel
 
@@ -839,21 +841,19 @@ bool RepParser::consumeRule(int ruleno)
     switch (ruleno) {
 ./
 
-TopLevel: Types | Newlines Types | FileComments Types | Newlines FileComments Types;
+TopLevel: Types | Newlines Types;
 
-FileComments: Comments;
+Types: Type | Types Type;
 
-Types: Type | Type Types;
-
-Newlines: newline | newline Newlines;
-Comments: Comment | Comment Comments;
+Newlines: newline | Newlines newline;
+Comments: Comment | Comments Comment;
 Comment: comment | comment Newlines | mcomment | mcomment Newlines;
 Type: PreprocessorDirective | PreprocessorDirective Newlines;
 Type: Pod | Pod Newlines;
 Type: Pod2;
 Type: Class;
 Type: UseEnum | UseEnum Newlines;
-Type: Comments | Comments Newlines;
+Type: Comment | Comment Newlines;
 Type: Enum;
 /.
     case $rule_number:
@@ -904,11 +904,7 @@ Pod: pod;
     break;
 ./
 
-Class: ClassStart Start ClassTypes Stop;
-/.
-    case $rule_number:
-./
-Class: ClassStart Start Comments Stop;
+Class: ClassStart Start ClassContent Stop;
 /.
     case $rule_number:
 ./
@@ -922,9 +918,14 @@ Class: ClassStart Start Stop;
     break;
 ./
 
-ClassTypes: ClassType | ClassType ClassTypes;
-ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass | DecoratedClassFlag | Comments;
-ClassType: Enum;
+--"Decorated" types capture comments _before_ the type and newlines _after_ the type
+--This leaves newlines at the start of the scope and comments at the end of the scope still to be handled
+ClassContent: ClassTypes | ClassTypes Comments | Newlines ClassTypes | Newlines ClassTypes Comments;
+--Allow empty/ignored content in the scope for testing purposes
+ClassContent: Comments | Newlines | Newlines Comments | Comments Newlines | Newlines Comments Newlines;
+ClassTypes: ClassType | ClassTypes ClassType;
+ClassType: DecoratedProp | DecoratedSignal | DecoratedSlot | DecoratedModel | DecoratedClass | DecoratedClassFlag;
+ClassType: DecoratedEnum;
 /.
     case $rule_number:
     {
@@ -935,11 +936,7 @@ ClassType: Enum;
     break;
 ./
 
-Pod2: PodStart Start PodTypes Stop;
-/.
-    case $rule_number:
-./
-Pod2: PodStart Start Comments Stop;
+Pod2: PodStart Start PodContent Stop;
 /.
     case $rule_number:
 ./
@@ -956,9 +953,17 @@ Pod2: PodStart Start Stop;
     break;
 ./
 
-PodTypes: PodType | PodType Newlines | PodType CaptureComma PodTypes | PodType PodTypes | PodType Newlines PodTypes;
-PodType: DecoratedPODFlag | Comments;
-PodType: Enum;
+--"Decorated" types capture comments _before_ the type and newlines _after_ the type
+--This leaves newlines at the start of the scope and comments at the end of the scope still to be handled
+PodContent: PodTypes | PodTypes Comments | Newlines PodTypes | Newlines PodTypes Comments;
+--Allow empty/ignored content in the scope for testing purposes
+PodContent: Comments | Newlines | Newlines Comments | Comments Newlines | Newlines Comments Newlines;
+PodTypes: PodType | PodTypes CaptureComma PodType;
+--Enums are now legal in PODs, but don't usually have a comma afterwards so we need to accept matches without
+--separating commas unless we expand the language to distinguish enums from other PodTypes.
+PodTypes: PodTypes PodType;
+PodType: DecoratedPODFlag;
+PodType: DecoratedEnum;
 /.
     case $rule_number:
     {
@@ -968,7 +973,7 @@ PodType: Enum;
     break;
 ./
 
-PodType: Parameter;
+PodType: Parameter | Parameter Newlines;
 Parameter: DecoratedParameterType ParameterName;
 
 DecoratedParameterType: ParameterType | Qualified ParameterType | ParameterType PassByReference | Qualified ParameterType PassByReference;
@@ -1022,7 +1027,7 @@ PassByReference: passbyqual;
     break;
 ./
 
-ParameterTypes: DecoratedParameterType | DecoratedParameterType CaptureComma ParameterTypes;
+ParameterTypes: DecoratedParameterType | ParameterTypes CaptureComma DecoratedParameterType;
 
 CaptureComma: comma;
 /.
@@ -1064,11 +1069,11 @@ DecoratedEnumParam: EnumParam | Comments EnumParam | EnumParam Newlines | Commen
 DecoratedClassFlag: ClassFlag | Comments ClassFlag | ClassFlag Newlines | Comments ClassFlag Newlines;
 
 DecoratedPODFlag: PODFlag | Comments PODFlag | PODFlag Newlines | Comments PODFlag Newlines;
+DecoratedEnum: Enum | Comments Enum | Enum Newlines | Comments Enum Newlines;
 
 Start: start | Comments start | start Newlines | Comments start Newlines;
 Stop: stop | stop Newlines;
 
-Enum: EnumStart Start EnumParams Comments Stop;
 Enum: EnumStart Start EnumParams Stop;
 
 EnumStart: enum;
@@ -1090,7 +1095,7 @@ EnumStart: enum;
     break;
 ./
 
-EnumParams: DecoratedEnumParam | DecoratedEnumParam Comma EnumParams;
+EnumParams: DecoratedEnumParam | EnumParams Comma DecoratedEnumParam;
 
 EnumParam: Symbol;
 /.

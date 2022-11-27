@@ -51,6 +51,7 @@ void tst_Parser::testBasic_data()
     QTest::newRow("enum") << "ENUM MyEnum {test}";
     QTest::newRow("empty class with comment") << "class MyClass {\n//comment\n}";
     QTest::newRow("comment, class") << "//comment\nclass MyClass {}";
+    QTest::newRow("multicomment, class") << "/* row1\n row2\n */\nclass MyClass {}";
     QTest::newRow("include, comment, class") << "#include \"foo\"\n//comment\nclass MyClass {}";
 }
 
@@ -162,6 +163,9 @@ void tst_Parser::testSlots_data()
     QTest::addColumn<QString>("expectedSlot");
     QTest::addColumn<bool>("voidWarning");
     QTest::newRow("slotwithoutspacebeforeparentheses") << "SLOT(test())" << "void test()" << true;
+    QTest::newRow("slotwithoutspacebeforeparentheses with comment") << "SLOT(test()) // my slot" << "void test()" << true;
+    QTest::newRow("slotwithoutspacebeforeparentheses with comment above") << "// my slot\nSLOT(test())" << "void test()" << true;
+    QTest::newRow("slotwithoutspacebeforeparentheses with indented comment above") << "    // my slot\nSLOT(test())" << "void test()" << true;
     QTest::newRow("slotwithspacebeforeparentheses") << "SLOT (test())" << "void test()" << true;
     QTest::newRow("slotwitharguments") << "SLOT(void test(QString value, int number))" << "void test(QString value, int number)" << false;
     QTest::newRow("slotwithunnamedarguments") << "SLOT(void test(QString, int))" << "void test(QString __repc_variable_1, int __repc_variable_2)" << false;
@@ -211,6 +215,9 @@ void tst_Parser::testSignals_data()
     QTest::addColumn<QString>("signalDeclaration");
     QTest::addColumn<QString>("expectedSignal");
     QTest::newRow("signalwithoutspacebeforeparentheses") << "SIGNAL(test())" << "test()";
+    QTest::newRow("signalwithoutspacebeforeparentheses with comment") << "SIGNAL(test()) // my signal" << "test()";
+    QTest::newRow("signalwithoutspacebeforeparentheses with comment above") << "// my signal\nSIGNAL(test())" << "test()";
+    QTest::newRow("signalwithoutspacebeforeparentheses with indented comment above") << "    // my signal\nSIGNAL(test())" << "test()";
     QTest::newRow("signalwithspacebeforeparentheses") << "SIGNAL (test())" << "test()";
     QTest::newRow("signalwitharguments") << "SIGNAL(test(QString value, int value))" << "test(QString value, int value)";
     QTest::newRow("signalwithtemplates") << "SIGNAL(test(QMap<QString,int> foo))" << "test(QMap<QString,int> foo)";
@@ -253,9 +260,13 @@ void tst_Parser::testPods_data()
 
     //Variable/Type separate by ";"
     QTest::newRow("one pod") << "POD preset(int presetNumber)" << "int" << "presetNumber";
+    QTest::newRow("one pod with comment") << "POD preset(int presetNumber) // my pod" << "int" << "presetNumber";
+    QTest::newRow("one pod with comment above") << "// my pod\nPOD preset(int presetNumber)" << "int" << "presetNumber";
+    QTest::newRow("one pod with indented comment above") << "    // my pod\nPOD preset(int presetNumber)" << "int" << "presetNumber";
     QTest::newRow("two pod") << "POD preset(int presetNumber, double foo)" << "int;double" << "presetNumber;foo";
     QTest::newRow("two pod with space") << "POD preset ( int presetNumber , double foo ) " << "int;double" << "presetNumber;foo";
     QTest::newRow("two pod multiline") << "POD preset(\nint presetNumber,\ndouble foo\n)" << "int;double" << "presetNumber;foo";
+    QTest::newRow("two pod multiline with comments") << "POD preset(// this is a pod\nint presetNumber, // presetNumber\ndouble foo // foo\n)" << "int;double" << "presetNumber;foo";
     //Template
     QTest::newRow("pod template") << "POD preset(QMap<QString,int> foo) " << "QMap<QString,int>" << "foo";
     QTest::newRow("pod template (QList)") << "POD preset(QList<QString> foo) " << "QList<QString>" << "foo";
@@ -306,6 +317,9 @@ void tst_Parser::testPods2_data()
 
     //Variable/Type separate by ";"
     QTest::newRow("one pod") << "POD preset{int presetNumber}" << "int" << "presetNumber";
+    QTest::newRow("one pod with comment") << "POD preset{int presetNumber} // my pod" << "int" << "presetNumber";
+    QTest::newRow("one pod with comment above") << "// my pod\nPOD preset{int presetNumber}" << "int" << "presetNumber";
+    QTest::newRow("one pod with indented comment above") << "    // my pod\nPOD preset{int presetNumber}" << "int" << "presetNumber";
     QTest::newRow("two pod") << "POD preset{int presetNumber, double foo}" << "int;double" << "presetNumber;foo";
     QTest::newRow("two pod with space") << "POD preset { int presetNumber , double foo } " << "int;double" << "presetNumber;foo";
     QTest::newRow("two pod multiline") << "POD preset{\nint presetNumber,\ndouble foo\n}" << "int;double" << "presetNumber;foo";
@@ -367,6 +381,9 @@ void tst_Parser::testEnums_data()
         QString identifier = inclass ? QLatin1String("%1 in class") : QLatin1String("%1 outside class");
         //Separate by ";"
         QTest::newRow(identifier.arg("one enum val").toLatin1()) << "ENUM preset {presetNumber}" << "presetNumber" << (QList<int>() << 0) << 0 << false << inclass;
+        QTest::newRow(identifier.arg("one enum val with comment").toLatin1()) << "ENUM preset {presetNumber} // my enum" << "presetNumber" << (QList<int>() << 0) << 0 << false << inclass;
+        QTest::newRow(identifier.arg("one enum val with comment above").toLatin1()) << "// my enum\nENUM preset {presetNumber}" << "presetNumber" << (QList<int>() << 0) << 0 << false << inclass;
+        QTest::newRow(identifier.arg("one enum val with indented comment above").toLatin1()) << "    // my enum\nENUM preset {presetNumber}" << "presetNumber" << (QList<int>() << 0) << 0 << false << inclass;
         QTest::newRow(identifier.arg("two enum val").toLatin1()) << "ENUM preset {presetNumber, foo}" << "presetNumber;foo" << (QList<int>() << 0 << 1) << 1 << false << inclass;
         QTest::newRow(identifier.arg("two enum val -1 2nd").toLatin1()) << "ENUM preset {presetNumber, foo = -1}" << "presetNumber;foo" << (QList<int>() << 0 << -1) << 1 << true << inclass;
         QTest::newRow(identifier.arg("two enum val -1 1st").toLatin1()) << "ENUM preset {presetNumber=-1, foo}" << "presetNumber;foo" << (QList<int>() << -1 << 0) << 1 << true << inclass;
@@ -462,16 +479,20 @@ void tst_Parser::testTypedEnums()
     file.open();
     QTextStream stream(&file);
     if (!inclass) {
-        stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration << Qt::endl;
+        stream << " // comment 1" << Qt::endl;
+        stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration
+               << " // comment 2" << Qt::endl;
         if (isflag)
-            stream << "FLAG(MyFlags preset)" << Qt::endl;
+            stream << "//comment 3" << Qt::endl << "FLAG(MyFlags preset) // comment4" << Qt::endl;
     }
     stream << "class TestClass" << Qt::endl;
     stream << "{" << Qt::endl;
     if (inclass) {
-        stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration << Qt::endl;
+        stream << " // comment" << Qt::endl;
+        stream << "ENUM " << (isscoped ? "class " : "") << enumdeclaration
+               << " // comment 2" << Qt::endl;
         if (isflag)
-            stream << "FLAG(MyFlags preset)" << Qt::endl;
+            stream << "//comment 3" << Qt::endl << "FLAG(MyFlags preset) // comment4" << Qt::endl;
     }
     stream << "};" << Qt::endl;
     file.seek(0);
@@ -528,10 +549,18 @@ void tst_Parser::testModels()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
+    stream << " // comment 1" << Qt::endl;
+    stream << " // comment 2" << Qt::endl;
     stream << "class TestClass" << Qt::endl;
     stream << "{" << Qt::endl;
-    stream << modelDeclaration << Qt::endl;
+    stream << "    // comment 3" << Qt::endl;
+    stream << "    // comment 4" << Qt::endl;
+    stream << modelDeclaration << " // comment 5" << Qt::endl;
+    stream << "    // comment 6" << Qt::endl;
+    stream << "    // comment 7" << Qt::endl;
     stream << "};" << Qt::endl;
+    stream << " // comment 8" << Qt::endl;
+    stream << " // comment 9" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
@@ -568,14 +597,28 @@ void tst_Parser::testClasses()
     QTemporaryFile file;
     file.open();
     QTextStream stream(&file);
+    stream << " // comment 1" << Qt::endl;
+    stream << " // comment 2" << Qt::endl;
     stream << "class subObject" << Qt::endl;
     stream << "{" << Qt::endl;
-    stream << "    PROP(int value)" << Qt::endl;
+    stream << "    // comment 3" << Qt::endl;
+    stream << "    // comment 4" << Qt::endl;
+    stream << "    PROP(int value) // comment 5" << Qt::endl;
+    stream << "    // comment 6" << Qt::endl;
+    stream << "    // comment 7" << Qt::endl;
     stream << "};" << Qt::endl;
+    stream << " // comment 8" << Qt::endl;
+    stream << " // comment 9" << Qt::endl;
     stream << "class parentObject" << Qt::endl;
     stream << "{" << Qt::endl;
-    stream << classDeclaration << Qt::endl;
+    stream << "    // comment 10" << Qt::endl;
+    stream << "    // comment 11" << Qt::endl;
+    stream << classDeclaration << " // comment 12" << Qt::endl;
+    stream << "    // comment 13" << Qt::endl;
+    stream << "    // comment 14" << Qt::endl;
     stream << "};" << Qt::endl;
+    stream << " // comment 15" << Qt::endl;
+    stream << " // comment 16" << Qt::endl;
     file.seek(0);
 
     RepParser parser(file);
