@@ -10,7 +10,7 @@ qt_internal_add_test(tst_benchmarkstest
     SOURCES
         tst_benchmarkstest.cpp
     DEFINES
-        SRCDIR=\\\"${CMAKE_CURRENT_SOURCE_DIR}/\\\"
+        SRCDIR="${CMAKE_CURRENT_SOURCE_DIR}/"
     LIBRARIES
         Qt::Network
         Qt::RemoteObjects

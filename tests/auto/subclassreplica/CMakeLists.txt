@@ -10,7 +10,7 @@ qt_internal_add_test(tst_subclassreplicatest
     SOURCES
         tst_subclassreplicatest.cpp
     DEFINES
-        SRCDIR=\\\"${CMAKE_CURRENT_SOURCE_DIR}/\\\"
+        SRCDIR="${CMAKE_CURRENT_SOURCE_DIR}/"
     LIBRARIES
         Qt::RemoteObjects
 )
