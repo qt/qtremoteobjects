@@ -1047,15 +1047,12 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QtROIoDeviceBase *co
     }
     parseGadgets(connection, in);
 
-    int curIndex = 0;
-
     in >> numSignals;
     for (quint32 i = 0; i < numSignals; ++i) {
         QByteArray signature;
         QByteArrayList paramNames;
         in >> signature;
         in >> paramNames;
-        ++curIndex;
         auto mmb = builder.addSignal(signature);
         mmb.setParameterNames(paramNames);
     }
@@ -1067,7 +1064,6 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QtROIoDeviceBase *co
         in >> signature;
         in >> returnType;
         in >> paramNames;
-        ++curIndex;
         const bool isVoid = returnType.isEmpty() || returnType == QByteArrayLiteral("void");
         QMetaMethodBuilder mmb;
         if (isVoid)
