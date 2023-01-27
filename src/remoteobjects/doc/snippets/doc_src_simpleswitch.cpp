@@ -46,7 +46,7 @@ private:
 SimpleSwitch::SimpleSwitch(QObject *parent) : SimpleSwitchSimpleSource(parent)
 {
     stateChangeTimer = new QTimer(this); // Initialize timer
-    QObject::connect(stateChangeTimer, &SimpleSwitch::timeout, this, &SimpleSwitch::timeout_slot); // connect timeout() signal from stateChangeTimer to timeout_slot() of simpleSwitch
+    QObject::connect(stateChangeTimer, &QTimer::timeout, this, &SimpleSwitch::timeout_slot); // connect timeout() signal from stateChangeTimer to timeout_slot() of simpleSwitch
     stateChangeTimer->start(2000); // Start timer and set timout to 2 seconds
     qDebug() << "Source Node Started";
 }

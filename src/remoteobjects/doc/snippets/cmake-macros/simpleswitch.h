@@ -5,6 +5,7 @@
 #define SIMPLESWITCH_H
 
 #include "rep_simpleswitch_source.h"
+class QTimer;
 
 class SimpleSwitch : public SimpleSwitchSimpleSource
 {
