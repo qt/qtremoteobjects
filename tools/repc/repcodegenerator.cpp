@@ -269,6 +269,9 @@ void RepCodeGenerator::generateHeader(Mode mode)
 
     m_stream << m_ast.preprocessorDirectives.join(QLatin1Char('\n'));
     m_stream << "\n";
+
+    m_stream << "using namespace Qt::Literals::StringLiterals;";
+    m_stream << "\n";
 }
 
 static QString formatTemplateStringArgTypeNameCapitalizedName(int numberOfTypeOccurrences,
@@ -664,13 +667,13 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
                 if (astClass.subClassPropertyIndices.contains(index))
                     m_stream << QString::fromLatin1("        setChild(%1, QVariant::fromValue("
                                 "node->acquire<%2Replica>(QRemoteObjectStringLiterals::CLASS()"
-                                ".arg(\"%3\"))));")
+                                ".arg(u\"%3\"_s))));")
                                 .arg(QString::number(index), property.type, acquireName)
                              << Qt::endl;
                 else
                     m_stream << QString::fromLatin1("        setChild(%1, QVariant::fromValue("
                                 "node->acquireModel(QRemoteObjectStringLiterals::MODEL()"
-                                ".arg(\"%2\"))));")
+                                ".arg(u\"%2\"_s))));")
                                 .arg(QString::number(index), acquireName) << Qt::endl;
                 m_stream << "        Q_EMIT " << property.name << "Changed(" << property.name
                          << "()" << ");" << Qt::endl;
@@ -693,12 +696,12 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
             if (astClass.subClassPropertyIndices.contains(index))
                 m_stream << QString::fromLatin1("        setChild(%1, QVariant::fromValue("
                             "node->acquire<%2Replica>(QRemoteObjectStringLiterals::CLASS()"
-                            ".arg(\"%3\"))));")
+                            ".arg(u\"%3\"_s))));")
                             .arg(QString::number(index), property.type, acquireName) << Qt::endl;
             else
                 m_stream << QString::fromLatin1("        setChild(%1, QVariant::fromValue("
                             "node->acquireModel(QRemoteObjectStringLiterals::MODEL()"
-                            ".arg(\"%2\"))));")
+                            ".arg(u\"%2\"_s))));")
                             .arg(QString::number(index), acquireName) << Qt::endl;
         }
         m_stream << "    }" << Qt::endl;
