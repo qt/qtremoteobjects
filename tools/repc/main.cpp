@@ -29,10 +29,6 @@ enum Mode {
 };
 
 static const QLatin1String REP("rep");
-static const QLatin1String JSON("json");
-static const QLatin1String REPLICA("replica");
-static const QLatin1String SOURCE("source");
-static const QLatin1String MERGED("merged");
 
 QT_USE_NAMESPACE
 
@@ -97,7 +93,7 @@ int main(int argc, char **argv)
         const QString &inputType = parser.value(inputTypeOption);
         if (inputType == REP)
             mode = InRep;
-        else if (inputType == JSON)
+        else if (inputType == u"json")
             mode = InJson;
         else {
             fprintf(stderr, PROGRAM_NAME ": Unknown input type\"%s\".\n", qPrintable(inputType));
@@ -109,11 +105,11 @@ int main(int argc, char **argv)
         const QString &outputType = parser.value(outputTypeOption);
         if (outputType == REP)
             mode |= OutRep;
-        else if (outputType == REPLICA)
+        else if (outputType == u"replica")
             mode |= OutReplica;
-        else if (outputType == SOURCE)
+        else if (outputType == u"source")
             mode |= OutSource;
-        else if (outputType == MERGED)
+        else if (outputType == u"merged")
             mode |= OutMerged;
         else {
             fprintf(stderr, PROGRAM_NAME ": Unknown output type\"%s\".\n", qPrintable(outputType));
