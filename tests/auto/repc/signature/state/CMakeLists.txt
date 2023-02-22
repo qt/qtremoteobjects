@@ -19,6 +19,3 @@ qt_internal_add_executable(state
 qt6_add_repc_replicas(state
     mismatch.rep
 )
-
-#### Keys ignored in scope 1:.:.:state.pro:<TRUE>:
-# TEMPLATE = "app"

@@ -23,6 +23,3 @@ qt6_add_repc_replicas(tst_benchmarkstest
         ../repfiles/localdatacenter.rep
         ../repfiles/tcpdatacenter.rep
 )
-
-#### Keys ignored in scope 1:.:.:benchmarks.pro:<TRUE>:
-# TEMPLATE = "app"

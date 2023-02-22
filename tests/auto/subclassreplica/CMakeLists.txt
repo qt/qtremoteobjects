@@ -17,6 +17,3 @@ qt_internal_add_test(tst_subclassreplicatest
 qt6_add_repc_merged(tst_subclassreplicatest
     class.rep
 )
-
-#### Keys ignored in scope 1:.:.:subclassreplica.pro:<TRUE>:
-# TEMPLATE = "app"

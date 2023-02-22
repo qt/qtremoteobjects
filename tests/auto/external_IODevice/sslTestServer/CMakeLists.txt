@@ -42,6 +42,3 @@ qt_internal_add_resource(sslTestServer "cert"
 qt6_add_repc_sources(sslTestServer
     ../pingpong.rep
 )
-
-#### Keys ignored in scope 1:.:.:sslTestServer.pro:<TRUE>:
-# TEMPLATE = "app"

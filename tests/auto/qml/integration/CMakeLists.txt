@@ -21,7 +21,3 @@ qt_internal_add_test(tst_qmlintegration
         Qt::Gui
     TESTDATA ${test_data}
 )
-
-#### Keys ignored in scope 1:.:.:integration.pro:<TRUE>:
-# OTHER_FILES = "$$PWD/data/*.qml"
-# TEMPLATE = "app"

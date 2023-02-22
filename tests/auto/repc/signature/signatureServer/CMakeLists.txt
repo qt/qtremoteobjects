@@ -20,6 +20,3 @@ qt_internal_add_executable(signatureServer
 qt6_add_repc_sources(signatureServer
     ../server.rep
 )
-
-#### Keys ignored in scope 1:.:.:signatureServer.pro:<TRUE>:
-# TEMPLATE = "app"

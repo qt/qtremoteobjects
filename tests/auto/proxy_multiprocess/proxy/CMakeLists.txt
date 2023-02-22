@@ -16,6 +16,3 @@ qt_internal_add_executable(proxy
         Qt::RemoteObjects
         Qt::Test
 )
-
-#### Keys ignored in scope 1:.:.:proxy.pro:<TRUE>:
-# TEMPLATE = "app"

@@ -14,6 +14,3 @@ qt_internal_add_executable(localsockettestserver
     OUTPUT_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}
 )
-
-#### Keys ignored in scope 1:.:.:localsockettestserver.pro:<TRUE>:
-# TEMPLATE = "app"
