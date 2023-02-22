@@ -28,7 +28,10 @@ qt_internal_add_tool(${target_name}
     LIBRARIES
         Qt::CorePrivate
 )
+
 qt_internal_return_unless_building_tools()
+
+set_target_properties(${target_name} PROPERTIES UNITY_BUILD OFF)
 
 # QLALR Grammars:
 qt_process_qlalr(
