@@ -20,6 +20,3 @@ qt_internal_add_executable(restart_server
 qt6_add_repc_sources(restart_server
     ../subclass.rep
 )
-
-#### Keys ignored in scope 1:.:.:server.pro:<TRUE>:
-# TEMPLATE = "app"

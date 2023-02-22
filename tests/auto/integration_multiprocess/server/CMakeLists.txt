@@ -25,6 +25,3 @@ qt6_add_repc_sources(integration_multiprocess_server
     ../MyInterface.rep
     ../PodInterface.rep
 )
-
-#### Keys ignored in scope 1:.:.:server.pro:<TRUE>:
-# TEMPLATE = "app"

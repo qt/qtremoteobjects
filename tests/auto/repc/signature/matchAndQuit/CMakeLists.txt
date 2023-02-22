@@ -19,6 +19,3 @@ qt_internal_add_executable(matchAndQuit
 qt6_add_repc_replicas(matchAndQuit
     ../server.rep
 )
-
-#### Keys ignored in scope 1:.:.:matchAndQuit.pro:<TRUE>:
-# TEMPLATE = "app"

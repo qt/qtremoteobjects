@@ -24,6 +24,3 @@ qt6_add_repc_merged(integration_multiprocess_client
 qt6_add_repc_replicas(integration_multiprocess_client
     ../MyInterface.rep
 )
-
-#### Keys ignored in scope 1:.:.:client.pro:<TRUE>:
-# TEMPLATE = "app"

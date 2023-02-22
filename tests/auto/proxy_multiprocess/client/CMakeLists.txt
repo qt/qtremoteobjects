@@ -21,6 +21,3 @@ qt_internal_add_executable(proxy_multiprocess_client
 qt6_add_repc_replicas(proxy_multiprocess_client
     ../subclass.rep
 )
-
-#### Keys ignored in scope 1:.:.:client.pro:<TRUE>:
-# TEMPLATE = "app"

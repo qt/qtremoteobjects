@@ -38,6 +38,3 @@ if(QT_BUILD_STANDALONE_TESTS)
     # For fully static builds, let qmlimportscanner take care of plugin importing
     qt_import_qml_plugins(tst_usertypes)
 endif()
-
-#### Keys ignored in scope 1:.:.:usertypes.pro:<TRUE>:
-# TEMPLATE = "app"
