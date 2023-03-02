@@ -1218,26 +1218,34 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
              << Qt::endl;
     m_stream << QStringLiteral("    int sourceEnumIndex(int index) const override") << Qt::endl;
     m_stream << QStringLiteral("    {") << Qt::endl;
-    m_stream << QStringLiteral("        if (index < 0 || index >= m_enums[0])") << Qt::endl;
+    m_stream << QStringLiteral("        if (index < 0 || index >= m_enums[0]"
+                               " || index + 1 >= int(std::size(m_enums)))")
+             << Qt::endl;
     m_stream << QStringLiteral("            return -1;") << Qt::endl;
     m_stream << QStringLiteral("        return m_enums[index+1];") << Qt::endl;
     m_stream << QStringLiteral("    }") << Qt::endl;
     m_stream << QStringLiteral("    int sourcePropertyIndex(int index) const override")
              << Qt::endl;
     m_stream << QStringLiteral("    {") << Qt::endl;
-    m_stream << QStringLiteral("        if (index < 0 || index >= m_properties[0])") << Qt::endl;
+    m_stream << QStringLiteral("        if (index < 0 || index >= m_properties[0]"
+                               " || index + 1 >= int(std::size(m_properties)))")
+             << Qt::endl;
     m_stream << QStringLiteral("            return -1;") << Qt::endl;
     m_stream << QStringLiteral("        return m_properties[index+1];") << Qt::endl;
     m_stream << QStringLiteral("    }") << Qt::endl;
     m_stream << QStringLiteral("    int sourceSignalIndex(int index) const override") << Qt::endl;
     m_stream << QStringLiteral("    {") << Qt::endl;
-    m_stream << QStringLiteral("        if (index < 0 || index >= m_signals[0])") << Qt::endl;
+    m_stream << QStringLiteral("        if (index < 0 || index >= m_signals[0]"
+                               " || index + 1 >= int(std::size(m_signals)))")
+             << Qt::endl;
     m_stream << QStringLiteral("            return -1;") << Qt::endl;
     m_stream << QStringLiteral("        return m_signals[index+1];") << Qt::endl;
     m_stream << QStringLiteral("    }") << Qt::endl;
     m_stream << QStringLiteral("    int sourceMethodIndex(int index) const override") << Qt::endl;
     m_stream << QStringLiteral("    {") << Qt::endl;
-    m_stream << QStringLiteral("        if (index < 0 || index >= m_methods[0])") << Qt::endl;
+    m_stream << QStringLiteral("        if (index < 0 || index >= m_methods[0]"
+                               " || index + 1 >= int(std::size(m_methods)))")
+             << Qt::endl;
     m_stream << QStringLiteral("            return -1;") << Qt::endl;
     m_stream << QStringLiteral("        return m_methods[index+1];") << Qt::endl;
     m_stream << QStringLiteral("    }") << Qt::endl;
@@ -1382,7 +1390,9 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
         QStringLiteral("    QByteArrayList signalParameterNames(int index) const override")
         << Qt::endl;
     m_stream << QStringLiteral("    {") << Qt::endl;
-    m_stream << QStringLiteral("        if (index < 0 || index >= m_signals[0])") << Qt::endl;
+    m_stream << QStringLiteral("        if (index < 0 || index >= m_signals[0]"
+                               " || index + 1 >= int(std::size(m_signals)))")
+             << Qt::endl;
     m_stream << QStringLiteral("            return QByteArrayList();") << Qt::endl;
     m_stream << QStringLiteral("        return ObjectType::staticMetaObject.method(m_signals["
                                "index + 1]).parameterNames();") << Qt::endl;
@@ -1452,7 +1462,9 @@ void RepCodeGenerator::generateSourceAPI(const ASTClass &astClass)
         QStringLiteral("    QByteArrayList methodParameterNames(int index) const override")
         << Qt::endl;
     m_stream << QStringLiteral("    {") << Qt::endl;
-    m_stream << QStringLiteral("        if (index < 0 || index >= m_methods[0])") << Qt::endl;
+    m_stream << QStringLiteral("        if (index < 0 || index >= m_methods[0]"
+                               " || index + 1 >= int(std::size(m_methods)))")
+             << Qt::endl;
     m_stream << QStringLiteral("            return QByteArrayList();") << Qt::endl;
     m_stream << QStringLiteral("        return ObjectType::staticMetaObject.method(m_methods["
                                "index + 1]).parameterNames();") << Qt::endl;

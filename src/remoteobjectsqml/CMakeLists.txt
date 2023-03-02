@@ -14,6 +14,5 @@ qt_internal_add_qml_module(RemoteObjectsQml
         Qt::Core
         Qt::Gui
         Qt::Qml
-        Qt::QmlPrivate
         Qt::RemoteObjects
 )
