@@ -75,6 +75,8 @@
 #define FATAL_ON_ERROR(cmd, ...) if (cmd(__VA_ARGS__) == -1) qFatal("Error %s: %s %s %s %d", \
                         #cmd, strerror(errno), Q_FUNC_INFO, __FILE__, __LINE__);
 
+QT_BEGIN_NAMESPACE
+
 const int MAX_RETRIES = 3;
 
 enum MsgType : uint16_t { REPLICA_INIT = _IO_MAX+100,
@@ -109,6 +111,8 @@ public:
 private:
     T *m_obj;
 };
+
+QT_END_NAMESPACE
 
 #endif // QNXIPCPRIVATE_GLOBAL_H
 
