@@ -37,7 +37,7 @@ set_target_properties(${target_name} PROPERTIES UNITY_BUILD OFF)
 qt_process_qlalr(
     ${target_name}
     "${REPPARSER_DIR}/parser.g"
-    ""
+    "--exit-on-warn"
 )
 
 ## Scopes:

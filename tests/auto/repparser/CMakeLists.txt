@@ -20,7 +20,7 @@ qt_internal_add_test(tst_parser
 qt_process_qlalr(
     tst_parser
     ${REPPARSER_DIR}/parser.g
-    ""
+    "--exit-on-warn"
 )
 
 ## Scopes:
