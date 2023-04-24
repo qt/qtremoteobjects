@@ -84,11 +84,13 @@ void ModelreplicaTest::basicFunctions()
     }
 
     // Wait for data to be fetch and confirm
-    QTest::qWait(100);
-    QCOMPARE(model->rowCount(), replica->tracks()->rowCount());
+    QTRY_COMPARE(model->rowCount(), replica->tracks()->rowCount());
     for (int i = 0; i < replica->tracks()->rowCount(); i++)
     {
-        QCOMPARE(model->data(model->index(i), Qt::DisplayRole), replica->tracks()->data(replica->tracks()->index(i, 0)));
+        // The data still might be out of sync, use QTRY_COMPARE, to wait for
+        // the expected data to arrive.
+        QTRY_COMPARE(model->data(model->index(i), Qt::DisplayRole),
+                     replica->tracks()->data(replica->tracks()->index(i, 0)));
     }
 }
 
