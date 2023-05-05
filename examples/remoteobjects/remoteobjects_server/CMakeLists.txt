@@ -4,6 +4,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(remoteobjects_server LANGUAGES CXX)
 
+if (ANDROID)
+    message(FATAL_ERROR "This project cannot be built on Android.")
+endif()
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
