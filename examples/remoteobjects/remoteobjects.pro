@@ -20,5 +20,4 @@ qtHaveModule(quick) {
         plugins \
         clientapp
 
-    unix:!android: SUBDIRS += qmlmodelviewclient
 }
