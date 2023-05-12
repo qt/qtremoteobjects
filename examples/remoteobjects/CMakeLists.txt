@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 qt_internal_add_example(remoteobjects_server)
-qt_internal_add_example(cppclient)
 add_subdirectory(simpleswitch)
 add_subdirectory(websockets)
 if(TARGET Qt::Widgets)
