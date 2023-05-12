@@ -4,7 +4,6 @@
 if (NOT ANDROID)
     qt_internal_add_example(remoteobjects_server)
 endif()
-qt_internal_add_example(cppclient)
 add_subdirectory(simpleswitch)
 add_subdirectory(websockets)
 if(TARGET Qt::Widgets)
