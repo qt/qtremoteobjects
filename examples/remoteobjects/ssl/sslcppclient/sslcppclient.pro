@@ -1,20 +1,17 @@
 QT_FOR_CONFIG += network
 requires(qtConfig(ssl))
 
-REPC_REPLICA += timemodel.rep
+REPC_REPLICA += ../../timemodel.rep
 QT = remoteobjects remoteobjects-private core
 
 QT       -= gui
 
-TARGET = SslCppClient
+TARGET = sslcppclient
 CONFIG   -= app_bundle
 
 TEMPLATE = app
 
 SOURCES += main.cpp
-
-OTHER_FILES += \
-    timemodel.rep
 
 RESOURCES += \
     ../sslserver/cert/cert.qrc
