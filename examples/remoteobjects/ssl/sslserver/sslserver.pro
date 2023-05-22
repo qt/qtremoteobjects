@@ -7,10 +7,8 @@ CONFIG   += console
 REPC_SOURCE += ../../timemodel.rep
 QT = remoteobjects remoteobjects-private core
 
-SOURCES += timemodel.cpp main.cpp \
-    sslserver.cpp
-HEADERS += timemodel.h \
-    sslserver.h
+SOURCES += timemodel.cpp main.cpp
+HEADERS += timemodel.h
 
 contains(QT_CONFIG, c++11): CONFIG += c++11
 
