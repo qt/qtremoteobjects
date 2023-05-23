@@ -70,6 +70,7 @@ QList<QStandardItem*> addChild(int numChildren, int nestingLevel)
     return result;
 }
 
+//! [0]
 int main(int argc, char *argv[])
 {
     QLoggingCategory::setFilterRules("qt.remoteobjects.debug=false\n"
@@ -96,6 +97,7 @@ int main(int argc, char *argv[])
         //sourceModel.appendRow(row);
         list << QStringLiteral("FancyTextNumber %1").arg(i);
     }
+    //! [0]
 
     // Needed by QMLModelViewClient
     QHash<int,QByteArray> roleNames = {
@@ -107,6 +109,7 @@ int main(int argc, char *argv[])
     QList<int> roles;
     roles << Qt::DisplayRole << Qt::BackgroundRole;
 
+    //! [1]
     QWebSocketServer webSockServer{QStringLiteral("WS QtRO"), QWebSocketServer::NonSecureMode};
     webSockServer.listen(QHostAddress::Any, 8088);
 
@@ -114,7 +117,9 @@ int main(int argc, char *argv[])
     hostNode.setHostUrl(webSockServer.serverAddress().toString(), QRemoteObjectHost::AllowExternalRegistration);
 
     hostNode.enableRemoting(&sourceModel, QStringLiteral("RemoteModel"), roles);
+    //! [1]
 
+    //! [2]
     QObject::connect(&webSockServer, &QWebSocketServer::newConnection, &hostNode, [&hostNode, &webSockServer]{
         while (auto conn = webSockServer.nextPendingConnection()) {
 #ifndef QT_NO_SSL
@@ -135,13 +140,15 @@ int main(int argc, char *argv[])
             QObject::connect(conn, &QWebSocket::sslErrors, conn, &QWebSocket::deleteLater);
 #endif
             QObject::connect(conn, &QWebSocket::disconnected, conn, &QWebSocket::deleteLater);
-            QObject::connect(conn,  QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), conn, &QWebSocket::deleteLater);
+            QObject::connect(conn, &QWebSocket::errorOccurred, conn, &QWebSocket::deleteLater);
             auto ioDevice = new WebSocketIoDevice(conn);
             QObject::connect(conn, &QWebSocket::destroyed, ioDevice, &WebSocketIoDevice::deleteLater);
             hostNode.addHostSideConnection(ioDevice);
         }
     });
+    //! [2]
 
+    //! [3]
     QTreeView view;
     view.setWindowTitle(QStringLiteral("SourceView"));
     view.setModel(&sourceModel);
@@ -155,6 +162,7 @@ int main(int argc, char *argv[])
     QTimer::singleShot(13000, &handler, &TimerHandler::moveData);
 
     return app.exec();
+    //! [3]
 }
 
 #include "main.moc"
