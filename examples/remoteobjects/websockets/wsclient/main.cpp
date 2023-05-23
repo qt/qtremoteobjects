@@ -24,10 +24,12 @@ int main(int argc, char **argv)
 
     QApplication app(argc, argv);
 
-
-
+    //! [0]
     QScopedPointer<QWebSocket> webSocket{new QWebSocket};
     WebSocketIoDevice socket(webSocket.data());
+//! [0]
+
+//! [1]
 #ifndef QT_NO_SSL
     // Always use secure connections when available
     QSslConfiguration sslConf;
@@ -44,11 +46,16 @@ int main(int argc, char **argv)
     sslConf.setPeerVerifyMode(QSslSocket::VerifyPeer);
     webSocket->setSslConfiguration(sslConf);
 #endif
+    //! [1]
+
+    //! [2]
     QRemoteObjectNode node;
     node.addClientSideConnection(&socket);
     node.setHeartbeatInterval(1000);
     webSocket->open(QStringLiteral("ws://localhost:8088"));
+    //! [2]
 
+    //! [3]
     QTreeView view;
     view.setWindowTitle(QStringLiteral("RemoteView"));
     view.resize(640,480);
@@ -57,4 +64,5 @@ int main(int argc, char **argv)
     view.show();
 
     return app.exec();
+    //! [3]
 }
