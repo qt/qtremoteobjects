@@ -1,7 +1,7 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
-import QtQuick 2.0
+import QtQuick
 
 Rectangle {
     id: clock
@@ -11,6 +11,7 @@ Rectangle {
     property variant hours
     property variant minutes
     property variant shift : 0
+    property variant valid : true
 
     Image { id: background; source: "clock.png" }
 
@@ -47,5 +48,10 @@ Rectangle {
     Text {
         id: cityLabel; font.bold: true; font.pixelSize: 14; y:200; color: "white"
         anchors.horizontalCenter: parent.horizontalCenter
+    }
+    Text {
+        id: validity; font.bold: true; font.pixelSize: 14; y:100; color: "black"
+        anchors.horizontalCenter: parent.horizontalCenter
+        text: clock.valid ? "" : "Server not found"
     }
 }

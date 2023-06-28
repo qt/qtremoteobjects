@@ -10,10 +10,13 @@ MinuteTimer::MinuteTimer(QObject *parent) : MinuteTimerSimpleSource(parent), zon
     setMinute(time.minute());
     timer.start(60000-time.second()*1000, this);
 }
+
 MinuteTimer::~MinuteTimer()
 {
     timer.stop();
 }
+
+//![0]
 void MinuteTimer::timerEvent(QTimerEvent *)
 {
     QTime now = QTime::currentTime();
@@ -29,10 +32,9 @@ void MinuteTimer::timerEvent(QTimerEvent *)
     setHour(time.hour());
     setMinute(time.minute());
     emit timeChanged();
-    emit timeChanged2(time);
-    static PresetInfo bla(3, 93.9f, "Best Station");
-    emit sendCustom(bla);
 }
+//![0]
+
 void MinuteTimer::SetTimeZone(const int &zn)
 {
     qDebug()<<"SetTimeZone"<<zn;
