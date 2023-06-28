@@ -4,5 +4,10 @@
         <file>qml/plugins.qml</file>
         <file>qml/plugins1.qml</file>
         <file>qml/plugins2.qml</file>
+        <file>qml/Clock.qml</file>
+        <file>qml/center.png</file>
+        <file>qml/clock.png</file>
+        <file>qml/hour.png</file>
+        <file>qml/minute.png</file>
     </qresource>
 </RCC>

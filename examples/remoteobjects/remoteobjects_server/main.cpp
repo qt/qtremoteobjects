@@ -38,6 +38,7 @@ void SigIntHandler()
   }
 #endif
 
+//![0]
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
@@ -55,3 +56,4 @@ int main(int argc, char *argv[])
     Q_UNUSED(timer)
     return app.exec();
 }
+//![0]
