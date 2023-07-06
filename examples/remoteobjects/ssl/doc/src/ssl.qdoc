@@ -5,7 +5,7 @@
     \example ssl
     \title SSL Server and Client
     \brief Setting up a secure Remote Object network using QSslSockets.
-    \examplecategory {Input/Output}
+    \examplecategory {Data Processing & I/O}
     \meta tag {rpc,network,tls}
     \ingroup qtremoteobjects-examples
 
