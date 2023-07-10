@@ -7,11 +7,9 @@ Rectangle {
     id: clock
     width: 200; height: 200; color: "gray"
 
-    property alias city: cityLabel.text
-    property variant hours
-    property variant minutes
-    property variant shift : 0
-    property variant valid : true
+    property int hours
+    property int minutes
+    property bool valid : true
 
     Image { id: background; source: "clock.png" }
 
@@ -45,10 +43,6 @@ Rectangle {
         anchors.centerIn: background; source: "center.png"
     }
 
-    Text {
-        id: cityLabel; font.bold: true; font.pixelSize: 14; y:200; color: "white"
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
     Text {
         id: validity; font.bold: true; font.pixelSize: 14; y:100; color: "black"
         anchors.horizontalCenter: parent.horizontalCenter
