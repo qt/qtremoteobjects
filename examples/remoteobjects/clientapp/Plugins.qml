@@ -3,17 +3,18 @@
 
 import QtQuick
 
-Item {
+Window {
+    id: window
     width: 200
     height: 400
+    visible: true
     property int counter: 0;
     MouseArea {
         anchors.fill: parent
         onClicked:
         {
-            counter = (counter + 1) % 3;
-            console.log(counter);
-            pageLoader.source = "plugins"+counter+".qml"
+            window.counter = (window.counter + 1) % 3;
+            pageLoader.source = "plugins"+window.counter+".qml"
         }
     }
     Loader {
@@ -21,4 +22,3 @@ Item {
         source: "plugins0.qml"
     }
 }
-//![0]
