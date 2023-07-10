@@ -5,7 +5,6 @@
     \group qtremoteobjects-examples
     \title Qt Remote Objects Examples
     \brief Examples for the Qt Remote Objects module
-    \ingroup all-examples
     \ingroup qtremoteobjects
 
     The list of \l {Qt Remote Objects} examples.
