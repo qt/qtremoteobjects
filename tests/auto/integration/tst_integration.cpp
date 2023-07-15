@@ -561,7 +561,8 @@ private slots:
         QScopedPointer<QRemoteObjectDynamicReplica> regDynamic, regDynamicNamed;
 
         int regAdded = 0;
-        connect(client->registry(), &QRemoteObjectRegistry::remoteObjectAdded, [&](QRemoteObjectSourceLocation entry)
+        connect(client->registry(), &QRemoteObjectRegistry::remoteObjectAdded,
+                this, [&](QRemoteObjectSourceLocation entry)
             {
                 if (entry.first == QLatin1String("Engine")) {
                     ++regAdded;
@@ -788,7 +789,7 @@ private slots:
 
         QSignalSpy spy(this, &tst_Integration::forwardResult);
         QScopedPointer<QRemoteObjectDynamicReplica> engine_dr(client->acquireDynamic(QStringLiteral("Engine")));
-        connect(engine_dr.data(), &QRemoteObjectDynamicReplica::initialized, [&]()
+        connect(engine_dr.data(), &QRemoteObjectDynamicReplica::initialized, this, [&]()
             {
                 const QMetaObject *metaObject = engine_dr->metaObject();
                 const int propIndex = metaObject->indexOfProperty("rpm");

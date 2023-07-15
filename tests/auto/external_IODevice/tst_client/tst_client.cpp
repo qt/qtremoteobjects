@@ -55,7 +55,7 @@ private slots:
         QVERIFY(pp->waitForSource());
 
         QString pongStr;
-        connect(pp.data(), &PingPongReplica::pong, [&pongStr](const QString &str) {
+        connect(pp.data(), &PingPongReplica::pong, this, [&pongStr](const QString &str) {
             pongStr = str;
         });
         pp->ping("yahoo");

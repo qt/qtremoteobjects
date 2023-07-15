@@ -57,7 +57,7 @@ private Q_SLOTS:
 
         // wait for quit
         bool quit = false;
-        connect(&myTestServer, &MyTestServer::quitApp, [&quit]{quit = true;});
+        connect(&myTestServer, &MyTestServer::quitApp, this, [&quit] { quit = true; });
         QTRY_VERIFY_WITH_TIMEOUT(quit, 5000);
 
         // wait for delivery of events

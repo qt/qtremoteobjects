@@ -69,7 +69,7 @@ public:
         m_callbacks.insert(watcher, response);
 
         // handle timeout
-        connect(response.timer, &QTimer::timeout, [this, watcher]() {
+        connect(response.timer, &QTimer::timeout, this, [this, watcher]() {
             auto i = m_callbacks.find(watcher);
             if (i == m_callbacks.end()) {
                 qmlWarning(this) << "could not find callback for watcher.";
@@ -85,7 +85,7 @@ public:
         });
 
         // handle success
-        connect(watcher, &QRemoteObjectPendingCallWatcher::finished,
+        connect(watcher, &QRemoteObjectPendingCallWatcher::finished, this,
                 [this](QRemoteObjectPendingCallWatcher *self) {
                     auto i = m_callbacks.find(self);
                     if (i == m_callbacks.end()) {

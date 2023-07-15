@@ -18,8 +18,8 @@ private Q_SLOTS:
         m_repNode.reset(new QRemoteObjectNode);
         m_repNode->connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65213")));
         m_rep.reset(m_repNode->acquire<MyInterfaceReplica>());
-        connect(m_rep.data(), &MyInterfaceReplica::notified, [&]() { m_notified = true; });
-        connect(m_rep.data(), &MyInterfaceReplica::initialValueChanged, [&]() {
+        connect(m_rep.data(), &MyInterfaceReplica::notified, this, [&]() { m_notified = true; });
+        connect(m_rep.data(), &MyInterfaceReplica::initialValueChanged, this, [&]() {
             // this value is only set when the replica first connects to the source
             QCOMPARE(m_notified, false);
             QCOMPARE(m_rep->initialValue(), 18);
@@ -128,7 +128,7 @@ private Q_SLOTS:
 
         rep->testEnumParamsInSlots(MyInterfaceReplica::Second, false, 74);
 
-        connect(rep.data(), &MyInterfaceReplica::testEnumParamsInSignals,
+        connect(rep.data(), &MyInterfaceReplica::testEnumParamsInSignals, this,
                 [](MyInterfaceReplica::Enum1 enumSignalParam) { QCOMPARE(enumSignalParam, MyInterfaceReplica::Second); });
 
         QTRY_COMPARE(rep->enum1(), MyInterfaceReplica::Second);
@@ -146,7 +146,7 @@ private Q_SLOTS:
         rep->testExtPODListSlot(list);
         QSignalSpy spy(rep.data(), &MyInterfaceReplica::testExtPODListSignal);
         connect(rep.data(), &MyInterfaceReplica::testExtPODListSignal,
-                [list](const QList<ExtPOD> &l) { QCOMPARE(l, list); });
+                this, [list](const QList<ExtPOD> &l) { QCOMPARE(l, list); });
         QTRY_COMPARE(spy.size(), 1);
     }
 

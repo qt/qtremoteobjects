@@ -746,7 +746,7 @@ static void trackConnection(int typeId, QtROIoDeviceBase *connection)
     // Unregister the type only when the connection is destroyed
     // Do not unregister types when the connections is discconected, because
     // if it gets reconnected it will not register the types again
-    QObject::connect(connection, &QtROIoDeviceBase::destroyed, unregisterIfNotUsed);
+    QObject::connect(connection, &QtROIoDeviceBase::destroyed, connection, unregisterIfNotUsed);
 }
 
 struct EnumPair {

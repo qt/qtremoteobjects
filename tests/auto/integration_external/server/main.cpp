@@ -22,7 +22,7 @@ class tst_Server_Process : public QObject
         {
             tcpServer.listen(QHostAddress(url.host()), quint16(url.port()));
             QVERIFY(srcNode.waitForRegistry(3000));
-            QObject::connect(&tcpServer, &QTcpServer::newConnection, [this]() {
+            QObject::connect(&tcpServer, &QTcpServer::newConnection, &tcpServer, [this]() {
                 auto conn = this->tcpServer.nextPendingConnection();
                 this->srcNode.addHostSideConnection(conn);
             });
@@ -69,7 +69,7 @@ private Q_SLOTS:
         QCOMPARE(waitForStartedSpy.value(0).value(0).toBool(), false);
 
         bool next = false;
-        connect(&myTestServer, &MyTestServer::nextStep, [&next]{ next = true; });
+        connect(&myTestServer, &MyTestServer::nextStep, this, [&next] { next = true; });
         QTRY_VERIFY_WITH_TIMEOUT(next, 5000);
 
         qDebug() << "Disable remoting";
@@ -88,7 +88,7 @@ private Q_SLOTS:
 
         // wait for quit
         bool quit = false;
-        connect(&myTestServer, &MyTestServer::quitApp, [&quit]{quit = true;});
+        connect(&myTestServer, &MyTestServer::quitApp, this, [&quit] { quit = true; });
         QTRY_VERIFY_WITH_TIMEOUT(quit, 5000);
 
         // wait for delivery of events

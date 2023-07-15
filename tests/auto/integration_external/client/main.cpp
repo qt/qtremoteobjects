@@ -21,11 +21,11 @@ private Q_SLOTS:
         QRemoteObjectNode::RemoteObjectSchemaHandler setupTcp = [this](QUrl url) {
             QTcpSocket *socket = new QTcpSocket(&this->m_repNode);
             connect(socket, &QTcpSocket::connected,
-                    [socket, this]() {
+                    this, [socket, this]() {
                 this->m_repNode.addClientSideConnection(socket);
             });
             connect(socket, &QTcpSocket::errorOccurred,
-                    [socket](QAbstractSocket::SocketError error) {
+                    socket, [socket](QAbstractSocket::SocketError error) {
                 qDebug() << "SocketError" << error;
                 delete socket;
             });
@@ -139,7 +139,7 @@ private Q_SLOTS:
 
         rep->testEnumParamsInSlots(MyInterfaceReplica::Second, false, 74);
 
-        connect(rep.data(), &MyInterfaceReplica::testEnumParamsInSignals,
+        connect(rep.data(), &MyInterfaceReplica::testEnumParamsInSignals, this,
                 [](MyInterfaceReplica::Enum1 enumSignalParam) { QCOMPARE(enumSignalParam, MyInterfaceReplica::Second); });
 
         QTRY_COMPARE(rep->enum1(), MyInterfaceReplica::Second);

@@ -100,7 +100,8 @@ void BenchmarksTest::benchPropertyChangesInt()
     }
     QEventLoop loop;
     int lastValue = 0;
-    connect(center.data(), &LocalDataCenterReplica::data1Changed, [&lastValue, &center, &loop]() {
+    connect(center.data(), &LocalDataCenterReplica::data1Changed,
+            this, [&lastValue, &center, &loop]() {
         const bool res = (lastValue++ == center->data1());
         Q_ASSERT(res);
         Q_UNUSED(res)
@@ -149,7 +150,7 @@ void BenchmarksTest::benchQLocalSocketInt()
     Q_ASSERT(server.hasPendingConnections());
     serverSock.reset(server.nextPendingConnection());
     int lastValue = 0;
-    connect(&client, &QLocalSocket::readyRead, [&loop, &lastValue, &client]() {
+    connect(&client, &QLocalSocket::readyRead, this, [&loop, &lastValue, &client]() {
         int readout = 0;
         while (client.bytesAvailable() && lastValue < 50000) {
             client.read(reinterpret_cast<char*>(&readout), sizeof(int));
@@ -194,7 +195,7 @@ void BenchmarksTest::benchQLocalSocketQDataStreamInt()
     serverSock.reset(server.nextPendingConnection());
     QDataStream writeStream(serverSock.data());
     int lastValue = 0;
-    connect(&client, &QIODevice::readyRead, [&loop, &lastValue, &readStream]() {
+    connect(&client, &QIODevice::readyRead, this, [&loop, &lastValue, &readStream]() {
         int readout = 0;
         while (readStream.device()->bytesAvailable() && lastValue < 50000) {
             readStream >> readout;
@@ -229,7 +230,10 @@ void BenchmarksTest::benchModelLinearAccess()
         QScopedPointer<QAbstractItemModelReplica> model(localClient.acquireModel(QStringLiteral("BenchmarkRemoteModel")));
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
-        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles) {
+        connect(model.data(), &QAbstractItemModelReplica::dataChanged,
+                this, [&model, &loop, &dataToWait](const QModelIndex &topLeft,
+                                                   const QModelIndex &bottomRight,
+                                                   const QList<int> &roles) {
             for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                 // we're assuming that the view will try use the sent data,
                 // therefore we're not optimizing the code
@@ -276,7 +280,8 @@ void BenchmarksTest::benchModelLinearAccess()
             }
 
         };
-        connect(model.data(), &QAbstractItemModelReplica::initialized, [&model, &loop, &beginBenchmark] {
+        connect(model.data(), &QAbstractItemModelReplica::initialized,
+                this, [&model, &loop, &beginBenchmark] {
             if (model->isInitialized()) {
                 beginBenchmark();
             } else {
@@ -302,7 +307,10 @@ void BenchmarksTest::benchModelRandomAccess()
         model->setRootCacheSize(5000); // we need to make room for all 5000 rows that we'll use
         QEventLoop loop;
         QHash<int, QPair<QString, QString>> dataToWait;
-        connect(model.data(), &QAbstractItemModelReplica::dataChanged, [&model, &loop, &dataToWait](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles) {
+        connect(model.data(), &QAbstractItemModelReplica::dataChanged, this,
+                [&model, &loop, &dataToWait](const QModelIndex &topLeft,
+                                             const QModelIndex &bottomRight,
+                                             const QList<int> &roles) {
             for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
                 // we're assuming that the view will try use the sent data,
                 // therefore we're not optimizing the code
@@ -350,7 +358,8 @@ void BenchmarksTest::benchModelRandomAccess()
             }
 
         };
-        connect(model.data(), &QAbstractItemModelReplica::initialized, [&model, &loop, &beginBenchmark] {
+        connect(model.data(), &QAbstractItemModelReplica::initialized,
+                this, [&model, &loop, &beginBenchmark] {
             if (model->isInitialized()) {
                 beginBenchmark();
             } else {

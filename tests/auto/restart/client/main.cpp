@@ -18,7 +18,9 @@ private Q_SLOTS:
         m_repNode.reset(new QRemoteObjectNode);
         m_repNode->connectToNode(QUrl(QStringLiteral("tcp://127.0.0.1:65217")));
         m_rep.reset(m_repNode->acquire<ParentClassReplica>());
-        connect(m_rep.data(), &QRemoteObjectReplica::stateChanged, [this](QRemoteObjectReplica::State state, QRemoteObjectReplica::State previousState) {
+        connect(m_rep.data(), &QRemoteObjectReplica::stateChanged,
+                this, [this](QRemoteObjectReplica::State state,
+                             QRemoteObjectReplica::State previousState) {
             qDebug() << "**** stateChanged" << state << previousState;
             if (state == QRemoteObjectReplica::Suspect) {
                 qWarning() << "Replica suspect";
