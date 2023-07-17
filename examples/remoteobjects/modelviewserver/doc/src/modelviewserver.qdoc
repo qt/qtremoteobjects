@@ -4,6 +4,7 @@
 /*!
     \example modelviewserver
     \title Model-View Server
+    \examplecategory {Connectivity}
     \brief Developing a simple server program that displays and makes changes to a QTreeView
            which is made available on a Remote Objects network.
     \ingroup qtremoteobjects-examples
