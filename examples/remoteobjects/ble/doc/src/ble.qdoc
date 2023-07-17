@@ -4,6 +4,7 @@
 /*!
     \example ble
     \title QtRemoteObjects Bluetooth LE Example
+    \examplecategory {Connectivity}
     \brief Using QtBluetooth Low Energy (BT LE or BLE for short) as a transport medium with
            Qt Remote Objects.
     \ingroup qtremoteobjects-examples
