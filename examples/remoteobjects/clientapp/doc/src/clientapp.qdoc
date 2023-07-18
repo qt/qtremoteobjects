@@ -4,7 +4,7 @@
 /*!
     \example clientapp
     \title Time Client Application
-    \examplecategory {Input/Output}
+    \examplecategory {Connectivity}
     \ingroup qtremoteobjects-examples
     \meta tag {remoteobjects}
     \brief A client who holds a replica of a time object from a server and displays the time in a clock.
