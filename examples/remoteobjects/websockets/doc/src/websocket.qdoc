@@ -5,7 +5,7 @@
     \example websockets
     \title QtRemoteObjects WebSockets Applications
     \brief Using a non-QIODevice-based transport (QWebSocket) with QtRemoteObjects.
-    \examplecategory {Data Processing & I/O}
+    \examplecategory {Connectivity}
     \meta tag {rpc,network,websockets}
     \ingroup qtremoteobjects-examples
 

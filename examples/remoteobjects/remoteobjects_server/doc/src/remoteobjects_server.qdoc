@@ -4,7 +4,7 @@
 /*!
     \example remoteobjects_server
     \title Time Server Application
-    \examplecategory {Input/Output}
+    \examplecategory {Connectivity}
     \ingroup qtremoteobjects-examples
     \meta tag {remoteobjects}
     \brief A server which shares a time object with connected clients.
