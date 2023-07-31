@@ -18,7 +18,7 @@
 #include <QtNetwork/qabstractsocket.h>
 
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
-
+#include <QtRemoteObjects/qremoteobjectnode.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -116,6 +116,7 @@ public:
 
 Q_SIGNALS:
     void shouldReconnect(QtROClientIoDevice*);
+    void setError(QRemoteObjectNode::ErrorCode);
 
 protected:
     virtual void doDisconnectFromServer() = 0;

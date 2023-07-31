@@ -6,6 +6,7 @@
 
 #include <QtCore/qsharedpointer.h>
 #include <QtCore/qmetaobject.h>
+#include <QtNetwork/qlocalserver.h>
 #include <QtRemoteObjects/qtremoteobjectglobal.h>
 #include <QtRemoteObjects/qremoteobjectregistry.h>
 #include <QtRemoteObjects/qremoteobjectdynamicreplica.h>
@@ -61,7 +62,8 @@ public:
         MissingObjectName,
         HostUrlInvalid,
         ProtocolMismatch,
-        ListenFailed
+        ListenFailed,
+        SocketAccessError
     };
     Q_ENUM(ErrorCode)
 
@@ -181,6 +183,7 @@ public:
     ~QRemoteObjectHost() override;
     QUrl hostUrl() const override;
     bool setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas=BuiltInSchemasOnly) override;
+    static void setLocalServerOptions(QLocalServer::SocketOptions options);
 
 Q_SIGNALS:
     void hostUrlChanged();

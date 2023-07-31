@@ -8,6 +8,7 @@
 #include "qremoteobjectnode_p.h"
 #include "qremoteobjectpendingcall.h"
 #include "qtremoteobjectglobal.h"
+#include "qconnection_local_backend_p.h"
 
 #include <QtCore/qstringlist.h>
 
@@ -84,6 +85,19 @@ bool QRemoteObjectSourceIo::disableRemoting(QObject *object)
 
     delete source;
     return true;
+}
+
+void QRemoteObjectSourceIo::setSocketOptions(QLocalServer::SocketOptions options)
+{
+    if (!m_server.isNull()) {
+        LocalServerImpl *server = qobject_cast<LocalServerImpl *>(m_server.get());
+        if (server != nullptr) {
+            server->setSocketOptions(options);
+        } else {
+            qROWarning(this)
+                    << "Attempting to set socket options to a backend that is non-localserver";
+        }
+    }
 }
 
 void QRemoteObjectSourceIo::registerSource(QRemoteObjectSourceBase *source)

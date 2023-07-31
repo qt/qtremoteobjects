@@ -44,6 +44,7 @@ struct ManagedGadgetTypeEntry
 static QMutex s_managedTypesMutex;
 static QHash<int, ManagedGadgetTypeEntry> s_managedTypes;
 static QHash<int, QSet<QtROIoDeviceBase*>> s_trackedConnections;
+static QLocalServer::SocketOptions s_localServerOptions = QLocalServer::NoOptions;
 
 static void GadgetsStaticMetacallFunction(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
@@ -1192,6 +1193,8 @@ bool QRemoteObjectNodePrivate::initConnection(const QUrl &address)
     QObject::connect(connection, &QtROIoDeviceBase::readyRead, q, [this, connection]() {
         onClientRead(connection);
     });
+    connect(connection, &QtROClientIoDevice::setError, this,
+            &QRemoteObjectNodePrivate::setLastError);
     connection->connectToServer();
 
     return true;
@@ -1676,6 +1679,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
     \value HostUrlInvalid The given url has an invalid or unrecognized scheme.
     \value ProtocolMismatch The client and the server have different protocol versions.
     \value ListenFailed Can't listen on the specified host port.
+    \value SocketAccessError The client isn't allowed to connect to the server. Ensure that QRemoteObjectHost::setLocalServerOptions is set appropriately.
 */
 
 /*!
@@ -1966,6 +1970,13 @@ bool QRemoteObjectHostBasePrivate::setHostUrlBaseImpl(
         return false;
     }
     remoteObjectIo = new QRemoteObjectSourceIo(hostAddress, q);
+    QLocalServer::SocketOptions socketOptions;
+    {
+        QMutexLocker lock(&s_managedTypesMutex);
+        socketOptions = s_localServerOptions;
+    }
+    if (socketOptions != QLocalServer::NoOptions)
+        remoteObjectIo->setSocketOptions(socketOptions);
 
     if (allowedSchemas == QRemoteObjectHostBase::AllowedSchemas::BuiltInSchemasOnly && !remoteObjectIo->startListening()) {
         setLastError(QRemoteObjectHostBase::ListenFailed);
@@ -1984,6 +1995,26 @@ bool QRemoteObjectHostBasePrivate::setHostUrlBaseImpl(
     QObject::connect(remoteObjectIo, &QRemoteObjectSourceIo::remoteObjectRemoved, q, &QRemoteObjectHostBase::remoteObjectRemoved);
 
     return true;
+}
+
+/*!
+    \brief Sets the socket options for QLocalServer backends to \a options.
+    \since 6.7
+
+    It must be set before the QRemoteObjectHost object starts listening.
+    It has no consequence for already listening QRemoteObjectHost
+    objects or QRemoteObjectHost objects that use different
+    backends than QLocalServer. QRemoteObjectHost objects start to
+    listen during construction if the \l address argument is
+    non-empty, otherwise when the address is set via setHostUrl().
+
+    \sa setHostUrl(), QRemoteObjectHost()
+
+*/
+void QRemoteObjectHost::setLocalServerOptions(QLocalServer::SocketOptions options)
+{
+    QMutexLocker lock(&s_managedTypesMutex);
+    s_localServerOptions = options;
 }
 
 /*!

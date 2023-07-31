@@ -21,6 +21,7 @@
 
 #include <QtCore/qiodevice.h>
 #include <QtCore/qscopedpointer.h>
+#include <QtNetwork/qlocalserver.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -43,6 +44,7 @@ public:
     bool enableRemoting(QObject *object, const SourceApiMap *api, QObject *adapter = nullptr);
     bool disableRemoting(QObject *object);
     void newConnection(QtROIoDeviceBase *conn);
+    void setSocketOptions(QLocalServer::SocketOptions options);
 
     QUrl serverAddress() const;
 

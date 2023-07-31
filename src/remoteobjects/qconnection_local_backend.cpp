@@ -73,6 +73,9 @@ void LocalClientIo::onError(QLocalSocket::LocalSocketError error)
         emit shouldReconnect(this);
 #endif
         break;
+    case QLocalSocket::SocketAccessError:
+        emit setError(QRemoteObjectNode::SocketAccessError);
+        break;
     default:
         break;
     }
@@ -165,6 +168,11 @@ QAbstractSocket::SocketError LocalServerImpl::serverError() const
 void LocalServerImpl::close()
 {
     m_server.close();
+}
+
+void LocalServerImpl::setSocketOptions(QLocalServer::SocketOptions options)
+{
+    m_server.setSocketOptions(options);
 }
 
 #ifdef Q_OS_LINUX

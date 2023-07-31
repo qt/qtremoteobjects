@@ -85,6 +85,7 @@ public:
     bool listen(const QUrl &address) override;
     QAbstractSocket::SocketError serverError() const override;
     void close() override;
+    void setSocketOptions(QLocalServer::SocketOptions options);
 
 protected:
     QLocalServer m_server;
