@@ -6,10 +6,11 @@
 
 #include <QtBluetooth/QBluetoothUuid>
 #include <QtBluetooth/QLowEnergyCharacteristic>
+#include <QtBluetooth/QLowEnergyService>
+
 #include <QtCore/QIODevice>
 #include <QtCore/QPointer>
 
-class QLowEnergyService;
 class BLEIoDevice : public QIODevice
 {
     Q_OBJECT

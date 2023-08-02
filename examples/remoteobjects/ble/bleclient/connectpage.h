@@ -13,6 +13,7 @@
 
 class BLEIoDevice;
 
+QT_BEGIN_NAMESPACE
 class QBluetoothDeviceDiscoveryAgent;
 class QLowEnergyController;
 class QLowEnergyService;
@@ -20,6 +21,7 @@ class QLowEnergyService;
 namespace Ui {
 class ConnectPage;
 }
+QT_END_NAMESPACE
 
 class ConnectPage : public QWidget
 {
