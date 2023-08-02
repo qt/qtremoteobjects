@@ -8,12 +8,16 @@
 #include <QtRemoteObjects/QRemoteObjectNode>
 #include <QtWidgets/QWidget>
 
+#include <memory>
+
 class BLEIoDevice;
 class HeaterReplica;
 
+QT_BEGIN_NAMESPACE
 namespace Ui {
 class HeaterView;
 }
+QT_END_NAMESPACE
 
 class HeaterView : public QWidget
 {
