@@ -3,8 +3,6 @@
 
 #include "websocketiodevice.h"
 
-#include <QWebSocket>
-
 WebSocketIoDevice::WebSocketIoDevice(QWebSocket *webSocket, QObject *parent)
     : QIODevice(parent)
     , m_socket(webSocket)
