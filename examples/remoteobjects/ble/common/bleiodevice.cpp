@@ -5,7 +5,6 @@
 #include "bleiodevice.h"
 
 #include <QtBluetooth/QLowEnergyController>
-#include <QtBluetooth/QLowEnergyService>
 
 using namespace Qt::Literals::StringLiterals;
 
