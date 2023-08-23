@@ -767,10 +767,9 @@ bool QRemoteObjectReplica::isInitialized() const
 }
 
 /*!
-    Returns \c true if this replica has been initialized with data from the
-    \l {Source} object.  Returns \c false otherwise.
+    Returns the current \l {QRemoteObjectReplica::State}{state} of the replica.
 
-    \sa isInitialized()
+    \sa isInitialized
 */
 QRemoteObjectReplica::State QRemoteObjectReplica::state() const
 {
