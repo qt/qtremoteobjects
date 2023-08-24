@@ -52,7 +52,8 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
 
     This signal is emitted whenever a new source location is added to the registry.
 
-    \a entry is a QRemoteObjectSourceLocation, a typedef for QPair<QString, QUrl>.
+    \a entry is a QRemoteObjectSourceLocation, a typedef for
+    QPair<QString, QRemoteObjectSourceLocationInfo>.
 
     \sa remoteObjectRemoved()
 */
@@ -62,7 +63,8 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
 
     This signal is emitted whenever a Source location is removed from the Registry.
 
-    \a entry is a QRemoteObjectSourceLocation, a typedef for QPair<QString, QUrl>.
+    \a entry is a QRemoteObjectSourceLocation, a typedef for
+    QPair<QString, QRemoteObjectSourceLocationInfo>.
 
     \sa remoteObjectAdded()
 */
@@ -72,8 +74,9 @@ QRemoteObjectRegistry::QRemoteObjectRegistry(QRemoteObjectNode *node, const QStr
     \brief The set of sources known to the registry.
 
     This property is a QRemoteObjectSourceLocations, which is a typedef for
-    QHash<QString, QUrl>. Each known \l Source is the QString key, while the
-    url for the host node is the corresponding value for that key in the hash.
+    QHash<QString, QRemoteObjectSourceLocationInfo>. Each known \l Source is
+    contained as a QString key in the hash, and the corresponding value for
+    that key is the QRemoteObjectSourceLocationInfo for the host node.
 */
 
 /*!
