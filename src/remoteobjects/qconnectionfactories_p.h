@@ -24,6 +24,8 @@
 #include <QtRemoteObjects/qconnectionfactories.h>
 #include "qremoteobjectpacket_p.h"
 
+#include <memory>
+
 QT_BEGIN_NAMESPACE
 
 namespace QtRemoteObjects {
@@ -61,7 +63,7 @@ public:
     quint32 m_curReadSize = 0;
     QDataStream m_dataStream;
     QSet<QString> m_remoteObjects;
-    QRemoteObjectPackets::CodecBase *m_codec { nullptr };
+    std::unique_ptr<QRemoteObjectPackets::CodecBase> m_codec { nullptr };
     Q_DECLARE_PUBLIC(QtROIoDeviceBase)
 };
 
