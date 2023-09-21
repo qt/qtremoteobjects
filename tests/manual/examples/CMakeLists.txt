@@ -4,3 +4,4 @@
 if(TARGET Qt::Quick AND UNIX AND NOT ANDROID)
     add_subdirectory(qmlmodelviewclient)
 endif()
+add_subdirectory(simpleswitch)
