@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 cmake_minimum_required(VERSION 3.16)
-project(registryconnectedclient LANGUAGES CXX)
+project(tst_registryconnectedclient VERSION "${QT_REPO_MODULE_VERSION}" LANGUAGES CXX)
 
 if (ANDROID)
     message(FATAL_ERROR "This project cannot be built on Android.")
@@ -10,31 +10,17 @@ endif()
 
 set(CMAKE_AUTOMOC ON)
 
-if(NOT DEFINED INSTALL_EXAMPLESDIR)
-    set(INSTALL_EXAMPLESDIR "examples")
-endif()
-
-set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/simpleswitch/registryconnectedclient")
-
-find_package(Qt6 REQUIRED COMPONENTS Core RemoteObjects)
-
-qt_add_executable(registryconnectedclient
-    dynamicclient.cpp dynamicclient.h
-    main.cpp
+qt_internal_add_manual_test(tst_registryconnectedclient
+    SOURCES
+        main.cpp
+        dynamicclient.cpp
+        dynamicclient.h
+    LIBRARIES
+        Qt::Core
+        Qt::RemoteObjects
 )
 
-set_target_properties(registryconnectedclient PROPERTIES
+set_target_properties(tst_registryconnectedclient PROPERTIES
     WIN32_EXECUTABLE FALSE
     MACOSX_BUNDLE FALSE
-)
-
-target_link_libraries(registryconnectedclient PUBLIC
-    Qt::Core
-    Qt::RemoteObjects
-)
-
-install(TARGETS registryconnectedclient
-    RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
-    BUNDLE DESTINATION "${INSTALL_EXAMPLEDIR}"
-    LIBRARY DESTINATION "${INSTALL_EXAMPLEDIR}"
 )
