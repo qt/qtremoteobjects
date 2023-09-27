@@ -9,7 +9,6 @@ qtHaveModule(widgets) {
     SUBDIRS += \
         modelviewclient \
         modelviewserver
-    qtHaveModule(bluetooth): SUBDIRS += ble
 }
 
 contains(QT_CONFIG, ssl): SUBDIRS += ssl
