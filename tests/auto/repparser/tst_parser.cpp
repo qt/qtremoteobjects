@@ -26,6 +26,7 @@ private Q_SLOTS:
     void testPods();
     void testPods2_data();
     void testPods2();
+    void testCompilerAttributes();
     void testEnums_data();
     void testEnums();
     void testTypedEnums_data();
@@ -50,6 +51,7 @@ void tst_Parser::testBasic_data()
     //QTest::newRow("comment") << "//This is a comment";
     QTest::newRow("enum") << "ENUM MyEnum {test}";
     QTest::newRow("empty class with comment") << "class MyClass {\n//comment\n}";
+    QTest::newRow("empty exported class with comment") << "class Q_DECL_EXPORT MyClass {\n//comment\n}";
     QTest::newRow("comment, class") << "//comment\nclass MyClass {}";
     QTest::newRow("multicomment, class") << "/* row1\n row2\n */\nclass MyClass {}";
     QTest::newRow("include, comment, class") << "#include \"foo\"\n//comment\nclass MyClass {}";
@@ -298,6 +300,7 @@ void tst_Parser::testPods()
 
     QCOMPARE(ast.pods.size(), 1);
     const POD pods = ast.pods.first();
+    QVERIFY(pods.compilerAttribute.isEmpty());
     const QList<PODAttribute> podsList = pods.attributes;
     const QStringList typeList = expectedtypes.split(QLatin1Char(';'));
     const QStringList variableList = expectedvariables.split(QLatin1Char(';'));
@@ -356,6 +359,7 @@ void tst_Parser::testPods2()
 
     QCOMPARE(ast.pods.size(), 1);
     const POD pods = ast.pods.first();
+    QVERIFY(pods.compilerAttribute.isEmpty());
     const QVector<PODAttribute> podsList = pods.attributes;
     const QStringList typeList = expectedtypes.split(QLatin1Char(';'));
     const QStringList variableList = expectedvariables.split(QLatin1Char(';'));
@@ -365,6 +369,33 @@ void tst_Parser::testPods2()
         QCOMPARE(podsList.at(i).name, variableList.at(i));
         QCOMPARE(podsList.at(i).type, typeList.at(i));
     }
+}
+
+void tst_Parser::testCompilerAttributes()
+{
+    QTemporaryFile file;
+    file.open();
+    QTextStream stream(&file);
+    stream << "POD Q_DECL_EXPORT TestPod(int number)" << Qt::endl;
+    stream << "class Q_DECL_EXPORT TestClass" << Qt::endl;
+    stream << "{" << Qt::endl;
+    stream << "};" << Qt::endl;
+    file.seek(0);
+
+    RepParser parser(file);
+    QVERIFY(parser.parse());
+
+    const AST ast = parser.ast();
+
+    QCOMPARE(ast.pods.size(), 1);
+    const POD pods = ast.pods.first();
+    QCOMPARE(pods.name, "TestPod");
+    QCOMPARE(pods.compilerAttribute, "Q_DECL_EXPORT");
+
+    QCOMPARE(ast.classes.size(), 1);
+    const ASTClass klass = ast.classes.first();
+    QCOMPARE(klass.name, "TestClass");
+    QCOMPARE(klass.compilerAttribute, "Q_DECL_EXPORT");
 }
 
 void tst_Parser::testEnums_data()
@@ -629,6 +660,8 @@ void tst_Parser::testClasses()
 
     const ASTClass astSub = ast.classes.value(0);
     const ASTClass astObj = ast.classes.value(1);
+    QVERIFY(astSub.compilerAttribute.isEmpty());
+    QVERIFY(astObj.compilerAttribute.isEmpty());
     const ASTProperty property = astObj.properties.at(astObj.subClassPropertyIndices.at(0));
     QCOMPARE(property.name, expectedName);
     QCOMPARE(property.type, expectedType);

@@ -424,9 +424,11 @@ void RepCodeGenerator::generateSimpleSetter(const ASTProperty &property, bool ge
 void RepCodeGenerator::generatePOD(const POD &pod)
 {
     QStringList equalityCheck;
+    const QString compilerAttr = (!pod.compilerAttribute.isEmpty() ?
+                                   pod.compilerAttribute + QStringLiteral(" ") : QString());
     for (const PODAttribute &attr : pod.attributes)
         equalityCheck << QStringLiteral("left.%1() == right.%1()").arg(attr.name);
-    m_stream << "class " << pod.name << "\n"
+    m_stream << "class " << compilerAttr << pod.name << "\n"
                 "{\n"
                 "    Q_GADGET\n"
              << "\n"
@@ -569,13 +571,15 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
     const QString className = (astClass.name + (mode == REPLICA ?
                                QStringLiteral("Replica") : mode == SOURCE ?
                                QStringLiteral("Source") : QStringLiteral("SimpleSource")));
+    const QString compilerAttr = (!astClass.compilerAttribute.isEmpty() ?
+                                   astClass.compilerAttribute + QStringLiteral(" ") : QString());
     if (mode == REPLICA)
-        m_stream << "class " << className << " : public QRemoteObjectReplica" << Qt::endl;
+        m_stream << "class " << compilerAttr << className << " : public QRemoteObjectReplica" << Qt::endl;
     else if (mode == SIMPLE_SOURCE)
-        m_stream << "class " << className << " : public " << astClass.name << "Source"
+        m_stream << "class " << compilerAttr << className << " : public " << astClass.name << "Source"
                  << Qt::endl;
     else
-        m_stream << "class " << className << " : public QObject" << Qt::endl;
+        m_stream << "class " << compilerAttr << className << " : public QObject" << Qt::endl;
 
     m_stream << "{\n";
     m_stream << "    Q_OBJECT\n";
