@@ -53,7 +53,9 @@
     and minutes set to the hour and minute properties of \c Time. The
     "plugins2.qml" file is similar but displays two clocks.
 
-    \snippet clientapp/qml/plugins1.qml 0
+    \quotefromfile clientapp/plugins1.qml
+    \skipto /^import/
+    \printuntil
 
     \sa {Time Server Application}
 */

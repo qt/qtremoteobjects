@@ -2005,7 +2005,7 @@ bool QRemoteObjectHostBasePrivate::setHostUrlBaseImpl(
     It has no consequence for already listening QRemoteObjectHost
     objects or QRemoteObjectHost objects that use different
     backends than QLocalServer. QRemoteObjectHost objects start to
-    listen during construction if the \l address argument is
+    listen during construction if the \e address argument is
     non-empty, otherwise when the address is set via setHostUrl().
 
     \sa setHostUrl(), QRemoteObjectHost()

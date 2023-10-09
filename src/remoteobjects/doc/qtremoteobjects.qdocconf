@@ -56,3 +56,6 @@ imagedirs   += images
 navigation.landingpage = "Qt Remote Objects"
 navigation.cppclassespage = "Qt Remote Objects C++ Classes"
 navigation.qmltypespage = "Qt Remote Objects QML Types"
+
+# Enforce zero documentation warnings
+warninglimit = 0

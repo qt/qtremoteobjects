@@ -1,6 +1,6 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-//![0]
+
 import QtRemoteObjects
 import QtQuick
 import TimeExample // import types from the plugin
