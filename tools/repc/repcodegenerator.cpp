@@ -136,6 +136,13 @@ void RepCodeGenerator::generate(Mode mode, QString fileName)
     }
 
     generateHeader(mode);
+
+    m_stream << Qt::endl;
+    for (const QString &line : m_ast.headerLines)
+        m_stream << line;
+    if (!m_ast.headerLines.isEmpty())
+        m_stream << Qt::endl;
+
     for (const ASTEnum &en : m_ast.enums)
         generateEnumGadget(en, QStringLiteral("%1Enum").arg(en.name));
     for (const POD &pod : m_ast.pods)
@@ -223,6 +230,11 @@ void RepCodeGenerator::generate(Mode mode, QString fileName)
     }
 
     m_stream << Qt::endl;
+    for (const QString &line : m_ast.footerLines)
+        m_stream << line;
+    if (!m_ast.footerLines.isEmpty())
+        m_stream << Qt::endl;
+
     if (!fileName.isEmpty())
         m_stream << "#endif // " << fileName << Qt::endl;
 }

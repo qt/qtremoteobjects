@@ -252,6 +252,8 @@ struct AST
     QList<ASTFlag> flags;
     QList<QString> enumUses;
     QStringList preprocessorDirectives;
+    QStringList headerLines;
+    QStringList footerLines;
     QHash<QString, QByteArray> typeSignatures;
     QByteArray typeData(const QString &type, const QString &className) const;
     QByteArray functionsData(const QList<ASTFunction> &functions, const QString &className) const;
@@ -874,7 +876,13 @@ PreprocessorDirective: preprocessor_directive;
 /.
     case $rule_number:
     {
-        m_ast.preprocessorDirectives.append(captured().value(QStringLiteral("preprocessor_directive")));
+        const QString line = captured().value(QStringLiteral("preprocessor_directive"));
+        if (line.startsWith(QStringLiteral("#HEADER")))
+            m_ast.headerLines.append(line.sliced(8));
+        else if (line.startsWith(QStringLiteral("#FOOTER")))
+            m_ast.footerLines.append(line.sliced(8));
+        else
+            m_ast.preprocessorDirectives.append(captured().value(QStringLiteral("preprocessor_directive")));
     }
     break;
 ./

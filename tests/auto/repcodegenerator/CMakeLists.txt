@@ -17,6 +17,7 @@ qt6_add_repc_merged(tst_repcodegenerator
     preprocessortest.rep
     classwithreadonlypropertytest.rep
     classwithattributetest.rep
+    classinnamespace.rep
 )
 
 ## Scopes:

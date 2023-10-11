@@ -381,6 +381,25 @@
     end-of-line and adds that to the generated files. So multi-line
     #if/#else/#endif statements and multi-line macros are not supported.
 
+    \section3 #HEADER and #FOOTER Directives
+
+    There are two special directives, \c #HEADER and \c #FOOTER. Those directives
+    can be used to define content which should be put as-is into the generated
+    code, either before (HEADER) or after (FOOTER) the interfaces declaration.
+    The leading \c #HEADER and \c #FOOTER tokens plus one white-space character are
+    stripped.
+
+    In the following example, the generated repc classes are put inside a namespace.
+
+    \code
+        #HEADER namespace MyNamespace {
+        class MyType
+        {
+            ...
+        };
+        #FOOTER } // namespace MyNamespace
+    \endcode
+
     \section1 CMake functions
 
     The CMake functions for generating source and replica types are listed below.
