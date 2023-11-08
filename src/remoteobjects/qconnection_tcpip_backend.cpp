@@ -45,14 +45,15 @@ void TcpClientIo::connectToServer()
 {
     if (isOpen())
         return;
-    QHostAddress address(url().host());
-    if (address.isNull()) {
-        const QList<QHostAddress> addresses = QHostInfo::fromName(url().host()).addresses();
-        Q_ASSERT_X(addresses.size() >= 1, Q_FUNC_INFO, url().toString().toLatin1().data());
-        address = addresses.first();
-    }
+    const QString &host = url().host();
+    QHostAddress address(host);
+    if (address.isNull())
+        address = QHostInfo::fromName(host).addresses().value(0);
 
-    m_socket->connectToHost(address, quint16(url().port()));
+    if (address.isNull())
+        qWarning("connectToServer(): Failed to resolve host %s", qUtf8Printable(host));
+    else
+        m_socket->connectToHost(address, url().port());
 }
 
 bool TcpClientIo::isOpen() const
