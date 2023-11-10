@@ -298,7 +298,7 @@ QtROClientFactory *QtROClientFactory::instance()
 }
 
 /*!
-    \fn void qRegisterRemoteObjectsClient(const QString &id)
+    \fn template <typename T> void qRegisterRemoteObjectsClient(const QString &id)
     \relates QtROClientFactory
 
     Registers the Remote Objects client \a id for the type \c{T}.
@@ -325,7 +325,7 @@ QtROClientFactory *QtROClientFactory::instance()
 */
 
 /*!
-    \fn void qRegisterRemoteObjectsServer(const QString &id)
+    \fn template <typename T> void qRegisterRemoteObjectsServer(const QString &id)
     \relates QtROServerFactory
 
     Registers the Remote Objects server \a id for the type \c{T}.
