@@ -890,9 +890,13 @@ Pod: pod;
             qWarning() << "[repc] - Ignoring POD with no data members.  POD name: " << qPrintable(pod.name);
             return true;
         }
-        if (argString.contains(QLatin1String("ENUM"))) {
-            setErrorString(QLatin1String("ENUMs are only available in PODs using bracket syntax ('{'), not parentheses"));
-            return false;
+        for (const QStringView &token : argString.tokenize(u' ')) {
+            if (token.startsWith(QLatin1String("ENUM"))) {
+                if (token.size() == 4 || !(token[4].isLetterOrNumber() || token[4] == u'_')) {
+                    setErrorString(QLatin1String("ENUMs are only available in PODs using bracket syntax ('{'), not parentheses"));
+                    return false;
+                }
+            }
         }
 
         RepParser::TypeParser parseType;
