@@ -1700,7 +1700,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
 */
 
 /*!
-    \fn ObjectType *QRemoteObjectNode::acquire(const QString &name)
+    \fn template <class ObjectType> ObjectType *QRemoteObjectNode::acquire(const QString &name)
 
     Returns a pointer to a Replica of type ObjectType (which is a template
     parameter and must inherit from \l QRemoteObjectReplica). That is, the
@@ -2351,7 +2351,7 @@ void QRemoteObjectNode::addClientSideConnection(QIODevice *ioDevice)
 */
 
 /*!
-    \fn QStringList QRemoteObjectNode::instances() const
+    \fn template<typename T> QStringList QRemoteObjectNode::instances() const
 
     This templated function (taking a \l repc generated type as the template parameter) will
     return the list of names of every instance of that type on the Remote
