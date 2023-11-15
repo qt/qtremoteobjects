@@ -48,6 +48,9 @@ manifestmeta.thumbnail.names += "QtRemoteObjects/Model*" \
                                "QtRemoteObjects/QML*" \
                                "QtRemoteObjects/QtRemote*"
 
+manifestmeta.highlighted.names = \
+    "QtRemoteObjects/Time Server Application" \
+    "QtRemoteObjects/Time Client Application"
 
 examplesinstallpath = remoteobjects
 
