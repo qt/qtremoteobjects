@@ -10,6 +10,7 @@ qt_internal_add_module(RepParser
     HEADER_MODULE
     PUBLIC_LIBRARIES
         Qt::Core
+    NO_GENERATE_CPP_EXPORTS
 )
 
 qt_internal_module_info(module RepParser)

@@ -18,4 +18,5 @@ qt_internal_add_qml_module(RemoteObjectsQml
         Qt::Gui
         Qt::Qml
         Qt::RemoteObjects
+    NO_GENERATE_CPP_EXPORTS
 )
