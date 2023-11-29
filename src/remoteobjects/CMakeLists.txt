@@ -42,7 +42,6 @@ qt_internal_add_module(RemoteObjects
         Qt::Network
     PRIVATE_MODULE_INTERFACE
         Qt::CorePrivate
-    GENERATE_CPP_EXPORTS
 )
 
 ## Scopes:
