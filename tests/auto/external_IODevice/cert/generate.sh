@@ -16,6 +16,8 @@ genFiles () {
     # Generate certificate-signing request
     openssl req -new -key $stem.key -out $stem.csr -subj "/CN=127.0.0.1"
     # Generate and sign the certificate
+    # Apple requires that TLS certificates have a validity period of at most 825 days:
+    # https://support.apple.com/en-us/103769
     openssl x509 -req -in $stem.csr -out $stem.crt \
                  -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -days 825 -sha256 "$@"
     # Delete the signing request, no longer needed
