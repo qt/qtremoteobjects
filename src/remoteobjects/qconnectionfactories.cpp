@@ -259,7 +259,7 @@ QtROExternalIoDevice::QtROExternalIoDevice(QIODevice *device, QObject *parent)
     connect(device, &QIODevice::aboutToClose, this, [d]() { d->m_isClosing = true; });
     connect(device, &QIODevice::readyRead, this, &QtROExternalIoDevice::readyRead);
     auto meta = device->metaObject();
-    if (-1 != meta->indexOfSignal(SIGNAL(disconnected())))
+    if (-1 != meta->indexOfSignal("disconnected()"))
         connect(device, SIGNAL(disconnected()), this, SIGNAL(disconnected()));
 }
 
