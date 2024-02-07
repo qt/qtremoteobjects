@@ -1557,6 +1557,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
                 qROPrivDebug() << "Received InvokeReplyPacket ack'ing serial id:" << ackedSerialId;
+                rxValue = decodeVariant(std::move(rxValue), {});
                 rep->notifyAboutReply(ackedSerialId, rxValue);
             } else { //replica has been deleted, remove from list
                 replicas.remove(rxName);
