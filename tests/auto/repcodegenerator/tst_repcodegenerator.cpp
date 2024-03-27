@@ -1,5 +1,5 @@
 // Copyright (C) 2017 Ford Motor Company
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
 
 #include "rep_preprocessortest_merged.h"
 #include "rep_classinnamespace_merged.h"

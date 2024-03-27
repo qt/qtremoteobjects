@@ -1,5 +1,5 @@
 // Copyright (C) 2017 Ford Motor Company
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
 
 #include "rep_mismatch_replica.h"
 
