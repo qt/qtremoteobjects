@@ -228,7 +228,7 @@ bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::co
 
 /*!
     \qmltype Node
-    \instantiates QRemoteObjectNode
+    \nativetype QRemoteObjectNode
     \inqmlmodule QtRemoteObjects
     \brief A node on a Qt Remote Objects network.
 
@@ -1795,7 +1795,7 @@ QRemoteObjectNode::QRemoteObjectNode(QRemoteObjectNodePrivate &dptr, QObject *pa
 
 /*!
     \qmltype Host
-    \instantiates QRemoteObjectHost
+    \nativetype QRemoteObjectHost
     \inqmlmodule QtRemoteObjects
     \brief A host node on a Qt Remote Objects network.
 
