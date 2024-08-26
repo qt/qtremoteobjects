@@ -6,7 +6,7 @@
 \ingroup cmake-macros-qtremoteobjects
 
 \title qt_add_repc_replicas
-\target qt6_add_repc_replicas
+\keyword qt6_add_repc_replicas
 
 \brief Creates C++ header files for replica types from the Qt Remote Objects .rep files.
 
@@ -38,7 +38,7 @@ in this case \c rep_simpleswitch_replica.h
 \ingroup cmake-macros-qtremoteobjects
 
 \title qt_add_repc_sources
-\target qt6_add_repc_sources
+\keyword qt6_add_repc_sources
 
 \brief Creates C++ header files for source types from the Qt Remote Objects .rep files.
 
@@ -70,7 +70,7 @@ in this case \c rep_simpleswitch_source.h
 \ingroup cmake-macros-qtremoteobjects
 
 \title qt_add_repc_merged
-\target qt6_add_repc_merged
+\keyword qt6_add_repc_merged
 
 \brief Creates C++ header files for source and replica types from the Qt Remote Objects .rep files.
 
@@ -106,7 +106,7 @@ this function is not commonly used.
 \ingroup cmake-macros-qtremoteobjects
 
 \title qt_reps_from_headers
-\target qt6_reps_from_headers
+\keyword qt6_reps_from_headers
 
 \brief Creates .rep files from the QObject header files.
 
