@@ -1445,7 +1445,7 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 connection->close();
             } else {
                 // TODO should have some sort of manager for the codec
-                codec = new QRemoteObjectPackets::QDataStreamCodec;
+                codec.reset(new QRemoteObjectPackets::QDataStreamCodec);
             }
             break;
         case QRemoteObjectPacketTypeEnum::ObjectList:

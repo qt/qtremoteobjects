@@ -54,8 +54,7 @@
 #include <QBuffer>
 #include <QIODevice>
 #include <QPointer>
-
-class QWebSocket;
+#include <QWebSocket>
 
 class WebSocketIoDevice : public QIODevice
 {
