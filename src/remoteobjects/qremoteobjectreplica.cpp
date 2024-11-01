@@ -483,8 +483,12 @@ void QConnectedReplicaImplementation::setDisconnected()
     for (const int index : childIndices()) {
         auto pointerToQObject = qvariant_cast<QObject *>(getProperty(index));
         auto child = qobject_cast<QRemoteObjectReplica *>(pointerToQObject);
-        if (child)
-            static_cast<QConnectedReplicaImplementation *>(child->d_impl.data())->setDisconnected();
+        if (child) {
+            QConnectedReplicaImplementation *childReplicaImplData
+                    = static_cast<QConnectedReplicaImplementation *>(child->d_impl.data());
+            if (childReplicaImplData && !childReplicaImplData->connectionToSource.isNull())
+                childReplicaImplData->setDisconnected();
+        }
     }
 }
 
