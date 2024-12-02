@@ -6,6 +6,8 @@
 ## RemoteObjects Module:
 #####################################################################
 
+set(REPPARSER_DIR "${PROJECT_SOURCE_DIR}/src/repparser")
+
 qt_internal_add_module(RemoteObjects
     QMAKE_MODULE_CONFIG remoteobjects_repc
     SOURCES
@@ -17,12 +19,13 @@ qt_internal_add_module(RemoteObjects
         qremoteobjectabstractitemmodeltypes_p.h
         qremoteobjectcontainers.cpp qremoteobjectcontainers_p.h
         qremoteobjectdynamicreplica.cpp qremoteobjectdynamicreplica.h
-        qremoteobjectnode.cpp qremoteobjectnode.h qremoteobjectnode_p.h
+        qremoteobjectnode.cpp qremoteobjectnode.h qremoteobjectnode_p.h qremoteobjectstructs_p.h
         qremoteobjectpacket.cpp qremoteobjectpacket_p.h
         qremoteobjectpendingcall.cpp qremoteobjectpendingcall.h qremoteobjectpendingcall_p.h
         qremoteobjectregistry.cpp qremoteobjectregistry.h
         qremoteobjectregistrysource.cpp qremoteobjectregistrysource_p.h
         qremoteobjectreplica.cpp qremoteobjectreplica.h qremoteobjectreplica_p.h
+        qremoteobjectrepparser.cpp qremoteobjectrepparser_p.h
         qremoteobjectsettingsstore.cpp qremoteobjectsettingsstore.h
         qremoteobjectsource.cpp qremoteobjectsource.h qremoteobjectsource_p.h
         qremoteobjectsourceio.cpp qremoteobjectsourceio_p.h
@@ -35,6 +38,7 @@ qt_internal_add_module(RemoteObjects
         QT_NO_URL_CAST_FROM_STRING
     INCLUDE_DIRECTORIES
         .
+        "${REPPARSER_DIR}"
     LIBRARIES
         Qt::CorePrivate
     PUBLIC_LIBRARIES
@@ -42,6 +46,12 @@ qt_internal_add_module(RemoteObjects
         Qt::Network
     PRIVATE_MODULE_INTERFACE
         Qt::CorePrivate
+)
+
+qt_process_qlalr(
+    RemoteObjects
+    "${REPPARSER_DIR}/parser.g"
+    ""
 )
 
 ## Scopes:

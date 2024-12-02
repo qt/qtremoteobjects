@@ -23,26 +23,89 @@ QT_BEGIN_NAMESPACE
 
 using namespace QtRemoteObjects;
 using namespace QRemoteObjectStringLiterals;
+using namespace QRemoteObjectInternalTypes;
 
 using GadgetType = QVariantList;
 
-struct ManagedGadgetTypeEntry
+// When dynamic types consisted only of PODs and QDynamicReplicas, we used two
+// mechanisms for managing the memory allocated for these types.
+//
+// For POD types, we tracked memory using QObject pointers and the generated
+// QMetaType.id() - see ManagedTypeEntry and s_trackedReferences.
+//
+// For QDynamicReplica types we leveraged QRemoteObjectMetaObjectManager members
+// on Nodes that received the type information over the wire.
+//
+// Now that we can generate dynamic types for bindings to other languages, we need
+// to track the memory of these types as well.  Here we modify (hack?) the
+// ManagedTypeEntry mechanism.
+// 1) While dynamic classes have QMetaObjects, they don't have associated
+//    QMetaTypes.  So we create a global FakeClassIdManager that gives Qt reserved
+//    ids to class type we can use just for tracking.
+// 2) ManagedTypeEntry (which has been renamed from ManagedGadgetTypeEntry) now
+//    stores an int id instead of a QMetaType, and for class types, the stored
+//    QVariantList needed for PODs is unused.
+class FakeClassIdManager {
+public:
+    int addTypeName(const QByteArray &typeName) {
+        if (fakeClassIds.contains(typeName))
+            return -1;
+        int id = classId++;
+        if (id >= QMetaType::User) {
+            qWarning() << "Too many dynamic types registered, can't create more";
+            return -1;
+        }
+        fakeClassIds[typeName] = id;
+        return id;
+    }
+
+    int idForTypeName(const QByteArray &typeName) const {
+        return fakeClassIds.value(typeName, -1);
+    }
+
+    bool removeTypeName(const QByteArray &typeName) {
+        return fakeClassIds.remove(typeName) > 0;
+    }
+
+    bool removeTypeById(int id) {
+        auto it = std::find_if(fakeClassIds.begin(), fakeClassIds.end(), [id](const auto &value) {
+            return value == id;
+        });
+        if (it != fakeClassIds.end()) {
+            fakeClassIds.erase(it);
+            return true;
+        }
+        return false;
+    }
+
+private:
+    QMap<QByteArray, int> fakeClassIds;
+    int classId = 0;
+};
+
+Q_GLOBAL_STATIC(FakeClassIdManager, fakeClassIdManager)
+
+struct ManagedTypeEntry
 {
-    GadgetType gadgetType;
-    QMetaType gadgetMetaType;
+    GadgetType gadgetType;  // Optional now that this is used for dynamic types
+    int id;                 // Real QMetaType.id() or fake id for dynamic classes for bindings
     QList<QMetaType> enumMetaTypes;
-    std::shared_ptr<QMetaObject> metaObject;
+    QMetaObject *metaObject;
 
     void unregisterMetaTypes()
     {
-        QMetaType::unregisterMetaType(gadgetMetaType);
+        if (id >= QMetaType::User)
+            QMetaType::unregisterMetaType(QMetaType(id));
+        else
+            fakeClassIdManager()->removeTypeById(id);
         for (auto enumMetaType : enumMetaTypes)
             QMetaType::unregisterMetaType(enumMetaType);
+        free(metaObject);
     }
 };
 
 static QMutex s_managedTypesMutex;
-static QHash<int, ManagedGadgetTypeEntry> s_managedTypes;
+static QHash<int, ManagedTypeEntry> s_managedTypes;
 static QHash<int, QSet<QObject*>> s_trackedReferences;
 static QLocalServer::SocketOptions s_localServerOptions = QLocalServer::NoOptions;
 
@@ -197,6 +260,11 @@ static QString name(const QMetaObject * const mobj)
 {
     const int ind = mobj->indexOfClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE);
     return ind >= 0 ? QString::fromLatin1(mobj->classInfo(ind).value()) : QString();
+}
+
+ClassData::ClassData(bool _isSource) : isSource(_isSource)
+{
+    baseMeta = _isSource ? &QObject::staticMetaObject : &QRemoteObjectReplica::staticMetaObject;
 }
 
 QString QtRemoteObjects::getTypeNameAndMetaobjectFromClassInfo(const QMetaObject *& meta) {
@@ -754,59 +822,22 @@ static void trackReference(int typeId, QObject *reference)
     QObject::connect(reference, &QObject::destroyed, reference, unregisterIfNotUsed);
 }
 
-struct EnumPair {
-    QByteArray name;
-    int value;
-};
-
-struct EnumData {
-    QByteArray name;
-    bool isFlag, isScoped;
-    quint32 keyCount, size;
-    QList<EnumPair> values;
-};
-
-struct GadgetProperty {
-    QByteArray name;
-    QByteArray type;
-};
-
-struct GadgetData {
-    QList<GadgetProperty> properties;
-    QList<EnumData> enums;
-};
-
-struct ClassProperty {
-    QByteArray name;
-    QByteArray typeName;
-    QByteArray signalName;
-    bool isWritable = false;
-};
-
-struct ClassSignal {
-    QByteArray signature;
-    QByteArrayList parameterNames;
-};
-
-struct ClassSlot {
-    QByteArray signature, returnType;
-    QByteArrayList parameterNames;
-};
-
-struct ClassData
+bool trackAdditionalReference(QObject *reference, const QByteArray &typeName)
 {
-    ClassData(bool _isSource = false) : isSource(_isSource)
-    {
-        baseMeta = _isSource ? &QObject::staticMetaObject : &QRemoteObjectReplica::staticMetaObject;
-    }
-    QByteArray type;
-    QList<ClassProperty> properties;
-    QList<ClassSignal> _signals;
-    QList<ClassSlot> _slots;
-    QList<EnumData> enums;
-    bool isSource;
-    const QMetaObject *baseMeta;
-};
+    // Determine if the type is a POD or Class.  PODs will have a QMetaType
+    int id = -1;
+    auto metaType = QMetaType::fromName(typeName);
+    if (metaType.isValid())
+        id = metaType.id();
+    else
+        id = fakeClassIdManager->idForTypeName(typeName);
+
+    if (id < 0)
+        return false;
+
+    trackReference(id, reference);
+    return true;
+}
 
 static const char *strDup(const QByteArray &s)
 {
@@ -906,6 +937,9 @@ handleEnums(QMetaObjectBuilder &builder, const QList<EnumData> &enumList, const 
             metaType.registerType();
             enumLookup[enumData.name] = metaType;
             qCDebug(QT_REMOTEOBJECT) << "Registering new gadget enum with id" << metaType.id() << typeInfo->name << "size:" << typeInfo->size;
+        } else if (QMetaType::fromName(registeredName).isValid()) {
+            qWarning() << "Failed to register enum" << registeredName << "(this name is already in use).";
+            continue;
         }
         auto enumBuilder = builder.addEnumerator(enumData.name);
         enumBuilder.setIsFlag(enumData.isFlag);
@@ -920,13 +954,13 @@ handleEnums(QMetaObjectBuilder &builder, const QList<EnumData> &enumList, const 
     return {enumLookup, enumsToBeAssignedMetaObject};
 }
 
-static QMetaObject *registerGadget(QObject *reference, const GadgetData &gadget, QByteArray typeName)
+QMetaObject *registerGadget(QObject *reference, const GadgetData &gadget, QByteArray typeName)
 {
-    ManagedGadgetTypeEntry entry;
+    ManagedTypeEntry entry;
 
     QMetaObjectBuilder gadgetBuilder;
     gadgetBuilder.setClassName(typeName);
-    gadgetBuilder.setFlags(DynamicMetaObject | PropertyAccessInStaticMetaCall);
+    gadgetBuilder.setFlags(PropertyAccessInStaticMetaCall);
 
     auto [enumLookup, enumsToBeAssignedMetaObject] = handleEnums(gadgetBuilder, gadget.enums, typeName);
     for (auto metaType : enumLookup)
@@ -934,14 +968,17 @@ static QMetaObject *registerGadget(QObject *reference, const GadgetData &gadget,
 
     for (const auto &prop : gadget.properties) {
         int propertyType = QMetaType::fromName(prop.type).id();
-        entry.gadgetType.push_back(QVariant(QMetaType(propertyType)));
-        auto dynamicProperty = gadgetBuilder.addProperty(prop.name, prop.type);
+        if (!propertyType && enumLookup.contains(prop.type))
+            propertyType = enumLookup[prop.type].id();
+        auto propertyMetaType = QMetaType(propertyType);
+        entry.gadgetType.push_back(QVariant(propertyMetaType));
+        auto dynamicProperty = gadgetBuilder.addProperty(prop.name, {propertyMetaType.name()});
         dynamicProperty.setWritable(true);
         dynamicProperty.setReadable(true);
     }
 
     auto meta = gadgetBuilder.toMetaObject();
-    entry.metaObject = std::shared_ptr<QMetaObject>{meta, [](QMetaObject *ptr){ ::free(ptr); }};
+    entry.metaObject = meta;
     for (auto typeInfo : enumsToBeAssignedMetaObject)
         typeInfo->metaObject = meta;
 
@@ -967,7 +1004,7 @@ static QMetaObject *registerGadget(QObject *reference, const GadgetData &gadget,
             },
             meta
         };
-        entry.gadgetMetaType = QMetaType(typeInfo);
+        entry.id = QMetaType(typeInfo).id();
     } else {
         auto typeInfo = new TypeInfo {
             {
@@ -986,13 +1023,13 @@ static QMetaObject *registerGadget(QObject *reference, const GadgetData &gadget,
             },
             meta
         };
-        entry.gadgetMetaType = QMetaType(typeInfo);
+        entry.id = QMetaType(typeInfo).id();
     }
-    entry.gadgetMetaType.registerType();
-    const int gadgetTypeId = entry.gadgetMetaType.id();
-    trackReference(gadgetTypeId, reference);
+    QMetaType(entry.id).registerType();
+    if (reference)
+        trackReference(entry.id, reference);
     QMutexLocker lock(&s_managedTypesMutex);
-    s_managedTypes.insert(gadgetTypeId, entry);
+    s_managedTypes.insert(entry.id, entry);
     return meta;
 }
 
@@ -1006,7 +1043,8 @@ static void registerGadgets(QObject *reference, Gadgets &gadgets, QByteArray typ
     const auto &gadget = gadgets.take(typeName);
     int typeId = QMetaType::fromName(typeName).id();
     if (typeId != QMetaType::UnknownType) {
-        trackReference(typeId, reference);
+        if (reference)
+            trackReference(typeId, reference);
         return;
     }
 
@@ -1027,15 +1065,19 @@ static void registerAllGadgets(QObject *reference, Gadgets &gadgets)
         registerGadgets(reference, gadgets, gadgets.constBegin().key());
 }
 
-std::pair<QMetaObject *, QList<QMetaType>>
+static std::pair<QMetaObject *, QList<QMetaType>>
 registerDefinition(const ClassData &data)
 {
-    // TODO Fix appending "Source"/"Replica"
-    // auto type = data.type + (data.isSource ? "Source" : "");
-    auto type = data.type;
+    // This code was originally written to support dynamic Replica types, with no expectation
+    // that eventually dynamic sources for bindings to other languages would be added.
+    // Because it was only expected to support Replica types, the code only used the Rep type
+    // name for the name of the class, so we have "Simple" instead of "SimpleReplica".  Now
+    // that dynamic Sources are being added, we will have registration issues unless we have
+    // distinct names for Replicas and Sources.  To not break existing code, we will append
+    // "Source" to the type name if it is a Source, but leave Replica class names alone.
+    auto type = data.type + (data.isSource ? "Source" : "");
     QMetaObjectBuilder builder;
     builder.setSuperClass(data.baseMeta);
-    builder.setFlags(DynamicMetaObject);
 
     builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, data.type);
     builder.setClassName(type);
@@ -1082,6 +1124,27 @@ registerDefinition(const ClassData &data)
         newEnums.append(QMetaType(typeInfo));
     }
     return {meta, newEnums};
+}
+
+QMetaObject *registerAndTrackDefinition(const ClassData &data, QObject *reference)
+{
+    auto [meta, newEnums] = registerDefinition(data);
+    if (reference) {
+        ManagedTypeEntry entry;
+        auto id = fakeClassIdManager->addTypeName(meta->className());
+        if (id < 0) {
+            qWarning() << "Failed to register type" << meta->className() << "name already in use.";
+            return nullptr;
+        }
+        entry.id = id;
+        entry.metaObject = meta;
+        for (auto metaType : newEnums)
+            entry.enumMetaTypes.append(metaType);
+        trackReference(id, reference);
+        QMutexLocker lock(&s_managedTypesMutex);
+        s_managedTypes.insert(id, std::move(entry));
+    }
+    return meta;
 }
 
 static EnumData deserializeEnum(QDataStream &ds)

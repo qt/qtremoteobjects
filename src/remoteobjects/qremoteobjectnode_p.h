@@ -17,6 +17,7 @@
 
 #include <QtCore/private/qobject_p.h>
 #include "qremoteobjectsourceio_p.h"
+#include "qremoteobjectstructs_p.h"
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectnode.h"
 
@@ -37,6 +38,10 @@ QT_BEGIN_NAMESPACE
 class QRemoteObjectRegistry;
 class QRegistrySource;
 class QConnectedReplicaImplementation;
+
+QMetaObject *registerGadget(QObject *reference, const QRemoteObjectInternalTypes::GadgetData &gadget, QByteArray typeName);
+QMetaObject *registerAndTrackDefinition(const QRemoteObjectInternalTypes::ClassData &data, QObject *reference);
+bool trackAdditionalReference(QObject *reference, const QByteArray &typeName);
 
 class QRemoteObjectAbstractPersistedStorePrivate : public QObjectPrivate
 {
