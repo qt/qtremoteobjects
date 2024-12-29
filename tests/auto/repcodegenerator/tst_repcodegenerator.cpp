@@ -25,6 +25,7 @@ void tst_RepCodeGenerator::testNamespaceTestFile()
     Test::MyNamespace::MyNamespaceClassReplica testReplica;
     Test::MyNamespace::MyNamespaceClassSimpleSource testSource;
     Test::MyNamespace::MyNamespacePod testpod;
+    [[maybe_unused]]
     Test::MyNamespace::MyNamespaceEnumEnum::MyNamespaceEnum testenum =
             Test::MyNamespace::MyNamespaceEnumEnum::Value1;
 }
