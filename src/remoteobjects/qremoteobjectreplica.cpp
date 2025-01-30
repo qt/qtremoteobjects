@@ -119,8 +119,10 @@ QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
         sendCommand();
     }
     for (auto prop : m_propertyStorage) {
-        if (prop.canConvert<QObject*>())
-            prop.value<QObject *>()->deleteLater();
+        if (prop.canConvert<QObject*>()) {
+            if (auto o = prop.value<QObject*>())
+                o->deleteLater();
+        }
     }
 }
 
