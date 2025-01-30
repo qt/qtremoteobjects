@@ -37,7 +37,8 @@
 **
 ****************************************************************************/
 
-#pragma once
+#ifndef QREMOTEOBJECTCONTAINERS_P_H
+#define QREMOTEOBJECTCONTAINERS_P_H
 
 //
 //  W A R N I N G
@@ -118,3 +119,5 @@ QDataStream &operator>>(QDataStream &ds, QtROAssociativeContainer &p);
 QDataStream &operator<<(QDataStream &ds, const QtROAssociativeContainer &p);
 
 QT_END_NAMESPACE
+
+#endif // QREMOTEOBJECTCONTAINERS_P_H
