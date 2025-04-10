@@ -3,7 +3,9 @@
 
 
 add_subdirectory(benchmarks)
-add_subdirectory(cmake)
+if(NOT (WIN32 AND CMAKE_CROSSCOMPILING))
+    add_subdirectory(cmake)
+endif()
 add_subdirectory(modelreplica)
 add_subdirectory(modelview)
 add_subdirectory(pods)
