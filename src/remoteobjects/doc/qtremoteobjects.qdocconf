@@ -62,6 +62,9 @@ manifestmeta.highlighted.names = \
 
 examplesinstallpath = remoteobjects
 
+# Path to the root of qtremoteobjects (for automatic linking to source code)
+url.sources.rootdir     = ../../..
+
 imagedirs   += images
 
 navigation.landingpage = "Qt Remote Objects"
