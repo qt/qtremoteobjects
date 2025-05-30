@@ -78,7 +78,7 @@ In \c simpleswitch.h,
         later on the replica side.
 \endlist
 
-The definition of our \c SwitchState class is shown below:
+The definition of our \c SimpleSwitch class is shown below:
 
 \c simpleswitch.cpp
 
