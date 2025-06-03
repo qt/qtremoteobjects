@@ -8,6 +8,7 @@
 #include <qjsondocument.h>
 #include <qjsonobject.h>
 #include <qjsonarray.h>
+#include <qhashfunctions.h>
 
 #include "cppcodegenerator.h"
 #include "repcodegenerator.h"
@@ -34,6 +35,8 @@ QT_USE_NAMESPACE
 
 int main(int argc, char **argv)
 {
+    QHashSeed::setDeterministicGlobalSeed();
+
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationVersion(QString::fromLatin1(REPC_VERSION));
 
