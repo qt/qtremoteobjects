@@ -349,7 +349,7 @@ QtROClientFactory *QtROClientFactory::instance()
         QRemoteObjectNode client(QUrl(QStringLiteral("myprotocol:registry")));
     \endcode
 
-    \sa {qRegisterRemoteObjectsServer}
+    \sa {qRegisterRemoteObjectsClient}
 */
 
 QtROIoDeviceBasePrivate::QtROIoDeviceBasePrivate() : QObjectPrivate()
