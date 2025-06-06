@@ -1,8 +1,13 @@
 version: 2
 accept_configuration:
-  condition: property
-  property: features
-  not_contains_value: Disable
+  condition: and
+  conditions:
+    - condition: property
+      property: features
+      not_contains_value: Disable
+    - condition: property
+      property: target.osVersion
+      not_contains_value: QNX_800
 
 instructions:
   Build:
