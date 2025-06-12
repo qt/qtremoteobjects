@@ -1,5 +1,6 @@
 -- Copyright (C) 2014-2020 Ford Motor Company.
 -- SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+-- Qt-Security score:significant reason:parsing-build-time-only
 
 %parser rep_grammar
 %decl repparser.h
