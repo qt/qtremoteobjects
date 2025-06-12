@@ -1,5 +1,6 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:critical reason:network-protocol
 
 #include "qremoteobjectreplica.h"
 #include "qremoteobjectreplica_p.h"

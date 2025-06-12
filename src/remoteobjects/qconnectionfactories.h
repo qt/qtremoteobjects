@@ -1,5 +1,6 @@
 // Copyright (C) 2021 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:significant reason:default
 
 #ifndef QCONNECTIONFACTORIES_H
 #define QCONNECTIONFACTORIES_H

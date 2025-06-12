@@ -1,5 +1,6 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:significant reason:default
 
 #include "qremoteobjectabstractitemmodelreplica.h"
 #include "qremoteobjectabstractitemmodelreplica_p.h"

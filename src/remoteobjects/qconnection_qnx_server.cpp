@@ -1,5 +1,6 @@
 // Copyright (C) 2017-2016 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:critical reason:insecure-local-connections
 
 #include "qconnection_qnx_global_p.h"
 #include "qconnection_qnx_qiodevices_p.h"

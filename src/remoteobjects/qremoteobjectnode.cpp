@@ -1,5 +1,6 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:critical reason:potentially-allows-insecure-connections
 
 #include "private/qmetaobjectbuilder_p.h"
 

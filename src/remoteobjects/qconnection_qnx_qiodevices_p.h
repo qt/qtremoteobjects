@@ -1,5 +1,6 @@
 // Copyright (C) 2017-2016 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:significant reason:declarations-only
 
 #ifndef QQNXNATIVEIO_P_H
 #define QQNXNATIVEIO_P_H

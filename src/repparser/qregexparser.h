@@ -1,6 +1,7 @@
 // Copyright (C) 2017-2020 Ford Motor Company.
 // Copyright (C) 2017 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:significant reason:parsing-build-time-only
 
 #ifndef QREGEXPARSER_H
 #define QREGEXPARSER_H

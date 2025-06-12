@@ -1,5 +1,6 @@
 // Copyright (C) 2017-2015 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:critical reason:data-parser-and-backend-provider
 
 #include "qconnectionfactories_p.h"
 #include "qremoteobjectpacket_p.h"

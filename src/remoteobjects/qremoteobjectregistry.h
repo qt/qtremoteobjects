@@ -1,5 +1,6 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// Qt-Security score:significant reason:default
 
 #ifndef QREMOTEOBJECTREGISTRY_P_H
 #define QREMOTEOBJECTREGISTRY_P_H
