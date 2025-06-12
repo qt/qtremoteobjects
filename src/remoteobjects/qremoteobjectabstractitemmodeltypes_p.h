@@ -1,5 +1,6 @@
 // Copyright (C) 2017 Ford Motor Company
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+// Qt-Security score:critical reason:data-parser
 
 #ifndef QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_P_H
 #define QREMOTEOBJECTS_ABSTRACT_ITEM_MODEL_TYPES_P_H
