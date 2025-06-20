@@ -110,7 +110,8 @@ int main(int argc, char *argv[])
         }
     };
 
-    QObject::connect(bleController.get(), &QLowEnergyController::disconnected, [&]() {
+    QObject::connect(bleController.get(), &QLowEnergyController::disconnected, bleController.get(),
+                     [&]() {
         // Upon disconnection the underlying BLE service used by the ioDevice becomes
         // obsolete. Free up the resources, resume advertising and wait for a new client
         hostNode.reset(nullptr);
@@ -140,7 +141,8 @@ int main(int argc, char *argv[])
     // 2) Wait for client to indicate it is fully ready
     // 3) Create RO sourcenode and BLE IO device
     QMetaObject::Connection readConnection;
-    QObject::connect(bleController.get(), &QLowEnergyController::connected, [&]() {
+    QObject::connect(bleController.get(), &QLowEnergyController::connected, bleController.get(),
+                     [&]() {
         Q_ASSERT(!hostNode);
         Q_ASSERT(!ioDevice);
         readConnection = QObject::connect(sppService.get(),
