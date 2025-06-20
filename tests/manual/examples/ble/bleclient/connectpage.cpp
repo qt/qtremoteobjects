@@ -202,7 +202,7 @@ void ConnectPage::connectNode()
         }
     });
 
-    QObject::connect(m_service, &QLowEnergyService::errorOccurred, [this]
+    QObject::connect(m_service, &QLowEnergyService::errorOccurred, this, [this]
                                 (QLowEnergyService::ServiceError error) {
             if (error == QLowEnergyService::ServiceError::DescriptorWriteError)
                 m_controller->disconnectFromDevice();
