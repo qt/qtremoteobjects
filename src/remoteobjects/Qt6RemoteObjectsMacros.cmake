@@ -79,11 +79,12 @@ function(_qt_internal_add_repc_files type target)
         # The generated header file needs to be manually moc'ed (without using AUTOMOC) and then
         # added as source to compile into the target.
         qt6_wrap_cpp(qtro_moc_files "${outfile}" TARGET "${target}" ${extra_moc_options})
-        set_source_files_properties("${outfile}" PROPERTIES
-            GENERATED TRUE
-            SKIP_AUTOGEN ON)
         list(APPEND outfiles ${qtro_moc_files})
     endforeach()
+    _qt_internal_set_source_file_generated(
+        SOURCES ${outfiles}
+        SKIP_AUTOGEN
+    )
     target_sources(${target} PRIVATE ${outfiles})
 endfunction()
 
