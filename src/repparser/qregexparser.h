@@ -15,14 +15,14 @@
 #include <QtCore/qtextstream.h>
 #include <QtCore/qdebug.h>
 
+QT_BEGIN_NAMESPACE
+
 struct MatchCandidate {
     MatchCandidate(const QString &n, const QString &t, int i) : name(n), matchText(t), index(i) {}
     QString name;
     QString matchText;
     int index;
 };
-
-QT_BEGIN_NAMESPACE
 
 template <typename _Parser, typename _Table>
 class QRegexParser: protected _Table
