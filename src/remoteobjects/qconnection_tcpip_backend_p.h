@@ -1,5 +1,5 @@
 // Copyright (C) 2017-2015 Ford Motor Company
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #ifndef QCONNECTIONTCPIPBACKEND_P_H
 #define QCONNECTIONTCPIPBACKEND_P_H
