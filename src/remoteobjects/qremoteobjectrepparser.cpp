@@ -28,8 +28,8 @@ static QByteArrayList toByteArrayList(const QStringList &stringList)
     /*
      * Helper method to convert a list of strings into a list of QByteArrays
     */
-    QByteArrayList byteArrayList(stringList.size());
-
+    QByteArrayList byteArrayList;
+    byteArrayList.reserve(stringList.size());
     for (const QString &str : stringList)
         byteArrayList.append(toQBA(str));
 
