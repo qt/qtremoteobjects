@@ -108,8 +108,8 @@ QDataStream &operator<<(QDataStream &ds, const QtROAssociativeContainer &p)
     auto pos = ds.device()->pos();
     quint32 count = p.size();
     ds << count;
-    QAssociativeIterable map(&p);
-    QAssociativeIterable::const_iterator iter = map.begin();
+    QMetaAssociation::Iterable map(&p);
+    QMetaAssociation::Iterable::const_iterator iter = map.begin();
     auto transferType = p.m_keyType;
     if (p.m_keyType.flags().testFlag(QMetaType::IsEnumeration))
         transferType = QRemoteObjectPackets::transferTypeForEnum(p.m_keyType);

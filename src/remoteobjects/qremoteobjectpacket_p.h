@@ -20,11 +20,11 @@
 #include "qremoteobjectsource.h"
 #include "qconnectionfactories.h"
 
-#include <QtCore/qassociativeiterable.h>
 #include <QtCore/qhash.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qpair.h>
-#include <QtCore/qsequentialiterable.h>
+#include <QtCore/qmetaassociation.h>
+#include <QtCore/qmetasequence.h>
 #include <QtCore/qurl.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qloggingcategory.h>
