@@ -308,6 +308,11 @@ bool map_contains(const QMap<K,V> &map, const Query &key, typename QMap<K,V>::co
     replicas only. It is not able to share source objects.
 
 */
+/*!
+    \class QRemoteObjectRegistryHostPrivate
+    \inmodule QtRemoteObjects
+    \internal
+*/
 
 QRemoteObjectNodePrivate::QRemoteObjectNodePrivate()
     : QObjectPrivate()
@@ -2113,7 +2118,9 @@ QUrl QRemoteObjectHostBase::hostUrl() const
 }
 
 /*!
-    \internal The HostBase version of this method is protected so the method
+    \internal
+
+    The HostBase version of this method is protected so the method
     isn't exposed on RegistryHost nodes.
 */
 bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas allowedSchemas)
@@ -2121,6 +2128,9 @@ bool QRemoteObjectHostBase::setHostUrl(const QUrl &hostAddress, AllowedSchemas a
     return d_func()->setHostUrlBaseImpl(hostAddress, allowedSchemas);
 }
 
+/*!
+ *  \internal
+ */
 bool QRemoteObjectHostBasePrivate::setHostUrlBaseImpl(
         const QUrl &hostAddress, QRemoteObjectHostBase::AllowedSchemas allowedSchemas)
 {
@@ -2229,6 +2239,9 @@ bool QRemoteObjectHost::setHostUrl(const QUrl &hostAddress, AllowedSchemas allow
     return d_func()->setHostUrlHostImpl(hostAddress, allowedSchemas);
 }
 
+/*!
+ *  \internal
+ */
 bool QRemoteObjectHostPrivate::setHostUrlHostImpl(
         const QUrl &hostAddress, QRemoteObjectHostBase::AllowedSchemas allowedSchemas)
 {
@@ -2796,7 +2809,9 @@ QAbstractItemModelReplica *QRemoteObjectNode::acquireModel(const QString &name, 
     QAbstractItemModelReplicaImplementation *rep = acquire<QAbstractItemModelReplicaImplementation>(name);
     return new QAbstractItemModelReplica(rep, action, rolesHint);
 }
-
+/*!
+ * \internal
+ */
 QRemoteObjectHostBasePrivate::QRemoteObjectHostBasePrivate()
     : QRemoteObjectNodePrivate()
     , remoteObjectIo(nullptr)

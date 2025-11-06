@@ -832,6 +832,11 @@ bool QRemoteObjectReplica::waitForSource(int timeout)
     return d_impl->waitForSource(timeout);
 }
 
+/*!
+ *  \class QInProcessReplicaImplementation
+ *  \inmodule QtRemoteObjects
+ *  \internal
+ */
 QInProcessReplicaImplementation::QInProcessReplicaImplementation(const QString &name, const QMetaObject *meta, QRemoteObjectNode * node)
     : QRemoteObjectReplicaImplementation(name, meta, node)
 {
