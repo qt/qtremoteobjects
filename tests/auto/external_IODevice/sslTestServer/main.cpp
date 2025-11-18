@@ -19,7 +19,8 @@ int main(int argc, char *argv[])
     QSslConfiguration::setDefaultConfiguration(config);
     SslServer server;
     server.listen(QHostAddress::Any, 65111);
-    host.setHostUrl(server.serverAddress().toString(), QRemoteObjectHost::AllowExternalRegistration);
+    host.setHostUrl(QUrl{server.serverAddress().toString()},
+                    QRemoteObjectHost::AllowExternalRegistration);
     QObject::connect(&server, &SslServer::encryptedSocketReady, &server, [&host](QSslSocket *socket){
         QObject::connect(socket, &QSslSocket::errorOccurred,
                 socket, [](QAbstractSocket::SocketError error){
