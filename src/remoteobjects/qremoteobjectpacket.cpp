@@ -158,7 +158,8 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
                 return QVariant();
             }
             QMetaSequence::Iterable seqIter = seq.view<QMetaSequence::Iterable>();
-            if (!seqIter.metaContainer().canAddValue()) {
+            const QMetaSequence metaSequence = seqIter.metaContainer();
+            if (!metaSequence.canAddValue()) {
                 qWarning() << "Unsupported container" << qsq_->typeName.constData()
                            << "(Unable to add values)";
                 return QVariant();
@@ -171,16 +172,20 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
             QVariant tmp{valueType, nullptr};
             for (quint32 i = 0; i < count; i++) {
                 if (!valueType.load(in, tmp.data())) {
-                    if (seqIter.metaContainer().canRemoveValue() || i == 0) {
+                    if (metaSequence.canRemoveValue() || i == 0) {
                         for (quint32 ii = 0; ii < i; ii++)
-                            seqIter.removeValue();
+                            metaSequence.removeValue(seqIter.mutableIterable());
                         qWarning("QSQ_: unable to load type '%s', returning an empty list.", valueTypeName.constData());
                     } else {
                         qWarning("QSQ_: unable to load type '%s', returning a partial list.", valueTypeName.constData());
                     }
                     break;
                 }
-                seqIter.addValue(tmp);
+
+                QtPrivate::QVariantTypeCoercer coercer;
+                metaSequence.addValue(
+                        seqIter.mutableIterable(),
+                        coercer.coerce(tmp, metaSequence.valueMetaType()));
             }
             value = seq;
 #ifdef QTRO_VERBOSE_PROTOCOL
