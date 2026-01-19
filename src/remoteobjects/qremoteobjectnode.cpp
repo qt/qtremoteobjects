@@ -2694,10 +2694,10 @@ bool QRemoteObjectHostBase::enableRemoting(QAbstractItemModel *model, const QStr
         hostNode.enableRemoting<MinuteTimerSourceAPI>(&timer);
     \endcode
 
-    Here the MinuteTimerSourceAPI is the set of Signals/Slots/Properties
-    defined by the TimeModel.rep file. Compile time checks are made to verify
-    the input QObject can expose the requested API, it will fail to compile
-    otherwise. This allows a subset of \a object 's interface to be exposed,
+    Here the MinuteTimerSourceAPI is the \a ApiDefinition, representing the
+    set of Signals/Slots/Properties defined by the TimeModel.rep file.
+    Compile time checks are made to verify the input QObject can expose the
+    requested API, it will fail to compile otherwise. This allows a subset of \a object 's interface to be exposed,
     and allows the types of conversions supported by Signal/Slot connections.
 
     Returns \c false if the current node is a client node, or if the QObject is
