@@ -18,6 +18,7 @@
     with support for it.
 
     \image StandardItemTableWindow.webp
+           {SourceView window with two-column table and colored row highlighting}
 
     \section1 The WsServer Application
 

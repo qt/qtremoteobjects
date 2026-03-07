@@ -16,6 +16,7 @@
     on the server.
 
     \image clientapp-example.webp
+           {Application window displaying two synchronized analog clocks}
 
     \section1 Before Running the Time Client Application
 
