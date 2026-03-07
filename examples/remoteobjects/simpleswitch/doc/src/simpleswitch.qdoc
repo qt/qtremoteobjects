@@ -10,6 +10,7 @@
     \brief A minimalist Remote Object server and client.
 
     \image simpleswitch-example.webp
+           {Terminal output with Source State and Replica state toggling true and false}
 
     The directconnectserver and directconnectclient applications are simple
     examples that can be used as starting points for more complex

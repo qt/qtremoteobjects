@@ -15,6 +15,7 @@
     and how to access them.
 
     \image ssl-example.webp
+           {Terminal running sslserver and displaying the current time}
 
     Both \e sslserver and \e sslcppclient use a custom root CA certificate to
     validate each other's certificates all located in sslserver/cert.
