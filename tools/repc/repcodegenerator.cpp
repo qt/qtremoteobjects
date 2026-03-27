@@ -735,6 +735,11 @@ void RepCodeGenerator::generateClass(Mode mode, const ASTClass &astClass,
                 m_stream << "        properties << QVariant::fromValue(("
                          << typeForMode(property, mode) << ")" << property.defaultValue
                          << ");" << Qt::endl;
+            else if (typeForMode(property, mode) == "QString"_L1
+                     && !property.defaultValue.isEmpty())
+                m_stream << "        properties << QVariant::fromValue("
+                         << "u" << property.defaultValue << "_s"
+                         << ");" << Qt::endl; // Use string literal syntax for QString
             else
                 m_stream << "        properties << QVariant::fromValue("
                          << typeForMode(property, mode) << "(" << property.defaultValue

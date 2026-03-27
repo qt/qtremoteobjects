@@ -1,0 +1,4 @@
+class StringLiteral
+{
+    PROP(QString name="Default")
+}
