@@ -50,6 +50,11 @@
     is an object based system, these interfaces are defined by APIs available
     through objects, that is, classes with properties, signals, and slots.
 
+    \section2 Comments
+
+    Single-line comments in C++ style (\c{/}\c{/ text}) as well as multi-line comments
+    in C style (\c{/}\c{* text *}\c{/}) are supported.
+
     \section2 The class type
 
     Each class defined in a rep file becomes a QObject in the generated header

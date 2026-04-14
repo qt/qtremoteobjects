@@ -53,7 +53,7 @@ void tst_Parser::testBasic_data()
     QTest::newRow("empty class with comment") << "class MyClass {\n//comment\n}";
     QTest::newRow("empty exported class with comment") << "class Q_DECL_EXPORT MyClass {\n//comment\n}";
     QTest::newRow("comment, class") << "//comment\nclass MyClass {}";
-    QTest::newRow("multicomment, class") << "/* row1\n row2\n */\nclass MyClass {}";
+    QTest::newRow("multicomment, class") << "/* row1\n row2\n */\nclass MyClass {}\n /* trailing */";
     QTest::newRow("include, comment, class") << "#include \"foo\"\n//comment\nclass MyClass {}";
 }
 

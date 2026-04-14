@@ -28,7 +28,7 @@
 %token comma "[comma],"
 %token equals "[equals]="
 %token comment "[comment](?<comment>[ \\t]*//[^\\n]*\\n)"
-%token mcomment "[mcomment,M](?<comment>/\\*(.*?)\\*/)"
+%token mcomment "[mcomment,M](?<comment>[ \\t]*/\\*(.*?)\\*/)"
 %token preprocessor_directive "[preprocessor_directive](?<preprocessor_directive>#[ \\t]*[^\\n]*\\n)"
 %token newline "[newline](\\r)?\\n"
 %token tstart "[tstart]<"
