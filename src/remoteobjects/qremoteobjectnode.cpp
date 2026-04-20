@@ -764,7 +764,10 @@ QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
 void QRemoteObjectNode::setPersistedStore(QRemoteObjectAbstractPersistedStore *persistedStore)
 {
     Q_D(QRemoteObjectNode);
+    if (d->persistedStore == persistedStore)
+        return;
     d->persistedStore = persistedStore;
+    emit persistedStoreChanged(persistedStore);
 }
 
 QRemoteObjectAbstractPersistedStore::QRemoteObjectAbstractPersistedStore(QRemoteObjectAbstractPersistedStorePrivate &dptr, QObject *parent)
@@ -2265,7 +2268,10 @@ bool QRemoteObjectHostPrivate::setHostUrlHostImpl(
 */
 bool QRemoteObjectRegistryHost::setRegistryUrl(const QUrl &registryUrl)
 {
-    return d_func()->setRegistryUrlRegistryHostImpl(registryUrl);
+    bool success = d_func()->setRegistryUrlRegistryHostImpl(registryUrl);
+    if (success)
+        emit registryUrlChanged(registryUrl);
+    return success;
 }
 
 bool QRemoteObjectRegistryHostPrivate::setRegistryUrlRegistryHostImpl(const QUrl &registryUrl)
@@ -2327,7 +2333,10 @@ QUrl QRemoteObjectNode::registryUrl() const
 bool QRemoteObjectNode::setRegistryUrl(const QUrl &registryAddress)
 {
     Q_D(QRemoteObjectNode);
-    return d->setRegistryUrlNodeImpl(registryAddress);
+    bool success = d->setRegistryUrlNodeImpl(registryAddress);
+    if (success)
+        emit registryUrlChanged(registryAddress);
+    return success;
 }
 
 bool QRemoteObjectNodePrivate::setRegistryUrlNodeImpl(const QUrl &registryAddr)

@@ -77,12 +77,20 @@ void ProxyTest::testProxy()
     QFETCH(bool, dynamic);
 
     //Setup Local Registry
-    QRemoteObjectRegistryHost registry(registryUrl);
+    QRemoteObjectRegistryHost registry;
     SET_NODE_NAME(registry);
+    QSignalSpy spy1(&registry, &QRemoteObjectRegistryHost::registryUrlChanged);
+    registry.setRegistryUrl(registryUrl);
+    QVERIFY(spy1.isValid());
+    QVERIFY(spy1.size() || spy1.wait());
+
     //Setup Local Host
     QRemoteObjectHost host(localHostUrl);
     SET_NODE_NAME(host);
+    QSignalSpy spy2(&host, &QRemoteObjectNode::registryUrlChanged);
     host.setRegistryUrl(registryUrl);
+    QVERIFY(spy2.isValid());
+    QVERIFY(spy2.size() || spy2.wait());
     EngineSimpleSource engine;
     engine.setRpm(1234);
     engine.setType(EngineSimpleSource::Gas);

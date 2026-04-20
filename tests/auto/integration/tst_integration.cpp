@@ -267,8 +267,11 @@ private slots:
     {
         QRemoteObjectNode _client;
         Q_SET_OBJECT_NAME(_client);
+        QSignalSpy spy(&_client, &QRemoteObjectNode::persistedStoreChanged);
         TestPersistedStore store;
         _client.setPersistedStore(&store);
+        QVERIFY(spy.isValid());
+        QVERIFY(spy.size() || spy.wait());
 
         const QScopedPointer<EngineReplica> engine_r(_client.acquire<EngineReplica>());
         QCOMPARE(engine_r->engineType(), EngineReplica::HYBRID);
