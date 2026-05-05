@@ -182,35 +182,11 @@ static void GadgetDataStreamInFn(const QtPrivate::QMetaTypeInterface *, QDataStr
         ds >> prop;
 }
 
-// Like the Q_GADGET static methods above, we need constructor/destructor methods
-// in order to use dynamically defined enums with QVariant or as signal/slot
+// Helpers for dynamically defined enums with QVariant or used as signal/slot
 // parameters (i.e., the queued connection mechanism, which QtRO leverages).
 //
 // We will need the enum methods to support different sizes when typed scope enum
 // support is added, so might as well use that now.
-template<typename T>
-static void EnumDestructor(const QtPrivate::QMetaTypeInterface *, void *ptr)
-{
-    static_cast<T*>(ptr)->~T();
-}
-
-template<typename T>
-static void EnumConstructor(const QtPrivate::QMetaTypeInterface *, void *where)
-{
-    new(where) T;
-}
-
-template<typename T>
-static void EnumCopyConstructor(const QtPrivate::QMetaTypeInterface *, void *where, const void *copy)
-{
-    new(where) T(*static_cast<const T*>(copy));
-}
-
-template<typename T>
-static void EnumMoveConstructor(const QtPrivate::QMetaTypeInterface *, void *where, void *copy)
-{
-    new(where) T(std::move(*static_cast<T*>(copy)));
-}
 
 // Not used, but keeping these in case we end up with a need for save/load.
 template<typename T>
@@ -878,16 +854,18 @@ static const QMetaObject *metaObjectFn(const QtPrivate::QMetaTypeInterface *self
 template <class Int>
 static TypeInfo *enumMetaType(const QByteArray &name, uint size, const QMetaObject *meta=nullptr)
 {
-    static const auto flags = QMetaType::IsEnumeration | QMetaType::NeedsConstruction
-                              | QMetaType::NeedsDestruction;
+    static_assert(std::is_integral_v<Int>);
+    Q_ASSERT(size == sizeof(Int));
 
     auto typeInfo = new TypeInfo {
         {
-            0, alignof(Int), size, uint(flags), 0, metaObjectFn, strDup(name),
-            EnumConstructor<Int>,
-            EnumCopyConstructor<Int>,
-            EnumMoveConstructor<Int>,
-            EnumDestructor<Int>,
+            0, alignof(Int), size,
+            uint(QMetaType::fromType<Int>().flags() | QMetaType::IsEnumeration),
+            0, metaObjectFn, strDup(name),
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
             EnumEqualsFn<Int>,
             EnumLessThanFn<Int>,
             EnumDebugStreamFn<Int>,
