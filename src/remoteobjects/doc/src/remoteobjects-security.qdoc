@@ -1,0 +1,30 @@
+// Copyright (C) 2026 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
+
+/*!
+    \page qtremoteobjects-security.html
+    \title Qt Remote Objects Security Considerations
+    \ingroup security-considerations
+    \brief Security considerations for Qt Remote Objects.
+
+    \section1 Overview
+
+    The purpose of Qt Remote Objects is the ability to call methods on
+    objects that are not in the same process or on the same host as if
+    they are in the same process. However, the Qt Remote Objects module is
+    not designed with security in mind and provides no authentication of
+    other hosts. The protocol has no way of discovering if two hosts are
+    using different versions of the shared objects, and attackers sending
+    random data can cause misbehavior or crashing. Because all hosts have
+    equal access to the same methods on the shared objects, a single host
+    can flood the others with high rates of method calls and large amounts
+    of data. It must therefore be used in a trusted environment protected
+    from the internet.
+
+    \warning Exposing Qt Remote Objects directly to the internet is a security
+    risk. Qt Remote Objects is not hardened against network-based attacks.
+
+    If internet-facing access to Qt Remote Objects functionality is needed, isolate
+    the Qt Remote Objects nodes behind a hardened application-level gateway that
+    exposes only the specific operations required.
+*/
