@@ -10,7 +10,7 @@
 #include <QStandardPaths>
 #include <QCoreApplication>
 
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) || defined(Q_OS_OHOS)
 #define LOCAL_SOCKET "localabstract"
 #else
 #define LOCAL_SOCKET  "local"
@@ -26,7 +26,7 @@ bool init(const QString &folder)
     if (!TestUtils::rootFolder.isEmpty())
         return true;
 
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) || defined(Q_OS_OHOS)
     // All libraries are at located at the native libraries folder
     return true;
 #endif
