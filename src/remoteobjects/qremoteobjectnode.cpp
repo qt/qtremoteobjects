@@ -737,6 +737,15 @@ QRemoteObjectAbstractPersistedStore *QRemoteObjectNode::persistedStore() const
     Requires a \l QRemoteObjectAbstractPersistedStore class implementation to control where and how
     persistence is handled.
 */
+
+/*!
+    \fn void QRemoteObjectNode::persistedStoreChanged(
+            QRemoteObjectAbstractPersistedStore *persistedStore)
+    \since 6.12
+
+    This signal is emitted when the \l persistedStore property changes to
+    \a persistedStore.
+*/
 void QRemoteObjectNode::setPersistedStore(QRemoteObjectAbstractPersistedStore *persistedStore)
 {
     Q_D(QRemoteObjectNode);
@@ -2301,6 +2310,14 @@ QRemoteObjectNode::ErrorCode QRemoteObjectNode::lastError() const
     \brief The address of the \l {QRemoteObjectRegistry} {Registry} used by this node.
 
     This is an empty QUrl if there is no registry in use.
+*/
+
+/*!
+    \fn void QRemoteObjectNode::registryUrlChanged(const QUrl &registryUrl)
+    \since 6.12
+
+    This signal is emitted when the \l registryUrl property changes to
+    \a registryUrl.
 */
 QUrl QRemoteObjectNode::registryUrl() const
 {
