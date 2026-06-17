@@ -1,9 +1,15 @@
 QT += widgets remoteobjects websockets
 requires(qtConfig(treeview))
 
-SOURCES += main.cpp
+CONFIG -= app_bundle
 
-include(../common/common.pri)
+HEADERS += websocketiodevice.h
+
+SOURCES += \
+    main.cpp \
+    websocketiodevice.cpp
+
+RESOURCES += sslcert.qrc
 
 target.path = $$[QT_INSTALL_EXAMPLES]/remoteobjects/websockets/wsserver
 INSTALLS += target
