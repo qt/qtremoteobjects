@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>sslcert/client.crt</file>
+        <file>sslcert/client.key</file>
+        <file>sslcert/rootCA.key</file>
+        <file>sslcert/rootCA.pem</file>
+        <file>sslcert/rootCA.srl</file>
+        <file>sslcert/server.crt</file>
+        <file>sslcert/server.key</file>
+    </qresource>
+</RCC>

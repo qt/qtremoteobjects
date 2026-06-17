@@ -15,17 +15,13 @@ set(INSTALL_EXAMPLEDIR "${INSTALL_EXAMPLESDIR}/remoteobjects/websockets/wsserver
 find_package(Qt6 REQUIRED COMPONENTS Core Gui RemoteObjects WebSockets Widgets)
 
 qt_add_executable(wsserver
-    ../common/websocketiodevice.cpp ../common/websocketiodevice.h
+    websocketiodevice.cpp websocketiodevice.h
     main.cpp
 )
 
 set_target_properties(wsserver PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE FALSE
-)
-
-target_include_directories(wsserver PUBLIC
-    ../common
 )
 
 target_link_libraries(wsserver PUBLIC
@@ -37,23 +33,21 @@ target_link_libraries(wsserver PUBLIC
 )
 
 # Resources:
-set(cert_resource_files
-    "../common/cert/client.crt"
-    "../common/cert/client.key"
-    "../common/cert/rootCA.key"
-    "../common/cert/rootCA.pem"
-    "../common/cert/rootCA.srl"
-    "../common/cert/server.crt"
-    "../common/cert/server.key"
+set(sslcert_resource_files
+    "sslcert/client.crt"
+    "sslcert/client.key"
+    "sslcert/rootCA.key"
+    "sslcert/rootCA.pem"
+    "sslcert/rootCA.srl"
+    "sslcert/server.crt"
+    "sslcert/server.key"
 )
 
-qt6_add_resources(wsserver "cert"
+qt6_add_resources(wsserver "sslcert"
     PREFIX
-        "/sslcert"
-    BASE
-        "../common/cert"
+        "/"
     FILES
-        ${cert_resource_files}
+        ${sslcert_resource_files}
 )
 
 install(TARGETS wsserver
