@@ -13,6 +13,26 @@ QT_BEGIN_NAMESPACE
 
 namespace QtPrivate {
 
+// Qt Core does not automatically register all types, but we have to in order
+// to marshal the signal parameters. This requires that all argument types
+// are fully declared.
+template <typename ArgList> struct RegisterConnectionTypes
+{ static const int *types() { return nullptr; } };
+
+template <> struct RegisterConnectionTypes<List<>>
+{ static const int *types() { return nullptr; } };
+
+template <typename... Args> struct RegisterConnectionTypes<List<Args...>>
+{
+    static const int *types()
+    {
+        static const int t[sizeof...(Args) + 1] = {
+            (QMetaType::fromType<Args>().id())..., 0
+        };
+        return t;
+    }
+};
+
 //Based on compile time checks for static connect() from qobjectdefs_impl.h
 template <class ObjectType, typename Func1, typename Func2>
 static inline int qtro_property_index(Func1, Func2, const char *propName)
@@ -46,6 +66,11 @@ static inline int qtro_signal_index(Func1 func, Func2, int *count, int const **t
     const QMetaMethod sig = QMetaMethod::fromSignal(func);
     *count = Type2::ArgumentCount;
     *types = QtPrivate::ConnectionTypes<typename Type2::Arguments>::types();
+    if constexpr (Type2::ArgumentCount > 0) {
+        if (!*types)
+            *types = QtPrivate::RegisterConnectionTypes<typename Type2::Arguments>::types();
+        Q_ASSERT(*types);
+    }
     return sig.methodIndex();
 }
 
@@ -83,6 +108,11 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
                       "Return types are not compatible.");
     *count = Type2::ArgumentCount;
     *types = QtPrivate::ConnectionTypes<typename Type2::Arguments>::types();
+    if constexpr (Type2::ArgumentCount > 0) {
+        if (!*types)
+            *types = QtPrivate::RegisterConnectionTypes<typename Type2::Arguments>::types();
+        Q_ASSERT(*types);
+    }
 
     return qtro_method_index_impl(&ObjectType::staticMetaObject,
                                   ObjectType::staticMetaObject.className(), methodName, count,
