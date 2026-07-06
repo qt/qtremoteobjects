@@ -32,18 +32,16 @@ void tst_rep_from_header::testRep()
 {
     QFETCH(QString, actualFile);
     QFETCH(QByteArrayList, expectedLines);
-    const auto readFile = [&](const QString &fileName) {
-        QFile f(fileName);
-        f.open(QIODevice::ReadOnly);
-        QByteArrayList lines;
-        while (!f.atEnd())
-            lines.append(f.readLine().trimmed());
-        return lines;
-    };
 
     QVERIFY2(QFile::exists(actualFile), qPrintable(actualFile));
 
-    QByteArrayList actualLines = readFile(actualFile);
+    QByteArrayList actualLines;
+    {
+        QFile f(actualFile);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        while (!f.atEnd())
+            actualLines.append(f.readLine().trimmed());
+    }
 
     QVERIFY(actualLines == expectedLines);
 }
