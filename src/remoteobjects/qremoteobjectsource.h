@@ -123,7 +123,7 @@ template <class ObjectType>
 static inline QByteArray qtro_enum_signature(const char *enumName)
 {
     const auto qme = ObjectType::staticMetaObject.enumerator(ObjectType::staticMetaObject.indexOfEnumerator(enumName));
-    return QByteArrayLiteral("1::2").replace("1", qme.scope()).replace("2", qme.name());
+    return QByteArrayView(qme.scope()) % "::" % qme.name();
 }
 
 QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
