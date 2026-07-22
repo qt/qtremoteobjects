@@ -129,6 +129,12 @@ int qtro_method_index_impl(const QMetaObject * staticMetaObj, const char *classN
 
 } // namespace QtPrivate
 
+QByteArray QtPrivate::qtro_enum_signature_impl(const QMetaObject &mo, const char *enumName)
+{
+    const auto qme = mo.enumerator(mo.indexOfEnumerator(enumName));
+    return QByteArrayView(qme.scope()) % "::" % qme.name();
+}
+
 QByteArray QtPrivate::qtro_classinfo_signature(const QMetaObject *metaObject)
 {
     if (!metaObject)

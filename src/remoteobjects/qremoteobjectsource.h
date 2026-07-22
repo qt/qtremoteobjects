@@ -119,11 +119,13 @@ int qtro_method_index(Func1, Func2, const char *methodName, int *count, int cons
                                   types);
 }
 
+Q_REMOTEOBJECTS_EXPORT
+QByteArray qtro_enum_signature_impl(const QMetaObject &mo, const char *enumName);
+
 template <class ObjectType>
 QByteArray qtro_enum_signature(const char *enumName)
 {
-    const auto qme = ObjectType::staticMetaObject.enumerator(ObjectType::staticMetaObject.indexOfEnumerator(enumName));
-    return QByteArrayView(qme.scope()) % "::" % qme.name();
+    return qtro_enum_signature_impl(ObjectType::staticMetaObject, enumName);
 }
 
 QByteArray qtro_classinfo_signature(const QMetaObject *metaObject);
