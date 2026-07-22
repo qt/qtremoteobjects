@@ -7,3 +7,9 @@ class TestClass
     PROP(ClassEnum classEnum)
     PROP(ClassEnum classEnumRW READWRITE)
 }
+
+class TestClass2
+{
+    ENUM ClassEnum {Null, One, Two}
+    SLOT(ClassEnum getEnum())
+}

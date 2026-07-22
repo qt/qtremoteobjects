@@ -125,6 +125,12 @@ public:
     }
 };
 
+class TestClass2Impl : public TestClass2SimpleSource
+{
+public:
+    TestClass2Source::ClassEnum getEnum() override { return TestClass2Source::Two; }
+};
+
 
 class tst_Integration: public QObject
 {
@@ -414,6 +420,26 @@ private slots:
 
             QCOMPARE(tc_rep->classEnum(), TestClassReplica::Two);
         }
+    }
+
+    void enumReturnValueTest()
+    {
+        setupHost();
+        setupClient();
+
+        TestClass2Impl tc;
+        host->enableRemoting<TestClass2SourceAPI>(&tc);
+        const std::unique_ptr<TestClass2Replica> tc_rep(client->acquire<TestClass2Replica>());
+        QVERIFY(tc_rep->waitForSource());
+
+        QRemoteObjectPendingReply<TestClass2Replica::ClassEnum> reply = tc_rep->getEnum();
+        QVERIFY(reply.waitForFinished());
+        QCOMPARE(reply.error(), QRemoteObjectPendingCall::NoError);
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 12, 0)
+        QEXPECT_FAIL("", "515711c520975049fea242eb08c6036b831c9655 missing", Continue);
+#endif
+        QCOMPARE(reply.returnValue(), TestClass2Replica::Two);
     }
 
     void namedObjectTest()
