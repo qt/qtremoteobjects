@@ -15,7 +15,7 @@ namespace QtPrivate {
 
 //Based on compile time checks for static connect() from qobjectdefs_impl.h
 template <class ObjectType, typename Func1, typename Func2>
-static inline int qtro_property_index(Func1, Func2, const char *propName)
+int qtro_property_index(Func1, Func2, const char *propName)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
@@ -31,7 +31,7 @@ static inline int qtro_property_index(Func1, Func2, const char *propName)
 }
 
 template <class ObjectType, typename Func1, typename Func2>
-static inline int qtro_signal_index(Func1 func, Func2, int *count, int const **types)
+int qtro_signal_index(Func1 func, Func2, int *count, int const **types)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
@@ -50,7 +50,7 @@ static inline int qtro_signal_index(Func1 func, Func2, int *count, int const **t
 }
 
 template <class ObjectType, typename Func1, typename Func2>
-static inline void qtro_method_test(Func1, Func2)
+void qtro_method_test(Func1, Func2)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
@@ -69,7 +69,7 @@ int qtro_method_index_impl(const QMetaObject *staticMetaObj, const char *classNa
                            const char *methodName, int *count, const int **types);
 
 template <class ObjectType, typename Func1, typename Func2>
-static inline int qtro_method_index(Func1, Func2, const char *methodName, int *count, int const **types)
+int qtro_method_index(Func1, Func2, const char *methodName, int *count, int const **types)
 {
     typedef QtPrivate::FunctionPointer<Func1> Type1;
     typedef QtPrivate::FunctionPointer<Func2> Type2;
@@ -90,7 +90,7 @@ static inline int qtro_method_index(Func1, Func2, const char *methodName, int *c
 }
 
 template <class ObjectType>
-static inline QByteArray qtro_enum_signature(const char *enumName)
+QByteArray qtro_enum_signature(const char *enumName)
 {
     const auto qme = ObjectType::staticMetaObject.enumerator(ObjectType::staticMetaObject.indexOfEnumerator(enumName));
     return QByteArrayLiteral("1::2").replace("1", qme.scope()).replace("2", qme.name());
