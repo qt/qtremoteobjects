@@ -204,7 +204,8 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                     else {
                         roles.clear();
                         const auto knownRoles = model->roleNames();
-                        for (const auto &role : modelInfo.roles.split('|')) {
+                        const auto modelInfoRoles = modelInfo.roles.split('|');
+                        for (const auto &role : modelInfoRoles) {
                             if (role.isEmpty())
                                 continue;
                             const int roleIndex = knownRoles.key(role, -1);
@@ -327,7 +328,7 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
         return;
 
     if (!newObject) {
-        for (const auto &child : m_children)
+        for (const auto &child : std::as_const(m_children))
             child->resetObject(nullptr);
         return;
     }
@@ -342,7 +343,7 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
 
 QRemoteObjectSource::~QRemoteObjectSource()
 {
-    for (const auto &it : m_children) {
+    for (const auto &it : std::as_const(m_children)) {
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
@@ -352,7 +353,7 @@ QRemoteObjectSource::~QRemoteObjectSource()
 
 QRemoteObjectRootSource::~QRemoteObjectRootSource()
 {
-    for (const auto &it : m_children) {
+    for (const auto &it : std::as_const(m_children)) {
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
@@ -362,7 +363,8 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
     // removeListener tries to modify d->m_listeners, this is O(N²),
     // so clear d->m_listeners prior to calling unregister (consume loop).
     // We can do this, because we don't care about the return value of removeListener() here.
-    for (QtROIoDeviceBase *io : std::exchange(d->m_listeners, {})) {
+    const auto listeners = std::exchange(d->m_listeners, {});
+    for (QtROIoDeviceBase *io : listeners) {
         removeListener(io, true);
     }
     delete d;

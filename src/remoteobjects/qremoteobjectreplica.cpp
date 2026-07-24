@@ -119,7 +119,7 @@ QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
         connectionToSource->d_func()->m_codec->serializeRemoveObjectPacket(m_objectName);
         sendCommand();
     }
-    for (const auto &prop : m_propertyStorage) {
+    for (const auto &prop : std::as_const(m_propertyStorage)) {
         if (prop.canConvert<QObject*>()) {
             if (auto o = prop.value<QObject*>())
                 o->deleteLater();
@@ -284,7 +284,8 @@ void QRemoteObjectReplicaImplementation::setDynamicProperties(QVariantList &&val
 void QConnectedReplicaImplementation::setDynamicProperties(QVariantList &&values)
 {
     QRemoteObjectReplicaImplementation::setDynamicProperties(std::move(values));
-    for (QRemoteObjectReplica *obj : std::exchange(m_parentsNeedingConnect, {}))
+    const auto parentsNeedingConnect = std::exchange(m_parentsNeedingConnect, {});
+    for (QRemoteObjectReplica *obj : parentsNeedingConnect)
         configurePrivate(obj);
 
     Q_ASSERT(m_state.loadAcquire() < QRemoteObjectReplica::Valid);
@@ -481,7 +482,8 @@ void QConnectedReplicaImplementation::setDisconnected()
     Q_ASSERT(connectionToSource);
     connectionToSource.clear();
     setState(QRemoteObjectReplica::State::Suspect);
-    for (const int index : childIndices()) {
+    const auto childIds = childIndices();
+    for (const int index : childIds) {
         auto pointerToQObject = qvariant_cast<QObject *>(getProperty(index));
         auto child = qobject_cast<QRemoteObjectReplica *>(pointerToQObject);
         if (child) {

@@ -99,7 +99,7 @@ struct ManagedTypeEntry
             QMetaType::unregisterMetaType(QMetaType(id));
         else
             fakeClassIdManager()->removeTypeById(id);
-        for (auto enumMetaType : enumMetaTypes)
+        for (auto enumMetaType : std::as_const(enumMetaTypes))
             QMetaType::unregisterMetaType(enumMetaType);
         free(metaObject);
     }
@@ -770,8 +770,8 @@ QRemoteObjectAbstractPersistedStorePrivate::~QRemoteObjectAbstractPersistedStore
 
 QRemoteObjectMetaObjectManager::~QRemoteObjectMetaObjectManager()
 {
-    for (QMetaObject *mo : dynamicTypes) {
-        for (auto metaType : enumTypes[mo])
+    for (QMetaObject *mo : std::as_const(dynamicTypes)) {
+        for (auto metaType : std::as_const(enumTypes[mo]))
             QMetaType::unregisterMetaType(metaType);
         enumTypes.remove(mo);
         free(mo); //QMetaObjectBuilder uses malloc, not new
@@ -2442,7 +2442,8 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
 
 void QRemoteObjectNodePrivate::handlePointerToQObjectProperties(QConnectedReplicaImplementation *rep, QVariantList &properties)
 {
-    for (const int index : rep->childIndices())
+    const auto childIndices = rep->childIndices();
+    for (const int index : childIndices)
         properties[index] = handlePointerToQObjectProperty(rep, index, properties.at(index));
 }
 
@@ -2868,14 +2869,14 @@ ProxyInfo::ProxyInfo(QRemoteObjectNode *node, QRemoteObjectHostBase *parent,
         if (state != QRemoteObjectRegistry::Suspect)
             return;
         // unproxy all objects
-        for (ProxyReplicaInfo* info : proxiedReplicas)
+        for (ProxyReplicaInfo* info : std::as_const(proxiedReplicas))
             disableAndDeleteObject(info);
         proxiedReplicas.clear();
     });
 }
 
 ProxyInfo::~ProxyInfo() {
-    for (ProxyReplicaInfo* info : proxiedReplicas)
+    for (ProxyReplicaInfo* info : std::as_const(proxiedReplicas))
         delete info;
     delete proxyNode;
 }
