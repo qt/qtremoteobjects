@@ -340,7 +340,7 @@ QRemoteObjectSource::~QRemoteObjectSource()
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
-        delete it;
+        delete it.data();
     }
 }
 
@@ -350,7 +350,7 @@ QRemoteObjectRootSource::~QRemoteObjectRootSource()
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
-        delete it;
+        delete it.data();
     }
     d->m_sourceIo->unregisterSource(this);
     // removeListener tries to modify d->m_listeners, this is O(N²),
