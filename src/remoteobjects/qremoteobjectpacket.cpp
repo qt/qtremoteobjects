@@ -595,7 +595,7 @@ static void serializeGadgets(QDataStream &ds, const QSet<const QMetaObject *> &g
             dynamicEnumMetaObjects.insert(metaEnum.enclosingMetaObject());
     }
     ds << quint32(qtEnums.size());
-    for (const auto &metaEnum : qtEnums) {
+    for (const auto &metaEnum : std::as_const(qtEnums)) {
         QByteArray enumName(metaEnum.scope());
         enumName.append("::", 2).append(metaEnum.name());
         ds << enumName;
