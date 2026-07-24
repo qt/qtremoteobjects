@@ -327,11 +327,11 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
         return;
     }
 
-    for (int i : m_children.keys()) {
+    for (const auto &[i, val] : std::as_const(m_children).asKeyValueRange()) {
         const int index = m_api->sourcePropertyIndex(i);
         const auto property = m_object->metaObject()->property(index);
         QObject *child = property.read(m_object).value<QObject *>();
-        m_children[i]->resetObject(child);
+        val->resetObject(child);
     }
 }
 
