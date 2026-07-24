@@ -198,7 +198,7 @@ QRemoteObjectSourceBase::QRemoteObjectSourceBase(QObject *obj, Private *d, const
                     else {
                         roles.clear();
                         const auto knownRoles = model->roleNames();
-                        for (auto role : modelInfo.roles.split('|')) {
+                        for (const auto &role : modelInfo.roles.split('|')) {
                             if (role.isEmpty())
                                 continue;
                             const int roleIndex = knownRoles.key(role, -1);
@@ -321,7 +321,7 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
         return;
 
     if (!newObject) {
-        for (auto child : m_children)
+        for (const auto &child : m_children)
             child->resetObject(nullptr);
         return;
     }
@@ -336,7 +336,7 @@ void QRemoteObjectSourceBase::resetObject(QObject *newObject)
 
 QRemoteObjectSource::~QRemoteObjectSource()
 {
-    for (auto it : m_children) {
+    for (const auto &it : m_children) {
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
@@ -346,7 +346,7 @@ QRemoteObjectSource::~QRemoteObjectSource()
 
 QRemoteObjectRootSource::~QRemoteObjectRootSource()
 {
-    for (auto it : m_children) {
+    for (const auto &it : m_children) {
         // We used QPointers for m_children because we don't control the lifetime of child QObjects
         // Since the this/source QObject's parent is the referenced QObject, it could have already
         // been deleted
