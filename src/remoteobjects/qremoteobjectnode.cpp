@@ -958,7 +958,7 @@ QMetaObject *registerGadget(QObject *reference, const GadgetData &gadget, QByteA
     gadgetBuilder.setClassName(typeName);
     gadgetBuilder.setFlags(PropertyAccessInStaticMetaCall);
 
-    auto [enumLookup, enumsToBeAssignedMetaObject] = handleEnums(gadgetBuilder, gadget.enums, typeName);
+    const auto [enumLookup, enumsToBeAssignedMetaObject] = handleEnums(gadgetBuilder, gadget.enums, typeName);
     for (auto metaType : enumLookup)
         entry.enumMetaTypes.append(metaType);
 
@@ -1078,7 +1078,7 @@ registerDefinition(const ClassData &data)
     builder.addClassInfo(QCLASSINFO_REMOTEOBJECT_TYPE, data.type);
     builder.setClassName(type);
 
-    auto [enumLookup, enumsToBeAssignedMetaObject] = handleEnums(builder, data.enums, type);
+    const auto [enumLookup, enumsToBeAssignedMetaObject] = handleEnums(builder, data.enums, type);
 
     for (const auto &signal : data._signals) {
         auto mmb = builder.addSignal(signal.signature);
@@ -1124,7 +1124,7 @@ registerDefinition(const ClassData &data)
 
 QMetaObject *registerAndTrackDefinition(const ClassData &data, QObject *reference)
 {
-    auto [meta, newEnums] = registerDefinition(data);
+    const auto [meta, newEnums] = registerDefinition(data);
     if (reference) {
         ManagedTypeEntry entry;
         auto id = fakeClassIdManager->addTypeName(meta->className());
