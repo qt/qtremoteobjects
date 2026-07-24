@@ -119,7 +119,7 @@ QConnectedReplicaImplementation::~QConnectedReplicaImplementation()
         connectionToSource->d_func()->m_codec->serializeRemoveObjectPacket(m_objectName);
         sendCommand();
     }
-    for (auto prop : m_propertyStorage) {
+    for (const auto &prop : m_propertyStorage) {
         if (prop.canConvert<QObject*>()) {
             if (auto o = prop.value<QObject*>())
                 o->deleteLater();
