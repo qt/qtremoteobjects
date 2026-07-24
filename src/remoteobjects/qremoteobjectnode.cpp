@@ -1239,8 +1239,6 @@ QMetaObject *QRemoteObjectMetaObjectManager::addDynamicType(QtROIoDeviceBase *co
     classData._slots.reserve(numMethods);
     for (quint32 i = 0; i < numMethods; ++i) {
         ClassSlot classSlot;
-        QByteArray signature, returnType;
-        QByteArrayList paramNames;
         in >> classSlot.signature;
         in >> classSlot.returnType;
         in >> classSlot.parameterNames;
