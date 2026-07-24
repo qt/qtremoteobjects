@@ -1071,7 +1071,7 @@ registerDefinition(const ClassData &data)
     // that dynamic Sources are being added, we will have registration issues unless we have
     // distinct names for Replicas and Sources.  To not break existing code, we will append
     // "Source" to the type name if it is a Source, but leave Replica class names alone.
-    auto type = data.type + (data.isSource ? "Source" : "");
+    const QByteArray type = data.type + (data.isSource ? "Source" : "");
     QMetaObjectBuilder builder;
     builder.setSuperClass(data.baseMeta);
 
