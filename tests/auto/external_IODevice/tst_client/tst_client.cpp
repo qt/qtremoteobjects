@@ -22,7 +22,7 @@ private slots:
     void testRun()
     {
 // TODO: This a limitation of QProcess on Android, QTBUG-88507 is relevant to this issue.
-#if defined(Q_OS_ANDROID) || defined(Q_OS_OHOS)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_HARMONY)
         QSKIP("QProcess doesn't support running user bundled binaries on Android or OHOS");
 #endif
         QProcess serverProc;
