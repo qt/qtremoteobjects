@@ -55,7 +55,7 @@ inline bool fromDataStream(QDataStream &in, QRemoteObjectPacketTypeEnum &type, Q
     return true;
 }
 
-/*!
+/*
     All communication between nodes happens through some form of QIODevice with
     an associated QDataStream to handle marshalling of Qt types. QtROIoDeviceBase
     is an abstract base class that provides a consistent interface to QtRO, yet
@@ -186,7 +186,7 @@ void QtROClientIoDevice::setUrl(const QUrl &url)
     d->m_url = url;
 }
 
-/*!
+/*
     The Qt servers create QIODevice derived classes from handleConnection. The
     problem is that they behave differently, so this class adds some
     consistency.
