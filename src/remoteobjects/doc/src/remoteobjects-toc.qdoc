@@ -20,6 +20,7 @@
     \li \l {Remote Object Interaction}
     \li \l {Troubleshooting Qt Remote Objects}{Troubleshooting}
     \li \l {Qt Remote Objects Protocol Versioning}{Protocol Versioning}
+    \li \l {Qt Remote Objects Security Considerations}{Security Considerations}
     \li \l {Changes to Qt Remote Objects}{Upgrading from Qt 5}
     \endlist
 
