@@ -13,6 +13,8 @@
 #include <QSortFilterProxyModel>
 #include <QEventLoop>
 #include <QRandomGenerator>
+#include <QTcpServer>
+#include <QHostAddress>
 
 namespace {
 
@@ -449,7 +451,7 @@ private:
     QRemoteObjectHost basicServer; \
     QRemoteObjectNode client; \
     QRemoteObjectRegistryHost registryServer; \
-    setup_models(basicServer, client, registryServer);
+    QVERIFY(setup_models(basicServer, client, registryServer));
 
 class TestModelView: public QObject
 {
@@ -459,7 +461,7 @@ class TestModelView: public QObject
     RolenamesListModel m_listModel;
 
 public:
-    void setup_models(QRemoteObjectHost &basicServer,
+    bool setup_models(QRemoteObjectHost &basicServer,
                       QRemoteObjectNode &client,
                       QRemoteObjectRegistryHost &registryServer);
 
@@ -538,7 +540,15 @@ void TestModelView::initTestCase()
     }
 }
 
-void TestModelView::setup_models(QRemoteObjectHost &basicServer, QRemoteObjectNode &client, QRemoteObjectRegistryHost &registryServer)
+static bool portPairIsFree(int port)
+{
+    QTcpServer probe1;
+    QTcpServer probe2;
+    return probe1.listen(QHostAddress::LocalHost, port)
+        && probe2.listen(QHostAddress::LocalHost, port + 1);
+}
+
+bool TestModelView::setup_models(QRemoteObjectHost &basicServer, QRemoteObjectNode &client, QRemoteObjectRegistryHost &registryServer)
 {
     static int port = 65211;
     static const QString url = QStringLiteral("tcp://127.0.0.1:%1");
@@ -548,15 +558,33 @@ void TestModelView::setup_models(QRemoteObjectHost &basicServer, QRemoteObjectNo
 
     static const QList<int> listModelRoles( {Qt::UserRole, Qt::UserRole+1} );
 
+    const int maxAttempts = 10;
+    int attempt = 0;
+    while (!portPairIsFree(port) && ++attempt < maxAttempts)
+        port += 2;
+    // setup_models() returns bool, so QVERIFY/QVERIFY2 ("return;" with no
+    // value) can't be used here; call QTest::qVerify() directly instead.
+    if (!QTest::qVerify(attempt < maxAttempts, "attempt < maxAttempts",
+                         "setup_models: unable to find a free port pair after several attempts",
+                         __FILE__, __LINE__))
+        return false;
+
     //Setup registry
     //Registry needs to be created first until we get the retry mechanism implemented
-    basicServer.setHostUrl(QUrl(url.arg(port)));
-    registryServer.setRegistryUrl(QUrl(url.arg(port+1)));
-    basicServer.setRegistryUrl(QUrl(url.arg(port+1)));
+    if (!QTest::qVerify(basicServer.setHostUrl(QUrl(url.arg(port))),
+                         "basicServer.setHostUrl(QUrl(url.arg(port)))", "", __FILE__, __LINE__))
+        return false;
+    if (!QTest::qVerify(registryServer.setRegistryUrl(QUrl(url.arg(port+1))),
+                         "registryServer.setRegistryUrl(QUrl(url.arg(port+1)))", "", __FILE__, __LINE__))
+        return false;
+    if (!QTest::qVerify(basicServer.setRegistryUrl(QUrl(url.arg(port+1))),
+                         "basicServer.setRegistryUrl(QUrl(url.arg(port+1)))", "", __FILE__, __LINE__))
+        return false;
     basicServer.enableRemoting(&m_sourceModel, "test", sourceModelRoles);
     basicServer.enableRemoting(&m_listModel, "testRoleNames", listModelRoles);
     client.setRegistryUrl(QUrl(url.arg(port+1)));
     port += 2;
+    return true;
 }
 
 #ifdef SLOW_MODELTEST

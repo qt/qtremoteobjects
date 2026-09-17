@@ -18,6 +18,7 @@ qt_internal_add_test(tst_modelview
         ../shared/model_utilities.h
     LIBRARIES
         Qt::Gui
+        Qt::Network
         Qt::RemoteObjects
 )
 
