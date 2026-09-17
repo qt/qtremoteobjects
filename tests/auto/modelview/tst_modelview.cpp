@@ -854,6 +854,11 @@ void TestModelView::testDataInsertionTree()
 
     QVERIFY(w.wait());
 
+    // WaitForDataChanged only checks that *some* dataChanged() signal touching this
+    // index arrived, regardless of which roles it carried.
+    const QModelIndex replicaParent = model->index(parent.row(), parent.column());
+    QTRY_COMPARE(model->index(0, 0, replicaParent).data(Qt::DisplayRole).toString(), QStringLiteral("foo"));
+
     compareTreeData(&m_sourceModel, model.data());
 }
 
@@ -893,6 +898,12 @@ void TestModelView::testDataRemoval()
     m_sourceModel.setData(m_sourceModel.index(0, 0, parent), QLatin1String("foo"), Qt::DisplayRole);
 
     QVERIFY(w.wait());
+
+    // WaitForDataChanged doesn't check which roles a dataChanged() carried, so it
+    // can return before the DisplayRole("foo") fetch (issued independently from the
+    // BackgroundRole fetch) completes.
+    const QModelIndex replicaParent = model->index(parent.row(), parent.column());
+    QTRY_COMPARE(model->index(0, 0, replicaParent).data(Qt::DisplayRole).toString(), QStringLiteral("foo"));
 
     compareTreeData(&m_sourceModel, model.data());
 }
