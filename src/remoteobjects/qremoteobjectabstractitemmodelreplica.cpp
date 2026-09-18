@@ -385,8 +385,18 @@ void QAbstractItemModelReplicaImplementation::handleSizeDone(QRemoteObjectPendin
 {
     SizeWatcher *sizeWatcher = static_cast<SizeWatcher*>(watcher);
     const QSize size = sizeWatcher->returnValue().toSize();
-    auto parentItem = cacheData(sizeWatcher->parentList);
-    const QModelIndex parent = toQModelIndex(sizeWatcher->parentList, q);
+    bool ok = false;
+    const QModelIndex parent = toQModelIndex(sizeWatcher->parentList, q, &ok);
+    auto parentItem = ok ? cacheData(parent) : nullptr;
+    if (!parentItem) {
+        // The model structure changed (e.g. rows were inserted/removed elsewhere)
+        // between issuing this size request and receiving the response, so
+        // parentList no longer resolves to a valid/cached index. Discard this
+        // now-stale response instead of crashing.
+        m_pendingRequests.removeAll(watcher);
+        delete watcher;
+        return;
+    }
 
     if (size.width() != parentItem->columnCount) {
         const int columnCount = std::max(0, parentItem->columnCount);
@@ -518,6 +528,15 @@ void QAbstractItemModelReplicaImplementation::requestedData(QRemoteObjectPending
     Q_ASSERT(!parentList.isEmpty());
     parentList.pop_back();
     auto parentItem = cacheData(parentList);
+    if (!parentItem) {
+        // The model structure changed (e.g. rows were inserted/removed elsewhere)
+        // between issuing this data request and receiving the response, so
+        // parentList no longer resolves to a valid/cached index. Discard this
+        // now-stale response instead of crashing.
+        m_pendingRequests.removeAll(watcher);
+        delete watcher;
+        return;
+    }
     QtPrivate::DataEntries entries = watcher->returnValue().value<QtPrivate::DataEntries>();
 
     const int rowCount = parentItem->rowCount;

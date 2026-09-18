@@ -404,7 +404,15 @@ public:
         return nullptr;
     }
     inline CacheData* cacheData(const QtPrivate::IndexList &index) const {
-        return cacheData(toQModelIndex(index, q));
+        // The IndexList may have been captured before an async request was sent and
+        // resolved after the model structure changed in the meantime (e.g. rows
+        // inserted/removed elsewhere), so it may no longer map to a valid index.
+        // Use the ok-checked overload rather than the one that qFatal()s on failure.
+        bool ok = false;
+        const QModelIndex modelIndex = toQModelIndex(index, q, &ok);
+        if (!ok)
+            return nullptr;
+        return cacheData(modelIndex);
     }
     inline CacheData* createCacheData(const QtPrivate::IndexList &index) const {
         bool ok = false;
@@ -422,7 +430,11 @@ public:
         return &entry;
     }
     inline CacheEntry* cacheEntry(const QtPrivate::IndexList &index) const {
-        return cacheEntry(toQModelIndex(index, q));
+        bool ok = false;
+        const QModelIndex modelIndex = toQModelIndex(index, q, &ok);
+        if (!ok)
+            return nullptr;
+        return cacheEntry(modelIndex);
     }
 
     QRemoteObjectPendingCallWatcher *doModelReset();
