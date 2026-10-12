@@ -393,8 +393,8 @@ QVariantList* QRemoteObjectSourceBase::marshalArgs(int index, void **a)
         else
             list << QVariant(QMetaType(type), a[i + 1]);
     }
-    for (int i = N; i < list.size(); ++i)
-        list.removeLast();
+    if (list.size() > N)
+        list.resize(N);
     return &m_marshalledArgs;
 }
 

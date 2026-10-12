@@ -1684,13 +1684,32 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             codec->deserializeInvokePacket(connection->d_func()->stream(), call, index, rxArgs, serialId, propertyIndex);
             QSharedPointer<QRemoteObjectReplicaImplementation> rep = qSharedPointerCast<QRemoteObjectReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep) {
+                const QMetaMethod signal = rep->m_metaObject->method(index + rep->m_signalOffset);
+                // A source notify signal without arguments is valid, the value
+                // is then taken from the property
+                const bool isZeroArgNotify = rxArgs.isEmpty() && propertyIndex != -1;
+                if (!isZeroArgNotify && rxArgs.size() < signal.parameterCount()) {
+                    qROPrivWarning() << "Argument count mismatch for" << rxName
+                                     << signal.methodSignature() << "- expected"
+                                     << signal.parameterCount() << "got" << rxArgs.size()
+                                     << ". Ignoring the signal.";
+                    break;
+                }
+                // Some old sources can unintentionally send more arguments than
+                // expected, so trim to the expected number instead of raising
+                // an error for backwards compatibility.
+                // This was never an issue before, because QMetaMethod::parameterType(),
+                // QMetaMethod::parameterMetaType(), and QMetaObject::activate()
+                // all have their own checks against argument count. Still,
+                // better to fix it here.
+                if (rxArgs.size() > signal.parameterCount())
+                    rxArgs.resize(signal.parameterCount());
                 static QVariant null(QMetaType::fromType<QObject *>(), nullptr);
                 QVariant paramValue;
                 // Qt usually supports 9 arguments, so ten should be usually safe
                 QVarLengthArray<void*, 10> param(rxArgs.size() + 1);
                 param[0] = null.data(); //Never a return value
                 if (rxArgs.size()) {
-                    auto signal = rep->m_metaObject->method(index+rep->m_signalOffset);
                     for (int i = 0; i < rxArgs.size(); i++) {
                         if (signal.parameterType(i) == QMetaType::QVariant)
                             param[i + 1] = const_cast<void*>(reinterpret_cast<const void*>(&rxArgs.at(i)));
