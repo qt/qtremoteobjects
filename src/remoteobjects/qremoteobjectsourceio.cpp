@@ -222,6 +222,13 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                     }
                     {
                         const int parameterCount = method.parameterCount();
+                        if (m_rxArgs.size() != parameterCount) {
+                            qROWarning(this) << "Argument count mismatch for" << m_rxName
+                                             << method.methodSignature() << "- expected"
+                                             << parameterCount << "got" << m_rxArgs.size()
+                                             << ". Ignoring the call.";
+                            break;
+                        }
                         for (int i = 0; i < parameterCount; i++)
                             m_rxArgs[i] = decodeVariant(std::move(m_rxArgs[i]), method.parameterMetaType(i));
                     }

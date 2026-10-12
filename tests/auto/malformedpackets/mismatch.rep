@@ -7,10 +7,25 @@
 // QObject-based source in tst_malformedpackets.cpp, where all the
 // properties and slot arguments are QString.
 // int can be converted to QString, QRectF cannot.
+//
+// The argument count of the tooMany/tooFew/noArgs slots and signals also
+// intentionally does not match the source. "Too many" and "too few" are
+// from the point of view of the sender, so the replica for slots, and the
+// source for signals.
 class MismatchedObject
 {
     PROP(int convertibleValue READWRITE)
     PROP(QRectF nonConvertibleValue READWRITE)
     SLOT(void convertibleSlot(int arg))
     SLOT(void nonConvertibleSlot(QRectF arg))
+    // The source slot takes one argument
+    SLOT(void tooManyArgsSlot(int a, int b))
+    // The source slot takes two arguments
+    SLOT(void tooFewArgsSlot(int a))
+    // The source signal has two arguments
+    SIGNAL(tooManyArgsSignal(int a))
+    // The source signal has one argument
+    SIGNAL(tooFewArgsSignal(int a, int b))
+    // The source signal has no arguments
+    SIGNAL(noArgsSignal(int a))
 }

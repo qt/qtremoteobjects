@@ -5,6 +5,7 @@
 
 #include <QtRemoteObjects/QRemoteObjectHost>
 #include <QtRemoteObjects/QRemoteObjectNode>
+#include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
 #include <QtCore/QRegularExpression>
@@ -19,8 +20,9 @@ using namespace Qt::StringLiterals;
 // replica generated from mismatch.rep.
 // The source is registered as a dynamic one, so no signature check is done
 // when the replica connects to it.
-// The order of the properties, notify signals and slots must match the
-// order in mismatch.rep, so that the indices line up.
+// The order of the properties, signals and slots must match the order in
+// mismatch.rep, so that the indices line up. The notify signals must come
+// first, followed by the other signals in the order of SIGNAL()s.
 class MismatchedSource : public QObject
 {
     Q_OBJECT
@@ -56,6 +58,9 @@ public:
     int nonConvertibleSlotCallCount() const { return m_nonConvertibleSlotCallCount; }
     QString nonConvertibleSlotArgument() const { return m_nonConvertibleSlotArgument; }
 
+    int tooManyArgsSlotCallCount() const { return m_tooManyArgsSlotCallCount; }
+    int tooFewArgsSlotCallCount() const { return m_tooFewArgsSlotCallCount; }
+
 public Q_SLOTS:
     void convertibleSlot(const QString &arg)
     {
@@ -69,9 +74,21 @@ public Q_SLOTS:
         m_nonConvertibleSlotArgument = arg;
     }
 
+    // The replica sends two arguments
+    void tooManyArgsSlot(int) { ++m_tooManyArgsSlotCallCount; }
+    // The replica sends one argument
+    void tooFewArgsSlot(int, int) { ++m_tooFewArgsSlotCallCount; }
+
 Q_SIGNALS:
     void convertibleValueChanged(const QString &value);
     void nonConvertibleValueChanged(const QString &value);
+
+    // The replica signal has one argument
+    void tooManyArgsSignal(int a, int b);
+    // The replica signal has two arguments
+    void tooFewArgsSignal(int a);
+    // The replica signal has one argument
+    void noArgsSignal();
 
 private:
     QString m_convertibleValue = u"initial"_s;
@@ -80,6 +97,8 @@ private:
     QString m_nonConvertibleSlotArgument = u"initial"_s;
     int m_convertibleSlotCallCount = 0;
     int m_nonConvertibleSlotCallCount = 0;
+    int m_tooManyArgsSlotCallCount = 0;
+    int m_tooFewArgsSlotCallCount = 0;
 };
 
 class tst_MalformedPackets : public QObject
@@ -92,6 +111,8 @@ private Q_SLOTS:
 
     void slotArgumentTypeMismatch();
     void propertyTypeMismatch();
+    void slotArgumentCountMismatch();
+    void signalArgumentCountMismatch();
 
 private:
 
@@ -204,6 +225,71 @@ void tst_MalformedPackets::propertyTypeMismatch()
         QTRY_COMPARE(m_source->nonConvertibleValue(), QString());
         QTRY_COMPARE(m_replica->nonConvertibleValue(), QRectF());
         QTRY_COMPARE(value, QRectF());
+    }
+}
+
+void tst_MalformedPackets::slotArgumentCountMismatch()
+{
+    // The packets are handled in order, so we call a "normal" convertibleSlot()
+    // to make sure that the previous call is handled.
+
+    // The replica sends more arguments than the source slot takes
+    {
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Argument count mismatch"_s));
+        m_replica->tooManyArgsSlot(1, 2);
+        m_replica->convertibleSlot(1);
+
+        QTRY_COMPARE(m_source->convertibleSlotCallCount(), 1);
+        QCOMPARE(m_source->tooManyArgsSlotCallCount(), 0);
+    }
+    // The replica sends fewer arguments than the source slot takes
+    {
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Argument count mismatch"_s));
+        m_replica->tooFewArgsSlot(1);
+        m_replica->convertibleSlot(2);
+
+        QTRY_COMPARE(m_source->convertibleSlotCallCount(), 2);
+        QCOMPARE(m_source->tooFewArgsSlotCallCount(), 0);
+    }
+}
+
+void tst_MalformedPackets::signalArgumentCountMismatch()
+{
+    // The packets are handled in order, so we update a property to make sure
+    // that the malformed signal has been handled.
+
+    // The source emits more arguments than the replica signal takes.
+    // This does not raise a warning and actually emits the signal on the
+    // replica side for backwards compatibility, because there was a separate
+    // bug on the Source side.
+    {
+        QSignalSpy spy(m_replica.get(), &MismatchedObjectReplica::tooManyArgsSignal);
+        emit m_source->tooManyArgsSignal(1, 2);
+        m_source->setConvertibleValue(u"1"_s);
+
+        QTRY_COMPARE(m_replica->convertibleValue(), 1);
+        QCOMPARE(spy.size(), 1);
+    }
+    // The source emits fewer arguments than the replica signal takes
+    {
+        QSignalSpy spy(m_replica.get(), &MismatchedObjectReplica::tooFewArgsSignal);
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Argument count mismatch"_s));
+        emit m_source->tooFewArgsSignal(1);
+        m_source->setConvertibleValue(u"2"_s);
+
+        QTRY_COMPARE(m_replica->convertibleValue(), 2);
+        QCOMPARE(spy.size(), 0);
+    }
+    // Same as above, but the source signal has no arguments at all. This is
+    // handled by a separate code path on the replica side.
+    {
+        QSignalSpy spy(m_replica.get(), &MismatchedObjectReplica::noArgsSignal);
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Argument count mismatch"_s));
+        emit m_source->noArgsSignal();
+        m_source->setConvertibleValue(u"3"_s);
+
+        QTRY_COMPARE(m_replica->convertibleValue(), 3);
+        QCOMPARE(spy.size(), 0);
     }
 }
 
