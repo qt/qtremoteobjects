@@ -274,6 +274,16 @@ QVariant decodeVariant(QVariant &&value, QMetaType metaType)
                      << container.m_valueTypeName;
 #endif
         }
+    } else if (metaType.isValid() && metaType != QMetaType::fromType<QVariant>()
+               && value.metaType() != metaType) {
+        if (!value.canConvert(metaType)) {
+            qWarning("The provided type %s does not match the expected type %s and is "
+                     "not convertible to it. Returning a default-constructed QVariant "
+                     "holding the type %s.",
+                     value.metaType().name(), metaType.name(), metaType.name());
+            return QVariant(metaType);
+        }
+        value.convert(metaType);
     }
     return std::move(value);
 }

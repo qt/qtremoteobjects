@@ -1,0 +1,16 @@
+// Copyright (C) 2026 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
+
+#include <QtCore/qrect.h>
+
+// The types used here intentionally do not match the types of the
+// QObject-based source in tst_malformedpackets.cpp, where all the
+// properties and slot arguments are QString.
+// int can be converted to QString, QRectF cannot.
+class MismatchedObject
+{
+    PROP(int convertibleValue READWRITE)
+    PROP(QRectF nonConvertibleValue READWRITE)
+    SLOT(void convertibleSlot(int arg))
+    SLOT(void nonConvertibleSlot(QRectF arg))
+}

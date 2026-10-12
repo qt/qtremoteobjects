@@ -211,11 +211,16 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         //TODO - consider moving this to packet validation?
                         break;
                     }
-                    if (source->m_api->isAdapterMethod(index))
-                        qRODebug(this) << "Adapter (method) Invoke-->" << m_rxName << source->m_adapter->metaObject()->method(resolvedIndex).name();
-                    else {
-                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << source->m_object->metaObject()->method(resolvedIndex).methodSignature();
-                        auto method = source->m_object->metaObject()->method(resolvedIndex);
+                    QMetaMethod method;
+                    if (source->m_api->isAdapterMethod(index)) {
+                        method = source->m_adapter->metaObject()->method(resolvedIndex);
+                        qRODebug(this) << "Adapter (method) Invoke-->" << m_rxName << method.name();
+                    } else {
+                        method = source->m_object->metaObject()->method(resolvedIndex);
+                        qRODebug(this) << "Source (method) Invoke-->" << m_rxName << method.methodSignature();
+
+                    }
+                    {
                         const int parameterCount = method.parameterCount();
                         for (int i = 0; i < parameterCount; i++)
                             m_rxArgs[i] = decodeVariant(std::move(m_rxArgs[i]), method.parameterMetaType(i));
@@ -254,10 +259,17 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         //TODO - consider moving this to packet validation?
                         break;
                     }
-                    if (source->m_api->isAdapterProperty(index))
-                        qRODebug(this) << "Adapter (write property) Invoke-->" << m_rxName << source->m_adapter->metaObject()->property(resolvedIndex).name();
-                    else
-                        qRODebug(this) << "Source (write property) Invoke-->" << m_rxName << source->m_object->metaObject()->property(resolvedIndex).name();
+                    QMetaProperty property;
+                    if (source->m_api->isAdapterProperty(index)) {
+                        property = source->m_adapter->metaObject()->property(resolvedIndex);
+                        qRODebug(this) << "Adapter (write property) Invoke-->" << m_rxName << property.name();
+                    } else {
+                        property = source->m_object->metaObject()->property(resolvedIndex);
+                        qRODebug(this) << "Source (write property) Invoke-->" << m_rxName << property.name();
+                    }
+                    // TODO - consider checking that we have only 1 argument?
+                    for (qsizetype i = 0; i < m_rxArgs.size(); ++i)
+                        m_rxArgs[i] = decodeVariant(std::move(m_rxArgs[i]), property.metaType());
                     source->invoke(QMetaObject::WriteProperty, index, m_rxArgs);
                 }
             }
