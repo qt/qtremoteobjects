@@ -199,8 +199,21 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
             int call, index, serialId, propertyId;
             m_codec->deserializeInvokePacket(connection->d_func()->stream(), call, index, m_rxArgs, serialId, propertyId);
             if (m_rxName == QLatin1String("Registry") && !m_registryMapping.contains(connection)) {
-                const QRemoteObjectSourceLocation loc = m_rxArgs.first().value<QRemoteObjectSourceLocation>();
-                m_registryMapping[connection] = loc.second.hostUrl;
+                bool expectedFormat = false;
+                if (m_rxArgs.size() > 0) {
+                    const QVariant arg = m_rxArgs.first();
+                    if (arg.canConvert<QRemoteObjectSourceLocation>()) {
+                        const QRemoteObjectSourceLocation loc = arg.value<QRemoteObjectSourceLocation>();
+                        m_registryMapping[connection] = loc.second.hostUrl;
+                        expectedFormat = true;
+                    }
+                }
+                if (!expectedFormat) {
+                    qROWarning(this) << "Unexpected packet format for the Registry object. "
+                                        "Not enough arguments or the first argument is not "
+                                        "QRemoteObjectSourceLocation.";
+                    break;
+                }
             }
             if (m_sourceObjects.contains(m_rxName)) {
                 QRemoteObjectSourceBase *source = m_sourceObjects[m_rxName];

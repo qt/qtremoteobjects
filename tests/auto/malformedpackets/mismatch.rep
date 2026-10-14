@@ -22,6 +22,8 @@ class MismatchedObject
     SLOT(void tooManyArgsSlot(int a, int b))
     // The source slot takes two arguments
     SLOT(void tooFewArgsSlot(int a))
+    // The slot for testing "Registry" object
+    SLOT(void noArgSlot())
     // The source signal has two arguments
     SIGNAL(tooManyArgsSignal(int a))
     // The source signal has one argument
