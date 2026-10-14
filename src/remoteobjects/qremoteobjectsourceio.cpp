@@ -287,9 +287,13 @@ void QRemoteObjectSourceIo::onServerRead(QObject *conn)
                         property = source->m_object->metaObject()->property(resolvedIndex);
                         qRODebug(this) << "Source (write property) Invoke-->" << m_rxName << property.name();
                     }
-                    // TODO - consider checking that we have only 1 argument?
-                    for (qsizetype i = 0; i < m_rxArgs.size(); ++i)
-                        m_rxArgs[i] = decodeVariant(std::move(m_rxArgs[i]), property.metaType());
+                    if (m_rxArgs.size() != 1) {
+                        qROWarning(this) << "Invalid argument count for property invoke packet. Got"
+                                         << m_rxArgs.size() << "arguments for" << m_rxName
+                                         << property.name();
+                        break;
+                    }
+                    m_rxArgs[0] = decodeVariant(std::move(m_rxArgs[0]), property.metaType());
                     source->invoke(QMetaObject::WriteProperty, index, m_rxArgs);
                 }
             }
