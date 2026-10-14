@@ -15,7 +15,7 @@ qt_internal_add_test(tst_malformedpackets
     SOURCES
         tst_malformedpackets.cpp
     LIBRARIES
-        Qt::RemoteObjects
+        Qt::RemoteObjectsPrivate
 )
 qt6_add_repc_replicas(tst_malformedpackets
     mismatch.rep

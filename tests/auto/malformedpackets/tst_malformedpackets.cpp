@@ -5,12 +5,16 @@
 
 #include <QtRemoteObjects/QRemoteObjectHost>
 #include <QtRemoteObjects/QRemoteObjectNode>
+#include <QtRemoteObjects/private/qconnectionfactories_p.h>
+
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
+#include <QtCore/QDataStream>
 #include <QtCore/QRegularExpression>
 
 #include <QtNetwork/qtcpserver.h>
+#include <QtNetwork/qtcpsocket.h>
 
 #include <memory>
 
@@ -116,6 +120,7 @@ private Q_SLOTS:
     void slotArgumentCountMismatch();
     void signalArgumentCountMismatch();
     void registrySlotWithNoArgs();
+    void writePropertyWithNoArgs();
 
 private:
 
@@ -320,6 +325,61 @@ void tst_MalformedPackets::registrySlotWithNoArgs()
     // "normal" name) to make sure that the first call is actually processed.
     m_replica->convertibleSlot(1);
     QTRY_COMPARE(m_source->convertibleSlotCallCount(), 1);
+}
+
+void tst_MalformedPackets::writePropertyWithNoArgs()
+{
+    // A hand-crafted property change packet with no arguments.
+    // The format matches QDataStreamCodec::serializeInvokePacket().
+    QByteArray packet;
+    {
+        QDataStream ds(&packet, QIODevice::WriteOnly);
+        ds.setVersion(QtRemoteObjects::dataStreamVersion);
+        ds.setByteOrder(QDataStream::LittleEndian);
+
+        const QMetaObject &mo = MismatchedSource::staticMetaObject;
+        const int propertyIndex = mo.indexOfProperty("convertibleValue") - mo.propertyOffset();
+
+        ds << quint32(0); // packet size, filled in below
+        ds << quint16(QtRemoteObjects::InvokePacket);
+        ds << m_source->objectName();
+        ds << int(QMetaObject::WriteProperty);
+        ds << propertyIndex;
+        ds << quint32(0); // argument count
+        ds << int(-1); // serialId
+        ds << int(-1); // propertyIndex
+        QCOMPARE(ds.status(), QDataStream::Ok);
+
+        ds.device()->seek(0);
+        ds << quint32(packet.size() - sizeof(quint32));
+    }
+
+    const QUrl url = m_host->hostUrl();
+
+    QTcpSocket socket;
+    socket.connectToHost(url.host(), url.port());
+    QVERIFY(socket.waitForConnected());
+
+    // Create a new client using the custom connection
+    QRemoteObjectNode client;
+    client.addClientSideConnection(&socket);
+
+    // Acquire a replica
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"provided type QString .* QRectF"_s));
+    std::unique_ptr<MismatchedObjectReplica> replica(client.acquire<MismatchedObjectReplica>());
+    QVERIFY(replica);
+    QVERIFY(replica->waitForSource());
+
+    // Now send a custom malformed packet - the host should not crash!
+    // It should simply discard the command.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Invalid argument count"_s));
+    QCOMPARE(socket.write(packet), packet.size());
+    QVERIFY(socket.waitForBytesWritten());
+
+    // After that update the property in a normal way to verify that the
+    // previous command was processed.
+    replica->setConvertibleValue(42);
+    QTRY_COMPARE(m_source->convertibleValue(), u"42"_s);
 }
 
 QTEST_MAIN(tst_MalformedPackets)
