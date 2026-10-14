@@ -79,6 +79,8 @@ public Q_SLOTS:
     // The replica sends one argument
     void tooFewArgsSlot(int, int) { ++m_tooFewArgsSlotCallCount; }
 
+    void noArgSlot() {}
+
 Q_SIGNALS:
     void convertibleValueChanged(const QString &value);
     void nonConvertibleValueChanged(const QString &value);
@@ -113,6 +115,7 @@ private Q_SLOTS:
     void propertyTypeMismatch();
     void slotArgumentCountMismatch();
     void signalArgumentCountMismatch();
+    void registrySlotWithNoArgs();
 
 private:
 
@@ -291,6 +294,32 @@ void tst_MalformedPackets::signalArgumentCountMismatch()
         QTRY_COMPARE(m_replica->convertibleValue(), 3);
         QCOMPARE(spy.size(), 0);
     }
+}
+
+void tst_MalformedPackets::registrySlotWithNoArgs()
+{
+    MismatchedSource sourceAsRegistry;
+    sourceAsRegistry.setObjectName("Registry");
+    m_host->enableRemoting(&sourceAsRegistry);
+
+    // "Registry" is a reserved name, but the module still allows registering
+    // custom objects under this name.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"provided type QString .* QRectF"_s));
+    std::unique_ptr<MismatchedObjectReplica> registryReplica(
+            m_client->acquire<MismatchedObjectReplica>("Registry"));
+    QVERIFY(registryReplica);
+    QVERIFY(registryReplica->waitForSource());
+
+    // The remote objects Registry always expects a slot to have at least one
+    // argument - the QRemoteObjectSourceLocation instance.
+    // Calling a slot with no arguments should not crash!
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Unexpected packet format"_s));
+    registryReplica->noArgSlot();
+
+    // Call a "normal" slot of another replica (that is registered under a
+    // "normal" name) to make sure that the first call is actually processed.
+    m_replica->convertibleSlot(1);
+    QTRY_COMPARE(m_source->convertibleSlotCallCount(), 1);
 }
 
 QTEST_MAIN(tst_MalformedPackets)
