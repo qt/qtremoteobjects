@@ -121,6 +121,8 @@ private Q_SLOTS:
     void signalArgumentCountMismatch();
     void registrySlotWithNoArgs();
     void writePropertyWithNoArgs();
+    void propertyChangeWithInvalidIndex_data();
+    void propertyChangeWithInvalidIndex();
 
 private:
 
@@ -380,6 +382,79 @@ void tst_MalformedPackets::writePropertyWithNoArgs()
     // previous command was processed.
     replica->setConvertibleValue(42);
     QTRY_COMPARE(m_source->convertibleValue(), u"42"_s);
+}
+
+void tst_MalformedPackets::propertyChangeWithInvalidIndex_data()
+{
+    QTest::addColumn<int>("propertyIndex");
+
+    const QMetaObject &mo = MismatchedObjectReplica::staticMetaObject;
+    const int propertyCount = mo.propertyCount() - mo.propertyOffset();
+
+    QTest::newRow("equal_to_count") << propertyCount;
+    QTest::newRow("large") << propertyCount + 1000;
+    QTest::newRow("negative") << -1;
+}
+
+void tst_MalformedPackets::propertyChangeWithInvalidIndex()
+{
+    QFETCH(const int, propertyIndex);
+
+    // A hand-crafted property change packet with an out-of-range index.
+    // The format matches QDataStreamCodec::serializePropertyChangePacket().
+    QByteArray packet;
+    {
+        QDataStream ds(&packet, QIODevice::WriteOnly);
+        ds.setVersion(QtRemoteObjects::dataStreamVersion);
+        ds.setByteOrder(QDataStream::LittleEndian);
+
+        ds << quint32(0); // packet size, filled in below
+        ds << quint16(QtRemoteObjects::PropertyChangePacket);
+        ds << m_source->objectName();
+        ds << propertyIndex;
+        ds << QVariant(42);
+        QCOMPARE(ds.status(), QDataStream::Ok);
+
+        ds.device()->seek(0);
+        ds << quint32(packet.size() - sizeof(quint32));
+    }
+
+    // Create the connection manually, so that we can write to the host side
+    // of it, and the replica sees the data as if it was sent by the source.
+    quint16 port = findPort();
+    QVERIFY(port);
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost, port));
+
+    QTcpSocket clientSocket;
+    clientSocket.connectToHost(QHostAddress::LocalHost, port);
+    QVERIFY(server.waitForNewConnection(5000));
+    QTcpSocket *hostSocket = server.nextPendingConnection();
+    QVERIFY(hostSocket);
+
+    m_host->addHostSideConnection(hostSocket);
+
+    QRemoteObjectNode client;
+    client.addClientSideConnection(&clientSocket);
+
+    // Acquire a replica. The source and the replica have the same number of
+    // properties, so the initialization succeeds.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"provided type QString .* QRectF"_s));
+    std::unique_ptr<MismatchedObjectReplica> replica(client.acquire<MismatchedObjectReplica>());
+    QVERIFY(replica);
+    QVERIFY(replica->waitForSource());
+
+    // Now send a custom malformed packet from the host side - the replica
+    // should not crash! It should simply discard the packet.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Invalid property index"_s));
+    QCOMPARE(hostSocket->write(packet), packet.size());
+    QVERIFY(hostSocket->waitForBytesWritten());
+
+    // After that update the property on the source in a normal way. The
+    // packets are handled in order, so this verifies that the previous packet
+    // was processed.
+    m_source->setConvertibleValue(u"1"_s);
+    QTRY_COMPARE(replica->convertibleValue(), 1);
 }
 
 QTEST_MAIN(tst_MalformedPackets)

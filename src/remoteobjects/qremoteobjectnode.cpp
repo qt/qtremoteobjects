@@ -1662,6 +1662,14 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
                 if (connectedRep)
                     rep->setProperty(propertyIndex, handlePointerToQObjectProperty(connectedRep, propertyIndex, rxValue));
                 else {
+                    const int repPropCount = rep->m_metaObject->propertyCount() - rep->m_propertyOffset;
+                    if (propertyIndex < 0 || propertyIndex >= repPropCount) {
+                        qROPrivWarning() << "Invalid property index for" << rxName
+                                         << "- got" << propertyIndex
+                                         << "but the total number of properties is"
+                                         << repPropCount;
+                        break;
+                    }
                     const QMetaProperty property = rep->m_metaObject->property(propertyIndex + rep->m_metaObject->propertyOffset());
                     if (property.userType() == QMetaType::QVariant && rxValue.canConvert<QRO_>()) {
                         // This is a type that requires registration
