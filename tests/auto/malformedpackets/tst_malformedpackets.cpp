@@ -124,6 +124,10 @@ private Q_SLOTS:
     void propertyChangeWithInvalidIndex_data();
     void propertyChangeWithInvalidIndex();
 
+    void propertyCountMismatch_data();
+    void propertyCountMismatch();
+    void childPropertyCountMismatch_data();
+    void childPropertyCountMismatch();
 private:
 
     std::unique_ptr<MismatchedSource> m_source;
@@ -455,6 +459,242 @@ void tst_MalformedPackets::propertyChangeWithInvalidIndex()
     // was processed.
     m_source->setConvertibleValue(u"1"_s);
     QTRY_COMPARE(replica->convertibleValue(), 1);
+}
+
+// Source objects to match the TwoPropertyObject from the replica. One of them
+// has less properties, the other one - more.
+class OnePropertySource : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int prop1 READ prop1 WRITE setProp1 NOTIFY prop1Changed)
+
+public:
+    using QObject::QObject;
+
+    int prop1() const { return m_prop1; }
+    void setProp1(int val)
+    {
+        if (m_prop1 == val)
+            return;
+        m_prop1 = val;
+        Q_EMIT prop1Changed(m_prop1);
+    }
+
+signals:
+    void prop1Changed(int);
+
+private:
+    int m_prop1 = 0;
+};
+
+class ThreePropertiesSource : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int prop1 READ prop1 WRITE setProp1 NOTIFY prop1Changed)
+    Q_PROPERTY(int prop2 READ prop2 WRITE setProp2 NOTIFY prop2Changed)
+    Q_PROPERTY(int prop3 READ prop3 WRITE setProp3 NOTIFY prop3Changed)
+
+public:
+    using QObject::QObject;
+
+    int prop1() const { return m_prop1; }
+    void setProp1(int val)
+    {
+        if (m_prop1 == val)
+            return;
+        m_prop1 = val;
+        Q_EMIT prop1Changed(m_prop1);
+    }
+
+    int prop2() const { return m_prop2; }
+    void setProp2(int val)
+    {
+        if (m_prop2 == val)
+            return;
+        m_prop2 = val;
+        Q_EMIT prop2Changed(m_prop2);
+    }
+
+    int prop3() const { return m_prop3; }
+    void setProp3(int val)
+    {
+        if (m_prop3 == val)
+            return;
+        m_prop3 = val;
+        Q_EMIT prop3Changed(m_prop3);
+    }
+
+signals:
+    void prop1Changed(int);
+    void prop2Changed(int);
+    void prop3Changed(int);
+
+private:
+    int m_prop1 = 0;
+    int m_prop2 = 0;
+    int m_prop3 = 0;
+};
+
+enum class MismatchType
+{
+    ReplicaHasLessProperties,
+    ReplicaHasMoreProperties,
+};
+
+void tst_MalformedPackets::propertyCountMismatch_data()
+{
+    QTest::addColumn<MismatchType>("type");
+
+    QTest::newRow("replica_has_less_properties") << MismatchType::ReplicaHasLessProperties;
+    QTest::newRow("replica_has_more_properties") << MismatchType::ReplicaHasMoreProperties;
+}
+
+void tst_MalformedPackets::propertyCountMismatch()
+{
+    QFETCH(const MismatchType, type);
+
+    // Create both sources
+    OnePropertySource src1;
+    ThreePropertiesSource src3;
+    // But enable remoting for only one of them
+    switch (type) {
+    case MismatchType::ReplicaHasLessProperties:
+        src1.setObjectName("PropertyMismatch");
+        m_host->enableRemoting(&src1);
+        break;
+    case MismatchType::ReplicaHasMoreProperties:
+        src3.setObjectName("PropertyMismatch");
+        m_host->enableRemoting(&src3);
+        break;
+    }
+
+    // Acquire a replica that has a different number of properties.
+    // This should not crash!
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Property count mismatch"_s));
+    std::unique_ptr<TwoPropertyObjectReplica> replica(
+            m_client->acquire<TwoPropertyObjectReplica>("PropertyMismatch"));
+    QVERIFY(replica);
+    QTRY_COMPARE(replica->state(), QRemoteObjectReplica::SignatureMismatch);
+}
+
+// The source child objects for the ParentWithChild replica. The type name is
+// set explicitly, so that it matches the TwoPropertyObject class from
+// mismatch.rep. The replica side needs it to find the metaobject for the new
+// child replica when the child pointer changes on the source side.
+class OnePropertyChildSource : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "TwoPropertyObject")
+    Q_PROPERTY(int prop1 READ prop1 CONSTANT)
+
+public:
+    using QObject::QObject;
+
+    int prop1() const { return 1; }
+};
+
+class ThreePropertiesChildSource : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "TwoPropertyObject")
+    Q_PROPERTY(int prop1 READ prop1 CONSTANT)
+    Q_PROPERTY(int prop2 READ prop2 CONSTANT)
+    Q_PROPERTY(int prop3 READ prop3 CONSTANT)
+
+public:
+    using QObject::QObject;
+
+    int prop1() const { return 1; }
+    int prop2() const { return 2; }
+    int prop3() const { return 3; }
+};
+
+// The objectName must match the class name in mismatch.rep, because the
+// generated replica uses it to build the name of the child replica.
+class ParentWithChildSource : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int value READ value NOTIFY valueChanged)
+    Q_PROPERTY(QObject *child READ child NOTIFY childChanged)
+
+public:
+    explicit ParentWithChildSource(QObject *child) : m_child(child)
+    {
+        setObjectName(u"ParentWithChild"_s);
+    }
+
+    int value() const { return 42; }
+
+    QObject *child() const { return m_child; }
+    void setChild(QObject *child)
+    {
+        if (m_child == child)
+            return;
+        m_child = child;
+        Q_EMIT childChanged();
+    }
+
+Q_SIGNALS:
+    void valueChanged();
+    void childChanged();
+
+private:
+    QObject *m_child = nullptr;
+};
+
+static std::unique_ptr<QObject> createChildSource(MismatchType type)
+{
+    switch (type) {
+    case MismatchType::ReplicaHasLessProperties:
+        return std::make_unique<ThreePropertiesChildSource>();
+    case MismatchType::ReplicaHasMoreProperties:
+        return std::make_unique<OnePropertyChildSource>();
+    }
+    return nullptr;
+}
+
+void tst_MalformedPackets::childPropertyCountMismatch_data()
+{
+    propertyCountMismatch_data();
+}
+
+void tst_MalformedPackets::childPropertyCountMismatch()
+{
+    QFETCH(const MismatchType, type);
+
+    const auto child = createChildSource(type);
+    ParentWithChildSource parent(child.get());
+    QVERIFY(m_host->enableRemoting(&parent));
+
+    // The child replica has a different number of properties than the source
+    // child. This should not crash! The child replica is not initialized,
+    // but the parent replica still is.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Property count mismatch for .*"
+                                                           "Class::ParentWithChild::child"_s));
+    std::unique_ptr<ParentWithChildReplica> replica(
+            m_client->acquire<ParentWithChildReplica>());
+    QVERIFY(replica);
+    QTRY_COMPARE(replica->state(), QRemoteObjectReplica::Valid);
+    QCOMPARE(replica->value(), 42);
+
+    TwoPropertyObjectReplica *childReplica = replica->child();
+    QVERIFY(childReplica);
+    QCOMPARE(childReplica->state(), QRemoteObjectReplica::SignatureMismatch);
+
+    // Changing the child pointer after the parent is initialized makes the
+    // replica side acquire a new dynamic replica for the child. Its property
+    // count does not match either. This should not crash either!
+    const auto newChild = createChildSource(type);
+    QSignalSpy childChangedSpy(replica.get(), &ParentWithChildReplica::childChanged);
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Property count mismatch for .*"
+                                                           "Class::ParentWithChild::child"_s));
+    parent.setChild(newChild.get());
+    QTRY_COMPARE(childChangedSpy.size(), 1);
+
+    TwoPropertyObjectReplica *newChildReplica = replica->child();
+    QVERIFY(newChildReplica);
+    QVERIFY(childReplica != newChildReplica);
+    QCOMPARE(newChildReplica->state(), QRemoteObjectReplica::SignatureMismatch);
 }
 
 QTEST_MAIN(tst_MalformedPackets)

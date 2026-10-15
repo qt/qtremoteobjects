@@ -120,6 +120,7 @@ public:
     void setRegistry(QRemoteObjectRegistry *);
     QVariant handlePointerToQObjectProperty(QConnectedReplicaImplementation *rep, int index, const QVariant &property);
     void handlePointerToQObjectProperties(QConnectedReplicaImplementation *rep, QVariantList &properties);
+    bool checkPropertyCount(QConnectedReplicaImplementation *rep, qsizetype expected, qsizetype received);
 
     void onClientRead(QObject *obj);
     void onRemoteObjectSourceAdded(const QRemoteObjectSourceLocation &entry);
