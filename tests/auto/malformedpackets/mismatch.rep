@@ -31,3 +31,21 @@ class MismatchedObject
     // The source signal has no arguments
     SIGNAL(noArgsSignal(int a))
 }
+
+// The object that is used to test property count mismatch between source
+// and replica. The replica will have two properties, and it will be acquired
+// for different sources - with one property, and with three properties.
+class TwoPropertyObject
+{
+    PROP(int prop1 READWRITE)
+    PROP(int prop2 READWRITE)
+}
+
+// The object that is used to test property count mismatch for nested child
+// objects. The child replica has two properties, and the source child object
+// has either one or three properties.
+class ParentWithChild
+{
+    PROP(int value READONLY)
+    CLASS child(TwoPropertyObject)
+}

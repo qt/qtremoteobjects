@@ -1608,6 +1608,15 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             codec->deserializeInitPacket(connection->d_func()->stream(), rxArgs);
             if (rep)
             {
+                if (!checkPropertyCount(rep.data(), rep->m_propertyStorage.size(), rxArgs.size())) {
+                    // Ask the source to stop sending updates for this object
+                    if (rep->connectionToSource) {
+                        codec->serializeRemoveObjectPacket(rxName);
+                        codec->send(connection);
+                        rep->setDisconnected(); // keeps the SignatureMismatch state
+                    }
+                    break;
+                }
                 handlePointerToQObjectProperties(rep.data(), rxArgs);
                 rep->initialize(std::move(rxArgs));
             } else { //replica has been deleted, remove from list
@@ -1623,6 +1632,16 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
             if (rep)
             {
+                const auto repPropertyCount = meta->propertyCount() - meta->propertyOffset();
+                if (!checkPropertyCount(rep.data(), repPropertyCount, rxArgs.size())) {
+                    // Ask the source to stop sending updates for this object
+                    if (rep->connectionToSource) {
+                        codec->serializeRemoveObjectPacket(rxName);
+                        codec->send(connection);
+                        rep->setDisconnected(); // keeps the SignatureMismatch state
+                    }
+                    break;
+                }
                 rep->setDynamicMetaObject(meta);
                 handlePointerToQObjectProperties(rep.data(), rxArgs);
                 rep->setDynamicProperties(std::move(rxArgs));
@@ -2455,13 +2474,20 @@ QVariant QRemoteObjectNodePrivate::handlePointerToQObjectProperty(QConnectedRepl
         }
         if (!childInfo.parameters.isEmpty())
             ds >> parameters;
-        handlePointerToQObjectProperties(childRep.data(), parameters);
-        childRep->setDynamicProperties(std::move(parameters));
+        const QMetaObject *meta = childRep->m_metaObject;
+        if (checkPropertyCount(childRep.data(), meta->propertyCount() - meta->propertyOffset(),
+                               parameters.size())) {
+            handlePointerToQObjectProperties(childRep.data(), parameters);
+            childRep->setDynamicProperties(std::move(parameters));
+        }
     } else {
         if (!childInfo.parameters.isEmpty())
             ds >> parameters;
-        handlePointerToQObjectProperties(childRep.data(), parameters);
-        childRep->initialize(std::move(parameters));
+        if (checkPropertyCount(childRep.data(), childRep->m_propertyStorage.size(),
+                               parameters.size())) {
+            handlePointerToQObjectProperties(childRep.data(), parameters);
+            childRep->initialize(std::move(parameters));
+        }
     }
 
     return retval;
@@ -2472,6 +2498,17 @@ void QRemoteObjectNodePrivate::handlePointerToQObjectProperties(QConnectedReplic
     const auto childIndices = rep->childIndices();
     for (const int index : childIndices)
         properties[index] = handlePointerToQObjectProperty(rep, index, properties.at(index));
+}
+
+bool QRemoteObjectNodePrivate::checkPropertyCount(QConnectedReplicaImplementation *rep,
+                                                  qsizetype expected, qsizetype received)
+{
+    if (expected == received)
+        return true;
+    qROPrivWarning() << "Property count mismatch for" << rep->m_objectName << "- expected"
+                     << expected << "got" << received;
+    rep->setState(QRemoteObjectReplica::SignatureMismatch);
+    return false;
 }
 
 /*!
