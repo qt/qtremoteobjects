@@ -100,10 +100,8 @@ void QRemoteObjectRegistry::initialize()
 {
     QRemoteObjectRegistry::registerMetatypes();
     QVariantList properties;
-    properties.reserve(3);
+    properties.reserve(1);
     properties << QVariant::fromValue(QRemoteObjectSourceLocations());
-    properties << QVariant::fromValue(QRemoteObjectSourceLocation());
-    properties << QVariant::fromValue(QRemoteObjectSourceLocation());
     setProperties(std::move(properties));
 }
 
