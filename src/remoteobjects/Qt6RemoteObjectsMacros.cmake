@@ -119,12 +119,18 @@ function(qt6_reps_from_headers target)
 
     foreach(it ${ARGV})
         get_filename_component(outfilename ${it} NAME_WE)
+        get_source_file_property(skip_automoc "${it}" SKIP_AUTOMOC)
         # This calls moc on an existing header file to extract metatypes json information
         # which is then passed to the tool to generate a .rep file.
         qt6_wrap_cpp(qtro_moc_files "${it}"
                      __QT_INTERNAL_OUTPUT_MOC_JSON_FILES json_list
                      TARGET "${target}"
                      ${extra_moc_options})
+        # The moc output is only used for the json file and is not compiled, so let AUTOMOC
+        # still handle the header for the target that contains the class.
+        if(NOT skip_automoc)
+            set_source_files_properties("${it}" PROPERTIES SKIP_AUTOMOC OFF)
+        endif()
         set(infile ${json_list})
         set_source_files_properties(${qtro_moc_files} PROPERTIES HEADER_FILE_ONLY ON)
         list(APPEND outfiles ${qtro_moc_files})

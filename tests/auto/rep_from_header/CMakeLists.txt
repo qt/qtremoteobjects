@@ -15,7 +15,8 @@ endif()
 qt_internal_add_test(tst_rep_from_header
     SOURCES
         tst_rep_from_header.cpp
+        simpleobject.h
     LIBRARIES
         Qt::RemoteObjects
 )
-qt6_reps_from_headers(tst_rep_from_header pods.h)
+qt6_reps_from_headers(tst_rep_from_header pods.h simpleobject.h)
