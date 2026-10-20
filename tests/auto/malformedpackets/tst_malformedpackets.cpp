@@ -3,6 +3,7 @@
 
 #include "rep_mismatch_replica.h"
 
+#include <QtRemoteObjects/QRemoteObjectDynamicReplica>
 #include <QtRemoteObjects/QRemoteObjectHost>
 #include <QtRemoteObjects/QRemoteObjectNode>
 #include <QtRemoteObjects/private/qconnectionfactories_p.h>
@@ -128,6 +129,10 @@ private Q_SLOTS:
     void propertyCountMismatch();
     void childPropertyCountMismatch_data();
     void childPropertyCountMismatch();
+
+    void dynamicInitForStaticReplica();
+    void repeatedDynamicInitForDynamicReplica_data();
+    void repeatedDynamicInitForDynamicReplica();
 private:
 
     std::unique_ptr<MismatchedSource> m_source;
@@ -695,6 +700,249 @@ void tst_MalformedPackets::childPropertyCountMismatch()
     QVERIFY(newChildReplica);
     QVERIFY(childReplica != newChildReplica);
     QCOMPARE(newChildReplica->state(), QRemoteObjectReplica::SignatureMismatch);
+}
+
+// A hand-crafted InitDynamicPacket that describes a type with a single int
+// property without a notify signal, and no signals or slots. All the sources
+// in this test have more properties, so any property index above zero becomes
+// stale once the replica applies this definition.
+// The format matches QDataStreamCodec::serializeInitDynamicPacket().
+static QByteArray createInitDynamicPacket(const QString &name,
+                                          const QString &typeName = u"InjectedType"_s)
+{
+    QByteArray packet;
+    QDataStream ds(&packet, QIODevice::WriteOnly);
+    ds.setVersion(QtRemoteObjects::dataStreamVersion);
+    ds.setByteOrder(QDataStream::LittleEndian);
+
+    ds << quint32(0); // packet size, filled in below
+    ds << quint16(QtRemoteObjects::InitDynamicPacket);
+    ds << name;
+
+    // The definition, see QDataStreamCodec::serializeDefinition()
+    ds << typeName; // type name
+    ds << quint32(0); // enum count
+    ds << quint32(0); // Qt enum count
+    ds << quint32(0); // gadget count
+    ds << quint32(0); // signal count
+    ds << quint32(0); // slot count
+    ds << quint32(1); // property count
+    ds << "injected"; // property name
+    ds << "int"; // property type
+    ds << QByteArray(); // notify signal
+
+    // The property values, see QDataStreamCodec::serializeProperties()
+    ds << quint32(1); // property count
+    ds << QVariant(42);
+
+    if (ds.status() != QDataStream::Ok)
+        return {};
+
+    ds.device()->seek(0);
+    ds << quint32(packet.size() - sizeof(quint32));
+    return packet;
+}
+
+void tst_MalformedPackets::dynamicInitForStaticReplica()
+{
+    const QByteArray packet = createInitDynamicPacket(m_source->objectName());
+    QVERIFY(!packet.isEmpty());
+
+    // Create the connection manually, so that we can write to the host side
+    // of it, and the replica sees the data as if it was sent by the source.
+    quint16 port = findPort();
+    QVERIFY(port);
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost, port));
+
+    QTcpSocket clientSocket;
+    clientSocket.connectToHost(QHostAddress::LocalHost, port);
+    QVERIFY(server.waitForNewConnection(5000));
+    QTcpSocket *hostSocket = server.nextPendingConnection();
+    QVERIFY(hostSocket);
+
+    m_host->addHostSideConnection(hostSocket);
+
+    QRemoteObjectNode client;
+    client.addClientSideConnection(&clientSocket);
+
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"provided type QString .* QRectF"_s));
+    std::unique_ptr<MismatchedObjectReplica> replica(client.acquire<MismatchedObjectReplica>());
+    QVERIFY(replica);
+    QVERIFY(replica->waitForSource());
+
+    // A static replica has a compiled-in metaobject and is initialized with
+    // an InitPacket, so it should never receive an InitDynamicPacket.
+    // The replica should not crash! It should simply discard the packet.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Unexpected InitDynamicPacket"_s));
+    QCOMPARE(hostSocket->write(packet), packet.size());
+    QVERIFY(hostSocket->waitForBytesWritten());
+
+    // After that update the property on the source in a normal way. The
+    // packets are handled in order, so this verifies that the previous packet
+    // was processed.
+    m_source->setConvertibleValue(u"1"_s);
+    QTRY_COMPARE(replica->convertibleValue(), 1);
+
+    // The compiled replica accesses the properties by the compiled indices.
+    // The injected definition has only one property, so reading the second
+    // one would access the property storage out of bounds, if the packet was
+    // applied.
+    QCOMPARE(replica->nonConvertibleValue(), QRectF());
+
+    // The slots are also invoked using the compiled indices.
+    replica->convertibleSlot(2);
+    QTRY_COMPARE(m_source->convertibleSlotCallCount(), 1);
+    QCOMPARE(m_source->convertibleSlotArgument(), u"2"_s);
+}
+
+// The source child object for the ParentWithChildSource. The type name is set
+// explicitly, so that the injected definition can use the same one.
+class CachedChildSource : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO(QCLASSINFO_REMOTEOBJECT_TYPE, "CachedChild")
+    Q_PROPERTY(int value1 READ value1 WRITE setValue1 NOTIFY value1Changed)
+    Q_PROPERTY(int value2 READ value2 CONSTANT)
+
+public:
+    CachedChildSource(int value1, int value2) : m_value1(value1), m_value2(value2) {}
+
+    int value1() const { return m_value1; }
+    void setValue1(int value)
+    {
+        if (m_value1 == value)
+            return;
+        m_value1 = value;
+        Q_EMIT value1Changed(m_value1);
+    }
+
+    int value2() const { return m_value2; }
+
+Q_SIGNALS:
+    void value1Changed(int value);
+
+private:
+    int m_value1;
+    int m_value2;
+};
+
+void tst_MalformedPackets::repeatedDynamicInitForDynamicReplica_data()
+{
+    QTest::addColumn<QString>("name");
+    QTest::addColumn<bool>("expectWarning");
+
+    // The packet is sent for an already initialized dynamic replica
+    QTest::newRow("parent") << u"ParentWithChild"_s << true;
+    // The packet is sent for an already initialized dynamic child replica
+    QTest::newRow("child") << u"Class::ParentWithChild::child"_s << true;
+    // The packet is sent for an object that the client never acquired
+    QTest::newRow("not_acquired") << u"NotAcquired"_s << false;
+}
+
+void tst_MalformedPackets::repeatedDynamicInitForDynamicReplica()
+{
+    QFETCH(const QString, name);
+    QFETCH(const bool, expectWarning);
+
+    // The injected definition uses the type name of the child, so applying
+    // it would also replace the cached definition of the child type.
+    const QByteArray packet = createInitDynamicPacket(name, u"CachedChild"_s);
+    QVERIFY(!packet.isEmpty());
+
+    CachedChildSource child(1, 10);
+    CachedChildSource newChild(2, 20);
+    ParentWithChildSource parent(&child);
+    QVERIFY(m_host->enableRemoting(&parent));
+
+    // Create the connection manually, so that we can write to the host side
+    // of it, and the replica sees the data as if it was sent by the source.
+    quint16 port = findPort();
+    QVERIFY(port);
+    QTcpServer server;
+    QVERIFY(server.listen(QHostAddress::LocalHost, port));
+
+    QTcpSocket clientSocket;
+    clientSocket.connectToHost(QHostAddress::LocalHost, port);
+    QVERIFY(server.waitForNewConnection(5000));
+    QTcpSocket *hostSocket = server.nextPendingConnection();
+    QVERIFY(hostSocket);
+
+    m_host->addHostSideConnection(hostSocket);
+
+    QRemoteObjectNode client;
+    client.addClientSideConnection(&clientSocket);
+
+    // The dynamic replicas receive their metaobjects from the
+    // InitDynamicPacket that the source sends during the initialization.
+    // The definition of the child type is sent together with the initial
+    // data of the parent, and is also stored in the cache of dynamic types.
+    std::unique_ptr<QRemoteObjectDynamicReplica> replica(
+            client.acquireDynamic(parent.objectName()));
+    QVERIFY(replica);
+    QVERIFY(replica->waitForSource());
+    const QMetaObject *mo = replica->metaObject();
+
+    auto *childReplica = qobject_cast<QRemoteObjectDynamicReplica *>(
+            replica->property("child").value<QObject *>());
+    QVERIFY(childReplica);
+    QCOMPARE(childReplica->state(), QRemoteObjectReplica::Valid);
+
+    // Keep the metaobject data obtained after the initialization, like e.g.
+    // QML bindings or the user code connecting to the replica would do.
+    const QMetaObject *childMo = childReplica->metaObject();
+    const QMetaProperty value1Prop = childMo->property(childMo->indexOfProperty("value1"));
+    QVERIFY(value1Prop.isValid());
+    QVERIFY(value1Prop.hasNotifySignal());
+    const QMetaProperty value2Prop = childMo->property(childMo->indexOfProperty("value2"));
+    QVERIFY(value2Prop.isValid());
+
+    QSignalSpy value1Spy(childReplica, value1Prop.notifySignal());
+    QVERIFY(value1Spy.isValid());
+
+    // The replicas are already initialized, so they should not receive
+    // another InitDynamicPacket. The replica should not crash! It should
+    // simply discard the packet.
+    if (expectWarning)
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"Unexpected InitDynamicPacket"_s));
+    QCOMPARE(hostSocket->write(packet), packet.size());
+    QVERIFY(hostSocket->waitForBytesWritten());
+
+    // After that update the property of the child on the source in a normal
+    // way. The packets are handled in order, so this verifies that the
+    // previous packet was processed.
+    child.setValue1(11);
+    QTRY_COMPARE(value1Spy.size(), 1);
+    QCOMPARE(value1Spy.at(0).at(0).toInt(), 11);
+
+    // The replicas must keep the metaobjects that they got during the
+    // initialization.
+    QCOMPARE(replica->metaObject(), mo);
+    QCOMPARE(childReplica->metaObject(), childMo);
+    QCOMPARE(value1Prop.read(childReplica), QVariant(11));
+
+    // The injected definition has only one property, so reading the second
+    // one using the stored index would access the property storage out of
+    // bounds, if the packet was applied.
+    QCOMPARE(value2Prop.read(childReplica), QVariant(10));
+
+    // Change the child pointer on the source. The source has already sent the
+    // definition of the child type, so it sends the new child without it, and
+    // the replica side takes the definition from the cache. The cached
+    // definition must not be replaced by the injected one.
+    QSignalSpy childSpy(replica.get(), SIGNAL(childChanged()));
+    QVERIFY(childSpy.isValid());
+    parent.setChild(&newChild);
+    QTRY_COMPARE(childSpy.size(), 1);
+
+    // Check that the child replica is actually updated but its metaobject
+    // did not change.
+    childReplica = qobject_cast<QRemoteObjectDynamicReplica *>(
+            replica->property("child").value<QObject *>());
+    QVERIFY(childReplica);
+    QCOMPARE(childReplica->metaObject(), childMo);
+    QCOMPARE(childReplica->property("value1"), QVariant(2));
+    QCOMPARE(childReplica->property("value2"), QVariant(20));
 }
 
 QTEST_MAIN(tst_MalformedPackets)

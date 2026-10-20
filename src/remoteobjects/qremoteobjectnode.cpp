@@ -1627,27 +1627,41 @@ void QRemoteObjectNodePrivate::onClientRead(QObject *obj)
         case QRemoteObjectPacketTypeEnum::InitDynamicPacket:
         {
             qROPrivDebug() << "InitDynamicPacket-->" << rxName << this;
-            const QMetaObject *meta = dynamicTypeManager.addDynamicType(connection, connection->d_func()->stream());
-            codec->deserializeInitPacket(connection->d_func()->stream(), rxArgs);
             QSharedPointer<QConnectedReplicaImplementation> rep = qSharedPointerCast<QConnectedReplicaImplementation>(replicas.value(rxName).toStrongRef());
-            if (rep)
-            {
-                const auto repPropertyCount = meta->propertyCount() - meta->propertyOffset();
-                if (!checkPropertyCount(rep.data(), repPropertyCount, rxArgs.size())) {
-                    // Ask the source to stop sending updates for this object
-                    if (rep->connectionToSource) {
-                        codec->serializeRemoveObjectPacket(rxName);
-                        codec->send(connection);
-                        rep->setDisconnected(); // keeps the SignatureMismatch state
-                    }
-                    break;
+            const bool unexpectedPacket = !rep || rep->m_metaObject;
+            // The packet must still be fully deserialized to keep the stream
+            // in sync. If it is unexpected, read the definition into a
+            // temporary manager, so that it does not replace the cached
+            // metatype.
+            QRemoteObjectMetaObjectManager discardedTypes;
+            auto &typeManager = unexpectedPacket ? discardedTypes : dynamicTypeManager;
+            const QMetaObject *meta = typeManager.addDynamicType(connection, connection->d_func()->stream());
+            codec->deserializeInitPacket(connection->d_func()->stream(), rxArgs);
+            if (unexpectedPacket) {
+                rxArgs.clear();
+                if (!rep) {
+                    //replica has been deleted, remove from list
+                    replicas.remove(rxName);
+                } else {
+                    qROPrivWarning() << "Unexpected InitDynamicPacket for" << rxName
+                                     << "- the replica already has a metaobject."
+                                     << "Ignoring the packet.";
                 }
-                rep->setDynamicMetaObject(meta);
-                handlePointerToQObjectProperties(rep.data(), rxArgs);
-                rep->setDynamicProperties(std::move(rxArgs));
-            } else { //replica has been deleted, remove from list
-                replicas.remove(rxName);
+                break;
             }
+            const auto repPropertyCount = meta->propertyCount() - meta->propertyOffset();
+            if (!checkPropertyCount(rep.data(), repPropertyCount, rxArgs.size())) {
+                // Ask the source to stop sending updates for this object
+                if (rep->connectionToSource) {
+                    codec->serializeRemoveObjectPacket(rxName);
+                    codec->send(connection);
+                    rep->setDisconnected(); // keeps the SignatureMismatch state
+                }
+                break;
+            }
+            rep->setDynamicMetaObject(meta);
+            handlePointerToQObjectProperties(rep.data(), rxArgs);
+            rep->setDynamicProperties(std::move(rxArgs));
             break;
         }
         case QRemoteObjectPacketTypeEnum::RemoveObject:
