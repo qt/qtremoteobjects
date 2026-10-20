@@ -1,0 +1,5 @@
+class ForeignObject
+{
+    ENUM Mode { Off, On }
+    PROP(int value=0)
+};

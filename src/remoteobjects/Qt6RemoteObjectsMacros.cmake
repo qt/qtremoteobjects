@@ -78,8 +78,25 @@ function(_qt_internal_add_repc_files type target)
 
         # The generated header file needs to be manually moc'ed (without using AUTOMOC) and then
         # added as source to compile into the target.
-        qt6_wrap_cpp(qtro_moc_files "${outfile}" TARGET "${target}" ${extra_moc_options})
+        qt6_wrap_cpp(qtro_moc_files "${outfile}"
+                     __QT_INTERNAL_OUTPUT_MOC_JSON_FILES generated_json_list
+                     TARGET "${target}"
+                     ${extra_moc_options})
         list(APPEND outfiles ${qtro_moc_files})
+
+        # Private source of the target only: not propagated to consumers of an installed library.
+        # Not in the target's metatypes, so expose it to qmltyperegistrar as *metatypes.json source.
+        set(metatypes_file
+            ${CMAKE_CURRENT_BINARY_DIR}/rep_${outfilename}_${type}_metatypes.json)
+        add_custom_command(
+            OUTPUT ${metatypes_file}
+            COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::moc
+                -o ${metatypes_file} --collect-json ${generated_json_list}
+            DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::moc ${generated_json_list}
+            VERBATIM
+        )
+        set_source_files_properties(${metatypes_file} PROPERTIES HEADER_FILE_ONLY ON)
+        list(APPEND outfiles ${metatypes_file})
     endforeach()
     _qt_internal_set_source_file_generated(
         SOURCES ${outfiles}

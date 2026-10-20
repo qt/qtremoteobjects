@@ -2,5 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+add_subdirectory(foreigntypes)
 add_subdirectory(integration)
 add_subdirectory(usertypes)
