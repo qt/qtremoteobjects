@@ -48,7 +48,7 @@ inline QDataStream& operator>>(QDataStream &stream, QRemoteObjectSourceLocationI
     return stream >> info.typeName >> info.hostUrl;
 }
 
-typedef QPair<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocation;
+using QRemoteObjectSourceLocation = std::pair<QString, QRemoteObjectSourceLocationInfo>;
 typedef QHash<QString, QRemoteObjectSourceLocationInfo> QRemoteObjectSourceLocations;
 typedef QHash<int, QByteArray> QIntHash;
 
