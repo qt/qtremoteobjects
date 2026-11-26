@@ -37,7 +37,6 @@ function(_qt_internal_add_repc_files type target)
     else()
         set(debug "")
     endif()
-    set(repc_incpath) ########### TODO
 
     _qt_internal_get_remote_objects_framework_path_moc_options(extra_moc_options)
     _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
@@ -69,7 +68,7 @@ function(_qt_internal_add_repc_files type target)
 
         add_custom_command(
             OUTPUT ${outfile}
-            ${repc_command} ${debug} -o ${type} ${repc_incpath} ${infile} ${outfile}
+            ${repc_command} ${debug} -o ${type} ${infile} ${outfile}
             MAIN_DEPENDENCY ${infile}
             DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::repc
             VERBATIM
